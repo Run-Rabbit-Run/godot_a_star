@@ -1,0 +1,13 @@
+[gd_resource type="TileSet" format=3 uid="uid://blp26h54nhwot"]
+
+[ext_resource type="Texture2D" uid="uid://cw5fyxxfa727j" path="res://features/battle/tiles/hex_debug.svg" id="1_82f5w"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ujbtb"]
+texture = ExtResource("1_82f5w")
+texture_region_size = Vector2i(56, 64)
+0:0/0 = 0
+
+[resource]
+tile_shape = 3
+tile_size = Vector2i(56, 64)
+sources/0 = SubResource("TileSetAtlasSource_ujbtb")

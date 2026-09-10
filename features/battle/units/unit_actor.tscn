@@ -1,0 +1,26 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/battle/units/unit_actor.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://features/battle/units/unit_debug.svg" id="2_texture"]
+
+[node name="UnitActor" type="Node2D"]
+z_index = 20
+script = ExtResource("1_script")
+
+[node name="VisualRoot" type="Node2D" parent="."]
+
+[node name="Sprite" type="Sprite2D" parent="VisualRoot"]
+texture = ExtResource("2_texture")
+
+[node name="UnitIdLabel" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = -56.0
+offset_top = 24.0
+offset_right = 56.0
+offset_bottom = 44.0
+mouse_filter = 2
+theme_override_colors/font_outline_color = Color(0.08, 0.08, 0.1, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "unit_id"
+horizontal_alignment = 1

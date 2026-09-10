@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BattleDefinition" format=3 uid="uid://xnuskv6fc8e5"]
+
+[ext_resource type="Script" uid="uid://dk2e5f3wrf5jk" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
+[ext_resource type="Script" uid="uid://c12lcgys5dmb4" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
+[ext_resource type="Script" uid="uid://p0sn4cgmj81" path="res://features/battle/definitions/battle_unit_spawn_definition.gd" id="3_spawn_script"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_player_spawn.tres" id="4_player_spawn"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_spawn.tres" id="5_enemy_spawn"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_player_2_spawn.tres" id="6_player_2_spawn"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_2_spawn.tres" id="7_enemy_2_spawn"]
+
+[sub_resource type="Resource" id="Objective_eliminate_enemies"]
+script = ExtResource("2_objective")
+description = "Победить всех врагов"
+
+[resource]
+script = ExtResource("1_battle")
+id = &"debug_battle"
+primary_objective = SubResource("Objective_eliminate_enemies")
+unit_spawns = Array[ExtResource("3_spawn_script")]([ExtResource("4_player_spawn"), ExtResource("6_player_2_spawn"), ExtResource("5_enemy_spawn"), ExtResource("7_enemy_2_spawn")])

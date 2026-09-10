@@ -1,0 +1,280 @@
+class_name BattleEngine
+extends RefCounted
+
+
+var _hex_grid: HexGrid
+var _unit_states: Dictionary[StringName, UnitState]
+var _turn_service: TurnService
+var _objective_system: ObjectiveSystem
+var _battle_id: StringName
+var _deterministic_seed: int
+var _random: RandomNumberGenerator
+
+
+func _init(
+	hex_grid: HexGrid,
+	unit_states: Dictionary[StringName, UnitState],
+	turn_order: Array[StringName],
+	objective_system: ObjectiveSystem,
+	battle_id: StringName,
+	deterministic_seed: int
+) -> void:
+	_hex_grid = hex_grid
+	_unit_states = unit_states
+	_objective_system = objective_system
+	_battle_id = battle_id
+	_deterministic_seed = deterministic_seed
+	_random = RandomNumberGenerator.new()
+	_random.seed = deterministic_seed
+	_turn_service = TurnService.new(turn_order)
+	_turn_service.start()
+
+
+func get_unit(unit_id: StringName) -> UnitState:
+	return _unit_states.get(unit_id) as UnitState
+
+
+func get_unit_at(hex: Vector2i) -> UnitState:
+	for state: UnitState in _unit_states.values():
+		if state.health.is_defeated():
+			continue
+
+		if state.hex == hex:
+			return state
+
+	return null
+
+
+func get_living_units_by_faction(
+	faction: BattleFaction.Value
+) -> Array[UnitState]:
+	var living_units: Array[UnitState] = []
+
+	for state: UnitState in _unit_states.values():
+		if state.faction == faction and not state.health.is_defeated():
+			living_units.append(state)
+
+	living_units.sort_custom(_is_unit_id_before)
+	return living_units
+
+
+func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
+	var targets: Array[UnitState] = []
+	var attacker := get_unit(unit_id)
+
+	if (
+		attacker == null
+		or attacker.health.is_defeated()
+		or attacker.unit_id != get_active_unit_id()
+		or not attacker.turn.main_action_available
+	):
+		return targets
+
+	for candidate: UnitState in _unit_states.values():
+		if candidate.faction == attacker.faction:
+			continue
+
+		if candidate.health.is_defeated():
+			continue
+
+		if HexGrid.get_distance(attacker.hex, candidate.hex) == 1:
+			targets.append(candidate)
+
+	targets.sort_custom(_is_unit_id_before)
+	return targets
+
+
+func get_battle_id() -> StringName:
+	return _battle_id
+
+
+func get_deterministic_seed() -> int:
+	return _deterministic_seed
+
+
+func get_active_unit_id() -> StringName:
+	return _turn_service.get_active_unit_id()
+
+
+func get_round_number() -> int:
+	return _turn_service.get_round_number()
+
+
+func get_objective_description() -> String:
+	return _objective_system.get_description()
+
+
+func get_outcome() -> BattleOutcome.Value:
+	return _objective_system.get_outcome(
+		_unit_states,
+		get_round_number()
+	)
+
+
+func get_result() -> BattleResult:
+	var outcome := get_outcome()
+
+	if outcome == BattleOutcome.Value.IN_PROGRESS:
+		return null
+
+	var objective_result := ObjectiveResult.new(
+		get_objective_description(),
+		outcome == BattleOutcome.Value.VICTORY
+	)
+
+	return BattleResult.new(
+		get_battle_id(),
+		get_deterministic_seed(),
+		outcome,
+		get_round_number(),
+		objective_result
+	)
+
+
+func get_movement_search(unit_id: StringName) -> MovementSearchResult:
+	var empty_costs: Dictionary[Vector2i, int] = {}
+	var empty_came_from: Dictionary[Vector2i, Vector2i] = {}
+	var state := get_unit(unit_id)
+
+	if (
+		state == null
+		or state.health.is_defeated()
+		or unit_id != get_active_unit_id()
+	):
+		return MovementSearchResult.new(
+			empty_costs,
+			empty_came_from
+		)
+
+	return MovementService.search(
+		_hex_grid,
+		state.hex,
+		state.turn.movement_remaining,
+		_get_blocked_cells(unit_id)
+	)
+
+
+func start_unit_turn(unit_id: StringName) -> bool:
+	var state := get_unit(unit_id)
+
+	if state == null or state.health.is_defeated():
+		return false
+
+	state.turn.start_turn()
+
+	return true
+
+
+## Новый активный юнит начинает ход с восстановленным TurnState.
+func end_turn() -> StringName:
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return StringName()
+
+	for _attempt in range(_turn_service.get_participant_count()):
+		var next_unit_id := _turn_service.advance_turn()
+
+		if start_unit_turn(next_unit_id):
+			return next_unit_id
+
+	return StringName()
+
+
+## Состояние меняется только после проверки активности, маршрута и списания цены.
+func execute_move(command: MoveCommand) -> MoveResult:
+	if command == null or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return MoveResult.failure()
+
+	var state := get_unit(command.unit_id)
+
+	if state == null or state.health.is_defeated():
+		return MoveResult.failure()
+
+	if command.destination == state.hex:
+		return MoveResult.failure()
+
+	var search_result := get_movement_search(command.unit_id)
+	var movement_cost := search_result.get_cost(command.destination)
+
+	if movement_cost < 0:
+		return MoveResult.failure()
+
+	var path := search_result.build_path(command.destination)
+
+	if not state.turn.spend_movement(movement_cost):
+		return MoveResult.failure()
+
+	state.hex = command.destination
+
+	return MoveResult.success(
+		command.unit_id,
+		path,
+		movement_cost
+	)
+
+
+func execute_attack(command: AttackCommand) -> AttackResult:
+	if command == null or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return AttackResult.failure()
+
+	var attacker := get_unit(command.attacker_id)
+	var target := get_unit(command.target_id)
+
+	if attacker == null or target == null:
+		return AttackResult.failure()
+
+	if attacker.unit_id != get_active_unit_id():
+		return AttackResult.failure()
+
+	if attacker.unit_id == target.unit_id:
+		return AttackResult.failure()
+
+	if attacker.faction == target.faction:
+		return AttackResult.failure()
+
+	if attacker.health.is_defeated() or target.health.is_defeated():
+		return AttackResult.failure()
+
+	if not attacker.turn.main_action_available:
+		return AttackResult.failure()
+
+	if HexGrid.get_distance(attacker.hex, target.hex) != 1:
+		return AttackResult.failure()
+
+	if not attacker.turn.spend_main_action():
+		return AttackResult.failure()
+
+	var damage := target.health.apply_damage(
+		attacker.basic_attack_damage
+	)
+
+	return AttackResult.success(
+		attacker.unit_id,
+		target.unit_id,
+		damage,
+		target.health.current
+	)
+
+func _is_unit_id_before(
+	left: UnitState,
+	right: UnitState
+) -> bool:
+	return String(left.unit_id) < String(right.unit_id)
+
+
+func _get_blocked_cells(
+	excluded_unit_id: StringName
+) -> Dictionary[Vector2i, bool]:
+	var blocked_cells: Dictionary[Vector2i, bool] = {}
+
+	for unit_id: StringName in _unit_states:
+		if unit_id == excluded_unit_id:
+			continue
+
+		var state: UnitState = _unit_states[unit_id]
+
+		if state.health.is_defeated():
+			continue
+
+		blocked_cells[state.hex] = true
+
+	return blocked_cells

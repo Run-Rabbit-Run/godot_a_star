@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="BattleUnitSpawnDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://features/battle/definitions/battle_unit_spawn_definition.gd" id="1_spawn"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player.tres" id="2_unit"]
+
+[resource]
+script = ExtResource("1_spawn")
+unit_id = &"debug_player"
+unit_definition = ExtResource("2_unit")
+faction = 0
+hex = Vector2i(7, 7)
