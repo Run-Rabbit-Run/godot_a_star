@@ -16,6 +16,16 @@ static func validate(
 			"BattleDefinition id must not be empty."
 		)
 
+	if definition.map_definition == null:
+		return BattleDefinitionValidationResult.failure(
+			"BattleDefinition map definition is not assigned."
+		)
+
+	if definition.map_definition.id.is_empty():
+		return BattleDefinitionValidationResult.failure(
+			"BattleMapDefinition id must not be empty."
+		)
+
 	if definition.primary_objective == null:
 		return BattleDefinitionValidationResult.failure(
 			"BattleDefinition primary objective is not assigned."

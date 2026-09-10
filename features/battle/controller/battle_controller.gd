@@ -5,7 +5,6 @@ extends Node
 signal battle_finished(result: BattleResult)
 
 
-@onready var _terrain_layer: TileMapLayer = %TerrainLayer
 @onready var _units: Node2D = %Units
 @onready var _map_view: BattleMapView = get_parent() as BattleMapView
 @onready var _hud: BattleHUD = %BattleUI
@@ -47,7 +46,11 @@ func _initialize_battle() -> void:
 		return
 
 	var definition := _start_request.battle_definition
-	_hex_grid = BattleMapAssembler.build_hex_grid(_terrain_layer)
+	_hex_grid = BattleMapFactory.create_hex_grid(definition.map_definition)
+
+	if _hex_grid == null:
+		push_error("Battle map could not be created from its definition.")
+		return
 	var validation := BattleDefinitionValidator.validate(
 		definition,
 		_hex_grid

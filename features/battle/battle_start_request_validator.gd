@@ -15,6 +15,11 @@ static func validate(
 			"BattleStartRequest requires a BattleDefinition."
 		)
 
+	if request.battle_definition.map_definition == null:
+		return BattleStartRequestValidationResult.failure(
+			"BattleDefinition requires a BattleMapDefinition."
+		)
+
 	if request.deterministic_seed < 0:
 		return BattleStartRequestValidationResult.failure(
 			"BattleStartRequest seed must not be negative."

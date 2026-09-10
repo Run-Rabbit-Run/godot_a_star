@@ -7,6 +7,7 @@
 [ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_spawn.tres" id="5_enemy_spawn"]
 [ext_resource type="Resource" path="res://features/battle/definitions/debug_player_2_spawn.tres" id="6_player_2_spawn"]
 [ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_2_spawn.tres" id="7_enemy_2_spawn"]
+[ext_resource type="Resource" uid="uid://cxxynqyb72h7a" path="res://features/battle/map/definitions/debug_battle_map.tres" id="8_map"]
 
 [sub_resource type="Resource" id="Objective_eliminate_enemies"]
 script = ExtResource("2_objective")
@@ -15,5 +16,6 @@ description = "Победить всех врагов"
 [resource]
 script = ExtResource("1_battle")
 id = &"debug_battle"
+map_definition = ExtResource("8_map")
 primary_objective = SubResource("Objective_eliminate_enemies")
 unit_spawns = Array[ExtResource("3_spawn_script")]([ExtResource("4_player_spawn"), ExtResource("6_player_2_spawn"), ExtResource("5_enemy_spawn"), ExtResource("7_enemy_2_spawn")])

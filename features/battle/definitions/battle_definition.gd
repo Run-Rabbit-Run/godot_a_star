@@ -3,6 +3,7 @@ extends Resource
 
 
 @export var id: StringName
+@export var map_definition: BattleMapDefinition
 @export var primary_objective: BattleObjectiveDefinition
 @export var protected_faction: BattleFaction.Value = BattleFaction.Value.PLAYER
 @export var unit_spawns: Array[BattleUnitSpawnDefinition] = []
