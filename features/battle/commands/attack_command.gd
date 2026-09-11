@@ -1,5 +1,5 @@
 class_name AttackCommand
-extends RefCounted
+extends BattleCommand
 
 
 var attacker_id: StringName

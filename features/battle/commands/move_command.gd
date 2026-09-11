@@ -1,5 +1,5 @@
 class_name MoveCommand
-extends RefCounted
+extends BattleCommand
 
 
 var unit_id: StringName

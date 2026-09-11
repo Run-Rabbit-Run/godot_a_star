@@ -1,12 +1,24 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://features/battle/debug_battle_launcher.gd" id="1_launcher"]
 [ext_resource type="PackedScene" path="res://features/battle/battle_screen.tscn" id="2_screen"]
-[ext_resource type="Resource" path="res://features/battle/definitions/debug_battle.tres" id="3_battle"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="3_battle_definition"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_battle.tres" id="4_battle"]
+[ext_resource type="Script" path="res://features/battle/map/battle_map_definition.gd" id="5_map_definition"]
+[ext_resource type="Resource" path="res://features/battle/map/definitions/debug_battle_map.tres" id="6_map"]
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="7_unit_definition"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player.tres" id="8_player"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy.tres" id="9_enemy"]
+[ext_resource type="Script" path="res://features/battle/definitions/ai_profile_definition.gd" id="10_ai_profile_definition"]
+[ext_resource type="Resource" path="res://features/battle/definitions/debug_basic_enemy_ai.tres" id="11_enemy_ai"]
 
 [node name="DebugBattleLauncher" type="Node"]
 script = ExtResource("1_launcher")
-battle_definition = ExtResource("3_battle")
+battle_id = &"debug_battle"
+battle_definitions = Array[ExtResource("3_battle_definition")]([ExtResource("4_battle")])
+map_definitions = Array[ExtResource("5_map_definition")]([ExtResource("6_map")])
+unit_definitions = Array[ExtResource("7_unit_definition")]([ExtResource("8_player"), ExtResource("9_enemy")])
+ai_profile_definitions = Array[ExtResource("10_ai_profile_definition")]([ExtResource("11_enemy_ai")])
 deterministic_seed = 1
 
 [node name="BattleScreen" parent="." instance=ExtResource("2_screen")]

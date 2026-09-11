@@ -2,40 +2,20 @@ class_name BattleEngine
 extends RefCounted
 
 
-var _hex_grid: HexGrid
-var _unit_states: Dictionary[StringName, UnitState]
-var _turn_service: TurnService
-var _objective_system: ObjectiveSystem
-var _battle_id: StringName
-var _deterministic_seed: int
-var _random: RandomNumberGenerator
+var _state: BattleState
 
 
-func _init(
-	hex_grid: HexGrid,
-	unit_states: Dictionary[StringName, UnitState],
-	turn_order: Array[StringName],
-	objective_system: ObjectiveSystem,
-	battle_id: StringName,
-	deterministic_seed: int
-) -> void:
-	_hex_grid = hex_grid
-	_unit_states = unit_states
-	_objective_system = objective_system
-	_battle_id = battle_id
-	_deterministic_seed = deterministic_seed
-	_random = RandomNumberGenerator.new()
-	_random.seed = deterministic_seed
-	_turn_service = TurnService.new(turn_order)
-	_turn_service.start()
+func _init(p_state: BattleState) -> void:
+	_state = p_state
+	_state.turn_service.start()
 
 
 func get_unit(unit_id: StringName) -> UnitState:
-	return _unit_states.get(unit_id) as UnitState
+	return _state.unit_states.get(unit_id) as UnitState
 
 
 func get_unit_at(hex: Vector2i) -> UnitState:
-	for state: UnitState in _unit_states.values():
+	for state: UnitState in _state.unit_states.values():
 		if state.health.is_defeated():
 			continue
 
@@ -50,7 +30,7 @@ func get_living_units_by_faction(
 ) -> Array[UnitState]:
 	var living_units: Array[UnitState] = []
 
-	for state: UnitState in _unit_states.values():
+	for state: UnitState in _state.unit_states.values():
 		if state.faction == faction and not state.health.is_defeated():
 			living_units.append(state)
 
@@ -70,7 +50,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 	):
 		return targets
 
-	for candidate: UnitState in _unit_states.values():
+	for candidate: UnitState in _state.unit_states.values():
 		if candidate.faction == attacker.faction:
 			continue
 
@@ -85,28 +65,28 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 
 
 func get_battle_id() -> StringName:
-	return _battle_id
+	return _state.battle_id
 
 
 func get_deterministic_seed() -> int:
-	return _deterministic_seed
+	return _state.deterministic_seed
 
 
 func get_active_unit_id() -> StringName:
-	return _turn_service.get_active_unit_id()
+	return _state.turn_service.get_active_unit_id()
 
 
 func get_round_number() -> int:
-	return _turn_service.get_round_number()
+	return _state.turn_service.get_round_number()
 
 
 func get_objective_description() -> String:
-	return _objective_system.get_description()
+	return _state.objective_system.get_description()
 
 
 func get_outcome() -> BattleOutcome.Value:
-	return _objective_system.get_outcome(
-		_unit_states,
+	return _state.objective_system.get_outcome(
+		_state.unit_states,
 		get_round_number()
 	)
 
@@ -147,7 +127,7 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 		)
 
 	return MovementService.search(
-		_hex_grid,
+		_state.hex_grid,
 		state.hex,
 		state.turn.movement_remaining,
 		_get_blocked_cells(unit_id)
@@ -170,8 +150,8 @@ func end_turn() -> StringName:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return StringName()
 
-	for _attempt in range(_turn_service.get_participant_count()):
-		var next_unit_id := _turn_service.advance_turn()
+	for _attempt in range(_state.turn_service.get_participant_count()):
+		var next_unit_id := _state.turn_service.advance_turn()
 
 		if start_unit_turn(next_unit_id):
 			return next_unit_id
@@ -266,11 +246,11 @@ func _get_blocked_cells(
 ) -> Dictionary[Vector2i, bool]:
 	var blocked_cells: Dictionary[Vector2i, bool] = {}
 
-	for unit_id: StringName in _unit_states:
+	for unit_id: StringName in _state.unit_states:
 		if unit_id == excluded_unit_id:
 			continue
 
-		var state: UnitState = _unit_states[unit_id]
+		var state: UnitState = _state.unit_states[unit_id]
 
 		if state.health.is_defeated():
 			continue

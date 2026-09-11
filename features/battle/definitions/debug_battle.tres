@@ -2,20 +2,56 @@
 
 [ext_resource type="Script" uid="uid://dk2e5f3wrf5jk" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
 [ext_resource type="Script" uid="uid://c12lcgys5dmb4" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
-[ext_resource type="Script" uid="uid://p0sn4cgmj81" path="res://features/battle/definitions/battle_unit_spawn_definition.gd" id="3_spawn_script"]
-[ext_resource type="Resource" path="res://features/battle/definitions/debug_player_spawn.tres" id="4_player_spawn"]
-[ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_spawn.tres" id="5_enemy_spawn"]
-[ext_resource type="Resource" path="res://features/battle/definitions/debug_player_2_spawn.tres" id="6_player_2_spawn"]
-[ext_resource type="Resource" path="res://features/battle/definitions/debug_enemy_2_spawn.tres" id="7_enemy_2_spawn"]
-[ext_resource type="Resource" uid="uid://cxxynqyb72h7a" path="res://features/battle/map/definitions/debug_battle_map.tres" id="8_map"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="4_side"]
+[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="5_placement"]
 
 [sub_resource type="Resource" id="Objective_eliminate_enemies"]
 script = ExtResource("2_objective")
 description = "Победить всех врагов"
 
+[sub_resource type="Resource" id="Side_player"]
+script = ExtResource("4_side")
+side_id = &"player"
+
+[sub_resource type="Resource" id="Side_enemy"]
+script = ExtResource("4_side")
+side_id = &"enemy"
+faction = 1
+control_source = 1
+ai_profile_id = &"core:basic_enemy_ai"
+
+[sub_resource type="Resource" id="Placement_player_1"]
+script = ExtResource("5_placement")
+placement_id = &"player_1"
+definition_id = &"debug_player"
+side_id = &"player"
+start_hex = Vector2i(7, 7)
+
+[sub_resource type="Resource" id="Placement_player_2"]
+script = ExtResource("5_placement")
+placement_id = &"player_2"
+definition_id = &"debug_player"
+side_id = &"player"
+start_hex = Vector2i(7, 8)
+
+[sub_resource type="Resource" id="Placement_enemy_1"]
+script = ExtResource("5_placement")
+placement_id = &"enemy_1"
+definition_id = &"debug_enemy"
+side_id = &"enemy"
+start_hex = Vector2i(9, 7)
+
+[sub_resource type="Resource" id="Placement_enemy_2"]
+script = ExtResource("5_placement")
+placement_id = &"enemy_2"
+definition_id = &"debug_enemy"
+side_id = &"enemy"
+start_hex = Vector2i(10, 8)
+
 [resource]
 script = ExtResource("1_battle")
 id = &"debug_battle"
-map_definition = ExtResource("8_map")
+map_id = &"core:debug_battle_map"
 primary_objective = SubResource("Objective_eliminate_enemies")
-unit_spawns = Array[ExtResource("3_spawn_script")]([ExtResource("4_player_spawn"), ExtResource("6_player_2_spawn"), ExtResource("5_enemy_spawn"), ExtResource("7_enemy_2_spawn")])
+sides = Array[ExtResource("4_side")]([SubResource("Side_player"), SubResource("Side_enemy")])
+unit_placements = Array[ExtResource("5_placement")]([SubResource("Placement_player_1"), SubResource("Placement_player_2"), SubResource("Placement_enemy_1"), SubResource("Placement_enemy_2")])

@@ -5,19 +5,22 @@ extends Node
 signal battle_finished(result: BattleResult)
 
 
+const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
+
+
 @onready var _units: Node2D = %Units
 @onready var _map_view: BattleMapView = get_parent() as BattleMapView
 @onready var _hud: BattleHUD = %BattleUI
 @onready var _input_router: BattleInputRouter = %BattleInputRouter
 
 var _hex_grid: HexGrid
-var _battle_engine: BattleEngine
+var _battle_session: BattleSession
+var _battle_setup: BattleSetup
 var _start_request: BattleStartRequest
 var _is_initialization_requested := false
 var _movement_search_result: MovementSearchResult
 var _attackable_target_hexes: Array[Vector2i] = []
 var _is_presenting := false
-var _unit_states: Dictionary[StringName, UnitState] = {}
 var _unit_actors: Dictionary[StringName, UnitActor] = {}
 var _unit_definitions: Dictionary[StringName, UnitDefinition] = {}
 
@@ -45,146 +48,73 @@ func _initialize_battle() -> void:
 		push_error("BattleController requires setup before initialization.")
 		return
 
-	var definition := _start_request.battle_definition
-	_hex_grid = BattleMapFactory.create_hex_grid(definition.map_definition)
+	var session_result := BattleSessionFactory.create(_start_request)
 
-	if _hex_grid == null:
-		push_error("Battle map could not be created from its definition.")
-		return
-	var validation := BattleDefinitionValidator.validate(
-		definition,
-		_hex_grid
-	)
-
-	if not validation.is_valid:
+	if not session_result.is_successful:
 		push_error(
-			"Battle initialization failed: %s" % validation.error_message
+			"Battle initialization failed: %s" % session_result.error_message
 		)
 		return
 
+	_battle_session = session_result.session
+	_battle_setup = _battle_session.setup
+	_hex_grid = _battle_session.get_hex_grid()
 	_input_router.setup(_hex_grid)
 
-	## Порядок spawn-определений задаёт начальный порядок ходов.
-	var turn_order: Array[StringName] = []
-
-	for spawn: BattleUnitSpawnDefinition in definition.unit_spawns:
-		var state := _create_unit_from_spawn(spawn)
-
-		if state != null:
-			turn_order.append(state.unit_id)
-
-	var primary_objective := BattleObjectiveFactory.create(
-		definition.primary_objective
-	)
-
-	if primary_objective == null:
-		push_error("BattleObjective could not be created.")
+	if not _create_unit_actors(_battle_setup.unit_spawns):
+		_clear_created_units()
 		return
-	var objective_system := ObjectiveSystem.new(
-		primary_objective,
-		definition.protected_faction
-	)
-	_battle_engine = BattleEngine.new(
-		_hex_grid,
-		_unit_states,
-		turn_order,
-		objective_system,
-		definition.id,
-		_start_request.deterministic_seed
-	)
+
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
 	_input_router.hex_selected.connect(_on_hex_selected)
 	_input_router.hex_hovered.connect(_on_hex_hovered)
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
 	_hud.clear_action()
-	_hud.show_objective(_battle_engine.get_objective_description())
+	_hud.show_objective(_battle_session.get_objective_description())
 
-	var active_state := _battle_engine.get_unit(
-		_battle_engine.get_active_unit_id()
+	var active_state := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
 	)
 
 	if active_state != null:
 		_show_unit_movement(active_state)
 
-
-func _create_unit_from_spawn(
-	spawn: BattleUnitSpawnDefinition
-) -> UnitState:
-	if spawn == null:
-		push_error("BattleUnitSpawnDefinition must not be null.")
-		return null
-
-	return _create_unit(
-		spawn.unit_id,
-		spawn.unit_definition,
-		spawn.faction,
-		spawn.hex
-	)
+		if _battle_session.is_active_unit_ai_controlled():
+			_set_presenting(true)
+			await _run_ai_turns()
 
 
-func _create_unit(	unit_id: StringName,
-	definition: UnitDefinition,
-	faction: BattleFaction.Value,
-	hex: Vector2i
-) -> UnitState:
-	if definition == null:
-		push_error("UnitDefinition is not assigned to BattleController.")
-		return null
+func _create_unit_actors(spawns: Array[UnitSpawnData]) -> bool:
+	for spawn: UnitSpawnData in spawns:
+		var state := _battle_session.get_unit(spawn.unit_id)
 
-	if definition.id.is_empty():
-		push_error("UnitDefinition id must not be empty.")
-		return null
+		if state == null:
+			push_error("Unit state is missing: %s." % spawn.unit_id)
+			return false
 
-	if definition.actor_scene == null:
-		push_error("UnitDefinition actor_scene is not assigned.")
-		return null
+		var actor := UnitActorFactory.create(
+			state,
+			spawn.unit_definition,
+			_units
+		)
 
-	if definition.base_stats == null:
-		push_error("UnitDefinition base_stats is not assigned.")
-		return null
+		if actor == null:
+			push_error("Unit actor could not be created: %s." % spawn.unit_id)
+			return false
 
-	if not _hex_grid.has_cell(hex):
-		push_warning("Unit spawn hex does not exist in the battle grid.")
-		return null
+		actor.global_position = _map_view.hex_to_global_position(state.hex)
+		_unit_actors[state.unit_id] = actor
+		_unit_definitions[state.unit_id] = spawn.unit_definition
 
-	if _unit_states.has(unit_id):
-		push_warning("Unit spawn id is already registered.")
-		return null
+	return true
 
-	for existing_state: UnitState in _unit_states.values():
-		if existing_state.hex == hex:
-			push_warning("Unit spawn hex is already occupied.")
-			return null
 
-	var actor_node := definition.actor_scene.instantiate()
-	var actor := actor_node as UnitActor
+func _clear_created_units() -> void:
+	for actor: UnitActor in _unit_actors.values():
+		actor.queue_free()
 
-	if actor == null:
-		actor_node.free()
-		push_error("UnitDefinition actor_scene root must be a UnitActor.")
-		return null
-
-	var base_stats := definition.base_stats
-	var turn := TurnState.new(base_stats.movement_points)
-	var health := HealthState.new(base_stats.max_health)
-	var state := UnitState.new(
-		unit_id,
-		definition.id,
-		faction,
-		hex,
-		turn,
-		health,
-		base_stats.basic_attack_damage
-	)
-	_units.add_child(actor)
-	actor.setup(state.unit_id, definition)
-	actor.global_position = _map_view.hex_to_global_position(state.hex)
-
-	_unit_states[state.unit_id] = state
-	_unit_actors[state.unit_id] = actor
-	_unit_definitions[state.unit_id] = definition
-
-	return state
+	_unit_actors.clear()
+	_unit_definitions.clear()
 
 
 ## Контроллер превращает ввод в команду; допустимость решает BattleEngine.
@@ -192,28 +122,28 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _is_presenting:
 		return
 
-	var active_unit_id := _battle_engine.get_active_unit_id()
+	var active_unit_id := _battle_session.get_active_unit_id()
 
 	if active_unit_id.is_empty():
 		return
 
-	var state := _battle_engine.get_unit(active_unit_id)
+	var state := _battle_session.get_unit(active_unit_id)
 
 	if state == null:
 		push_error("Active unit state is not registered.")
 		return
 
-	if state.faction != BattleFaction.Value.PLAYER:
+	if _battle_session.is_unit_ai_controlled(state.unit_id):
 		return
 
-	var target_state := _battle_engine.get_unit_at(axial_cell)
+	var target_state := _battle_session.get_unit_at(axial_cell)
 
 	if target_state != null and target_state.unit_id != active_unit_id:
 		var attack_command := AttackCommand.new(
 			active_unit_id,
 			target_state.unit_id
 		)
-		var attack_result := _battle_engine.execute_attack(
+		var attack_result := _battle_session.execute_attack(
 			attack_command
 		)
 
@@ -230,7 +160,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		return
 
 	var command := MoveCommand.new(active_unit_id, axial_cell)
-	var move_result := _battle_engine.execute_move(command)
+	var move_result := _battle_session.execute_move(command)
 
 	if not move_result.is_successful:
 		return
@@ -249,8 +179,8 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 	_show_hovered_target(axial_cell)
 
 	if (
-		_battle_engine != null
-		and _battle_engine.get_unit_at(axial_cell) != null
+		_battle_session != null
+		and _battle_session.get_unit_at(axial_cell) != null
 	):
 		_map_view.clear_path()
 		return
@@ -265,13 +195,13 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 
 
 func _show_hovered_target(axial_cell: Vector2i) -> void:
-	if _battle_engine == null:
+	if _battle_session == null:
 		_hud.clear_target()
 		return
 
-	var target := _battle_engine.get_unit_at(axial_cell)
-	var active := _battle_engine.get_unit(
-		_battle_engine.get_active_unit_id()
+	var target := _battle_session.get_unit_at(axial_cell)
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
 	)
 
 	if (
@@ -298,148 +228,118 @@ func _on_hex_hover_exited() -> void:
 
 
 func _on_end_turn_requested() -> void:
-	if _is_presenting:
+	if _is_presenting or _battle_session.is_active_unit_ai_controlled():
 		return
 
 	_set_presenting(true)
-
-	var next_unit_id := _battle_engine.end_turn()
+	var active_unit_id := _battle_session.get_active_unit_id()
+	var next_unit_id := _battle_session.end_turn_for(active_unit_id)
 
 	if next_unit_id.is_empty():
-		push_error("The next unit turn could not be started.")
-		_set_presenting(false)
+		if not _finish_battle_if_needed():
+			push_error("The next unit turn could not be started.")
+			_set_presenting(false)
 		return
 
-	var next_state := _battle_engine.get_unit(next_unit_id)
+	await _continue_turn_cycle()
 
-	if next_state == null:
+
+func _continue_turn_cycle() -> void:
+	var active_unit_id := _battle_session.get_active_unit_id()
+	var active := _battle_session.get_unit(active_unit_id)
+
+	if active == null:
 		push_error("The next active unit is not registered.")
 		_set_presenting(false)
 		return
 
-	if next_state.faction == BattleFaction.Value.PLAYER:
-		_show_unit_movement(next_state)
-		_set_presenting(false)
+	_show_unit_movement(active)
+
+	if _battle_session.is_active_unit_ai_controlled():
+		await _run_ai_turns()
 		return
 
-	if next_state.faction != BattleFaction.Value.ENEMY:
-		push_error("The next active unit has an unsupported faction.")
-		_set_presenting(false)
-		return
+	_set_presenting(false)
 
-	_show_unit_movement(next_state)
-	await _run_enemy_turn(next_state)
 
-func _run_enemy_turn(enemy_state: UnitState) -> void:
-	if (
-		enemy_state == null
-		or enemy_state.faction != BattleFaction.Value.ENEMY
+func _run_ai_turns() -> void:
+	var automatic_steps := 0
+
+	while (
+		not _battle_session.is_finished()
+		and _battle_session.is_active_unit_ai_controlled()
 	):
-		push_error("Enemy turn requires a valid enemy UnitState.")
-		_set_presenting(false)
-		return
-
-	var player_candidates := _battle_engine.get_living_units_by_faction(
-		BattleFaction.Value.PLAYER
-	)
-	var player_state := EnemyBrain.choose_target(
-		enemy_state.hex,
-		player_candidates
-	)
-
-	if player_state == null:
-		push_error("No living player target is available for the enemy.")
-		await _advance_after_enemy_turn()
-		return
-
-	var opening_attack_result := _execute_enemy_attack(
-		enemy_state,
-		player_state
-	)
-
-	if opening_attack_result.is_successful:
-		await _present_attack(opening_attack_result)
-
-		if _finish_battle_if_needed():
+		if automatic_steps >= MAX_AUTOMATIC_STEPS_PER_HANDOFF:
+			push_error("Automatic turn step limit was reached.")
+			_set_presenting(false)
 			return
 
-		await _advance_after_enemy_turn()
-		return
+		var active_unit_id := _battle_session.get_active_unit_id()
+		var active := _battle_session.get_unit(active_unit_id)
 
-	var movement_search := _battle_engine.get_movement_search(
-		enemy_state.unit_id
-	)
-	var command := EnemyBrain.choose_move(
-		enemy_state.unit_id,
-		enemy_state.hex,
-		player_state.hex,
-		movement_search
-	)
+		if active == null:
+			push_error("AI-controlled active unit is not registered.")
+			_set_presenting(false)
+			return
 
-	if command != null:
-		var move_result := _battle_engine.execute_move(command)
+		_show_unit_movement(active)
+		var command := _battle_session.get_next_ai_command()
 
-		if move_result.is_successful:
+		if command == null:
+			push_error("AI command source did not provide a command.")
+			_set_presenting(false)
+			return
+
+		if command is MoveCommand:
+			var move_result := _battle_session.execute_move(
+				command as MoveCommand
+			)
+
+			if not move_result.is_successful:
+				push_error("AI move command was rejected.")
+				_set_presenting(false)
+				return
+
 			await _present_move(move_result)
+		elif command is AttackCommand:
+			var attack_result := _battle_session.execute_attack(
+				command as AttackCommand
+			)
 
-	var closing_attack_result := _execute_enemy_attack(
-		enemy_state,
-		player_state
-	)
+			if not attack_result.is_successful:
+				push_error("AI attack command was rejected.")
+				_set_presenting(false)
+				return
 
-	if closing_attack_result.is_successful:
-		await _present_attack(closing_attack_result)
+			await _present_attack(attack_result)
+		elif command is EndTurnCommand:
+			var end_turn := command as EndTurnCommand
+			var next_unit_id := _battle_session.end_turn_for(end_turn.unit_id)
+
+			if next_unit_id.is_empty():
+				if _finish_battle_if_needed():
+					return
+
+				push_error("The next turn could not be started after an AI turn.")
+				_set_presenting(false)
+				return
+		else:
+			push_error("AI command source returned an unsupported command.")
+			_set_presenting(false)
+			return
+
+		automatic_steps += 1
 
 		if _finish_battle_if_needed():
 			return
 
-	await _advance_after_enemy_turn()
-
-
-func _execute_enemy_attack(
-	enemy_state: UnitState,
-	player_state: UnitState
-) -> AttackResult:
-	var command := EnemyBrain.choose_attack(
-		enemy_state.unit_id,
-		enemy_state.hex,
-		player_state.unit_id,
-		player_state.hex,
-		enemy_state.turn.main_action_available
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
 	)
 
-	if command == null:
-		return AttackResult.failure()
+	if active != null:
+		_show_unit_movement(active)
 
-	return _battle_engine.execute_attack(command)
-
-
-func _advance_after_enemy_turn() -> void:
-	var next_unit_id := _battle_engine.end_turn()
-
-	if next_unit_id.is_empty():
-		push_error("The next turn could not be started after the enemy turn.")
-		_set_presenting(false)
-		return
-
-	var next_state := _battle_engine.get_unit(next_unit_id)
-
-	if next_state == null:
-		push_error("The next active unit is not registered in the battle.")
-		_set_presenting(false)
-		return
-
-	if next_state.faction == BattleFaction.Value.PLAYER:
-		_show_unit_movement(next_state)
-		_set_presenting(false)
-		return
-
-	if next_state.faction == BattleFaction.Value.ENEMY:
-		_show_unit_movement(next_state)
-		await _run_enemy_turn(next_state)
-		return
-
-	push_error("The next active unit belongs to an unsupported faction.")
 	_set_presenting(false)
 
 
@@ -528,7 +428,7 @@ func _set_presenting(is_presenting: bool) -> void:
 
 
 func _finish_battle_if_needed() -> bool:
-	var result := _battle_engine.get_result()
+	var result := _battle_session.get_result()
 
 	if result == null:
 		return false
@@ -546,11 +446,11 @@ func _finish_battle_if_needed() -> bool:
 func _refresh_attack_targets(state: UnitState) -> void:
 	_attackable_target_hexes.clear()
 
-	if state == null or state.faction != BattleFaction.Value.PLAYER:
+	if state == null or _battle_session.is_unit_ai_controlled(state.unit_id):
 		_map_view.show_targetable_cells(_attackable_target_hexes)
 		return
 
-	var targets := _battle_engine.get_attackable_targets(state.unit_id)
+	var targets := _battle_session.get_attackable_targets(state.unit_id)
 
 	for target: UnitState in targets:
 		_attackable_target_hexes.append(target.hex)
@@ -562,7 +462,7 @@ func _refresh_attack_targets(state: UnitState) -> void:
 func _show_unit_movement(state: UnitState) -> void:
 	_map_view.clear_path()
 
-	_movement_search_result = _battle_engine.get_movement_search(
+	_movement_search_result = _battle_session.get_movement_search(
 		state.unit_id
 	)
 	_map_view.show_selected_hex(state.hex)
@@ -570,7 +470,7 @@ func _show_unit_movement(state: UnitState) -> void:
 		_movement_search_result.get_reachable_cells()
 	)
 	_refresh_attack_targets(state)
-	_hud.show_round(_battle_engine.get_round_number())
+	_hud.show_round(_battle_session.get_round_number())
 	_hud.show_health(
 		state.health.current,
 		state.health.maximum

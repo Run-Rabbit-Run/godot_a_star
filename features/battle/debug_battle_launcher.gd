@@ -5,7 +5,11 @@ extends Node
 signal battle_finished(result: BattleResult)
 
 
-@export var battle_definition: BattleDefinition
+@export var battle_id: StringName
+@export var battle_definitions: Array[BattleDefinition] = []
+@export var map_definitions: Array[BattleMapDefinition] = []
+@export var unit_definitions: Array[UnitDefinition] = []
+@export var ai_profile_definitions: Array[AIProfileDefinition] = []
 @export var deterministic_seed := 1
 
 @onready var _battle_screen: BattleScreen = %BattleScreen
@@ -19,8 +23,15 @@ func _ready() -> void:
 			_on_battle_finished
 		)
 
+	var content_snapshot := ContentSnapshot.new(
+		battle_definitions,
+		map_definitions,
+		unit_definitions,
+		ai_profile_definitions
+	)
 	var request := BattleStartRequest.new(
-		battle_definition,
+		battle_id,
+		content_snapshot,
 		deterministic_seed
 	)
 

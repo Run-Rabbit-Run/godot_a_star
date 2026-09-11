@@ -10,14 +10,19 @@ static func validate(
 			"BattleStartRequest must not be null."
 		)
 
-	if request.battle_definition == null:
+	if request.battle_id.is_empty():
 		return BattleStartRequestValidationResult.failure(
-			"BattleStartRequest requires a BattleDefinition."
+			"BattleStartRequest battle_id must not be empty."
 		)
 
-	if request.battle_definition.map_definition == null:
+	if request.content_snapshot == null:
 		return BattleStartRequestValidationResult.failure(
-			"BattleDefinition requires a BattleMapDefinition."
+			"BattleStartRequest requires a ContentSnapshot."
+		)
+
+	if not request.content_snapshot.is_valid:
+		return BattleStartRequestValidationResult.failure(
+			request.content_snapshot.error_message
 		)
 
 	if request.deterministic_seed < 0:
