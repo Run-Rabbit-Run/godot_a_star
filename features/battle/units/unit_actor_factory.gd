@@ -3,12 +3,12 @@ extends RefCounted
 
 
 static func create(
-	state: UnitState,
+	state: UnitSnapshot,
 	definition: UnitDefinition,
 	parent: Node
 ) -> UnitActor:
 	if state == null:
-		push_error("UnitActorFactory requires a UnitState.")
+		push_error("UnitActorFactory requires a UnitSnapshot.")
 		return null
 
 	if definition == null:

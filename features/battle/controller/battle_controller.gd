@@ -12,8 +12,10 @@ const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
 @onready var _map_view: BattleMapView = get_parent() as BattleMapView
 @onready var _hud: BattleHUD = %BattleUI
 @onready var _input_router: BattleInputRouter = %BattleInputRouter
+@onready var _presentation_queue: BattlePresentationQueue = %PresentationQueue
 
 var _hex_grid: HexGrid
+var _known_map_revision := -1
 var _battle_session: BattleSession
 var _battle_setup: BattleSetup
 var _start_request: BattleStartRequest
@@ -39,8 +41,40 @@ func setup(request: BattleStartRequest) -> bool:
 	_start_request = request
 	_is_initialization_requested = true
 	call_deferred("_initialize_battle")
-
 	return true
+
+
+func set_playback_speed(speed: float) -> bool:
+	return _presentation_queue.set_speed(speed)
+
+
+func apply_map_mutations(
+	mutations: Array[MapMutation]
+) -> BattleResolution:
+	if _battle_session == null:
+		return BattleResolution.rejected(
+			"Battle session is not initialized.",
+			0,
+			StringName()
+		)
+
+	_set_presenting(true)
+	var resolution := _battle_session.apply_map_mutations(mutations)
+
+	if not resolution.accepted:
+		_set_presenting(false)
+		return resolution
+
+	await _presentation_queue.present(
+		resolution,
+		_unit_actors,
+		_unit_definitions,
+		_map_view,
+		_hud
+	)
+	_refresh_map_revision()
+	_set_presenting(false)
+	return resolution
 
 
 func _initialize_battle() -> void:
@@ -59,6 +93,7 @@ func _initialize_battle() -> void:
 	_battle_session = session_result.session
 	_battle_setup = _battle_session.setup
 	_hex_grid = _battle_session.get_hex_grid()
+	_known_map_revision = _battle_session.get_map_revision()
 	_input_router.setup(_hex_grid)
 
 	if not _create_unit_actors(_battle_setup.unit_spawns):
@@ -72,12 +107,12 @@ func _initialize_battle() -> void:
 	_hud.clear_action()
 	_hud.show_objective(_battle_session.get_objective_description())
 
-	var active_state := _battle_session.get_unit(
+	var active := _battle_session.get_unit(
 		_battle_session.get_active_unit_id()
 	)
 
-	if active_state != null:
-		_show_unit_movement(active_state)
+	if active != null:
+		_show_unit_movement(active)
 
 		if _battle_session.is_active_unit_ai_controlled():
 			_set_presenting(true)
@@ -117,7 +152,6 @@ func _clear_created_units() -> void:
 	_unit_definitions.clear()
 
 
-## Контроллер превращает ввод в команду; допустимость решает BattleEngine.
 func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _is_presenting:
 		return
@@ -127,52 +161,49 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if active_unit_id.is_empty():
 		return
 
-	var state := _battle_session.get_unit(active_unit_id)
+	var active := _battle_session.get_unit(active_unit_id)
 
-	if state == null:
-		push_error("Active unit state is not registered.")
+	if active == null:
+		push_error("Active unit snapshot is not registered.")
 		return
 
-	if _battle_session.is_unit_ai_controlled(state.unit_id):
+	if _battle_session.is_unit_ai_controlled(active.unit_id):
 		return
 
-	var target_state := _battle_session.get_unit_at(axial_cell)
+	var target := _battle_session.get_unit_at(axial_cell)
+	var command: BattleCommand
 
-	if target_state != null and target_state.unit_id != active_unit_id:
-		var attack_command := AttackCommand.new(
-			active_unit_id,
-			target_state.unit_id
-		)
-		var attack_result := _battle_session.execute_attack(
-			attack_command
-		)
+	if target != null and target.unit_id != active_unit_id:
+		command = AttackCommand.new(active_unit_id, target.unit_id)
+	else:
+		command = MoveCommand.new(active_unit_id, axial_cell)
 
-		if attack_result.is_successful:
-			_set_presenting(true)
-			await _present_attack(attack_result)
+	var resolution := _battle_session.step(command)
 
-			if _finish_battle_if_needed():
-				return
-
-			_set_presenting(false)
-			_show_unit_movement(state)
-
-		return
-
-	var command := MoveCommand.new(active_unit_id, axial_cell)
-	var move_result := _battle_session.execute_move(command)
-
-	if not move_result.is_successful:
+	if not resolution.accepted:
 		return
 
 	_set_presenting(true)
-	var was_presented := await _present_move(move_result)
+	var was_presented := await _presentation_queue.present(
+		resolution,
+		_unit_actors,
+		_unit_definitions,
+		_map_view,
+		_hud
+	)
+
+	if _finish_battle_if_needed(resolution):
+		return
+
 	_set_presenting(false)
 
 	if not was_presented:
 		return
 
-	_show_unit_movement(state)
+	active = _battle_session.get_unit(active_unit_id)
+
+	if active != null:
+		_show_unit_movement(active)
 
 
 func _on_hex_hovered(axial_cell: Vector2i) -> void:
@@ -185,7 +216,10 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 		_map_view.clear_path()
 		return
 
-	if _movement_search_result == null:
+	if (
+		_movement_search_result == null
+		or _movement_search_result.map_revision != _known_map_revision
+	):
 		_map_view.clear_path()
 		return
 
@@ -233,14 +267,23 @@ func _on_end_turn_requested() -> void:
 
 	_set_presenting(true)
 	var active_unit_id := _battle_session.get_active_unit_id()
-	var next_unit_id := _battle_session.end_turn_for(active_unit_id)
+	var resolution := _battle_session.step(
+		EndTurnCommand.new(active_unit_id)
+	)
 
-	if next_unit_id.is_empty():
-		if not _finish_battle_if_needed():
-			push_error("The next unit turn could not be started.")
+	if not resolution.accepted:
+		if not _finish_battle_if_needed(resolution):
+			push_error(resolution.rejection_reason)
 			_set_presenting(false)
 		return
 
+	await _presentation_queue.present(
+		resolution,
+		_unit_actors,
+		_unit_definitions,
+		_map_view,
+		_hud
+	)
 	await _continue_turn_cycle()
 
 
@@ -274,8 +317,9 @@ func _run_ai_turns() -> void:
 			_set_presenting(false)
 			return
 
-		var active_unit_id := _battle_session.get_active_unit_id()
-		var active := _battle_session.get_unit(active_unit_id)
+		var active := _battle_session.get_unit(
+			_battle_session.get_active_unit_id()
+		)
 
 		if active == null:
 			push_error("AI-controlled active unit is not registered.")
@@ -290,47 +334,26 @@ func _run_ai_turns() -> void:
 			_set_presenting(false)
 			return
 
-		if command is MoveCommand:
-			var move_result := _battle_session.execute_move(
-				command as MoveCommand
-			)
+		var resolution := _battle_session.step(command)
 
-			if not move_result.is_successful:
-				push_error("AI move command was rejected.")
-				_set_presenting(false)
-				return
+		if not resolution.accepted:
+			push_error("AI command was rejected: %s" % resolution.rejection_reason)
+			_set_presenting(false)
+			return
 
-			await _present_move(move_result)
-		elif command is AttackCommand:
-			var attack_result := _battle_session.execute_attack(
-				command as AttackCommand
-			)
-
-			if not attack_result.is_successful:
-				push_error("AI attack command was rejected.")
-				_set_presenting(false)
-				return
-
-			await _present_attack(attack_result)
-		elif command is EndTurnCommand:
-			var end_turn := command as EndTurnCommand
-			var next_unit_id := _battle_session.end_turn_for(end_turn.unit_id)
-
-			if next_unit_id.is_empty():
-				if _finish_battle_if_needed():
-					return
-
-				push_error("The next turn could not be started after an AI turn.")
-				_set_presenting(false)
-				return
-		else:
-			push_error("AI command source returned an unsupported command.")
+		if not await _presentation_queue.present(
+			resolution,
+			_unit_actors,
+			_unit_definitions,
+			_map_view,
+			_hud
+		):
 			_set_presenting(false)
 			return
 
 		automatic_steps += 1
 
-		if _finish_battle_if_needed():
+		if _finish_battle_if_needed(resolution):
 			return
 
 	var active := _battle_session.get_unit(
@@ -343,6 +366,26 @@ func _run_ai_turns() -> void:
 	_set_presenting(false)
 
 
+func _refresh_map_revision() -> void:
+	var revision := _battle_session.get_map_revision()
+
+	if revision == _known_map_revision:
+		return
+
+	_known_map_revision = revision
+	_hex_grid = _battle_session.get_hex_grid()
+	_input_router.setup(_hex_grid)
+	_movement_search_result = null
+	_map_view.clear_overlays()
+
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
+	)
+
+	if active != null:
+		_show_unit_movement(active)
+
+
 func _get_unit_display_name(unit_id: StringName) -> String:
 	var definition := _unit_definitions.get(unit_id) as UnitDefinition
 
@@ -351,69 +394,6 @@ func _get_unit_display_name(unit_id: StringName) -> String:
 		return String(unit_id)
 
 	return definition.display_name
-
-
-func _present_attack(result: AttackResult) -> bool:
-	if result == null or not result.is_successful:
-		return false
-
-	var target_actor := _unit_actors.get(result.target_id) as UnitActor
-
-	if target_actor == null:
-		push_error("UnitActor is not registered for the attacked unit.")
-		return false
-
-	_hud.show_attack(
-		_get_unit_display_name(result.attacker_id),
-		_get_unit_display_name(result.target_id),
-		result.damage,
-		result.target_health_remaining
-	)
-	await target_actor.present_damage()
-
-	if result.is_target_defeated():
-		_present_defeat(result.target_id)
-
-	return true
-
-
-func _present_defeat(unit_id: StringName) -> void:
-	var actor := _unit_actors.get(unit_id) as UnitActor
-
-	if actor == null:
-		push_error("UnitActor is not registered for the defeated unit.")
-		return
-
-	actor.present_defeat()
-
-
-func _present_move(move_result: MoveResult) -> bool:
-	if move_result == null or not move_result.is_successful:
-		return false
-
-	var actor := _unit_actors.get(move_result.unit_id) as UnitActor
-
-	if actor == null:
-		push_error("UnitActor is not registered for the moved unit.")
-		return false
-
-	_map_view.clear_path()
-
-	var empty_cells: Array[Vector2i] = []
-	_map_view.show_reachable_cells(empty_cells)
-
-	var global_positions: Array[Vector2] = []
-
-	for path_index in range(1, move_result.path.size()):
-		global_positions.append(
-			_map_view.hex_to_global_position(
-				move_result.path[path_index]
-			)
-		)
-
-	await actor.move_along_global_positions(global_positions)
-
-	return true
 
 
 func _set_presenting(is_presenting: bool) -> void:
@@ -427,8 +407,16 @@ func _set_presenting(is_presenting: bool) -> void:
 		_hud.clear_target()
 
 
-func _finish_battle_if_needed() -> bool:
-	var result := _battle_session.get_result()
+func _finish_battle_if_needed(
+	resolution: BattleResolution = null
+) -> bool:
+	var result: BattleResult
+
+	if resolution != null:
+		result = resolution.battle_result
+
+	if result == null:
+		result = _battle_session.get_result()
 
 	if result == null:
 		return false
@@ -438,12 +426,10 @@ func _finish_battle_if_needed() -> bool:
 	_hud.show_outcome(result.outcome)
 	_set_presenting(true)
 	battle_finished.emit(result)
-
 	return true
 
 
-## Контроллер преобразует доменные цели в axial-клетки слоя представления.
-func _refresh_attack_targets(state: UnitState) -> void:
+func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	_attackable_target_hexes.clear()
 
 	if state == null or _battle_session.is_unit_ai_controlled(state.unit_id):
@@ -452,16 +438,14 @@ func _refresh_attack_targets(state: UnitState) -> void:
 
 	var targets := _battle_session.get_attackable_targets(state.unit_id)
 
-	for target: UnitState in targets:
+	for target: UnitSnapshot in targets:
 		_attackable_target_hexes.append(target.hex)
 
 	_map_view.show_targetable_cells(_attackable_target_hexes)
 
 
-## Один сохранённый поиск питает область движения и preview маршрута.
-func _show_unit_movement(state: UnitState) -> void:
+func _show_unit_movement(state: UnitSnapshot) -> void:
 	_map_view.clear_path()
-
 	_movement_search_result = _battle_session.get_movement_search(
 		state.unit_id
 	)
@@ -471,10 +455,7 @@ func _show_unit_movement(state: UnitState) -> void:
 	)
 	_refresh_attack_targets(state)
 	_hud.show_round(_battle_session.get_round_number())
-	_hud.show_health(
-		state.health.current,
-		state.health.maximum
-	)
+	_hud.show_health(state.health.current, state.health.maximum)
 	_hud.show_movement(
 		state.turn.movement_remaining,
 		state.turn.movement_max

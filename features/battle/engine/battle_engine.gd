@@ -80,6 +80,14 @@ func get_round_number() -> int:
 	return _state.turn_service.get_round_number()
 
 
+func get_state_revision() -> int:
+	return _state.state_revision
+
+
+func get_map_revision() -> int:
+	return _state.map_revision
+
+
 func get_objective_description() -> String:
 	return _state.objective_system.get_description()
 
@@ -123,47 +131,137 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 	):
 		return MovementSearchResult.new(
 			empty_costs,
-			empty_came_from
+			empty_came_from,
+			_state.map_revision,
+			_state.state_revision
 		)
 
 	return MovementService.search(
 		_state.hex_grid,
 		state.hex,
 		state.turn.movement_remaining,
-		_get_blocked_cells(unit_id)
+		_get_blocked_cells(unit_id),
+		_state.map_revision,
+		_state.state_revision
 	)
 
 
-func start_unit_turn(unit_id: StringName) -> bool:
+func apply_map_mutations(
+	mutations: Array[MapMutation]
+) -> BattleResolution:
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return _rejected("Battle is already finished.")
+
+	var application := MapMutationService.apply(_state, mutations)
+
+	if not application.accepted:
+		return _rejected(application.rejection_reason)
+
+	return BattleResolution.success(
+		application.events,
+		_state.state_revision,
+		get_active_unit_id(),
+		get_result()
+	)
+
+
+func execute(command: BattleCommand) -> BattleResolution:
+	if command == null:
+		return _rejected("Command must not be null.")
+
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return _rejected("Battle is already finished.")
+
+	if command is MoveCommand:
+		return _resolve_move(command as MoveCommand)
+
+	if command is AttackCommand:
+		return _resolve_attack(command as AttackCommand)
+
+	if command is EndTurnCommand:
+		return _resolve_end_turn(command as EndTurnCommand)
+
+	return _rejected("Unsupported battle command.")
+
+
+func _resolve_move(command: MoveCommand) -> BattleResolution:
+	var result := _execute_move(command)
+
+	if not result.is_successful:
+		return _rejected("Move command was rejected.")
+
+	var events: Array[BattleEvent] = [
+		UnitMovedEvent.new(
+			result.unit_id,
+			result.path,
+			result.movement_cost
+		),
+	]
+	return _accepted(events)
+
+
+func _resolve_attack(command: AttackCommand) -> BattleResolution:
+	var result := _execute_attack(command)
+
+	if not result.is_successful:
+		return _rejected("Attack command was rejected.")
+
+	var events: Array[BattleEvent] = [
+		UnitDamagedEvent.new(
+			result.attacker_id,
+			result.target_id,
+			result.damage,
+			result.target_health_remaining,
+			result.is_target_defeated()
+		),
+	]
+	return _accepted(events)
+
+
+func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
+	if command.unit_id != get_active_unit_id():
+		return _rejected("Only the active unit can end its turn.")
+
+	var previous_unit_id := command.unit_id
+	var next_unit_id := _end_turn()
+
+	if next_unit_id.is_empty():
+		return _rejected("The next unit turn could not be started.")
+
+	var events: Array[BattleEvent] = [
+		TurnEndedEvent.new(
+			previous_unit_id,
+			next_unit_id,
+			get_round_number()
+		),
+	]
+	return _accepted(events)
+
+
+func _start_unit_turn(unit_id: StringName) -> bool:
 	var state := get_unit(unit_id)
 
 	if state == null or state.health.is_defeated():
 		return false
 
 	state.turn.start_turn()
-
 	return true
 
 
-## Новый активный юнит начинает ход с восстановленным TurnState.
-func end_turn() -> StringName:
+func _end_turn() -> StringName:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return StringName()
 
 	for _attempt in range(_state.turn_service.get_participant_count()):
 		var next_unit_id := _state.turn_service.advance_turn()
 
-		if start_unit_turn(next_unit_id):
+		if _start_unit_turn(next_unit_id):
 			return next_unit_id
 
 	return StringName()
 
 
-## Состояние меняется только после проверки активности, маршрута и списания цены.
-func execute_move(command: MoveCommand) -> MoveResult:
-	if command == null or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		return MoveResult.failure()
-
+func _execute_move(command: MoveCommand) -> MoveResult:
 	var state := get_unit(command.unit_id)
 
 	if state == null or state.health.is_defeated():
@@ -184,7 +282,6 @@ func execute_move(command: MoveCommand) -> MoveResult:
 		return MoveResult.failure()
 
 	state.hex = command.destination
-
 	return MoveResult.success(
 		command.unit_id,
 		path,
@@ -192,10 +289,7 @@ func execute_move(command: MoveCommand) -> MoveResult:
 	)
 
 
-func execute_attack(command: AttackCommand) -> AttackResult:
-	if command == null or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		return AttackResult.failure()
-
+func _execute_attack(command: AttackCommand) -> AttackResult:
 	var attacker := get_unit(command.attacker_id)
 	var target := get_unit(command.target_id)
 
@@ -226,13 +320,32 @@ func execute_attack(command: AttackCommand) -> AttackResult:
 	var damage := target.health.apply_damage(
 		attacker.basic_attack_damage
 	)
-
 	return AttackResult.success(
 		attacker.unit_id,
 		target.unit_id,
 		damage,
 		target.health.current
 	)
+
+
+func _accepted(events: Array[BattleEvent]) -> BattleResolution:
+	_state.state_revision += 1
+	return BattleResolution.success(
+		events,
+		_state.state_revision,
+		get_active_unit_id(),
+		get_result()
+	)
+
+
+func _rejected(reason: String) -> BattleResolution:
+	return BattleResolution.rejected(
+		reason,
+		_state.state_revision,
+		get_active_unit_id(),
+		get_result()
+	)
+
 
 func _is_unit_id_before(
 	left: UnitState,

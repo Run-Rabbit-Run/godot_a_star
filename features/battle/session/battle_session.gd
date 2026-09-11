@@ -4,7 +4,6 @@ extends RefCounted
 
 var setup: BattleSetup
 var _state: BattleState
-
 var _engine: BattleEngine
 var _battle_result: BattleResult
 var _side_command_sources: Dictionary[StringName, CommandSource] = {}
@@ -25,40 +24,40 @@ func _init(
 
 
 func get_hex_grid() -> HexGrid:
-	return _state.hex_grid
+	return _state.hex_grid.duplicate_grid()
 
 
-func get_unit(unit_id: StringName) -> UnitState:
-	return _engine.get_unit(unit_id)
+func get_unit(unit_id: StringName) -> UnitSnapshot:
+	return _to_snapshot(_engine.get_unit(unit_id))
 
 
-func get_unit_at(hex: Vector2i) -> UnitState:
-	return _engine.get_unit_at(hex)
+func get_unit_at(hex: Vector2i) -> UnitSnapshot:
+	return _to_snapshot(_engine.get_unit_at(hex))
 
 
 func get_living_units_by_faction(
 	faction: BattleFaction.Value
-) -> Array[UnitState]:
-	return _engine.get_living_units_by_faction(faction)
+) -> Array[UnitSnapshot]:
+	return _to_snapshots(_engine.get_living_units_by_faction(faction))
 
 
 func get_living_opponents(
 	faction: BattleFaction.Value
-) -> Array[UnitState]:
-	var opponents: Array[UnitState] = []
+) -> Array[UnitSnapshot]:
+	var opponents: Array[UnitSnapshot] = []
 
 	for candidate: UnitState in _state.unit_states.values():
 		if candidate.faction == faction or candidate.health.is_defeated():
 			continue
 
-		opponents.append(candidate)
+		opponents.append(_to_snapshot(candidate))
 
 	opponents.sort_custom(_is_unit_id_before)
 	return opponents
 
 
-func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
-	return _engine.get_attackable_targets(unit_id)
+func get_attackable_targets(unit_id: StringName) -> Array[UnitSnapshot]:
+	return _to_snapshots(_engine.get_attackable_targets(unit_id))
 
 
 func get_active_unit_id() -> StringName:
@@ -67,6 +66,14 @@ func get_active_unit_id() -> StringName:
 
 func get_round_number() -> int:
 	return _engine.get_round_number()
+
+
+func get_state_revision() -> int:
+	return _engine.get_state_revision()
+
+
+func get_map_revision() -> int:
+	return _engine.get_map_revision()
 
 
 func get_objective_description() -> String:
@@ -92,12 +99,22 @@ func is_finished() -> bool:
 
 func is_unit_ai_controlled(unit_id: StringName) -> bool:
 	var source := _get_command_source(unit_id)
-
 	return source != null and source.is_automatic()
 
 
 func is_active_unit_ai_controlled() -> bool:
 	return is_unit_ai_controlled(get_active_unit_id())
+
+
+func set_side_command_source(
+	side_id: StringName,
+	source: CommandSource
+) -> bool:
+	if is_finished() or source == null or _get_side(side_id) == null:
+		return false
+
+	_side_command_sources[side_id] = source
+	return true
 
 
 func get_next_ai_command() -> BattleCommand:
@@ -112,45 +129,45 @@ func get_next_ai_command() -> BattleCommand:
 	return source.next_command(self)
 
 
-func execute_command(command: BattleCommand) -> Variant:
-	if command is MoveCommand:
-		return execute_move(command as MoveCommand)
 
-	if command is AttackCommand:
-		return execute_attack(command as AttackCommand)
-
-	if command is EndTurnCommand:
-		var end_turn := command as EndTurnCommand
-		return end_turn_for(end_turn.unit_id)
-
-	return null
-
-
-func execute_move(command: MoveCommand) -> MoveResult:
+func step(command: BattleCommand) -> BattleResolution:
 	if is_finished():
-		return MoveResult.failure()
+		return BattleResolution.rejected(
+			"Battle is already finished.",
+			get_state_revision(),
+			get_active_unit_id(),
+			get_result()
+		)
 
-	var result := _engine.execute_move(command)
-	_capture_result()
-	return result
+	var resolution := _engine.execute(command)
+
+	if resolution.battle_result != null:
+		_battle_result = resolution.battle_result
+
+	return resolution
 
 
-func execute_attack(command: AttackCommand) -> AttackResult:
+func execute_command(command: BattleCommand) -> BattleResolution:
+	return step(command)
+
+
+func apply_map_mutations(
+	mutations: Array[MapMutation]
+) -> BattleResolution:
 	if is_finished():
-		return AttackResult.failure()
+		return BattleResolution.rejected(
+			"Battle is already finished.",
+			get_state_revision(),
+			get_active_unit_id(),
+			get_result()
+		)
 
-	var result := _engine.execute_attack(command)
-	_capture_result()
-	return result
+	var resolution := _engine.apply_map_mutations(mutations)
 
+	if resolution.battle_result != null:
+		_battle_result = resolution.battle_result
 
-func end_turn_for(unit_id: StringName) -> StringName:
-	if is_finished() or unit_id != get_active_unit_id():
-		return StringName()
-
-	var next_unit_id := _engine.end_turn()
-	_capture_result()
-	return next_unit_id
+	return resolution
 
 
 func _build_command_sources() -> void:
@@ -206,5 +223,24 @@ func _capture_result() -> void:
 		_battle_result = _engine.get_result()
 
 
-func _is_unit_id_before(left: UnitState, right: UnitState) -> bool:
+func _to_snapshot(state: UnitState) -> UnitSnapshot:
+	if state == null:
+		return null
+
+	return UnitSnapshot.new(state)
+
+
+func _to_snapshots(states: Array[UnitState]) -> Array[UnitSnapshot]:
+	var snapshots: Array[UnitSnapshot] = []
+
+	for state: UnitState in states:
+		snapshots.append(_to_snapshot(state))
+
+	return snapshots
+
+
+func _is_unit_id_before(
+	left: UnitSnapshot,
+	right: UnitSnapshot
+) -> bool:
 	return String(left.unit_id) < String(right.unit_id)

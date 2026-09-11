@@ -9,6 +9,8 @@ var turn_service: TurnService
 var objective_system: ObjectiveSystem
 var deterministic_seed: int
 var random: RandomNumberGenerator
+var state_revision := 0
+var map_revision := 0
 
 
 func _init(

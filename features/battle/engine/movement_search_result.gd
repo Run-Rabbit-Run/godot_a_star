@@ -4,13 +4,19 @@ extends RefCounted
 
 var _costs: Dictionary[Vector2i, int] = {}
 var _came_from: Dictionary[Vector2i, Vector2i] = {}
+var map_revision: int
+var state_revision: int
 
 
 ## Копии не позволяют вызывающему коду изменить уже завершённый поиск.
 func _init(
 	costs: Dictionary[Vector2i, int],
-	came_from: Dictionary[Vector2i, Vector2i]
+	came_from: Dictionary[Vector2i, Vector2i],
+	p_map_revision: int = 0,
+	p_state_revision: int = 0
 ) -> void:
+	map_revision = maxi(p_map_revision, 0)
+	state_revision = maxi(p_state_revision, 0)
 	for cell in costs:
 		_costs[cell] = costs[cell]
 

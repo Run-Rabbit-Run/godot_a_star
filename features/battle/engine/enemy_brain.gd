@@ -3,12 +3,12 @@ extends RefCounted
 
 static func choose_target(
 	origin: Vector2i,
-	candidates: Array[UnitState]
-) -> UnitState:
-	var best_target: UnitState
+	candidates: Array[UnitSnapshot]
+) -> UnitSnapshot:
+	var best_target: UnitSnapshot
 	var best_distance := 0
 
-	for candidate: UnitState in candidates:
+	for candidate: UnitSnapshot in candidates:
 		if candidate == null or candidate.health.is_defeated():
 			continue
 

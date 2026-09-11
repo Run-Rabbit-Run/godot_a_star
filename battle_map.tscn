@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://c2j36ghy6bxqu" path="res://features/battle/view/battle_input_router.gd" id="3_x3813"]
 [ext_resource type="Script" uid="uid://boe3be2yu0qpc" path="res://features/battle/view/battle_map_view.gd" id="4_map_view"]
 [ext_resource type="Script" uid="uid://g3tej7jdg56o" path="res://features/battle/controller/battle_controller.gd" id="5_controller"]
+[ext_resource type="Script" uid="uid://bfcylgwuci65y" path="res://features/battle/view/battle_presentation_queue.gd" id="6_queue"]
 [ext_resource type="Script" uid="uid://ccy562fhcgqly" path="res://features/battle/view/battle_hud.gd" id="7_hud"]
 
 [node name="BattleMap" type="Node2D" unique_id=1017118401]
@@ -60,6 +61,10 @@ script = ExtResource("3_x3813")
 
 [node name="BattleController" type="Node" parent="." unique_id=1616696389]
 script = ExtResource("5_controller")
+
+[node name="PresentationQueue" type="Node" parent="." unique_id=547094283]
+unique_name_in_owner = true
+script = ExtResource("6_queue")
 
 [node name="BattleUI" type="CanvasLayer" parent="." unique_id=1892660459]
 unique_name_in_owner = true
