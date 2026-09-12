@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="UnitDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="1_definition"]
+[ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="2_actor"]
+[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="3_stats"]
+
+[sub_resource type="Resource" id="Resource_player_ranged_stats"]
+script = ExtResource("3_stats")
+movement_points = 3
+max_health = 8
+basic_attack_damage = 2
+basic_attack_range = 3
+
+[resource]
+script = ExtResource("1_definition")
+id = &"core:debug_player_ranged"
+display_name = "Союзный стрелок"
+actor_scene = ExtResource("2_actor")
+actor_color = Color(0.28, 0.95, 0.72, 1)
+base_stats = SubResource("Resource_player_ranged_stats")

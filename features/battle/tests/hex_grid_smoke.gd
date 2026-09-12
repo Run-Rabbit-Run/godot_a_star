@@ -17,6 +17,7 @@ func _run() -> void:
 	_check_turn_state()
 	_check_turn_service()
 	_check_battle_engine()
+	_check_ranged_attack()
 	_check_battle_session_factory()
 	await _check_battle_scene()
 
@@ -205,6 +206,10 @@ func _check_battle_engine() -> void:
 	var engine := BattleEngine.new(battle_state)
 
 	_expect(engine.get_active_unit_id() == player.unit_id, "BattleEngine must start with the first unit.")
+	_expect(
+		engine.get_attackable_targets(player.unit_id).is_empty(),
+		"Melee unit must not target an enemy two hexes away."
+	)
 	var inactive_move := engine.execute(
 		MoveCommand.new(enemy.unit_id, Vector2i(1, 0))
 	)
@@ -225,6 +230,101 @@ func _check_battle_engine() -> void:
 	_expect(player.turn.movement_remaining == 3, "Starting player turn must restore its movement.")
 	var unknown_turn := engine.execute(EndTurnCommand.new(&"missing"))
 	_expect(not unknown_turn.accepted, "Unknown unit turn must be rejected.")
+
+
+func _check_ranged_attack() -> void:
+	var cells: Array[Vector2i] = [
+		Vector2i(0, 0),
+		Vector2i(1, 0),
+		Vector2i(2, 0),
+		Vector2i(3, 0),
+	]
+	var ranged := UnitState.new(
+		&"ranged",
+		&"ranged_definition",
+		BattleFaction.Value.PLAYER,
+		Vector2i(0, 0),
+		TurnState.new(3),
+		HealthState.new(8),
+		4,
+		3
+	)
+	var target := UnitState.new(
+		&"target",
+		&"target_definition",
+		BattleFaction.Value.ENEMY,
+		Vector2i(3, 0),
+		TurnState.new(3),
+		HealthState.new(10),
+		2
+	)
+	var states: Dictionary[StringName, UnitState] = {
+		ranged.unit_id: ranged,
+		target.unit_id: target,
+	}
+	var order: Array[StringName] = [ranged.unit_id, target.unit_id]
+	var objective := EliminateFactionObjective.new(
+		BattleFaction.Value.ENEMY,
+		"Eliminate enemies."
+	)
+	var objective_system := ObjectiveSystem.new(
+		objective,
+		BattleFaction.Value.PLAYER
+	)
+	var battle_state := BattleState.new(
+		&"ranged_smoke_battle",
+		HexGrid.new(cells),
+		states,
+		order,
+		objective_system,
+		321
+	)
+	var engine := BattleEngine.new(battle_state)
+	var targets := engine.get_attackable_targets(ranged.unit_id)
+	_expect(
+		targets.size() == 1 and targets[0].unit_id == target.unit_id,
+		"Ranged unit must target an enemy at its maximum range."
+	)
+
+	var resolution := engine.execute(
+		AttackCommand.new(ranged.unit_id, target.unit_id)
+	)
+	_expect(resolution.accepted, "Ranged attack at distance three must be accepted.")
+	_expect(
+		resolution.events.size() == 1
+		and resolution.events[0] is UnitDamagedEvent,
+		"Ranged attack must emit UnitDamagedEvent."
+	)
+	_expect(
+		target.health.current == 6,
+		"Ranged attack must apply basic attack damage."
+	)
+	_expect(
+		not ranged.turn.main_action_available,
+		"Ranged attack must spend the main action."
+	)
+	_expect(
+		EnemyBrain.choose_attack(
+			&"ai_ranged",
+			Vector2i.ZERO,
+			&"player",
+			Vector2i(3, 0),
+			3,
+			true
+		) != null,
+		"AI must choose a basic attack when the target is in ranged reach."
+	)
+	_expect(
+		EnemyBrain.choose_attack(
+			&"ai_melee",
+			Vector2i.ZERO,
+			&"player",
+			Vector2i(3, 0),
+			1,
+			true
+		) == null,
+		"Melee AI must not attack the same distant target."
+	)
 
 
 func _check_battle_session_factory() -> void:
@@ -328,11 +428,14 @@ func _check_battle_scene() -> void:
 	var path_layer := launcher.get_node_or_null(
 		"BattleScreen/BattleMap/PathLayer"
 	) as TileMapLayer
+	var targetable_layer := launcher.get_node_or_null(
+		"BattleScreen/BattleMap/TargetableLayer"
+	) as TileMapLayer
 	_expect(map_view != null, "Battle launcher must expose BattleMapView.")
 	_expect(controller != null and input_router != null and hud != null, "Battle scene must expose controller, input router and HUD.")
-	_expect(selection_layer != null and path_layer != null, "Battle scene must expose selection and path layers.")
+	_expect(selection_layer != null and path_layer != null and targetable_layer != null, "Battle scene must expose selection, path and targetable layers.")
 
-	if map_view == null or controller == null or input_router == null or hud == null or selection_layer == null or path_layer == null:
+	if map_view == null or controller == null or input_router == null or hud == null or selection_layer == null or path_layer == null or targetable_layer == null:
 		launcher.queue_free()
 		await process_frame
 		return
@@ -347,16 +450,52 @@ func _check_battle_scene() -> void:
 		return
 
 	var player_id := &"core:debug_battle:player_1"
+	var ranged_player_id := &"core:debug_battle:player_2"
+	var enemy_id := &"core:debug_battle:enemy_1"
+	var ranged_enemy_id := &"core:debug_battle:enemy_2"
 	var player := session.get_unit(player_id)
+	var ranged_player := session.get_unit(ranged_player_id)
+	var ranged_enemy := session.get_unit(ranged_enemy_id)
 	var player_actor := actors.get(player_id) as UnitActor
+	var ranged_player_actor := actors.get(ranged_player_id) as UnitActor
+	var ranged_enemy_actor := actors.get(ranged_enemy_id) as UnitActor
 	var hex_grid := session.get_hex_grid()
 	var vbox := hud.get_node("MovementPanel/VBoxContainer") as VBoxContainer
 	var movement_label := vbox.get_node("MovementLabel") as Label
+	var end_turn_button := vbox.get_node("EndTurnButton") as Button
 
 	_expect(player != null, "Battle session must expose the first player snapshot.")
 	_expect(player_actor != null and actors.size() == 4, "Battle scene must create all four unit actors.")
+	_expect(
+		ranged_player != null
+		and ranged_enemy != null
+		and ranged_player.basic_attack_range == 3
+		and ranged_enemy.basic_attack_range == 3,
+		"Debug battle must contain one ranged unit on each side."
+	)
+	_expect(
+		not (player_actor.get_node("CombatRoleLabel") as Label).visible,
+		"Melee unit must not show the ranged marker."
+	)
+	_expect(
+		ranged_player_actor != null
+		and (ranged_player_actor.get_node("CombatRoleLabel") as Label).visible,
+		"Ranged ally must show a visible ranged marker."
+	)
+	_expect(
+		ranged_enemy_actor != null
+		and (ranged_enemy_actor.get_node("CombatRoleLabel") as Label).visible,
+		"Ranged enemy must show a visible ranged marker."
+	)
 
-	if player == null or player_actor == null:
+	if (
+		player == null
+		or player_actor == null
+		or ranged_player == null
+		or ranged_enemy == null
+		or ranged_player_actor == null
+		or ranged_enemy_actor == null
+	):
 		launcher.queue_free()
 		await process_frame
 		return
@@ -379,6 +518,43 @@ func _check_battle_scene() -> void:
 	_expect(player.hex == Vector2i(7, 6) and player.turn.movement_remaining == 2, "Player click must execute a MoveCommand through BattleSession.")
 	_expect(player_actor.global_position.is_equal_approx(map_view.hex_to_global_position(player.hex)), "Player actor must follow its snapshot.")
 	_expect(movement_label.text == "Перемещение: 2 / 3", "HUD must update after player movement.")
+
+	end_turn_button.pressed.emit()
+	await process_frame
+	ranged_player = session.get_unit(ranged_player_id)
+	var enemy := session.get_unit(enemy_id)
+	_expect(
+		session.get_active_unit_id() == ranged_player_id,
+		"Second player turn must activate the ranged ally."
+	)
+	_expect(
+		targetable_layer.get_used_cells().has(
+			HexCoordinateMapper.axial_to_offset(enemy.hex)
+		),
+		"Ranged target highlight must include an enemy two hexes away."
+	)
+
+	_expect(
+		controller.set_playback_speed(1.0),
+		"Scene smoke must restore normal presentation speed."
+	)
+	input_router.hex_selected.emit(enemy.hex)
+	_expect(
+		map_view.get_node_or_null("RangedAttackProjectile") != null
+		and map_view.get_node_or_null("RangedAttackTracer") != null,
+		"Ranged attack must create a visible projectile and tracer."
+	)
+	await create_timer(0.3).timeout
+	enemy = session.get_unit(enemy_id)
+	_expect(
+		enemy.health.current == 4,
+		"Ranged scene attack must damage the distant enemy."
+	)
+	_expect(
+		map_view.get_node_or_null("RangedAttackProjectile") == null
+		and map_view.get_node_or_null("RangedAttackTracer") == null,
+		"Ranged projectile visuals must be removed after presentation."
+	)
 
 	launcher.queue_free()
 	await process_frame

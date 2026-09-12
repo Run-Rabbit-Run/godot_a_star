@@ -57,7 +57,10 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 		if candidate.health.is_defeated():
 			continue
 
-		if HexGrid.get_distance(attacker.hex, candidate.hex) == 1:
+		if (
+			HexGrid.get_distance(attacker.hex, candidate.hex)
+			<= attacker.basic_attack_range
+		):
 			targets.append(candidate)
 
 	targets.sort_custom(_is_unit_id_before)
@@ -323,7 +326,10 @@ func _execute_attack(command: AttackCommand) -> AttackResult:
 	if not attacker.turn.main_action_available:
 		return AttackResult.failure()
 
-	if HexGrid.get_distance(attacker.hex, target.hex) != 1:
+	if (
+		HexGrid.get_distance(attacker.hex, target.hex)
+		> attacker.basic_attack_range
+	):
 		return AttackResult.failure()
 
 	if not attacker.turn.spend_main_action():

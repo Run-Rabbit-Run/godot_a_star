@@ -30,7 +30,7 @@ start_hex = Vector2i(7, 7)
 [sub_resource type="Resource" id="Placement_player_2"]
 script = ExtResource("5_placement")
 placement_id = &"player_2"
-definition_id = &"core:debug_player"
+definition_id = &"core:debug_player_ranged"
 side_id = &"player"
 start_hex = Vector2i(7, 8)
 
@@ -44,7 +44,7 @@ start_hex = Vector2i(9, 7)
 [sub_resource type="Resource" id="Placement_enemy_2"]
 script = ExtResource("5_placement")
 placement_id = &"enemy_2"
-definition_id = &"core:debug_enemy"
+definition_id = &"core:debug_enemy_ranged"
 side_id = &"enemy"
 start_hex = Vector2i(10, 8)
 

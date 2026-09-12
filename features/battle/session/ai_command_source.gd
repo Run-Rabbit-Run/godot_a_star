@@ -56,6 +56,7 @@ func next_command(session: BattleSession) -> BattleCommand:
 		active.hex,
 		target.unit_id,
 		target.hex,
+		active.basic_attack_range,
 		active.turn.main_action_available
 	)
 

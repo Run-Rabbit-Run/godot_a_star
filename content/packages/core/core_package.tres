@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="ContentPackage" load_steps=11 format=3]
+[gd_resource type="Resource" script_class="ContentPackage" load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://features/content/content_package.gd" id="1_package"]
 [ext_resource type="Script" path="res://features/content/content_package_manifest.gd" id="2_manifest"]
@@ -11,6 +11,8 @@
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy.tres" id="9_enemy"]
 [ext_resource type="Script" path="res://features/battle/definitions/ai_profile_definition.gd" id="10_ai_type"]
 [ext_resource type="Resource" path="res://features/battle/definitions/debug_basic_enemy_ai.tres" id="11_ai"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_ranged.tres" id="12_player_ranged"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged.tres" id="13_enemy_ranged"]
 
 [sub_resource type="Resource" id="Manifest_core"]
 script = ExtResource("2_manifest")
@@ -23,5 +25,5 @@ script = ExtResource("1_package")
 manifest = SubResource("Manifest_core")
 battles = Array[ExtResource("3_battle_type")]([ExtResource("4_battle")])
 maps = Array[ExtResource("5_map_type")]([ExtResource("6_map")])
-units = Array[ExtResource("7_unit_type")]([ExtResource("8_player"), ExtResource("9_enemy")])
+units = Array[ExtResource("7_unit_type")]([ExtResource("8_player"), ExtResource("9_enemy"), ExtResource("12_player_ranged"), ExtResource("13_enemy_ranged")])
 ai_profiles = Array[ExtResource("10_ai_type")]([ExtResource("11_ai")])

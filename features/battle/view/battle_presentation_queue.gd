@@ -58,6 +58,7 @@ func _present_event(
 			event as UnitDamagedEvent,
 			unit_actors,
 			unit_definitions,
+			map_view,
 			hud
 		)
 
@@ -107,6 +108,7 @@ func _present_damage(
 	event: UnitDamagedEvent,
 	unit_actors: Dictionary[StringName, UnitActor],
 	unit_definitions: Dictionary[StringName, UnitDefinition],
+	map_view: BattleMapView,
 	hud: BattleHUD
 ) -> bool:
 	var actor := unit_actors.get(event.target_id) as UnitActor
@@ -114,6 +116,26 @@ func _present_damage(
 	if actor == null:
 		push_error("UnitActor is not registered for the attacked unit.")
 		return false
+
+	var attacker := unit_actors.get(event.attacker_id) as UnitActor
+	var attacker_definition := unit_definitions.get(
+		event.attacker_id
+	) as UnitDefinition
+
+	if (
+		attacker_definition != null
+		and attacker_definition.base_stats != null
+		and attacker_definition.base_stats.basic_attack_range > 1
+	):
+		if attacker == null:
+			push_error("UnitActor is not registered for the ranged attacker.")
+			return false
+
+		await _present_ranged_projectile(
+			attacker,
+			actor,
+			map_view
+		)
 
 	hud.show_attack(
 		_get_display_name(event.attacker_id, unit_definitions),
@@ -145,6 +167,57 @@ func _present_damage(
 		actor.visible = false
 
 	return true
+
+
+func _present_ranged_projectile(
+	attacker: UnitActor,
+	target: UnitActor,
+	map_view: BattleMapView
+) -> void:
+	var start := map_view.to_local(attacker.global_position)
+	var finish := map_view.to_local(target.global_position)
+	var tracer := Line2D.new()
+	tracer.name = "RangedAttackTracer"
+	tracer.width = 5.0
+	tracer.default_color = Color(1.0, 0.78, 0.16, 0.9)
+	tracer.antialiased = true
+	tracer.z_index = 50
+	tracer.points = PackedVector2Array([start, finish])
+	map_view.add_child(tracer)
+
+	var projectile := Polygon2D.new()
+	projectile.name = "RangedAttackProjectile"
+	projectile.polygon = PackedVector2Array([
+		Vector2(-10.0, -5.0),
+		Vector2(12.0, 0.0),
+		Vector2(-10.0, 5.0),
+	])
+	projectile.color = Color(1.0, 0.92, 0.35, 1.0)
+	projectile.position = start
+	projectile.rotation = (finish - start).angle()
+	projectile.z_index = 51
+	map_view.add_child(projectile)
+
+	var tween := projectile.create_tween()
+	tween.set_parallel(true)
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_IN)
+	tween.tween_property(
+		projectile,
+		"position",
+		finish,
+		0.22
+	)
+	tween.tween_property(
+		tracer,
+		"modulate:a",
+		0.0,
+		0.22
+	)
+	_track_tween(tween)
+	await tween.finished
+	projectile.queue_free()
+	tracer.queue_free()
 
 
 func _track_tween(tween: Tween) -> void:

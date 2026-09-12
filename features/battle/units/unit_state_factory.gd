@@ -31,5 +31,6 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		turn,
 		health,
 		base_stats.basic_attack_damage,
+		base_stats.basic_attack_range,
 		spawn.abilities
 	)

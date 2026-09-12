@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://features/battle/debug_battle_launcher.gd" id="1_launcher"]
 [ext_resource type="PackedScene" path="res://features/battle/battle_screen.tscn" id="2_screen"]
@@ -14,6 +14,8 @@
 [ext_resource type="Script" path="res://features/content/content_package.gd" id="12_package_type"]
 [ext_resource type="Resource" path="res://content/packages/core/core_package.tres" id="13_core_package"]
 [ext_resource type="Resource" path="res://content/packages/ember_pack/ember_pack.tres" id="14_ember_package"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_ranged.tres" id="15_player_ranged"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged.tres" id="16_enemy_ranged"]
 
 [node name="DebugBattleLauncher" type="Node"]
 script = ExtResource("1_launcher")
@@ -21,7 +23,7 @@ battle_id = &"core:debug_battle"
 content_packages = Array[ExtResource("12_package_type")]([ExtResource("13_core_package"), ExtResource("14_ember_package")])
 battle_definitions = Array[ExtResource("3_battle_definition")]([ExtResource("4_battle")])
 map_definitions = Array[ExtResource("5_map_definition")]([ExtResource("6_map")])
-unit_definitions = Array[ExtResource("7_unit_definition")]([ExtResource("8_player"), ExtResource("9_enemy")])
+unit_definitions = Array[ExtResource("7_unit_definition")]([ExtResource("8_player"), ExtResource("9_enemy"), ExtResource("15_player_ranged"), ExtResource("16_enemy_ranged")])
 ai_profile_definitions = Array[ExtResource("10_ai_profile_definition")]([ExtResource("11_enemy_ai")])
 deterministic_seed = 1
 

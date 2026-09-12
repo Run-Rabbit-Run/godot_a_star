@@ -11,6 +11,7 @@ var damage_flash_duration := 0.18
 var unit_id: StringName
 
 @onready var _unit_id_label: Label = %UnitIdLabel
+@onready var _combat_role_label: Label = %CombatRoleLabel
 
 
 func setup(
@@ -19,6 +20,11 @@ func setup(
 ) -> void:
 	unit_id = p_unit_id
 	_unit_id_label.text = String(p_unit_id)
+	_combat_role_label.visible = (
+		definition.base_stats != null
+		and definition.base_stats.basic_attack_range > 1
+	)
+	_combat_role_label.text = "ДАЛЬНИЙ"
 	modulate = definition.actor_color
 
 

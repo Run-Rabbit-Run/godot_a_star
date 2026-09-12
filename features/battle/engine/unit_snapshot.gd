@@ -9,6 +9,7 @@ var hex: Vector2i
 var turn: TurnSnapshot
 var health: HealthSnapshot
 var basic_attack_damage: int
+var basic_attack_range: int
 var ability_ids: Array[StringName] = []
 var ability_ranges: Dictionary[StringName, int] = {}
 
@@ -28,6 +29,7 @@ func _init(state: UnitState) -> void:
 		state.health.current
 	)
 	basic_attack_damage = state.basic_attack_damage
+	basic_attack_range = state.basic_attack_range
 	ability_ids.assign(state.abilities.keys())
 	ability_ids.sort()
 

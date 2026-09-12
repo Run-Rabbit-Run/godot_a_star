@@ -9,6 +9,7 @@ var hex: Vector2i
 var turn: TurnState
 var health: HealthState
 var basic_attack_damage: int
+var basic_attack_range: int
 var abilities: Dictionary[StringName, AbilityDefinition] = {}
 
 
@@ -20,6 +21,7 @@ func _init(
 	p_turn: TurnState,
 	p_health: HealthState,
 	p_basic_attack_damage: int,
+	p_basic_attack_range: int = 1,
 	p_abilities: Array[AbilityDefinition] = []
 ) -> void:
 	unit_id = p_unit_id
@@ -29,6 +31,7 @@ func _init(
 	turn = p_turn
 	health = p_health
 	basic_attack_damage = maxi(p_basic_attack_damage, 0)
+	basic_attack_range = maxi(p_basic_attack_range, 1)
 
 	for ability: AbilityDefinition in p_abilities:
 		if ability != null:

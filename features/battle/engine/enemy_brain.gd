@@ -83,6 +83,7 @@ static func choose_attack(
 	attacker_hex: Vector2i,
 	target_id: StringName,
 	target_hex: Vector2i,
+	attack_range: int,
 	main_action_available: bool
 ) -> AttackCommand:
 	if attacker_id.is_empty() or target_id.is_empty():
@@ -94,7 +95,10 @@ static func choose_attack(
 	if not main_action_available:
 		return null
 
-	if HexGrid.get_distance(attacker_hex, target_hex) != 1:
+	if (
+		HexGrid.get_distance(attacker_hex, target_hex)
+		> maxi(attack_range, 1)
+	):
 		return null
 
 	return AttackCommand.new(attacker_id, target_id)
