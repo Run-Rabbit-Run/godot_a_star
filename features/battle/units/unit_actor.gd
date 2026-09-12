@@ -2,6 +2,9 @@ class_name UnitActor
 extends Node2D
 
 
+const CUSTOM_TEXTURE_SIZE := 52.0
+
+
 @export_range(0.01, 1.0, 0.01)
 var movement_step_duration := 0.12
 
@@ -10,6 +13,7 @@ var damage_flash_duration := 0.18
 
 var unit_id: StringName
 
+@onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
 @onready var _combat_role_label: Label = %CombatRoleLabel
 
@@ -19,7 +23,18 @@ func setup(
 	definition: UnitDefinition
 ) -> void:
 	unit_id = p_unit_id
-	_unit_id_label.text = String(p_unit_id)
+	_unit_id_label.text = definition.display_name
+
+	if definition.actor_texture != null:
+		_sprite.texture = definition.actor_texture
+		var texture_size := definition.actor_texture.get_size()
+		var longest_side := maxf(texture_size.x, texture_size.y)
+
+		if longest_side > 0.0:
+			_sprite.scale = Vector2.ONE * (
+				CUSTOM_TEXTURE_SIZE / longest_side
+			)
+
 	_combat_role_label.visible = (
 		definition.base_stats != null
 		and definition.base_stats.basic_attack_range > 1

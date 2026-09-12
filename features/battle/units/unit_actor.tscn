@@ -10,6 +10,7 @@ script = ExtResource("1_script")
 [node name="VisualRoot" type="Node2D" parent="."]
 
 [node name="Sprite" type="Sprite2D" parent="VisualRoot"]
+unique_name_in_owner = true
 texture = ExtResource("2_texture")
 
 [node name="CombatRoleLabel" type="Label" parent="."]
