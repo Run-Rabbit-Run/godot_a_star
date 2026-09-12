@@ -61,7 +61,7 @@ func _present_event(
 			hud
 		)
 
-	if event is TurnEndedEvent:
+	if event is TurnEndedEvent or event is AbilityUsedEvent:
 		return true
 
 	if event is MapMutationEvent:

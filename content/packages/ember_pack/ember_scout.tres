@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="1_unit"]
+[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="2_stats"]
+[ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="3_actor"]
+
+[sub_resource type="Resource" id="Stats_scout"]
+script = ExtResource("2_stats")
+movement_points = 3
+max_health = 8
+basic_attack_damage = 2
+
+[resource]
+script = ExtResource("1_unit")
+id = &"ember_pack:scout"
+display_name = "Разведчик искр"
+actor_scene = ExtResource("3_actor")
+actor_color = Color(1, 0.35, 0.12, 1)
+base_stats = SubResource("Stats_scout")
+race_id = &"ember_pack:emberkin"
+ability_ids = Array[StringName]([&"ember_pack:fire_bolt"])
+presentation_id = &"ember_pack:scout_actor"

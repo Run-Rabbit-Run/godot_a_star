@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="RaceDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://features/content/race_definition.gd" id="1_race"]
+
+[resource]
+script = ExtResource("1_race")
+id = &"ember_pack:emberkin"
+display_name = "Искророждённые"
+unit_ids = Array[StringName]([&"ember_pack:scout"])

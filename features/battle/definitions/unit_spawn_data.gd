@@ -13,6 +13,7 @@ var ai_profile_id: StringName
 var ai_profile_definition: AIProfileDefinition
 var hex: Vector2i
 var modifiers: Dictionary
+var abilities: Array[AbilityDefinition] = []
 
 
 func _init(
@@ -26,7 +27,8 @@ func _init(
 	p_ai_profile_id: StringName,
 	p_ai_profile_definition: AIProfileDefinition,
 	p_hex: Vector2i,
-	p_modifiers: Dictionary = {}
+	p_modifiers: Dictionary = {},
+	p_abilities: Array[AbilityDefinition] = []
 ) -> void:
 	unit_id = p_unit_id
 	placement_id = p_placement_id
@@ -39,3 +41,4 @@ func _init(
 	ai_profile_definition = p_ai_profile_definition
 	hex = p_hex
 	modifiers = p_modifiers.duplicate(true)
+	abilities.assign(p_abilities)

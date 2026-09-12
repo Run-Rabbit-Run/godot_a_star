@@ -12,7 +12,7 @@ basic_attack_damage = 2
 
 [resource]
 script = ExtResource("1_definition")
-id = &"debug_enemy"
+id = &"core:debug_enemy"
 display_name = "Враг"
 actor_scene = ExtResource("2_actor")
 actor_color = Color(1, 0.25, 0.2, 1)

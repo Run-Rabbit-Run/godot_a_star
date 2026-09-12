@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ScenarioDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://features/campaign/scenario_definition.gd" id="1_scenario"]
+[ext_resource type="Script" path="res://features/campaign/scenario_transition_definition.gd" id="2_transition"]
+
+[sub_resource type="Resource" id="Victory"]
+script = ExtResource("2_transition")
+target_scenario_id = &"ember_pack:ash_gate"
+
+[sub_resource type="Resource" id="Defeat"]
+script = ExtResource("2_transition")
+outcome = 1
+ends_campaign = true
+
+[resource]
+script = ExtResource("1_scenario")
+id = &"ember_pack:crossing"
+battle_id = &"ember_pack:crossing_battle"
+transitions = Array[ExtResource("2_transition")]([SubResource("Victory"), SubResource("Defeat")])

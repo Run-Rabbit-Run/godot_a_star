@@ -91,6 +91,19 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 				unit_validation_error
 			)
 
+		var abilities: Array[AbilityDefinition] = []
+
+		for ability_id: StringName in unit_definition.ability_ids:
+			var ability := snapshot.get_ability_definition(ability_id)
+
+			if ability == null:
+				return BattleSetupCreationResult.failure(
+					"AbilityDefinition could not be resolved for unit %s: %s."
+					% [unit_definition.id, ability_id]
+				)
+
+			abilities.append(ability)
+
 		var side := sides_by_id[placement.side_id]
 		var ai_profile_id := side.ai_profile_id
 
@@ -119,7 +132,8 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 				ai_profile_id,
 				ai_profile,
 				placement.start_hex,
-				placement.modifiers
+				placement.modifiers,
+				abilities
 			)
 		)
 

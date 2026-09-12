@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="BattleDefinition" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
+[ext_resource type="Script" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="3_side"]
+[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="4_placement"]
+
+[sub_resource type="Resource" id="Objective"]
+script = ExtResource("2_objective")
+description = "Зачистить пепельные врата"
+
+[sub_resource type="Resource" id="PlayerSide"]
+script = ExtResource("3_side")
+side_id = &"player"
+
+[sub_resource type="Resource" id="EnemySide"]
+script = ExtResource("3_side")
+side_id = &"enemy"
+faction = 1
+control_source = 1
+ai_profile_id = &"core:basic_enemy_ai"
+
+[sub_resource type="Resource" id="Player"]
+script = ExtResource("4_placement")
+placement_id = &"player_1"
+definition_id = &"core:debug_player"
+side_id = &"player"
+start_hex = Vector2i(0, 0)
+
+[sub_resource type="Resource" id="Enemy1"]
+script = ExtResource("4_placement")
+placement_id = &"ember_scout_1"
+definition_id = &"ember_pack:scout"
+side_id = &"enemy"
+start_hex = Vector2i(3, 0)
+
+[sub_resource type="Resource" id="Enemy2"]
+script = ExtResource("4_placement")
+placement_id = &"ember_scout_2"
+definition_id = &"ember_pack:scout"
+side_id = &"enemy"
+start_hex = Vector2i(3, 1)
+
+[resource]
+script = ExtResource("1_battle")
+id = &"ember_pack:ash_gate_battle"
+map_id = &"ember_pack:ash_gate_map"
+primary_objective = SubResource("Objective")
+sides = Array[ExtResource("3_side")]([SubResource("PlayerSide"), SubResource("EnemySide")])
+unit_placements = Array[ExtResource("4_placement")]([SubResource("Player"), SubResource("Enemy1"), SubResource("Enemy2")])

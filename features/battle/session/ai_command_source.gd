@@ -41,6 +41,16 @@ func next_command(session: BattleSession) -> BattleCommand:
 	if target == null:
 		return EndTurnCommand.new(active_unit_id)
 
+	var target_distance := HexGrid.get_distance(active.hex, target.hex)
+
+	for ability_id: StringName in active.ability_ids:
+		if target_distance <= active.ability_ranges.get(ability_id, 0):
+			return UseAbilityCommand.new(
+				active.unit_id,
+				target.unit_id,
+				ability_id
+			)
+
 	var attack := EnemyBrain.choose_attack(
 		active.unit_id,
 		active.hex,

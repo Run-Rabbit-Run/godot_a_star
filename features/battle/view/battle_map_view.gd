@@ -21,6 +21,29 @@ func _ready() -> void:
 	_capture_default_terrain_tile()
 
 
+func render_grid(grid: HexGrid) -> void:
+	if grid == null:
+		return
+
+	if _default_source_id == -1:
+		_capture_default_terrain_tile()
+
+	_terrain_layer.clear()
+	clear_overlays()
+
+	if _default_source_id == -1:
+		return
+
+	for hex: Vector2i in grid.get_cells():
+		var map_cell := HexCoordinateMapper.axial_to_offset(hex)
+		_terrain_layer.set_cell(
+			map_cell,
+			_default_source_id,
+			_default_atlas_coords,
+			_default_alternative_tile
+		)
+
+
 func hex_to_global_position(axial_cell: Vector2i) -> Vector2:
 	var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
 	var local_position := _terrain_layer.map_to_local(map_cell)

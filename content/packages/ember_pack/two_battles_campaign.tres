@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="CampaignDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://features/campaign/campaign_definition.gd" id="1_campaign"]
+
+[resource]
+script = ExtResource("1_campaign")
+id = &"ember_pack:two_battles"
+entry_scenario_id = &"ember_pack:crossing"
+scenario_ids = Array[StringName]([&"ember_pack:crossing", &"ember_pack:ash_gate"])

@@ -7,3 +7,7 @@ extends Resource
 @export var actor_scene: PackedScene
 @export var actor_color := Color.WHITE
 @export var base_stats: UnitStatsDefinition
+
+@export var race_id: StringName
+@export var ability_ids: Array[StringName] = []
+@export var presentation_id: StringName

@@ -1,0 +1,11 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://features/editor/battle_editor_shell.gd" id="1_shell"]
+[ext_resource type="Script" path="res://features/content/content_package.gd" id="2_package_type"]
+[ext_resource type="Resource" path="res://content/packages/core/core_package.tres" id="3_core"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ember_pack.tres" id="4_ember"]
+
+[node name="BattleEditor" type="Node"]
+script = ExtResource("1_shell")
+content_packages = Array[ExtResource("2_package_type")]([ExtResource("3_core"), ExtResource("4_ember")])
+initial_battle_id = &"ember_pack:crossing_battle"

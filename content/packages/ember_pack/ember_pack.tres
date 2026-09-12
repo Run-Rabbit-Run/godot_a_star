@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="ContentPackage" load_steps=22 format=3]
+
+[ext_resource type="Script" path="res://features/content/content_package.gd" id="1_package"]
+[ext_resource type="Script" path="res://features/content/content_package_manifest.gd" id="2_manifest"]
+[ext_resource type="Script" path="res://features/content/content_package_dependency.gd" id="3_dependency"]
+[ext_resource type="Script" path="res://features/content/race_definition.gd" id="4_race_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/emberkin.tres" id="5_race"]
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="6_unit_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ember_scout.tres" id="7_unit"]
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="8_ability_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/fire_bolt.tres" id="9_ability"]
+[ext_resource type="Script" path="res://features/battle/map/battle_map_definition.gd" id="10_map_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/crossing_map.tres" id="11_map_one"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ash_gate_map.tres" id="12_map_two"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="13_battle_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/crossing_battle.tres" id="14_battle_one"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ash_gate_battle.tres" id="15_battle_two"]
+[ext_resource type="Script" path="res://features/campaign/scenario_definition.gd" id="16_scenario_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/crossing_scenario.tres" id="17_scenario_one"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ash_gate_scenario.tres" id="18_scenario_two"]
+[ext_resource type="Script" path="res://features/campaign/campaign_definition.gd" id="19_campaign_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/two_battles_campaign.tres" id="20_campaign"]
+
+[sub_resource type="Resource" id="Dependency_core"]
+script = ExtResource("3_dependency")
+package_id = &"core"
+exact_version = "1.0.0"
+
+[sub_resource type="Resource" id="Manifest_ember"]
+script = ExtResource("2_manifest")
+package_id = &"ember_pack"
+package_version = "1.0.0"
+dependencies = Array[ExtResource("3_dependency")]([SubResource("Dependency_core")])
+entry_battle_ids = Array[StringName]([&"ember_pack:crossing_battle"])
+entry_campaign_ids = Array[StringName]([&"ember_pack:two_battles"])
+
+[resource]
+script = ExtResource("1_package")
+manifest = SubResource("Manifest_ember")
+battles = Array[ExtResource("13_battle_type")]([ExtResource("14_battle_one"), ExtResource("15_battle_two")])
+maps = Array[ExtResource("10_map_type")]([ExtResource("11_map_one"), ExtResource("12_map_two")])
+units = Array[ExtResource("6_unit_type")]([ExtResource("7_unit")])
+races = Array[ExtResource("4_race_type")]([ExtResource("5_race")])
+abilities = Array[ExtResource("8_ability_type")]([ExtResource("9_ability")])
+scenarios = Array[ExtResource("16_scenario_type")]([ExtResource("17_scenario_one"), ExtResource("18_scenario_two")])
+campaigns = Array[ExtResource("19_campaign_type")]([ExtResource("20_campaign")])

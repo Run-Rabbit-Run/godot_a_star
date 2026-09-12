@@ -178,6 +178,9 @@ func execute(command: BattleCommand) -> BattleResolution:
 	if command is AttackCommand:
 		return _resolve_attack(command as AttackCommand)
 
+	if command is UseAbilityCommand:
+		return _resolve_ability(command as UseAbilityCommand)
+
 	if command is EndTurnCommand:
 		return _resolve_end_turn(command as EndTurnCommand)
 
@@ -216,6 +219,15 @@ func _resolve_attack(command: AttackCommand) -> BattleResolution:
 		),
 	]
 	return _accepted(events)
+
+
+func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
+	var result := AbilityExecutor.execute(_state, command)
+
+	if not result.accepted:
+		return _rejected(result.rejection_reason)
+
+	return _accepted(result.events)
 
 
 func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:

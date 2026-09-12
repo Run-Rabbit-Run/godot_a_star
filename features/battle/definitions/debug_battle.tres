@@ -23,34 +23,34 @@ ai_profile_id = &"core:basic_enemy_ai"
 [sub_resource type="Resource" id="Placement_player_1"]
 script = ExtResource("5_placement")
 placement_id = &"player_1"
-definition_id = &"debug_player"
+definition_id = &"core:debug_player"
 side_id = &"player"
 start_hex = Vector2i(7, 7)
 
 [sub_resource type="Resource" id="Placement_player_2"]
 script = ExtResource("5_placement")
 placement_id = &"player_2"
-definition_id = &"debug_player"
+definition_id = &"core:debug_player"
 side_id = &"player"
 start_hex = Vector2i(7, 8)
 
 [sub_resource type="Resource" id="Placement_enemy_1"]
 script = ExtResource("5_placement")
 placement_id = &"enemy_1"
-definition_id = &"debug_enemy"
+definition_id = &"core:debug_enemy"
 side_id = &"enemy"
 start_hex = Vector2i(9, 7)
 
 [sub_resource type="Resource" id="Placement_enemy_2"]
 script = ExtResource("5_placement")
 placement_id = &"enemy_2"
-definition_id = &"debug_enemy"
+definition_id = &"core:debug_enemy"
 side_id = &"enemy"
 start_hex = Vector2i(10, 8)
 
 [resource]
 script = ExtResource("1_battle")
-id = &"debug_battle"
+id = &"core:debug_battle"
 map_id = &"core:debug_battle_map"
 primary_objective = SubResource("Objective_eliminate_enemies")
 sides = Array[ExtResource("4_side")]([SubResource("Side_player"), SubResource("Side_enemy")])

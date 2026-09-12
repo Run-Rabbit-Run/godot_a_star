@@ -94,6 +94,7 @@ func _initialize_battle() -> void:
 	_battle_setup = _battle_session.setup
 	_hex_grid = _battle_session.get_hex_grid()
 	_known_map_revision = _battle_session.get_map_revision()
+	_map_view.render_grid(_hex_grid)
 	_input_router.setup(_hex_grid)
 
 	if not _create_unit_actors(_battle_setup.unit_spawns):
