@@ -62,6 +62,13 @@ func _present_event(
 			hud
 		)
 
+	if event is AreaAbilityUsedEvent:
+		return await _present_area_ability(
+			event as AreaAbilityUsedEvent,
+			unit_actors,
+			map_view
+		)
+
 	if event is TurnEndedEvent or event is AbilityUsedEvent:
 		return true
 
@@ -218,6 +225,98 @@ func _present_ranged_projectile(
 	await tween.finished
 	projectile.queue_free()
 	tracer.queue_free()
+
+
+func _present_area_ability(
+	event: AreaAbilityUsedEvent,
+	unit_actors: Dictionary[StringName, UnitActor],
+	map_view: BattleMapView
+) -> bool:
+	var user := unit_actors.get(event.user_id) as UnitActor
+
+	if user == null:
+		push_error("UnitActor is not registered for the area ability user.")
+		return false
+
+	var start := map_view.to_local(user.global_position)
+	var finish := map_view.to_local(
+		map_view.hex_to_global_position(event.target_hex)
+	)
+	var trail := Line2D.new()
+	trail.name = "GrenadeTrail"
+	trail.width = 4.0
+	trail.default_color = Color(1.0, 0.48, 0.08, 0.78)
+	trail.antialiased = true
+	trail.z_index = 50
+	trail.points = PackedVector2Array([start, finish])
+	map_view.add_child(trail)
+
+	var projectile := Polygon2D.new()
+	projectile.name = "GrenadeProjectile"
+	projectile.polygon = _circle_points(9.0, 16)
+	projectile.color = Color(0.16, 0.19, 0.16, 1.0)
+	projectile.position = start
+	projectile.z_index = 51
+	map_view.add_child(projectile)
+
+	var throw_tween := projectile.create_tween()
+	throw_tween.set_parallel(true)
+	throw_tween.set_trans(Tween.TRANS_QUAD)
+	throw_tween.set_ease(Tween.EASE_OUT)
+	throw_tween.tween_property(projectile, "position", finish, 0.28)
+	throw_tween.tween_property(projectile, "rotation", TAU * 2.0, 0.28)
+	throw_tween.tween_property(trail, "modulate:a", 0.0, 0.28)
+	_track_tween(throw_tween)
+	await throw_tween.finished
+	projectile.queue_free()
+	trail.queue_free()
+
+	map_view.show_ability_area(event.affected_hexes)
+	var core := Polygon2D.new()
+	core.name = "GrenadeExplosionCore"
+	core.polygon = _circle_points(30.0, 28)
+	core.color = Color(1.0, 0.3, 0.04, 0.92)
+	core.position = finish
+	core.scale = Vector2(0.18, 0.18)
+	core.z_index = 52
+	map_view.add_child(core)
+
+	var shockwave := Line2D.new()
+	shockwave.name = "GrenadeExplosionRing"
+	shockwave.width = 9.0
+	shockwave.default_color = Color(1.0, 0.82, 0.24, 0.95)
+	shockwave.antialiased = true
+	shockwave.closed = true
+	shockwave.points = _circle_points(42.0, 32)
+	shockwave.position = finish
+	shockwave.scale = Vector2(0.2, 0.2)
+	shockwave.z_index = 53
+	map_view.add_child(shockwave)
+
+	var explosion_tween := core.create_tween()
+	explosion_tween.set_parallel(true)
+	explosion_tween.set_trans(Tween.TRANS_QUAD)
+	explosion_tween.set_ease(Tween.EASE_OUT)
+	explosion_tween.tween_property(core, "scale", Vector2(2.1, 2.1), 0.34)
+	explosion_tween.tween_property(core, "modulate:a", 0.0, 0.34)
+	explosion_tween.tween_property(shockwave, "scale", Vector2(2.0, 2.0), 0.34)
+	explosion_tween.tween_property(shockwave, "modulate:a", 0.0, 0.34)
+	_track_tween(explosion_tween)
+	await explosion_tween.finished
+	core.queue_free()
+	shockwave.queue_free()
+	map_view.clear_ability_area()
+	return true
+
+
+func _circle_points(radius: float, segments: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+
+	for index in range(segments):
+		var angle := TAU * float(index) / float(segments)
+		points.append(Vector2.from_angle(angle) * radius)
+
+	return points
 
 
 func _track_tween(tween: Tween) -> void:

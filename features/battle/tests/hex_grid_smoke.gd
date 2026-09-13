@@ -18,6 +18,7 @@ func _run() -> void:
 	_check_turn_service()
 	_check_battle_engine()
 	_check_ranged_attack()
+	_check_grenade_ability()
 	_check_battle_session_factory()
 	await _check_battle_scene()
 
@@ -327,6 +328,123 @@ func _check_ranged_attack() -> void:
 	)
 
 
+func _check_grenade_ability() -> void:
+	var core_package := load(
+		"res://content/packages/core/core_package.tres"
+	) as ContentPackage
+	_expect(core_package != null, "Grenade check requires the core package.")
+
+	if core_package == null:
+		return
+
+	var packages: Array[ContentPackage] = [core_package]
+	var load_result := ContentLoader.load_packages(packages)
+	_expect(
+		load_result.is_successful,
+		"Core package with grenade must pass content validation."
+	)
+
+	if not load_result.is_successful:
+		return
+
+	var creation_result := BattleSessionFactory.create(
+		BattleStartRequest.new(
+			&"core:debug_battle",
+			load_result.snapshot,
+			77
+		)
+	)
+	_expect(
+		creation_result.is_successful,
+		"Grenade check requires a debug battle session."
+	)
+
+	if not creation_result.is_successful:
+		return
+
+	var session := creation_result.session
+	var player_id := &"core:debug_battle:player_1"
+	var ally_id := &"core:debug_battle:player_2"
+	var enemy_id := &"core:debug_battle:enemy_1"
+	var outside_enemy_id := &"core:debug_battle:enemy_2"
+	var player := session.get_unit(player_id)
+	_expect(
+		player.ability_ids.has(&"core:grenade")
+		and player.ability_ranges[&"core:grenade"] == 3
+		and player.ability_area_radii[&"core:grenade"] == 1,
+		"Melee unit snapshot must expose grenade range and area radius."
+	)
+
+	var rejected := session.step(
+		UseAbilityCommand.at_hex(
+			player_id,
+			Vector2i(11, 7),
+			&"core:grenade"
+		)
+	)
+	_expect(
+		not rejected.accepted,
+		"Grenade center beyond throw range must be rejected."
+	)
+	_expect(
+		session.get_unit(player_id).turn.main_action_available,
+		"Rejected grenade must not spend the main action."
+	)
+
+	var resolution := session.step(
+		UseAbilityCommand.at_hex(
+			player_id,
+			Vector2i(8, 7),
+			&"core:grenade"
+		)
+	)
+	_expect(resolution.accepted, "Grenade at a valid center must be accepted.")
+	_expect(
+		resolution.events.size() == 4
+		and resolution.events[0] is AreaAbilityUsedEvent,
+		"Grenade must emit one area event and damage three affected units."
+	)
+
+	if resolution.events.size() > 0 and resolution.events[0] is AreaAbilityUsedEvent:
+		var area_event := resolution.events[0] as AreaAbilityUsedEvent
+		_expect(
+			area_event.affected_hexes.size() == 7,
+			"Grenade radius one must contain exactly seven existing hexes."
+		)
+
+	_expect(
+		session.get_unit(player_id).health.current == 8,
+		"Grenade must damage its user when the user is inside the area."
+	)
+	_expect(
+		session.get_unit(ally_id).health.current == 6,
+		"Grenade must apply friendly fire to an ally inside the area."
+	)
+	_expect(
+		session.get_unit(enemy_id).health.current == 4,
+		"Grenade must damage an enemy inside the area."
+	)
+	_expect(
+		session.get_unit(outside_enemy_id).health.current == 5,
+		"Grenade must not damage a unit outside the seven-hex area."
+	)
+	_expect(
+		not session.get_unit(player_id).turn.main_action_available,
+		"Grenade must spend the main action."
+	)
+
+	var ended := session.step(EndTurnCommand.new(player_id))
+	_expect(ended.accepted, "Melee unit must be able to end its turn after grenade.")
+	ended = session.step(EndTurnCommand.new(ally_id))
+	_expect(ended.accepted, "Second ally must hand the turn to enemy AI.")
+	var ai_command := session.get_next_ai_command()
+	_expect(
+		ai_command is UseAbilityCommand
+		and (ai_command as UseAbilityCommand).targets_hex,
+		"Melee AI must target a hex when it chooses grenade."
+	)
+
+
 func _check_battle_session_factory() -> void:
 	var core_package := load(
 		"res://content/packages/core/core_package.tres"
@@ -425,17 +543,23 @@ func _check_battle_scene() -> void:
 	var selection_layer := launcher.get_node_or_null(
 		"BattleScreen/BattleMap/SelectionLayer"
 	) as TileMapLayer
+	var terrain_layer := launcher.get_node_or_null(
+		"BattleScreen/BattleMap/TerrainLayer"
+	) as TileMapLayer
 	var path_layer := launcher.get_node_or_null(
 		"BattleScreen/BattleMap/PathLayer"
 	) as TileMapLayer
 	var targetable_layer := launcher.get_node_or_null(
 		"BattleScreen/BattleMap/TargetableLayer"
 	) as TileMapLayer
+	var ability_area_layer := launcher.get_node_or_null(
+		"BattleScreen/BattleMap/AbilityAreaLayer"
+	) as TileMapLayer
 	_expect(map_view != null, "Battle launcher must expose BattleMapView.")
 	_expect(controller != null and input_router != null and hud != null, "Battle scene must expose controller, input router and HUD.")
-	_expect(selection_layer != null and path_layer != null and targetable_layer != null, "Battle scene must expose selection, path and targetable layers.")
+	_expect(terrain_layer != null and selection_layer != null and path_layer != null and targetable_layer != null and ability_area_layer != null, "Battle scene must expose terrain, selection, path, targetable and ability area layers.")
 
-	if map_view == null or controller == null or input_router == null or hud == null or selection_layer == null or path_layer == null or targetable_layer == null:
+	if map_view == null or controller == null or input_router == null or hud == null or terrain_layer == null or selection_layer == null or path_layer == null or targetable_layer == null or ability_area_layer == null:
 		launcher.queue_free()
 		await process_frame
 		return
@@ -462,6 +586,7 @@ func _check_battle_scene() -> void:
 	var hex_grid := session.get_hex_grid()
 	var vbox := hud.get_node("MovementPanel/VBoxContainer") as VBoxContainer
 	var movement_label := vbox.get_node("MovementLabel") as Label
+	var grenade_button := vbox.get_node("GrenadeButton") as Button
 	var end_turn_button := vbox.get_node("EndTurnButton") as Button
 
 	_expect(player != null, "Battle session must expose the first player snapshot.")
@@ -503,7 +628,50 @@ func _check_battle_scene() -> void:
 	_expect(session.get_active_unit_id() == player.unit_id, "Battle scene must start with the first player active.")
 	_expect(movement_label.text == "Перемещение: 3 / 3", "HUD must show full player movement.")
 	_expect(hex_grid.get_movement_cost(Vector2i(8, 6)) == 2, "Scene grid must read difficult terrain cost.")
+	_expect(
+		terrain_layer.get_cell_source_id(
+			HexCoordinateMapper.axial_to_offset(Vector2i(8, 6))
+		) != terrain_layer.get_cell_source_id(
+			HexCoordinateMapper.axial_to_offset(Vector2i(7, 7))
+		),
+		"Difficult terrain must keep a visibly distinct tile after grid rendering."
+	)
 	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
+	_expect(grenade_button.visible and not grenade_button.disabled, "Melee player must have an available grenade button.")
+
+	grenade_button.pressed.emit()
+	_expect(
+		targetable_layer.get_used_cells().has(
+			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
+		),
+		"Grenade selection must highlight valid center hexes."
+	)
+	input_router.hex_hovered.emit(Vector2i(8, 7))
+	_expect(
+		ability_area_layer.get_used_cells().size() == 7,
+		"Grenade hover must preview the full seven-hex damage area."
+	)
+	input_router.hex_selected.emit(Vector2i(8, 7))
+	_expect(
+		map_view.get_node_or_null("GrenadeProjectile") != null,
+		"Grenade use must create a visible thrown projectile."
+	)
+	await create_timer(0.3).timeout
+	_expect(
+		map_view.get_node_or_null("GrenadeExplosionCore") != null
+		and map_view.get_node_or_null("GrenadeExplosionRing") != null,
+		"Grenade impact must create a visible explosion and shockwave."
+	)
+	await create_timer(1.1).timeout
+	player = session.get_unit(player_id)
+	_expect(
+		player.health.current == 8,
+		"Scene grenade must apply friendly fire to its melee user."
+	)
+	_expect(
+		ability_area_layer.get_used_cells().is_empty(),
+		"Grenade area overlay must clear after explosion presentation."
+	)
 
 	input_router.hex_hovered.emit(Vector2i(7, 6))
 	_expect(not path_layer.get_used_cells().is_empty(), "Reachable hover must draw a path.")
@@ -527,6 +695,7 @@ func _check_battle_scene() -> void:
 		session.get_active_unit_id() == ranged_player_id,
 		"Second player turn must activate the ranged ally."
 	)
+	_expect(not grenade_button.visible, "Ranged ally must not expose the grenade button.")
 	_expect(
 		targetable_layer.get_used_cells().has(
 			HexCoordinateMapper.axial_to_offset(enemy.hex)
@@ -547,7 +716,7 @@ func _check_battle_scene() -> void:
 	await create_timer(0.3).timeout
 	enemy = session.get_unit(enemy_id)
 	_expect(
-		enemy.health.current == 4,
+		enemy.health.current == 2,
 		"Ranged scene attack must damage the distant enemy."
 	)
 	_expect(

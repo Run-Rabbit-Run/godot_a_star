@@ -45,6 +45,13 @@ func next_command(session: BattleSession) -> BattleCommand:
 
 	for ability_id: StringName in active.ability_ids:
 		if target_distance <= active.ability_ranges.get(ability_id, 0):
+			if active.ability_area_radii.get(ability_id, 0) > 0:
+				return UseAbilityCommand.at_hex(
+					active.unit_id,
+					target.hex,
+					ability_id
+				)
+
 			return UseAbilityCommand.new(
 				active.unit_id,
 				target.unit_id,

@@ -6,6 +6,7 @@ signal battle_finished(result: BattleResult)
 
 
 const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
+const GRENADE_ABILITY_ID := &"core:grenade"
 
 
 @onready var _units: Node2D = %Units
@@ -22,6 +23,8 @@ var _start_request: BattleStartRequest
 var _is_initialization_requested := false
 var _movement_search_result: MovementSearchResult
 var _attackable_target_hexes: Array[Vector2i] = []
+var _ability_target_hexes: Array[Vector2i] = []
+var _selected_ability_id := StringName()
 var _is_presenting := false
 var _unit_actors: Dictionary[StringName, UnitActor] = {}
 var _unit_definitions: Dictionary[StringName, UnitDefinition] = {}
@@ -102,6 +105,7 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
+	_hud.ability_requested.connect(_on_ability_requested)
 	_input_router.hex_selected.connect(_on_hex_selected)
 	_input_router.hex_hovered.connect(_on_hex_hovered)
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
@@ -171,13 +175,24 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _battle_session.is_unit_ai_controlled(active.unit_id):
 		return
 
-	var target := _battle_session.get_unit_at(axial_cell)
 	var command: BattleCommand
 
-	if target != null and target.unit_id != active_unit_id:
-		command = AttackCommand.new(active_unit_id, target.unit_id)
+	if not _selected_ability_id.is_empty():
+		if not _ability_target_hexes.has(axial_cell):
+			return
+
+		command = UseAbilityCommand.at_hex(
+			active_unit_id,
+			axial_cell,
+			_selected_ability_id
+		)
 	else:
-		command = MoveCommand.new(active_unit_id, axial_cell)
+		var target := _battle_session.get_unit_at(axial_cell)
+
+		if target != null and target.unit_id != active_unit_id:
+			command = AttackCommand.new(active_unit_id, target.unit_id)
+		else:
+			command = MoveCommand.new(active_unit_id, axial_cell)
 
 	var resolution := _battle_session.step(command)
 
@@ -208,6 +223,26 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 
 
 func _on_hex_hovered(axial_cell: Vector2i) -> void:
+	if not _selected_ability_id.is_empty():
+		_map_view.clear_path()
+
+		if not _ability_target_hexes.has(axial_cell):
+			_map_view.clear_ability_area()
+			_hud.clear_target()
+			return
+
+		var active := _battle_session.get_unit(
+			_battle_session.get_active_unit_id()
+		)
+		var radius: int = active.ability_area_radii.get(
+			_selected_ability_id,
+			0
+		)
+		var area := _hex_grid.get_cells_in_range(axial_cell, radius)
+		_map_view.show_ability_area(area)
+		_hud.show_area_target(area.size())
+		return
+
 	_show_hovered_target(axial_cell)
 
 	if (
@@ -259,7 +294,41 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 
 func _on_hex_hover_exited() -> void:
 	_map_view.clear_path()
+	_map_view.clear_ability_area()
 	_hud.clear_target()
+
+
+func _on_ability_requested(ability_id: StringName) -> void:
+	if _is_presenting or _battle_session == null:
+		return
+
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
+	)
+
+	if (
+		active == null
+		or _battle_session.is_unit_ai_controlled(active.unit_id)
+		or not active.turn.main_action_available
+		or not active.ability_ids.has(ability_id)
+		or active.ability_area_radii.get(ability_id, 0) <= 0
+	):
+		return
+
+	_selected_ability_id = ability_id
+	_ability_target_hexes = _hex_grid.get_cells_in_range(
+		active.hex,
+		active.ability_ranges.get(ability_id, 0)
+	)
+	var empty_cells: Array[Vector2i] = []
+	_map_view.show_reachable_cells(empty_cells)
+	_map_view.show_targetable_cells(_ability_target_hexes)
+	_map_view.clear_ability_area()
+	_hud.show_ability_targeting(
+		"Граната",
+		1 + 3 * active.ability_area_radii[ability_id]
+			* (active.ability_area_radii[ability_id] + 1)
+	)
 
 
 func _on_end_turn_requested() -> void:
@@ -403,8 +472,11 @@ func _set_presenting(is_presenting: bool) -> void:
 	_hud.set_interaction_enabled(not is_presenting)
 
 	if is_presenting:
+		_selected_ability_id = StringName()
+		_ability_target_hexes.clear()
 		_attackable_target_hexes.clear()
 		_map_view.show_targetable_cells(_attackable_target_hexes)
+		_map_view.clear_ability_area()
 		_hud.clear_target()
 
 
@@ -446,6 +518,9 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 
 
 func _show_unit_movement(state: UnitSnapshot) -> void:
+	_selected_ability_id = StringName()
+	_ability_target_hexes.clear()
+	_map_view.clear_ability_area()
 	_map_view.clear_path()
 	_movement_search_result = _battle_session.get_movement_search(
 		state.unit_id
@@ -462,6 +537,11 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 		state.turn.movement_max
 	)
 	_hud.show_main_action(state.turn.main_action_available)
+	_hud.show_grenade_button(
+		state.ability_ids.has(GRENADE_ABILITY_ID)
+		and not _battle_session.is_unit_ai_controlled(state.unit_id),
+		state.turn.main_action_available
+	)
 
 	var definition := _unit_definitions.get(state.unit_id) as UnitDefinition
 

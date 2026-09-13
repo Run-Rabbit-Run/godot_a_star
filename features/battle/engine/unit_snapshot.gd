@@ -12,6 +12,7 @@ var basic_attack_damage: int
 var basic_attack_range: int
 var ability_ids: Array[StringName] = []
 var ability_ranges: Dictionary[StringName, int] = {}
+var ability_area_radii: Dictionary[StringName, int] = {}
 
 
 func _init(state: UnitState) -> void:
@@ -36,3 +37,4 @@ func _init(state: UnitState) -> void:
 	for ability_id: StringName in ability_ids:
 		var ability := state.get_ability(ability_id)
 		ability_ranges[ability_id] = ability.range
+		ability_area_radii[ability_id] = ability.area_radius
