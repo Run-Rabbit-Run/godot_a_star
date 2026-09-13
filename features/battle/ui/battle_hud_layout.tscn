@@ -1,0 +1,317 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://features/battle/ui/art/phobos_strategist.png" id="1_strategist"]
+
+[node name="HUDRoot" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="StrategistPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 326.0
+offset_bottom = 154.0
+
+[node name="Margin" type="MarginContainer" parent="StrategistPanel"]
+layout_mode = 2
+
+[node name="Content" type="HBoxContainer" parent="StrategistPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Portrait" type="TextureRect" parent="StrategistPanel/Margin/Content"]
+custom_minimum_size = Vector2(104, 104)
+layout_mode = 2
+texture = ExtResource("1_strategist")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Info" type="VBoxContainer" parent="StrategistPanel/Margin/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 3
+
+[node name="RoleLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
+theme_override_font_sizes/font_size = 11
+text = "СТРАТЕГ ФОБОСА"
+
+[node name="NameLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
+theme_override_font_sizes/font_size = 17
+text = "МАРК ВЕЙЛ"
+
+[node name="RoundLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
+text = "РАУНД 00"
+
+[node name="ObjectiveLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "ЦЕЛЬ: —"
+autowrap_mode = 2
+
+[node name="PassiveTitle" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
+theme_override_font_sizes/font_size = 10
+text = "ПАССИВНЫЕ ЭФФЕКТЫ"
+
+[node name="PassiveValue" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Нет активных эффектов"
+
+[node name="ActiveUnitPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -336.0
+offset_right = 306.0
+offset_bottom = -16.0
+grow_vertical = 0
+z_index = 2
+
+[node name="Content" type="VBoxContainer" parent="ActiveUnitPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SectionLabel" type="Label" parent="ActiveUnitPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 11
+text = "АКТИВНЫЙ ЮНИТ"
+
+[node name="UnitHeader" type="HBoxContainer" parent="ActiveUnitPanel/Content"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ActivePortrait" type="TextureRect" parent="ActiveUnitPanel/Content/UnitHeader"]
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Stats" type="VBoxContainer" parent="ActiveUnitPanel/Content/UnitHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="ActiveUnitLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
+theme_override_font_sizes/font_size = 17
+text = "—"
+autowrap_mode = 2
+
+[node name="HealthLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.39, 0.32, 1)
+theme_override_font_sizes/font_size = 15
+text = "ОЗ   0 / 0"
+
+[node name="MovementLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
+text = "ОД   0 / 0"
+
+[node name="MainActionLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+layout_mode = 2
+text = "ДЕЙСТВИЕ   ГОТОВО"
+
+[node name="CombatStatsLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
+text = "УРОН  0     ДАЛЬНОСТЬ  0"
+
+[node name="SkillsTitle" type="Label" parent="ActiveUnitPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
+theme_override_font_sizes/font_size = 10
+text = "АКТИВНЫЕ НАВЫКИ"
+
+[node name="SkillButtons" type="VBoxContainer" parent="ActiveUnitPanel/Content"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BasicAttackButton" type="Button" parent="ActiveUnitPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "БЛИЖНЯЯ АТАКА"
+
+[node name="GrenadeButton" type="Button" parent="ActiveUnitPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(0, 38)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ГРАНАТА · 7 ГЕКСОВ"
+
+[node name="ActionLabel" type="Label" parent="ActiveUnitPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
+theme_override_font_sizes/font_size = 11
+text = "СИСТЕМА ГОТОВА"
+autowrap_mode = 2
+
+[node name="TurnQueuePanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -286.0
+offset_top = -100.0
+offset_right = 286.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Content" type="VBoxContainer" parent="TurnQueuePanel"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="Title" type="Label" parent="TurnQueuePanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
+theme_override_font_sizes/font_size = 10
+text = "ОЧЕРЕДЬ ХОДОВ"
+horizontal_alignment = 1
+
+[node name="TurnOrderContainer" type="HBoxContainer" parent="TurnQueuePanel/Content"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 6
+
+[node name="TargetPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Content" type="VBoxContainer" parent="TargetPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="TargetPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
+theme_override_font_sizes/font_size = 11
+text = "ТАКТИЧЕСКИЙ АНАЛИЗ"
+horizontal_alignment = 1
+
+[node name="TargetPlaceholder" type="Label" parent="TargetPanel/Content"]
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
+text = "Наведите курсор на юнита,\nчтобы увидеть характеристики"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="TargetContent" type="VBoxContainer" parent="TargetPanel/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="TargetPortrait" type="TextureRect" parent="TargetPanel/Content/TargetContent"]
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TargetNameLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
+theme_override_font_sizes/font_size = 18
+text = "—"
+horizontal_alignment = 1
+
+[node name="TargetFactionLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 1
+
+[node name="TargetHealthLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.39, 0.32, 1)
+theme_override_font_sizes/font_size = 16
+text = "ОЗ   0 / 0"
+
+[node name="TargetStatsLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+text = "УРОН   0\nДАЛЬНОСТЬ   0\nОД   0 / 0\nДЕЙСТВИЕ   НЕТ"
+
+[node name="Separator" type="HSeparator" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+
+[node name="TargetEffectsLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
+text = "ПАССИВНЫЕ ЭФФЕКТЫ\nНет активных эффектов"
+
+[node name="SpeedPanel" type="PanelContainer" parent="TargetPanel/Content"]
+visible = false
+layout_mode = 2
+
+[node name="Content" type="VBoxContainer" parent="TargetPanel/Content/SpeedPanel"]
+layout_mode = 2
+
+[node name="SpeedLabel" type="Label" parent="TargetPanel/Content/SpeedPanel/Content"]
+layout_mode = 2
+text = "СКОРОСТЬ АНИМАЦИИ: 1x"
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="TargetPanel/Content/SpeedPanel/Content"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Speed1Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "1x"
+
+[node name="Speed2Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "2x"
+
+[node name="Speed4Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "4x"
+
+[node name="FooterButtons" type="HBoxContainer" parent="TargetPanel/Content"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SettingsButton" type="Button" parent="TargetPanel/Content/FooterButtons"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "НАСТРОЙКИ"
+
+[node name="EndTurnButton" type="Button" parent="TargetPanel/Content/FooterButtons"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "ПРОПУСК ХОДА"

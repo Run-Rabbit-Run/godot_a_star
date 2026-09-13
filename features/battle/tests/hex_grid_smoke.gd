@@ -584,10 +584,92 @@ func _check_battle_scene() -> void:
 	var ranged_player_actor := actors.get(ranged_player_id) as UnitActor
 	var ranged_enemy_actor := actors.get(ranged_enemy_id) as UnitActor
 	var hex_grid := session.get_hex_grid()
-	var vbox := hud.get_node("MovementPanel/VBoxContainer") as VBoxContainer
-	var movement_label := vbox.get_node("MovementLabel") as Label
-	var grenade_button := vbox.get_node("GrenadeButton") as Button
-	var end_turn_button := vbox.get_node("EndTurnButton") as Button
+	var hud_root := hud.get_node_or_null("HUDRoot") as Control
+	var strategist_panel := hud_root.get_node_or_null("StrategistPanel") as PanelContainer
+	var active_unit_panel := hud_root.get_node_or_null("ActiveUnitPanel") as PanelContainer
+	var turn_queue_panel := hud_root.get_node_or_null("TurnQueuePanel") as PanelContainer
+	var target_panel := hud_root.get_node_or_null("TargetPanel") as PanelContainer
+	var movement_label := active_unit_panel.get_node_or_null(
+		"Content/UnitHeader/Stats/MovementLabel"
+	) as Label
+	var grenade_button := active_unit_panel.get_node_or_null(
+		"Content/SkillButtons/GrenadeButton"
+	) as Button
+	var basic_attack_button := active_unit_panel.get_node_or_null(
+		"Content/SkillButtons/BasicAttackButton"
+	) as Button
+	var end_turn_button := target_panel.get_node_or_null(
+		"Content/FooterButtons/EndTurnButton"
+	) as Button
+	var settings_button := target_panel.get_node_or_null(
+		"Content/FooterButtons/SettingsButton"
+	) as Button
+	var speed_panel := target_panel.get_node_or_null(
+		"Content/SpeedPanel"
+	) as PanelContainer
+	var speed_1_button := speed_panel.get_node_or_null(
+		"Content/Buttons/Speed1Button"
+	) as Button
+	var speed_2_button := speed_panel.get_node_or_null(
+		"Content/Buttons/Speed2Button"
+	) as Button
+	var speed_label := speed_panel.get_node_or_null(
+		"Content/SpeedLabel"
+	) as Label
+	var target_placeholder := target_panel.get_node_or_null(
+		"Content/TargetPlaceholder"
+	) as Label
+	var target_content := target_panel.get_node_or_null(
+		"Content/TargetContent"
+	) as VBoxContainer
+	var target_portrait := target_panel.get_node_or_null(
+		"Content/TargetContent/TargetPortrait"
+	) as TextureRect
+	var turn_order_container := turn_queue_panel.get_node_or_null(
+		"Content/TurnOrderContainer"
+	) as HBoxContainer
+	_expect(
+		movement_label != null
+		and grenade_button != null
+		and basic_attack_button != null
+		and end_turn_button != null
+		and settings_button != null
+		and speed_panel != null
+		and speed_1_button != null
+		and speed_2_button != null
+		and speed_label != null
+		and target_placeholder != null
+		and target_content != null
+		and target_portrait != null
+		and turn_order_container != null,
+		"Battle HUD must expose unit, target, turn order and settings controls."
+	)
+	_expect(
+		strategist_panel != null
+		and active_unit_panel != null
+		and turn_queue_panel != null
+		and target_panel != null,
+		"Battle HUD must contain all four requested interface regions."
+	)
+
+	if (
+		movement_label == null
+		or grenade_button == null
+		or basic_attack_button == null
+		or end_turn_button == null
+		or settings_button == null
+		or speed_panel == null
+		or speed_1_button == null
+		or speed_2_button == null
+		or speed_label == null
+		or target_placeholder == null
+		or target_content == null
+		or target_portrait == null
+		or turn_order_container == null
+	):
+		launcher.queue_free()
+		await process_frame
+		return
 
 	_expect(player != null, "Battle session must expose the first player snapshot.")
 	_expect(player_actor != null and actors.size() == 4, "Battle scene must create all four unit actors.")
@@ -626,7 +708,8 @@ func _check_battle_scene() -> void:
 		return
 
 	_expect(session.get_active_unit_id() == player.unit_id, "Battle scene must start with the first player active.")
-	_expect(movement_label.text == "Перемещение: 3 / 3", "HUD must show full player movement.")
+	_expect(movement_label.text == "ОД   3 / 3", "HUD must show full player movement.")
+	_expect(turn_order_container.get_child_count() == 4, "Turn queue must show all four combatants.")
 	_expect(hex_grid.get_movement_cost(Vector2i(8, 6)) == 2, "Scene grid must read difficult terrain cost.")
 	_expect(
 		terrain_layer.get_cell_source_id(
@@ -637,7 +720,40 @@ func _check_battle_scene() -> void:
 		"Difficult terrain must keep a visibly distinct tile after grid rendering."
 	)
 	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
-	_expect(grenade_button.visible and not grenade_button.disabled, "Melee player must have an available grenade button.")
+	_expect(
+		active_unit_panel.is_visible_in_tree()
+		and active_unit_panel.get_global_rect().has_point(
+			Vector2(20.0, active_unit_panel.get_viewport_rect().size.y - 20.0)
+		),
+		"Active unit panel must be visible in the bottom-left corner: panel=%s viewport=%s."
+		% [active_unit_panel.get_global_rect(), active_unit_panel.get_viewport_rect()]
+	)
+	_expect(
+		grenade_button.is_visible_in_tree() and not grenade_button.disabled,
+		"Melee player must have a visible and available grenade button."
+	)
+	_expect(
+		target_portrait.stretch_mode
+		== TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		and target_portrait.custom_minimum_size.y <= 132.0,
+		"Target portrait must fit completely inside a compact right panel slot."
+	)
+	_expect(not basic_attack_button.disabled, "Active unit panel must expose the basic attack skill.")
+
+	input_router.hex_hovered.emit(Vector2i(9, 7))
+	_expect(
+		target_content.visible and not target_placeholder.visible,
+		"Hovering any unit must open the right tactical analysis panel."
+	)
+	input_router.hex_hover_exited.emit()
+	_expect(target_placeholder.visible, "Hover exit must restore the target placeholder.")
+	settings_button.pressed.emit()
+	_expect(speed_panel.visible, "Settings button must open animation speed controls.")
+	speed_2_button.pressed.emit()
+	_expect(speed_label.text.contains("2x"), "Speed controls must display the selected speed.")
+	speed_1_button.pressed.emit()
+	settings_button.pressed.emit()
+	_expect(not speed_panel.visible, "Settings button must close animation speed controls.")
 
 	grenade_button.pressed.emit()
 	_expect(
@@ -685,7 +801,7 @@ func _check_battle_scene() -> void:
 	player = session.get_unit(player_id)
 	_expect(player.hex == Vector2i(7, 6) and player.turn.movement_remaining == 2, "Player click must execute a MoveCommand through BattleSession.")
 	_expect(player_actor.global_position.is_equal_approx(map_view.hex_to_global_position(player.hex)), "Player actor must follow its snapshot.")
-	_expect(movement_label.text == "Перемещение: 2 / 3", "HUD must update after player movement.")
+	_expect(movement_label.text == "ОД   2 / 3", "HUD must update after player movement.")
 
 	end_turn_button.pressed.emit()
 	await process_frame

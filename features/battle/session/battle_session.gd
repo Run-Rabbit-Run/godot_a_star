@@ -68,6 +68,10 @@ func get_round_number() -> int:
 	return _engine.get_round_number()
 
 
+func get_turn_order() -> Array[StringName]:
+	return _engine.get_turn_order()
+
+
 func get_state_revision() -> int:
 	return _engine.get_state_revision()
 

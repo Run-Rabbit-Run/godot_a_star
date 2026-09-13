@@ -39,6 +39,12 @@ func get_participant_count() -> int:
 	return _turn_order.size()
 
 
+func get_turn_order() -> Array[StringName]:
+	var result: Array[StringName] = []
+	result.assign(_turn_order)
+	return result
+
+
 ## До start() переход запрещён; после старта порядок циклический.
 func advance_turn() -> StringName:
 	if _turn_order.is_empty() or _active_index < 0:

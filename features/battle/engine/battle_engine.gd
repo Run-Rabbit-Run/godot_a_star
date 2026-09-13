@@ -83,6 +83,10 @@ func get_round_number() -> int:
 	return _state.turn_service.get_round_number()
 
 
+func get_turn_order() -> Array[StringName]:
+	return _state.turn_service.get_turn_order()
+
+
 func get_state_revision() -> int:
 	return _state.state_revision
 

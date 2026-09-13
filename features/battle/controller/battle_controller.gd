@@ -105,7 +105,9 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
+	_hud.basic_attack_requested.connect(_on_basic_attack_requested)
 	_hud.ability_requested.connect(_on_ability_requested)
+	_hud.playback_speed_requested.connect(_on_playback_speed_requested)
 	_input_router.hex_selected.connect(_on_hex_selected)
 	_input_router.hex_hovered.connect(_on_hex_hovered)
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
@@ -270,25 +272,23 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 		return
 
 	var target := _battle_session.get_unit_at(axial_cell)
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
 
-	if (
-		target == null
-		or active == null
-		or target.faction == active.faction
-	):
+	if target == null:
 		_hud.clear_target()
 		return
 
+	var definition := _unit_definitions.get(target.unit_id) as UnitDefinition
 	_hud.show_target(
-		"%s [%s]" % [
-			_get_unit_display_name(target.unit_id),
-			target.unit_id,
-		],
+		_get_unit_display_name(target.unit_id),
+		definition.actor_texture if definition != null else null,
+		"Союзник" if target.faction == BattleFaction.Value.PLAYER else "Противник",
 		target.health.current,
-		target.health.maximum
+		target.health.maximum,
+		target.basic_attack_damage,
+		target.basic_attack_range,
+		target.turn.movement_remaining,
+		target.turn.movement_max,
+		target.turn.main_action_available
 	)
 
 
@@ -329,6 +329,29 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		1 + 3 * active.ability_area_radii[ability_id]
 			* (active.ability_area_radii[ability_id] + 1)
 	)
+
+
+func _on_basic_attack_requested() -> void:
+	if _is_presenting or _battle_session == null:
+		return
+
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
+	)
+
+	if (
+		active == null
+		or _battle_session.is_unit_ai_controlled(active.unit_id)
+		or not active.turn.main_action_available
+	):
+		return
+
+	_show_unit_movement(active)
+
+
+func _on_playback_speed_requested(speed: float) -> void:
+	if not set_playback_speed(speed):
+		push_warning("Requested playback speed is outside allowed range.")
 
 
 func _on_end_turn_requested() -> void:
@@ -550,5 +573,46 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 		return
 
 	_hud.show_active_unit(
-		"%s [%s]" % [definition.display_name, state.unit_id]
+		definition.display_name
+	)
+	_hud.show_active_portrait(definition.actor_texture)
+	_hud.show_combat_stats(
+		state.basic_attack_damage,
+		state.basic_attack_range
+	)
+	_hud.show_basic_attack_button(
+		state.basic_attack_range,
+		state.turn.main_action_available
+	)
+	_refresh_turn_order()
+
+
+func _refresh_turn_order() -> void:
+	var entries: Array[Dictionary] = []
+
+	for unit_id: StringName in _battle_session.get_turn_order():
+		var state := _battle_session.get_unit(unit_id)
+
+		if state == null:
+			continue
+
+		var definition := _unit_definitions.get(unit_id) as UnitDefinition
+		var display_name := String(unit_id)
+		var texture: Texture2D
+
+		if definition != null:
+			display_name = definition.display_name
+			texture = definition.actor_texture
+
+		entries.append({
+			"unit_id": unit_id,
+			"short_name": display_name.left(7).to_upper(),
+			"texture": texture,
+			"faction": state.faction,
+			"defeated": state.health.is_defeated(),
+		})
+
+	_hud.show_turn_order(
+		entries,
+		_battle_session.get_active_unit_id()
 	)
