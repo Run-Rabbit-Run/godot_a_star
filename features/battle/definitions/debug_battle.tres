@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dk2e5f3wrf5jk" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
 [ext_resource type="Script" uid="uid://c12lcgys5dmb4" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
-[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="4_side"]
-[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="5_placement"]
+[ext_resource type="Script" uid="uid://bhr4j34ggmq40" path="res://features/battle/definitions/battle_side_definition.gd" id="4_side"]
+[ext_resource type="Script" uid="uid://dkl3ubj3im2by" path="res://features/battle/definitions/unit_placement_definition.gd" id="5_placement"]
 
 [sub_resource type="Resource" id="Objective_eliminate_enemies"]
 script = ExtResource("2_objective")

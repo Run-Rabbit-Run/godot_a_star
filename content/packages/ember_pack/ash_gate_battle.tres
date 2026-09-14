@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="BattleDefinition" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="BattleDefinition" format=3 uid="uid://cyjslmh3hjrni"]
 
-[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
-[ext_resource type="Script" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
-[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="3_side"]
-[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="4_placement"]
+[ext_resource type="Script" uid="uid://dk2e5f3wrf5jk" path="res://features/battle/definitions/battle_definition.gd" id="1_battle"]
+[ext_resource type="Script" uid="uid://c12lcgys5dmb4" path="res://features/battle/engine/battle_objective_definition.gd" id="2_objective"]
+[ext_resource type="Script" uid="uid://bhr4j34ggmq40" path="res://features/battle/definitions/battle_side_definition.gd" id="3_side"]
+[ext_resource type="Script" uid="uid://dkl3ubj3im2by" path="res://features/battle/definitions/unit_placement_definition.gd" id="4_placement"]
 
 [sub_resource type="Resource" id="Objective"]
 script = ExtResource("2_objective")
@@ -25,7 +25,6 @@ script = ExtResource("4_placement")
 placement_id = &"player_1"
 definition_id = &"core:debug_player"
 side_id = &"player"
-start_hex = Vector2i(0, 0)
 
 [sub_resource type="Resource" id="Enemy1"]
 script = ExtResource("4_placement")

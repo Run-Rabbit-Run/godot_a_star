@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="UnitDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="UnitDefinition" format=3 uid="uid://dxpn12fs6ojag"]
 
-[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="1_unit"]
-[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="2_stats"]
+[ext_resource type="Script" uid="uid://g0hr6ujup8gy" path="res://features/battle/units/unit_definition.gd" id="1_unit"]
+[ext_resource type="Script" uid="uid://0b0ucuhj5cuq" path="res://features/battle/units/unit_stats_definition.gd" id="2_stats"]
 [ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="3_actor"]
 
 [sub_resource type="Resource" id="Stats_scout"]

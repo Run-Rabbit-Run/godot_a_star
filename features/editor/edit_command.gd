@@ -9,6 +9,7 @@ enum Kind {
 	DUPLICATE_PLACEMENT,
 	REMOVE_PLACEMENT,
 	ADD_HEX,
+	UPDATE_HEX,
 	REMOVE_HEX,
 }
 
@@ -17,6 +18,7 @@ var kind: Kind
 var placement: UnitPlacementDefinition
 var placement_id: StringName
 var target_hex: Vector2i
+var map_cell: BattleMapCellDefinition
 var _before: EditorDocument
 
 
@@ -68,12 +70,25 @@ static func remove_placement(p_placement_id: StringName) -> EditCommand:
 
 static func add_hex(
 	hex: Vector2i,
-	terrain_id: StringName = &"core:default"
+	terrain_id: StringName = &"core:default",
+	movement_cost: int = 1,
+	traversable: bool = true
 ) -> EditCommand:
 	var command := EditCommand.new(Kind.ADD_HEX)
 	command.target_hex = hex
-	command.placement = UnitPlacementDefinition.new()
-	command.placement.definition_id = terrain_id
+	command.map_cell = BattleMapCellDefinition.new(
+		hex,
+		movement_cost,
+		terrain_id,
+		traversable
+	)
+	return command
+
+
+static func update_hex(value: BattleMapCellDefinition) -> EditCommand:
+	var command := EditCommand.new(Kind.UPDATE_HEX)
+	command.target_hex = value.hex
+	command.map_cell = value.duplicate(true) as BattleMapCellDefinition
 	return command
 
 
@@ -127,12 +142,15 @@ func apply(document: EditorDocument) -> bool:
 				if cell.hex == target_hex:
 					return _restore_failed(document)
 			document.map_definition.cells.append(
-				BattleMapCellDefinition.new(
-					target_hex,
-					1,
-					placement.definition_id,
-					true
-				)
+				map_cell.duplicate(true) as BattleMapCellDefinition
+			)
+
+		Kind.UPDATE_HEX:
+			var index := _find_cell_index(document, target_hex)
+			if index < 0:
+				return _restore_failed(document)
+			document.map_definition.cells[index] = (
+				map_cell.duplicate(true) as BattleMapCellDefinition
 			)
 
 		Kind.REMOVE_HEX:

@@ -1,11 +1,16 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://dng1hgsbix0ex"]
 
-[ext_resource type="Script" path="res://features/editor/battle_editor_shell.gd" id="1_shell"]
-[ext_resource type="Script" path="res://features/content/content_package.gd" id="2_package_type"]
-[ext_resource type="Resource" path="res://content/packages/core/core_package.tres" id="3_core"]
-[ext_resource type="Resource" path="res://content/packages/ember_pack/ember_pack.tres" id="4_ember"]
+[ext_resource type="Script" uid="uid://syduftvsoffo" path="res://features/editor/battle_editor_shell.gd" id="1_shell"]
+[ext_resource type="Script" uid="uid://cjchxgyycwdeb" path="res://features/content/content_package.gd" id="2_package_type"]
+[ext_resource type="Resource" uid="uid://dwbb47lxdk1dq" path="res://content/packages/core/core_package.tres" id="3_core"]
+[ext_resource type="Resource" uid="uid://bq2d3vsk42trd" path="res://content/packages/ember_pack/ember_pack.tres" id="4_ember"]
 
-[node name="BattleEditor" type="Node"]
+[node name="BattleEditor" type="Control" unique_id=681318579]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_shell")
 content_packages = Array[ExtResource("2_package_type")]([ExtResource("3_core"), ExtResource("4_ember")])
-initial_battle_id = &"ember_pack:crossing_battle"

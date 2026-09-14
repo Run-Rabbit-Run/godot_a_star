@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=4 format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://dqiob1kty7oll"]
 
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="1_ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="2_effect"]
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="1_ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="2_effect"]
 
 [sub_resource type="Resource" id="Effect_damage"]
 script = ExtResource("2_effect")
 effect_type_id = &"core:damage"
-parameters = {"amount": 4}
+parameters = {
+"amount": 4
+}
 
 [resource]
 script = ExtResource("1_ability")
