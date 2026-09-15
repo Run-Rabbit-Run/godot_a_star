@@ -13,12 +13,12 @@ config_version=5
 config/name="a_star"
 run/main_scene="res://debug_battle_launcher.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
-config/icon="res://features/battle/tiles/hex_debug.svg"
+config/icon="res://features/battle/tiles/hex_mire.svg"
 
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=720
+window/size/viewport_width=1920
+window/size/viewport_height=1080
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 

@@ -1,6 +1,6 @@
 [gd_resource type="TileSet" format=3 uid="uid://blp26h54nhwot"]
 
-[ext_resource type="Texture2D" uid="uid://cw5fyxxfa727j" path="res://features/battle/tiles/hex_debug.svg" id="1_82f5w"]
+[ext_resource type="Texture2D" uid="uid://bo34bbmdevo23" path="res://features/battle/tiles/hex_mire.svg" id="1_82f5w"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ujbtb"]
 texture = ExtResource("1_82f5w")

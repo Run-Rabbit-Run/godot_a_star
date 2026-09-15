@@ -105,6 +105,7 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
+	_hud.movement_requested.connect(_on_movement_requested)
 	_hud.basic_attack_requested.connect(_on_basic_attack_requested)
 	_hud.ability_requested.connect(_on_ability_requested)
 	_hud.playback_speed_requested.connect(_on_playback_speed_requested)
@@ -329,6 +330,23 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		1 + 3 * active.ability_area_radii[ability_id]
 			* (active.ability_area_radii[ability_id] + 1)
 	)
+
+
+func _on_movement_requested() -> void:
+	if _is_presenting or _battle_session == null:
+		return
+
+	var active := _battle_session.get_unit(
+		_battle_session.get_active_unit_id()
+	)
+
+	if (
+		active == null
+		or _battle_session.is_unit_ai_controlled(active.unit_id)
+	):
+		return
+
+	_show_unit_movement(active)
 
 
 func _on_basic_attack_requested() -> void:

@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=7 format=3]
 
-[ext_resource type="Texture2D" path="res://features/battle/ui/art/phobos_strategist.png" id="1_strategist"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/art/phobos_strategist_v2.png" id="1_strategist"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/icons/move.svg" id="2_move"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/icons/attack.svg" id="3_attack"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/icons/grenade.svg" id="4_grenade"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/icons/end_turn.svg" id="5_end"]
+[ext_resource type="Texture2D" path="res://features/battle/ui/icons/settings.svg" id="6_settings"]
 
 [node name="HUDRoot" type="Control"]
 layout_mode = 3
@@ -16,43 +21,42 @@ layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 326.0
-offset_bottom = 154.0
+offset_bottom = 148.0
 
 [node name="Margin" type="MarginContainer" parent="StrategistPanel"]
 layout_mode = 2
 
 [node name="Content" type="HBoxContainer" parent="StrategistPanel/Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 9
 
 [node name="Portrait" type="TextureRect" parent="StrategistPanel/Margin/Content"]
-custom_minimum_size = Vector2(104, 104)
+custom_minimum_size = Vector2(62, 62)
 layout_mode = 2
 texture = ExtResource("1_strategist")
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 
 [node name="Info" type="VBoxContainer" parent="StrategistPanel/Margin/Content"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 3
+theme_override_constants/separation = 1
 
 [node name="RoleLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
-theme_override_font_sizes/font_size = 11
-text = "СТРАТЕГ ФОБОСА"
+theme_override_colors/font_color = Color(0.77, 0.70, 0.56, 1)
+theme_override_font_sizes/font_size = 10
+text = "СТРАТЕГ · МАРК ВЕЙЛ"
 
 [node name="NameLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+visible = false
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
-theme_override_font_sizes/font_size = 17
 text = "МАРК ВЕЙЛ"
 
 [node name="RoundLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
-text = "РАУНД 00"
+theme_override_font_sizes/font_size = 15
+text = "ХОД 00"
 
 [node name="ObjectiveLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
 layout_mode = 2
@@ -62,14 +66,146 @@ autowrap_mode = 2
 
 [node name="PassiveTitle" type="Label" parent="StrategistPanel/Margin/Content/Info"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
-theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.48, 0.47, 0.42, 1)
+theme_override_font_sizes/font_size = 9
 text = "ПАССИВНЫЕ ЭФФЕКТЫ"
 
 [node name="PassiveValue" type="Label" parent="StrategistPanel/Margin/Content/Info"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 9
 text = "Нет активных эффектов"
+
+[node name="TurnQueuePanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -370.0
+offset_top = 14.0
+offset_right = 370.0
+offset_bottom = 94.0
+grow_horizontal = 2
+
+[node name="Content" type="VBoxContainer" parent="TurnQueuePanel"]
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="Title" type="Label" parent="TurnQueuePanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 9
+text = "ОЧЕРЁДНОСТЬ ХОДА"
+horizontal_alignment = 1
+
+[node name="TurnOrderContainer" type="HBoxContainer" parent="TurnQueuePanel/Content"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 4
+
+[node name="SystemPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -196.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 64.0
+grow_horizontal = 0
+
+[node name="Content" type="HBoxContainer" parent="SystemPanel"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="SystemPanel/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 10
+text = "БОЕВОЙ ЦИКЛ"
+
+[node name="SettingsButton" type="Button" parent="SystemPanel/Content"]
+custom_minimum_size = Vector2(42, 32)
+layout_mode = 2
+icon = ExtResource("6_settings")
+flat = true
+tooltip_text = "Настройки"
+
+[node name="TargetPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -326.0
+offset_top = 80.0
+offset_right = -16.0
+offset_bottom = 310.0
+grow_horizontal = 0
+
+[node name="Content" type="VBoxContainer" parent="TargetPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="Title" type="Label" parent="TargetPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 9
+text = "ТАКТИЧЕСКИЙ АНАЛИЗ"
+
+[node name="TargetPlaceholder" type="Label" parent="TargetPanel/Content"]
+custom_minimum_size = Vector2(0, 166)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.48, 0.47, 0.42, 1)
+theme_override_font_sizes/font_size = 11
+text = "Наведите курсор на юнита\nдля тактического анализа"
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="TargetContent" type="HBoxContainer" parent="TargetPanel/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 9
+
+[node name="TargetPortrait" type="TextureRect" parent="TargetPanel/Content/TargetContent"]
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TargetInfo" type="VBoxContainer" parent="TargetPanel/Content/TargetContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="TargetNameLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "—"
+autowrap_mode = 2
+
+[node name="TargetFactionLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 9
+text = "—"
+
+[node name="TargetHealthLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "ОЗ 0/0"
+
+[node name="TargetStatsLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "УРОН 0 · ДАЛЬНОСТЬ 0\nОД 0/0 · ДЕЙСТВИЕ НЕТ"
+
+[node name="Separator" type="HSeparator" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+
+[node name="TargetEffectsLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.48, 0.47, 0.42, 1)
+theme_override_font_sizes/font_size = 9
+text = "ЭФФЕКТЫ · НЕТ"
+autowrap_mode = 2
 
 [node name="ActiveUnitPanel" type="PanelContainer" parent="."]
 layout_mode = 1
@@ -77,28 +213,28 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -336.0
-offset_right = 306.0
+offset_top = -206.0
+offset_right = 462.0
 offset_bottom = -16.0
 grow_vertical = 0
 z_index = 2
 
 [node name="Content" type="VBoxContainer" parent="ActiveUnitPanel"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 3
 
 [node name="SectionLabel" type="Label" parent="ActiveUnitPanel/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
-theme_override_font_sizes/font_size = 11
-text = "АКТИВНЫЙ ЮНИТ"
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 9
+text = "АКТИВНЫЙ БОЕЦ"
 
 [node name="UnitHeader" type="HBoxContainer" parent="ActiveUnitPanel/Content"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 
 [node name="ActivePortrait" type="TextureRect" parent="ActiveUnitPanel/Content/UnitHeader"]
-custom_minimum_size = Vector2(96, 96)
+custom_minimum_size = Vector2(112, 124)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
@@ -106,212 +242,172 @@ stretch_mode = 5
 [node name="Stats" type="VBoxContainer" parent="ActiveUnitPanel/Content/UnitHeader"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 5
+theme_override_constants/separation = 2
 
 [node name="ActiveUnitLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
 theme_override_font_sizes/font_size = 17
 text = "—"
 autowrap_mode = 2
 
 [node name="HealthLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.93, 0.39, 0.32, 1)
-theme_override_font_sizes/font_size = 15
-text = "ОЗ   0 / 0"
+theme_override_font_sizes/font_size = 14
+text = "ОЗ 0/0"
 
 [node name="MovementLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.24, 0.78, 0.86, 1)
-text = "ОД   0 / 0"
+text = "ОД 0/0"
 
 [node name="MainActionLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-text = "ДЕЙСТВИЕ   ГОТОВО"
+text = "ДЕЙСТВИЕ ГОТОВО"
 
 [node name="CombatStatsLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
-text = "УРОН  0     ДАЛЬНОСТЬ  0"
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+text = "УРОН 0 · ДАЛЬНОСТЬ 0"
 
-[node name="SkillsTitle" type="Label" parent="ActiveUnitPanel/Content"]
+[node name="StateLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
-theme_override_font_sizes/font_size = 10
-text = "АКТИВНЫЕ НАВЫКИ"
+theme_override_colors/font_color = Color(0.48, 0.47, 0.42, 1)
+theme_override_font_sizes/font_size = 9
+text = "УКРЫТИЕ 0% · СОСТОЯНИЕ НОРМА"
 
-[node name="SkillButtons" type="VBoxContainer" parent="ActiveUnitPanel/Content"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="BasicAttackButton" type="Button" parent="ActiveUnitPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(0, 38)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "БЛИЖНЯЯ АТАКА"
-
-[node name="GrenadeButton" type="Button" parent="ActiveUnitPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(0, 38)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "ГРАНАТА · 7 ГЕКСОВ"
-
-[node name="ActionLabel" type="Label" parent="ActiveUnitPanel/Content"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
-theme_override_font_sizes/font_size = 11
-text = "СИСТЕМА ГОТОВА"
-autowrap_mode = 2
-
-[node name="TurnQueuePanel" type="PanelContainer" parent="."]
+[node name="ActionPanel" type="PanelContainer" parent="."]
 layout_mode = 1
-anchors_preset = 7
+anchors_preset = 12
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -286.0
-offset_top = -100.0
-offset_right = 286.0
+offset_left = -326.0
+offset_top = -138.0
+offset_right = 326.0
 offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
+z_index = 3
 
-[node name="Content" type="VBoxContainer" parent="TurnQueuePanel"]
+[node name="Content" type="VBoxContainer" parent="ActionPanel"]
 layout_mode = 2
-theme_override_constants/separation = 3
+theme_override_constants/separation = 4
 
-[node name="Title" type="Label" parent="TurnQueuePanel/Content"]
+[node name="ActionLabel" type="Label" parent="ActionPanel/Content"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
-theme_override_font_sizes/font_size = 10
-text = "ОЧЕРЕДЬ ХОДОВ"
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 9
+text = "СИСТЕМА ГОТОВА"
 horizontal_alignment = 1
-
-[node name="TurnOrderContainer" type="HBoxContainer" parent="TurnQueuePanel/Content"]
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_constants/separation = 6
-
-[node name="TargetPanel" type="PanelContainer" parent="."]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -300.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = -16.0
-grow_horizontal = 0
-grow_vertical = 2
-
-[node name="Content" type="VBoxContainer" parent="TargetPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Title" type="Label" parent="TargetPanel/Content"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.77, 0.52, 0.27, 1)
-theme_override_font_sizes/font_size = 11
-text = "ТАКТИЧЕСКИЙ АНАЛИЗ"
-horizontal_alignment = 1
-
-[node name="TargetPlaceholder" type="Label" parent="TargetPanel/Content"]
-custom_minimum_size = Vector2(0, 420)
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
-text = "Наведите курсор на юнита,\nчтобы увидеть характеристики"
-horizontal_alignment = 1
-vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="TargetContent" type="VBoxContainer" parent="TargetPanel/Content"]
+[node name="SkillButtons" type="HBoxContainer" parent="ActionPanel/Content"]
 layout_mode = 2
-size_flags_vertical = 3
+theme_override_constants/separation = 5
+
+[node name="MovementButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(150, 78)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("2_move")
+text = "ПЕРЕМЕЩЕНИЕ"
+expand_icon = true
+
+[node name="BasicAttackButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(150, 78)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("3_attack")
+text = "АТАКА"
+expand_icon = true
+
+[node name="GrenadeButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(150, 78)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("4_grenade")
+text = "ГРАНАТА"
+expand_icon = true
+
+[node name="EndTurnButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+custom_minimum_size = Vector2(150, 78)
+layout_mode = 2
+size_flags_horizontal = 3
+icon = ExtResource("5_end")
+text = "КОНЕЦ ХОДА"
+expand_icon = true
+
+[node name="SpeedPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -376.0
+offset_top = 76.0
+offset_right = -16.0
+offset_bottom = 326.0
+grow_horizontal = 0
+z_index = 10
+
+[node name="Content" type="VBoxContainer" parent="SpeedPanel"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SettingsTitle" type="Label" parent="SpeedPanel/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "НАСТРОЙКИ ИЗОБРАЖЕНИЯ"
+horizontal_alignment = 1
+
+[node name="ResolutionRow" type="HBoxContainer" parent="SpeedPanel/Content"]
+layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="TargetPortrait" type="TextureRect" parent="TargetPanel/Content/TargetContent"]
-custom_minimum_size = Vector2(0, 132)
+[node name="ResolutionLabel" type="Label" parent="SpeedPanel/Content/ResolutionRow"]
 layout_mode = 2
-expand_mode = 1
-stretch_mode = 5
+size_flags_horizontal = 3
+text = "РАЗРЕШЕНИЕ"
 
-[node name="TargetNameLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
+[node name="ResolutionOption" type="OptionButton" parent="SpeedPanel/Content/ResolutionRow"]
+custom_minimum_size = Vector2(150, 32)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.95, 0.96, 1)
-theme_override_font_sizes/font_size = 18
-text = "—"
+
+[node name="FullscreenCheck" type="CheckButton" parent="SpeedPanel/Content"]
+layout_mode = 2
+text = "НА ВЕСЬ ЭКРАН"
+
+[node name="DisplayStatusLabel" type="Label" parent="SpeedPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 9
+text = "ТЕКУЩИЙ РЕЖИМ: —"
 horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="TargetFactionLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
-layout_mode = 2
-text = "—"
-horizontal_alignment = 1
-
-[node name="TargetHealthLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.93, 0.39, 0.32, 1)
-theme_override_font_sizes/font_size = 16
-text = "ОЗ   0 / 0"
-
-[node name="TargetStatsLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
-layout_mode = 2
-text = "УРОН   0\nДАЛЬНОСТЬ   0\nОД   0 / 0\nДЕЙСТВИЕ   НЕТ"
-
-[node name="Separator" type="HSeparator" parent="TargetPanel/Content/TargetContent"]
+[node name="SettingsSeparator" type="HSeparator" parent="SpeedPanel/Content"]
 layout_mode = 2
 
-[node name="TargetEffectsLabel" type="Label" parent="TargetPanel/Content/TargetContent"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.58, 0.68, 0.73, 1)
-text = "ПАССИВНЫЕ ЭФФЕКТЫ\nНет активных эффектов"
-
-[node name="SpeedPanel" type="PanelContainer" parent="TargetPanel/Content"]
-visible = false
-layout_mode = 2
-
-[node name="Content" type="VBoxContainer" parent="TargetPanel/Content/SpeedPanel"]
-layout_mode = 2
-
-[node name="SpeedLabel" type="Label" parent="TargetPanel/Content/SpeedPanel/Content"]
+[node name="SpeedLabel" type="Label" parent="SpeedPanel/Content"]
 layout_mode = 2
 text = "СКОРОСТЬ АНИМАЦИИ: 1x"
 horizontal_alignment = 1
 
-[node name="Buttons" type="HBoxContainer" parent="TargetPanel/Content/SpeedPanel/Content"]
+[node name="Buttons" type="HBoxContainer" parent="SpeedPanel/Content"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Speed1Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+[node name="Speed1Button" type="Button" parent="SpeedPanel/Content/Buttons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "1x"
 
-[node name="Speed2Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+[node name="Speed2Button" type="Button" parent="SpeedPanel/Content/Buttons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "2x"
 
-[node name="Speed4Button" type="Button" parent="TargetPanel/Content/SpeedPanel/Content/Buttons"]
+[node name="Speed4Button" type="Button" parent="SpeedPanel/Content/Buttons"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "4x"
-
-[node name="FooterButtons" type="HBoxContainer" parent="TargetPanel/Content"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="SettingsButton" type="Button" parent="TargetPanel/Content/FooterButtons"]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "НАСТРОЙКИ"
-
-[node name="EndTurnButton" type="Button" parent="TargetPanel/Content/FooterButtons"]
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "ПРОПУСК ХОДА"

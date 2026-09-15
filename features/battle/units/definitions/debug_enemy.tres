@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://g0hr6ujup8gy" path="res://features/battle/units/unit_definition.gd" id="1_definition"]
 [ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="2_actor"]
 [ext_resource type="Script" uid="uid://0b0ucuhj5cuq" path="res://features/battle/units/unit_stats_definition.gd" id="3_stats"]
-[ext_resource type="Texture2D" uid="uid://qqr6w5gkbnkp" path="res://features/battle/units/art/ash_machine_cleaver.png" id="4_texture"]
+[ext_resource type="Texture2D" uid="uid://b6stntd1juck3" path="res://features/battle/units/art/ash_machine_cleaver_v2.png" id="4_texture"]
 
 [sub_resource type="Resource" id="Resource_enemy_stats"]
 script = ExtResource("3_stats")

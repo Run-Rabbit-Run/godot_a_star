@@ -2,7 +2,7 @@ class_name UnitActor
 extends Node2D
 
 
-const CUSTOM_TEXTURE_SIZE := 52.0
+const CUSTOM_TEXTURE_SIZE := 72.0
 
 
 @export_range(0.01, 1.0, 0.01)
@@ -24,6 +24,7 @@ func setup(
 ) -> void:
 	unit_id = p_unit_id
 	_unit_id_label.text = definition.display_name
+	_unit_id_label.visible = false
 
 	if definition.actor_texture != null:
 		_sprite.texture = definition.actor_texture
@@ -39,7 +40,7 @@ func setup(
 		definition.base_stats != null
 		and definition.base_stats.basic_attack_range > 1
 	)
-	_combat_role_label.text = "ДАЛЬНИЙ"
+	_combat_role_label.text = "◎ ДАЛЬН."
 	modulate = definition.actor_color
 
 
@@ -66,7 +67,11 @@ func present_damage() -> void:
 
 
 func present_defeat() -> void:
-	visible = false
+	z_index = 8
+	rotation_degrees = -82.0
+	modulate = modulate.lerp(Color(0.22, 0.21, 0.19, 0.72), 0.78)
+	_combat_role_label.visible = false
+	_unit_id_label.visible = false
 
 
 func move_along_global_positions(

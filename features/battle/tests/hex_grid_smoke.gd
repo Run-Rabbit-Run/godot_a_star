@@ -589,24 +589,27 @@ func _check_battle_scene() -> void:
 	var active_unit_panel := hud_root.get_node_or_null("ActiveUnitPanel") as PanelContainer
 	var turn_queue_panel := hud_root.get_node_or_null("TurnQueuePanel") as PanelContainer
 	var target_panel := hud_root.get_node_or_null("TargetPanel") as PanelContainer
+	var action_panel := hud_root.get_node_or_null("ActionPanel") as PanelContainer
+	var system_panel := hud_root.get_node_or_null("SystemPanel") as PanelContainer
+	var speed_panel := hud_root.get_node_or_null("SpeedPanel") as PanelContainer
 	var movement_label := active_unit_panel.get_node_or_null(
 		"Content/UnitHeader/Stats/MovementLabel"
 	) as Label
-	var grenade_button := active_unit_panel.get_node_or_null(
+	var movement_button := action_panel.get_node_or_null(
+		"Content/SkillButtons/MovementButton"
+	) as Button
+	var grenade_button := action_panel.get_node_or_null(
 		"Content/SkillButtons/GrenadeButton"
 	) as Button
-	var basic_attack_button := active_unit_panel.get_node_or_null(
+	var basic_attack_button := action_panel.get_node_or_null(
 		"Content/SkillButtons/BasicAttackButton"
 	) as Button
-	var end_turn_button := target_panel.get_node_or_null(
-		"Content/FooterButtons/EndTurnButton"
+	var end_turn_button := action_panel.get_node_or_null(
+		"Content/SkillButtons/EndTurnButton"
 	) as Button
-	var settings_button := target_panel.get_node_or_null(
-		"Content/FooterButtons/SettingsButton"
+	var settings_button := system_panel.get_node_or_null(
+		"Content/SettingsButton"
 	) as Button
-	var speed_panel := target_panel.get_node_or_null(
-		"Content/SpeedPanel"
-	) as PanelContainer
 	var speed_1_button := speed_panel.get_node_or_null(
 		"Content/Buttons/Speed1Button"
 	) as Button
@@ -616,12 +619,21 @@ func _check_battle_scene() -> void:
 	var speed_label := speed_panel.get_node_or_null(
 		"Content/SpeedLabel"
 	) as Label
+	var resolution_option := speed_panel.get_node_or_null(
+		"Content/ResolutionRow/ResolutionOption"
+	) as OptionButton
+	var fullscreen_check := speed_panel.get_node_or_null(
+		"Content/FullscreenCheck"
+	) as CheckButton
+	var display_status_label := speed_panel.get_node_or_null(
+		"Content/DisplayStatusLabel"
+	) as Label
 	var target_placeholder := target_panel.get_node_or_null(
 		"Content/TargetPlaceholder"
 	) as Label
 	var target_content := target_panel.get_node_or_null(
 		"Content/TargetContent"
-	) as VBoxContainer
+	) as HBoxContainer
 	var target_portrait := target_panel.get_node_or_null(
 		"Content/TargetContent/TargetPortrait"
 	) as TextureRect
@@ -630,6 +642,7 @@ func _check_battle_scene() -> void:
 	) as HBoxContainer
 	_expect(
 		movement_label != null
+		and movement_button != null
 		and grenade_button != null
 		and basic_attack_button != null
 		and end_turn_button != null
@@ -638,6 +651,9 @@ func _check_battle_scene() -> void:
 		and speed_1_button != null
 		and speed_2_button != null
 		and speed_label != null
+		and resolution_option != null
+		and fullscreen_check != null
+		and display_status_label != null
 		and target_placeholder != null
 		and target_content != null
 		and target_portrait != null
@@ -645,15 +661,29 @@ func _check_battle_scene() -> void:
 		"Battle HUD must expose unit, target, turn order and settings controls."
 	)
 	_expect(
+		resolution_option != null
+		and resolution_option.item_count == 4
+		and resolution_option.get_item_text(0) == "1920 × 1080"
+		and resolution_option.get_item_text(3) == "1280 × 720"
+		and fullscreen_check != null
+		and fullscreen_check.text == "НА ВЕСЬ ЭКРАН"
+		and display_status_label != null
+		and not display_status_label.text.is_empty(),
+		"Display settings must expose supported resolutions and fullscreen mode."
+	)
+	_expect(
 		strategist_panel != null
 		and active_unit_panel != null
 		and turn_queue_panel != null
-		and target_panel != null,
-		"Battle HUD must contain all four requested interface regions."
+		and target_panel != null
+		and action_panel != null
+		and system_panel != null,
+		"Battle HUD must contain all battlefield-first interface regions."
 	)
 
 	if (
 		movement_label == null
+		or movement_button == null
 		or grenade_button == null
 		or basic_attack_button == null
 		or end_turn_button == null
@@ -670,6 +700,12 @@ func _check_battle_scene() -> void:
 		launcher.queue_free()
 		await process_frame
 		return
+
+	_expect(not speed_panel.visible, "Settings panel must start collapsed.")
+	settings_button.pressed.emit()
+	_expect(speed_panel.visible, "Settings button must open display settings.")
+	settings_button.pressed.emit()
+	_expect(not speed_panel.visible, "Settings button must close display settings.")
 
 	_expect(player != null, "Battle session must expose the first player snapshot.")
 	_expect(player_actor != null and actors.size() == 4, "Battle scene must create all four unit actors.")
@@ -729,6 +765,10 @@ func _check_battle_scene() -> void:
 		% [active_unit_panel.get_global_rect(), active_unit_panel.get_viewport_rect()]
 	)
 	_expect(
+		movement_button.is_visible_in_tree() and not movement_button.disabled,
+		"Active player must have a visible movement-mode button."
+	)
+	_expect(
 		grenade_button.is_visible_in_tree() and not grenade_button.disabled,
 		"Melee player must have a visible and available grenade button."
 	)
@@ -762,6 +802,14 @@ func _check_battle_scene() -> void:
 		),
 		"Grenade selection must highlight valid center hexes."
 	)
+	movement_button.pressed.emit()
+	_expect(
+		not targetable_layer.get_used_cells().has(
+			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
+		),
+		"Movement button must leave grenade targeting mode."
+	)
+	grenade_button.pressed.emit()
 	input_router.hex_hovered.emit(Vector2i(8, 7))
 	_expect(
 		ability_area_layer.get_used_cells().size() == 7,

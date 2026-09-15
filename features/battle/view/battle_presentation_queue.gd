@@ -171,7 +171,7 @@ func _present_damage(
 		await tween.finished
 
 	if event.target_defeated:
-		actor.visible = false
+		actor.present_defeat()
 
 	return true
 
@@ -186,7 +186,7 @@ func _present_ranged_projectile(
 	var tracer := Line2D.new()
 	tracer.name = "RangedAttackTracer"
 	tracer.width = 5.0
-	tracer.default_color = Color(1.0, 0.78, 0.16, 0.9)
+	tracer.default_color = Color(0.604, 0.471, 0.271, 0.86)
 	tracer.antialiased = true
 	tracer.z_index = 50
 	tracer.points = PackedVector2Array([start, finish])
@@ -199,7 +199,7 @@ func _present_ranged_projectile(
 		Vector2(12.0, 0.0),
 		Vector2(-10.0, 5.0),
 	])
-	projectile.color = Color(1.0, 0.92, 0.35, 1.0)
+	projectile.color = Color(0.784, 0.725, 0.604, 1.0)
 	projectile.position = start
 	projectile.rotation = (finish - start).angle()
 	projectile.z_index = 51
@@ -245,7 +245,7 @@ func _present_area_ability(
 	var trail := Line2D.new()
 	trail.name = "GrenadeTrail"
 	trail.width = 4.0
-	trail.default_color = Color(1.0, 0.48, 0.08, 0.78)
+	trail.default_color = Color(0.557, 0.247, 0.224, 0.76)
 	trail.antialiased = true
 	trail.z_index = 50
 	trail.points = PackedVector2Array([start, finish])
@@ -275,7 +275,7 @@ func _present_area_ability(
 	var core := Polygon2D.new()
 	core.name = "GrenadeExplosionCore"
 	core.polygon = _circle_points(30.0, 28)
-	core.color = Color(1.0, 0.3, 0.04, 0.92)
+	core.color = Color(0.878, 0.267, 0.216, 0.92)
 	core.position = finish
 	core.scale = Vector2(0.18, 0.18)
 	core.z_index = 52
@@ -284,7 +284,7 @@ func _present_area_ability(
 	var shockwave := Line2D.new()
 	shockwave.name = "GrenadeExplosionRing"
 	shockwave.width = 9.0
-	shockwave.default_color = Color(1.0, 0.82, 0.24, 0.95)
+	shockwave.default_color = Color(0.784, 0.725, 0.604, 0.92)
 	shockwave.antialiased = true
 	shockwave.closed = true
 	shockwave.points = _circle_points(42.0, 32)

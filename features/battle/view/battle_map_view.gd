@@ -2,6 +2,14 @@ class_name BattleMapView
 extends Node2D
 
 
+const BATTLE_BACKDROP := preload(
+	"res://features/battle/art/fungal_mire_battlefield_v2.png"
+)
+const BATTLEFIELD_OFFSET := Vector2(350.0, 80.0)
+const BATTLEFIELD_SCALE := Vector2(1.15, 1.15)
+
+
+@onready var _background_layer: TileMapLayer = $BackgroundLayer
 @onready var _terrain_layer: TileMapLayer = %TerrainLayer
 @onready var _reachable_layer: TileMapLayer = %ReachableLayer
 @onready var _path_layer: TileMapLayer = %PathLayer
@@ -15,12 +23,58 @@ var _default_source_id := -1
 var _default_atlas_coords := Vector2i.ZERO
 var _default_alternative_tile := 0
 var _terrain_tiles_by_movement_cost: Dictionary = {}
+var _battle_backdrop: TextureRect
+
+
+func _enter_tree() -> void:
+	_mount_battle_backdrop()
+	_fit_battle_backdrop()
+
+	if not get_viewport().size_changed.is_connected(_fit_battle_backdrop):
+		get_viewport().size_changed.connect(_fit_battle_backdrop)
 
 
 func _ready() -> void:
+	position = BATTLEFIELD_OFFSET
+	scale = BATTLEFIELD_SCALE
+	_apply_visual_profile()
 	_input_router.hex_hovered.connect(_show_hover)
 	_input_router.hex_hover_exited.connect(_clear_hover)
 	_capture_terrain_tiles()
+
+
+func _mount_battle_backdrop() -> void:
+	var backdrop_layer := CanvasLayer.new()
+	backdrop_layer.name = "BattleBackdropLayer"
+	backdrop_layer.layer = -20
+	add_child(backdrop_layer)
+
+	_battle_backdrop = TextureRect.new()
+	_battle_backdrop.name = "BattleBackdrop"
+	_battle_backdrop.texture = BATTLE_BACKDROP
+	_battle_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_battle_backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_battle_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	backdrop_layer.add_child(_battle_backdrop)
+
+
+func _fit_battle_backdrop() -> void:
+	if _battle_backdrop == null:
+		return
+
+	_battle_backdrop.position = Vector2.ZERO
+	_battle_backdrop.size = get_viewport().get_visible_rect().size
+
+
+func _apply_visual_profile() -> void:
+	# Цвет не кодирует правила: он только делает слои читаемыми на живописном фоне.
+	_background_layer.modulate = Color(0.64, 0.70, 0.67, 0.18)
+	_reachable_layer.modulate = Color(0.83, 0.79, 0.61, 0.46)
+	_path_layer.modulate = Color(0.86, 0.72, 0.40, 0.64)
+	_targetable_layer.modulate = Color(0.66, 0.25, 0.20, 0.58)
+	_ability_area_layer.modulate = Color(0.92, 0.25, 0.18, 0.66)
+	_selection_layer.modulate = Color(0.91, 0.86, 0.67, 0.72)
+	_highlight_layer.modulate = Color(0.72, 0.73, 0.63, 0.48)
 
 
 func render_grid(grid: HexGrid) -> void:

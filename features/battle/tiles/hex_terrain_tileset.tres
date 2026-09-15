@@ -1,7 +1,7 @@
 [gd_resource type="TileSet" format=3 uid="uid://xw0r7kng0ej3"]
 
-[ext_resource type="Texture2D" uid="uid://cw5fyxxfa727j" path="res://features/battle/tiles/hex_debug.svg" id="1_330gn"]
-[ext_resource type="Texture2D" uid="uid://bw4ne6sicnwpt" path="res://features/battle/tiles/hex_difficult.svg" id="2_xjy2p"]
+[ext_resource type="Texture2D" uid="uid://bo34bbmdevo23" path="res://features/battle/tiles/hex_mire.svg" id="1_330gn"]
+[ext_resource type="Texture2D" uid="uid://clqp7ttpsgte5" path="res://features/battle/tiles/hex_mire_difficult.svg" id="2_xjy2p"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_x3813"]
 texture = ExtResource("1_330gn")
