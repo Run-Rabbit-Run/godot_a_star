@@ -8,12 +8,13 @@ z_index = 20
 script = ExtResource("1_script")
 
 [node name="VisualRoot" type="Node2D" parent="."]
+position = Vector2(0, 16)
 
 [node name="Sprite" type="Sprite2D" parent="VisualRoot"]
 unique_name_in_owner = true
 texture = ExtResource("2_texture")
 
-[node name="CombatRoleLabel" type="Label" parent="."]
+[node name="CombatRoleLabel" type="Label" parent="VisualRoot"]
 unique_name_in_owner = true
 visible = false
 offset_left = -44.0
@@ -28,7 +29,7 @@ theme_override_font_sizes/font_size = 11
 text = "◎ ДАЛЬН."
 horizontal_alignment = 1
 
-[node name="UnitIdLabel" type="Label" parent="."]
+[node name="UnitIdLabel" type="Label" parent="VisualRoot"]
 unique_name_in_owner = true
 visible = false
 offset_left = -56.0

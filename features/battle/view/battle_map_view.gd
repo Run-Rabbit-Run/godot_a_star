@@ -5,8 +5,11 @@ extends Node2D
 const BATTLE_BACKDROP := preload(
 	"res://features/battle/art/fungal_mire_battlefield_v2.png"
 )
-const BATTLEFIELD_OFFSET := Vector2(350.0, 80.0)
-const BATTLEFIELD_SCALE := Vector2(1.15, 1.15)
+const GRID_TILE_SIZE := Vector2(56.0, 64.0)
+const SAFE_SIDE_MARGIN := 380.0
+const SAFE_TOP_MARGIN := 155.0
+const SAFE_BOTTOM_MARGIN := 225.0
+const MAX_BATTLEFIELD_SCALE := 1.15
 
 
 @onready var _background_layer: TileMapLayer = $BackgroundLayer
@@ -24,6 +27,9 @@ var _default_atlas_coords := Vector2i.ZERO
 var _default_alternative_tile := 0
 var _terrain_tiles_by_movement_cost: Dictionary = {}
 var _battle_backdrop: TextureRect
+var _grid_local_bounds := Rect2()
+var _path_shadow: Line2D
+var _path_stroke: Line2D
 
 
 func _enter_tree() -> void:
@@ -35,12 +41,17 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
-	position = BATTLEFIELD_OFFSET
-	scale = BATTLEFIELD_SCALE
 	_apply_visual_profile()
 	_input_router.hex_hovered.connect(_show_hover)
 	_input_router.hex_hover_exited.connect(_clear_hover)
 	_capture_terrain_tiles()
+	_mount_path_visuals()
+	_fit_battlefield_to_viewport()
+
+	if not get_viewport().size_changed.is_connected(
+		_fit_battlefield_to_viewport
+	):
+		get_viewport().size_changed.connect(_fit_battlefield_to_viewport)
 
 
 func _mount_battle_backdrop() -> void:
@@ -58,6 +69,30 @@ func _mount_battle_backdrop() -> void:
 	backdrop_layer.add_child(_battle_backdrop)
 
 
+func _mount_path_visuals() -> void:
+	_path_shadow = Line2D.new()
+	_path_shadow.name = "PathShadow"
+	_path_shadow.width = 9.0
+	_path_shadow.default_color = Color(0.07, 0.06, 0.045, 0.92)
+	_path_shadow.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	_path_shadow.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_path_shadow.joint_mode = Line2D.LINE_JOINT_ROUND
+	_path_shadow.antialiased = true
+	_path_shadow.z_index = 1
+	_path_layer.add_child(_path_shadow)
+
+	_path_stroke = Line2D.new()
+	_path_stroke.name = "PathStroke"
+	_path_stroke.width = 4.5
+	_path_stroke.default_color = Color(0.96, 0.73, 0.24, 1.0)
+	_path_stroke.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	_path_stroke.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_path_stroke.joint_mode = Line2D.LINE_JOINT_ROUND
+	_path_stroke.antialiased = true
+	_path_stroke.z_index = 2
+	_path_layer.add_child(_path_stroke)
+
+
 func _fit_battle_backdrop() -> void:
 	if _battle_backdrop == null:
 		return
@@ -66,11 +101,70 @@ func _fit_battle_backdrop() -> void:
 	_battle_backdrop.size = get_viewport().get_visible_rect().size
 
 
+func _fit_battlefield_to_viewport() -> void:
+	if not is_node_ready():
+		return
+
+	_grid_local_bounds = _calculate_grid_local_bounds()
+
+	if _grid_local_bounds.size == Vector2.ZERO:
+		return
+
+	var viewport_size := get_viewport().get_visible_rect().size
+	var available_size := Vector2(
+		maxf(viewport_size.x - SAFE_SIDE_MARGIN * 2.0, 1.0),
+		maxf(
+			viewport_size.y - SAFE_TOP_MARGIN - SAFE_BOTTOM_MARGIN,
+			1.0
+		)
+	)
+	var fitted_scale := minf(
+		MAX_BATTLEFIELD_SCALE,
+		minf(
+			available_size.x / _grid_local_bounds.size.x,
+			available_size.y / _grid_local_bounds.size.y
+		)
+	)
+	var safe_center := Vector2(
+		viewport_size.x * 0.5,
+		SAFE_TOP_MARGIN + available_size.y * 0.5
+	)
+
+	scale = Vector2.ONE * fitted_scale
+	position = (
+		safe_center
+		- _grid_local_bounds.get_center() * fitted_scale
+	)
+
+
+func _calculate_grid_local_bounds() -> Rect2:
+	var used_cells := _terrain_layer.get_used_cells()
+
+	if used_cells.is_empty():
+		return Rect2()
+
+	var first_center := _terrain_layer.map_to_local(used_cells[0])
+	var minimum := first_center
+	var maximum := first_center
+
+	for map_cell: Vector2i in used_cells:
+		var cell_center := _terrain_layer.map_to_local(map_cell)
+		minimum.x = minf(minimum.x, cell_center.x)
+		minimum.y = minf(minimum.y, cell_center.y)
+		maximum.x = maxf(maximum.x, cell_center.x)
+		maximum.y = maxf(maximum.y, cell_center.y)
+
+	return Rect2(
+		minimum - GRID_TILE_SIZE * 0.5,
+		maximum - minimum + GRID_TILE_SIZE
+	)
+
+
 func _apply_visual_profile() -> void:
 	# Цвет не кодирует правила: он только делает слои читаемыми на живописном фоне.
 	_background_layer.modulate = Color(0.64, 0.70, 0.67, 0.18)
 	_reachable_layer.modulate = Color(0.83, 0.79, 0.61, 0.46)
-	_path_layer.modulate = Color(0.86, 0.72, 0.40, 0.64)
+	_path_layer.modulate = Color(1.0, 0.82, 0.36, 0.92)
 	_targetable_layer.modulate = Color(0.66, 0.25, 0.20, 0.58)
 	_ability_area_layer.modulate = Color(0.92, 0.25, 0.18, 0.66)
 	_selection_layer.modulate = Color(0.91, 0.86, 0.67, 0.72)
@@ -102,6 +196,20 @@ func render_grid(grid: HexGrid) -> void:
 			tile["alternative_tile"]
 		)
 
+	_fit_battlefield_to_viewport()
+
+
+func get_grid_global_bounds() -> Rect2:
+	if _grid_local_bounds.size == Vector2.ZERO:
+		_grid_local_bounds = _calculate_grid_local_bounds()
+
+	if _grid_local_bounds.size == Vector2.ZERO:
+		return Rect2()
+
+	var top_left := _terrain_layer.to_global(_grid_local_bounds.position)
+	var bottom_right := _terrain_layer.to_global(_grid_local_bounds.end)
+	return Rect2(top_left, bottom_right - top_left)
+
 
 func hex_to_global_position(axial_cell: Vector2i) -> Vector2:
 	var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
@@ -128,6 +236,8 @@ func show_path(cells: Array[Vector2i]) -> void:
 	for cell in cells:
 		_paint_cell_on_layer(cell, _path_layer)
 
+	_show_path_polyline(cells)
+
 
 func show_targetable_cells(cells: Array[Vector2i]) -> void:
 	_targetable_layer.clear()
@@ -150,10 +260,16 @@ func clear_ability_area() -> void:
 func clear_path() -> void:
 	_path_layer.clear()
 
+	if _path_shadow != null:
+		_path_shadow.clear_points()
+
+	if _path_stroke != null:
+		_path_stroke.clear_points()
+
 
 func clear_overlays() -> void:
 	_reachable_layer.clear()
-	_path_layer.clear()
+	clear_path()
 	_targetable_layer.clear()
 	_ability_area_layer.clear()
 	_selection_layer.clear()
@@ -244,6 +360,24 @@ func _paint_cell_on_layer(
 		_terrain_layer.get_cell_atlas_coords(map_cell),
 		_terrain_layer.get_cell_alternative_tile(map_cell)
 	)
+
+
+func _show_path_polyline(cells: Array[Vector2i]) -> void:
+	if _path_shadow == null or _path_stroke == null:
+		return
+
+	var points := PackedVector2Array()
+
+	for axial_cell: Vector2i in cells:
+		var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
+
+		if _terrain_layer.get_cell_source_id(map_cell) == -1:
+			continue
+
+		points.append(_terrain_layer.map_to_local(map_cell))
+
+	_path_shadow.points = points
+	_path_stroke.points = points
 
 
 func _clear_hover() -> void:

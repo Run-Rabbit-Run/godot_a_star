@@ -18,4 +18,5 @@ id = &"core:debug_player_ranged"
 display_name = "Стрелок Фобоса"
 actor_scene = ExtResource("2_actor")
 actor_texture = ExtResource("4_texture")
+actor_foot_anchor = Vector2(0.4, 0.98)
 base_stats = SubResource("Resource_player_ranged_stats")

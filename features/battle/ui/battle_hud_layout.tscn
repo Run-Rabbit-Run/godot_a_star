@@ -130,6 +130,7 @@ flat = true
 tooltip_text = "Настройки"
 
 [node name="TargetPanel" type="PanelContainer" parent="."]
+visible = false
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -281,9 +282,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -326.0
-offset_top = -138.0
-offset_right = 326.0
+offset_left = -274.0
+offset_top = -110.0
+offset_right = 274.0
 offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -306,7 +307,7 @@ layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="MovementButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(150, 78)
+custom_minimum_size = Vector2(124, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("2_move")
@@ -314,7 +315,7 @@ text = "ПЕРЕМЕЩЕНИЕ"
 expand_icon = true
 
 [node name="BasicAttackButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(150, 78)
+custom_minimum_size = Vector2(124, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("3_attack")
@@ -322,7 +323,7 @@ text = "АТАКА"
 expand_icon = true
 
 [node name="GrenadeButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(150, 78)
+custom_minimum_size = Vector2(124, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("4_grenade")
@@ -330,7 +331,7 @@ text = "ГРАНАТА"
 expand_icon = true
 
 [node name="EndTurnButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(150, 78)
+custom_minimum_size = Vector2(124, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("5_end")

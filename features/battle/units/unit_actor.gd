@@ -35,6 +35,10 @@ func setup(
 			_sprite.scale = Vector2.ONE * (
 				CUSTOM_TEXTURE_SIZE / longest_side
 			)
+			# The actor origin is the hex center; align the painted feet to it.
+			_sprite.offset = (
+				Vector2.ONE * 0.5 - definition.actor_foot_anchor
+			) * texture_size
 
 	_combat_role_label.visible = (
 		definition.base_stats != null

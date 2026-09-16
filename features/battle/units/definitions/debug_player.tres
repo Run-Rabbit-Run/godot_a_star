@@ -17,5 +17,6 @@ id = &"core:debug_player"
 display_name = "Страж Фобоса"
 actor_scene = ExtResource("2_actor")
 actor_texture = ExtResource("4_texture")
+actor_foot_anchor = Vector2(0.46, 0.95)
 base_stats = SubResource("Resource_player_stats")
 ability_ids = Array[StringName]([&"core:grenade"])

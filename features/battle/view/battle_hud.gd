@@ -169,6 +169,7 @@ func show_ability_targeting(display_name: String, area_size: int) -> void:
 
 
 func show_area_target(area_size: int) -> void:
+	_target_panel.visible = true
 	_target_placeholder.visible = true
 	_target_content.visible = false
 	_target_placeholder.text = "ЗОНА ПОРАЖЕНИЯ\n%d ГЕКСОВ\n\nУрон получат все юниты в области" % area_size
@@ -219,6 +220,7 @@ func show_target(
 	movement_maximum: int,
 	main_action_available: bool
 ) -> void:
+	_target_panel.visible = true
 	_target_placeholder.visible = false
 	_target_content.visible = true
 	_target_portrait.texture = texture
@@ -246,6 +248,7 @@ func show_target(
 
 
 func clear_target() -> void:
+	_target_panel.visible = false
 	_target_content.visible = false
 	_target_placeholder.visible = true
 	_target_placeholder.text = "Наведите курсор на юнита,\nчтобы увидеть характеристики"

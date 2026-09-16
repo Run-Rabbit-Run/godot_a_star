@@ -702,6 +702,10 @@ func _check_battle_scene() -> void:
 		return
 
 	_expect(not speed_panel.visible, "Settings panel must start collapsed.")
+	_expect(
+		not target_panel.visible,
+		"Target panel must stay hidden while no unit is hovered."
+	)
 	settings_button.pressed.emit()
 	_expect(speed_panel.visible, "Settings button must open display settings.")
 	settings_button.pressed.emit()
@@ -756,6 +760,21 @@ func _check_battle_scene() -> void:
 		"Difficult terrain must keep a visibly distinct tile after grid rendering."
 	)
 	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
+	var grid_bounds := map_view.get_grid_global_bounds()
+	var viewport_width := map_view.get_viewport_rect().size.x
+	var left_grid_margin := grid_bounds.position.x
+	var right_grid_margin := viewport_width - grid_bounds.end.x
+	_expect(
+		absf(left_grid_margin - right_grid_margin) <= 1.0,
+		"Battle grid must have equal left and right margins: left=%s right=%s."
+		% [left_grid_margin, right_grid_margin]
+	)
+	_expect(
+		grid_bounds.end.x
+		<= speed_panel.get_global_rect().position.x,
+		"Settings panel must stay outside the battle grid: grid=%s panel=%s."
+		% [grid_bounds, speed_panel.get_global_rect()]
+	)
 	_expect(
 		active_unit_panel.is_visible_in_tree()
 		and active_unit_panel.get_global_rect().has_point(
@@ -782,11 +801,16 @@ func _check_battle_scene() -> void:
 
 	input_router.hex_hovered.emit(Vector2i(9, 7))
 	_expect(
-		target_content.visible and not target_placeholder.visible,
+		target_panel.visible
+		and target_content.visible
+		and not target_placeholder.visible,
 		"Hovering any unit must open the right tactical analysis panel."
 	)
 	input_router.hex_hover_exited.emit()
-	_expect(target_placeholder.visible, "Hover exit must restore the target placeholder.")
+	_expect(
+		not target_panel.visible,
+		"Hover exit must hide the tactical analysis panel."
+	)
 	settings_button.pressed.emit()
 	_expect(speed_panel.visible, "Settings button must open animation speed controls.")
 	speed_2_button.pressed.emit()
@@ -838,9 +862,21 @@ func _check_battle_scene() -> void:
 	)
 
 	input_router.hex_hovered.emit(Vector2i(7, 6))
+	var path_stroke := map_view.get("_path_stroke") as Line2D
 	_expect(not path_layer.get_used_cells().is_empty(), "Reachable hover must draw a path.")
+	_expect(
+		path_stroke != null
+		and path_stroke.points.size() >= 2
+		and path_stroke.width >= 4.0
+		and path_stroke.default_color.a >= 0.95,
+		"Reachable path must include a strong high-contrast route line."
+	)
 	input_router.hex_hover_exited.emit()
-	_expect(path_layer.get_used_cells().is_empty(), "Hover exit must clear the path.")
+	_expect(
+		path_layer.get_used_cells().is_empty()
+		and path_stroke.points.is_empty(),
+		"Hover exit must clear every path visual."
+	)
 
 	_expect(controller.set_playback_speed(1000.0), "Scene smoke must enable fast presentation.")
 	input_router.hex_selected.emit(Vector2i(7, 6))
