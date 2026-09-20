@@ -720,18 +720,25 @@ func _check_battle_scene() -> void:
 		and ranged_enemy.basic_attack_range == 3,
 		"Debug battle must contain one ranged unit on each side."
 	)
+	var melee_role_label := player_actor.get_node_or_null(
+		"VisualRoot/CombatRoleLabel"
+	) as Label
+	var ranged_ally_role_label := ranged_player_actor.get_node_or_null(
+		"VisualRoot/CombatRoleLabel"
+	) as Label
+	var ranged_enemy_role_label := ranged_enemy_actor.get_node_or_null(
+		"VisualRoot/CombatRoleLabel"
+	) as Label
 	_expect(
-		not (player_actor.get_node("CombatRoleLabel") as Label).visible,
+		melee_role_label != null and not melee_role_label.visible,
 		"Melee unit must not show the ranged marker."
 	)
 	_expect(
-		ranged_player_actor != null
-		and (ranged_player_actor.get_node("CombatRoleLabel") as Label).visible,
+		ranged_ally_role_label != null and ranged_ally_role_label.visible,
 		"Ranged ally must show a visible ranged marker."
 	)
 	_expect(
-		ranged_enemy_actor != null
-		and (ranged_enemy_actor.get_node("CombatRoleLabel") as Label).visible,
+		ranged_enemy_role_label != null and ranged_enemy_role_label.visible,
 		"Ranged enemy must show a visible ranged marker."
 	)
 
@@ -760,6 +767,16 @@ func _check_battle_scene() -> void:
 		"Difficult terrain must keep a visibly distinct tile after grid rendering."
 	)
 	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
+	_expect(
+		hex_grid.get_cells().size() == 216
+		and terrain_layer.get_used_cells().size() == 216,
+		"Debug battlefield must render the full 18x12 map on battle start."
+	)
+	_expect(
+		hex_grid.has_cell(Vector2i(1, 2))
+		and hex_grid.has_cell(Vector2i(13, 13)),
+		"Debug battlefield must include both outer corners of the 18x12 map."
+	)
 	var grid_bounds := map_view.get_grid_global_bounds()
 	var viewport_width := map_view.get_viewport_rect().size.x
 	var left_grid_margin := grid_bounds.position.x
@@ -801,6 +818,10 @@ func _check_battle_scene() -> void:
 
 	input_router.hex_hovered.emit(Vector2i(9, 7))
 	_expect(
+		map_view.get("_cursor_mode") == BattleMapView.CursorMode.DEFAULT,
+		"Melee attack cursor must not appear for an out-of-range enemy."
+	)
+	_expect(
 		target_panel.visible
 		and target_content.visible
 		and not target_placeholder.visible,
@@ -820,13 +841,28 @@ func _check_battle_scene() -> void:
 	_expect(not speed_panel.visible, "Settings button must close animation speed controls.")
 
 	grenade_button.pressed.emit()
+	var grenade_targets := map_view.get_node_or_null(
+		"GrenadeTargetVisuals"
+	) as Node2D
+	var grenade_area := map_view.get_node_or_null(
+		"GrenadeAreaVisuals"
+	) as Node2D
 	_expect(
 		targetable_layer.get_used_cells().has(
 			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
 		),
 		"Grenade selection must highlight valid center hexes."
 	)
+	_expect(
+		grenade_targets != null
+		and grenade_targets.get_child_count() > 0,
+		"Grenade centers must have a separate readable highlight."
+	)
 	movement_button.pressed.emit()
+	_expect(
+		grenade_targets.get_child_count() == 0,
+		"Leaving grenade mode must remove the center highlight."
+	)
 	_expect(
 		not targetable_layer.get_used_cells().has(
 			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
@@ -838,6 +874,11 @@ func _check_battle_scene() -> void:
 	_expect(
 		ability_area_layer.get_used_cells().size() == 7,
 		"Grenade hover must preview the full seven-hex damage area."
+	)
+	_expect(
+		grenade_area != null
+		and grenade_area.get_child_count() == 14,
+		"Seven grenade hexes must each have a bright fill and contour."
 	)
 	input_router.hex_selected.emit(Vector2i(8, 7))
 	_expect(
@@ -901,6 +942,16 @@ func _check_battle_scene() -> void:
 			HexCoordinateMapper.axial_to_offset(enemy.hex)
 		),
 		"Ranged target highlight must include an enemy two hexes away."
+	)
+	input_router.hex_hovered.emit(enemy.hex)
+	_expect(
+		map_view.get("_cursor_mode") == BattleMapView.CursorMode.RANGED,
+		"Ranged attack cursor must appear on an attackable enemy."
+	)
+	input_router.hex_hover_exited.emit()
+	_expect(
+		map_view.get("_cursor_mode") == BattleMapView.CursorMode.DEFAULT,
+		"Leaving an enemy hex must restore the default cursor."
 	)
 
 	_expect(

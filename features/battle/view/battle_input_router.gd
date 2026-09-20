@@ -34,6 +34,20 @@ func _process(_delta: float) -> void:
 	if _hex_grid == null:
 		return
 
+	var hovered_control := get_viewport().gui_get_hovered_control()
+	var hud_root := get_node_or_null("../BattleUI/HUDRoot") as Control
+
+	if (
+		hud_root != null
+		and hovered_control != null
+		and (
+			hovered_control == hud_root
+			or hud_root.is_ancestor_of(hovered_control)
+		)
+	):
+		_clear_hover()
+		return
+
 	var map_cell := _terrain_layer.local_to_map(
 		_terrain_layer.get_local_mouse_position()
 	)

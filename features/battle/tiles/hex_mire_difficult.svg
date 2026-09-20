@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="56" height="64" viewBox="0 0 56 64">
   <defs>
-    <linearGradient id="root" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#66513a" stop-opacity=".82"/>
-      <stop offset="1" stop-color="#2e2923" stop-opacity=".88"/>
+    <linearGradient id="rough" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#74664f" stop-opacity=".33"/>
+      <stop offset="1" stop-color="#3e4037" stop-opacity=".27"/>
     </linearGradient>
   </defs>
-  <path d="M28 1.5 54.5 16.7v30.6L28 62.5 1.5 47.3V16.7Z" fill="url(#root)" stroke="#b28a55" stroke-opacity=".86" stroke-width="1.8"/>
-  <path d="M4 42c9-3 10-13 18-14 8-2 12 10 28 5M9 18c8 7 17 5 22 14 4 7 10 9 17 11" fill="none" stroke="#211714" stroke-opacity=".82" stroke-width="4.4" stroke-linecap="round"/>
-  <path d="M7 40c9-3 10-11 17-12 7-1 12 9 25 6" fill="none" stroke="#a66a42" stroke-opacity=".82" stroke-width="1.8" stroke-linecap="round"/>
-  <circle cx="16" cy="22" r="2.3" fill="#c09558" fill-opacity=".9"/>
-  <circle cx="39" cy="45" r="1.8" fill="#c09558" fill-opacity=".82"/>
+  <path d="M28 1.5 54.5 16.7v30.6L28 62.5 1.5 47.3V16.7Z" fill="url(#rough)" stroke="#3a3329" stroke-opacity=".48" stroke-width="1.45"/>
+  <path d="M7 42c8-2 11-11 18-12 7-1 12 8 24 5M10 19c7 5 14 4 19 11 4 6 10 8 17 10" fill="none" stroke="#44372b" stroke-opacity=".62" stroke-width="3.1" stroke-linecap="round"/>
+  <path d="M8 41c8-2 11-9 17-10 7-1 11 7 23 5" fill="none" stroke="#9a7650" stroke-opacity=".46" stroke-width="1.1" stroke-linecap="round"/>
+  <circle cx="16" cy="23" r="1.7" fill="#b59a68" fill-opacity=".55"/>
+  <circle cx="40" cy="45" r="1.4" fill="#b59a68" fill-opacity=".48"/>
 </svg>

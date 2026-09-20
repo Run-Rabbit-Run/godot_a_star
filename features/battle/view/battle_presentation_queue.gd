@@ -170,6 +170,16 @@ func _present_damage(
 		_track_tween(tween)
 		await tween.finished
 
+	var target_definition := unit_definitions.get(
+		event.target_id
+	) as UnitDefinition
+	var maximum_health := maxi(event.target_health_remaining, 1)
+
+	if target_definition != null and target_definition.base_stats != null:
+		maximum_health = target_definition.base_stats.max_health
+
+	actor.show_health(event.target_health_remaining, maximum_health)
+
 	if event.target_defeated:
 		actor.present_defeat()
 

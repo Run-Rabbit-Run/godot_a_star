@@ -20,13 +20,13 @@ const SUPPORTED_RESOLUTIONS: Array[Vector2i] = [
 	Vector2i(1366, 768),
 	Vector2i(1280, 720),
 ]
-const COLOR_PANEL := Color(0.070, 0.078, 0.073, 0.92)
-const COLOR_PANEL_INNER := Color(0.105, 0.110, 0.102, 0.96)
-const COLOR_IVORY := Color(0.790, 0.735, 0.590, 1.0)
-const COLOR_BRONZE := Color(0.435, 0.405, 0.325, 1.0)
-const COLOR_ENEMY := Color(0.610, 0.235, 0.195, 1.0)
-const COLOR_SIGNAL := Color(0.780, 0.215, 0.165, 1.0)
-const COLOR_MUTED := Color(0.480, 0.465, 0.410, 1.0)
+const COLOR_PANEL := Color(0.055, 0.060, 0.056, 0.88)
+const COLOR_PANEL_INNER := Color(0.088, 0.094, 0.086, 0.94)
+const COLOR_IVORY := Color(0.820, 0.800, 0.705, 1.0)
+const COLOR_BRONZE := Color(0.330, 0.335, 0.290, 1.0)
+const COLOR_ENEMY := Color(0.565, 0.215, 0.185, 1.0)
+const COLOR_SIGNAL := Color(0.635, 0.225, 0.175, 1.0)
+const COLOR_MUTED := Color(0.515, 0.510, 0.455, 1.0)
 const COLOR_HEALTHY := Color(0.400, 0.447, 0.357, 1.0)
 const COLOR_WOUNDED := Color(0.604, 0.451, 0.278, 1.0)
 const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
@@ -528,7 +528,7 @@ func _refresh_action_button_states() -> void:
 
 func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(68.0, 62.0)
+	card.custom_minimum_size = Vector2(62.0, 54.0)
 	var faction: int = entry.get("faction", BattleFaction.Value.PLAYER)
 	var border_color := COLOR_IVORY if faction == BattleFaction.Value.PLAYER else COLOR_ENEMY
 	card.add_theme_stylebox_override(
@@ -545,7 +545,7 @@ func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
 	stack.add_theme_constant_override("separation", 1)
 	card.add_child(stack)
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(56.0, 38.0)
+	portrait.custom_minimum_size = Vector2(52.0, 32.0)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.texture = entry.get("texture") as Texture2D
@@ -565,11 +565,11 @@ func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
 func _apply_styles() -> void:
 	_strategist_panel.add_theme_stylebox_override(
 		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 2, 8)
+		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 3)
 	)
 	_active_unit_panel.add_theme_stylebox_override(
 		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_SIGNAL, 2, 1)
+		_make_panel_style(COLOR_PANEL, COLOR_IVORY, 1, 2)
 	)
 	_turn_queue_panel.add_theme_stylebox_override(
 		"panel",
@@ -646,8 +646,8 @@ func _make_panel_style(
 	style.border_color = border
 	style.set_border_width_all(border_width)
 	style.set_corner_radius_all(radius)
-	style.content_margin_left = 10.0
-	style.content_margin_top = 8.0
-	style.content_margin_right = 10.0
-	style.content_margin_bottom = 8.0
+	style.content_margin_left = 8.0
+	style.content_margin_top = 6.0
+	style.content_margin_right = 8.0
+	style.content_margin_bottom = 6.0
 	return style

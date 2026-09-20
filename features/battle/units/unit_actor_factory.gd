@@ -32,6 +32,12 @@ static func create(
 		return null
 
 	parent.add_child(actor)
-	actor.setup(state.unit_id, definition)
+	actor.setup(
+	state.unit_id,
+	definition,
+	state.faction,
+	state.health.current,
+	state.health.maximum
+)
 
 	return actor

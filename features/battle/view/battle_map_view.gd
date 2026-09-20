@@ -3,12 +3,22 @@ extends Node2D
 
 
 const BATTLE_BACKDROP := preload(
-	"res://features/battle/art/fungal_mire_battlefield_v2.png"
+	"res://features/battle/art/forest_outskirts_battlefield_v1.png"
 )
+const CURSOR_DEFAULT := preload(
+	"res://features/battle/ui/icons/cursor_default.svg"
+)
+const CURSOR_MELEE := preload(
+	"res://features/battle/ui/icons/cursor_melee.svg"
+)
+const CURSOR_RANGED := preload(
+	"res://features/battle/ui/icons/cursor_ranged.svg"
+)
+enum CursorMode { DEFAULT, MELEE, RANGED }
 const GRID_TILE_SIZE := Vector2(56.0, 64.0)
-const SAFE_SIDE_MARGIN := 380.0
-const SAFE_TOP_MARGIN := 155.0
-const SAFE_BOTTOM_MARGIN := 225.0
+const SAFE_SIDE_MARGIN := 270.0
+const SAFE_TOP_MARGIN := 112.0
+const SAFE_BOTTOM_MARGIN := 168.0
 const MAX_BATTLEFIELD_SCALE := 1.15
 
 
@@ -30,6 +40,12 @@ var _battle_backdrop: TextureRect
 var _grid_local_bounds := Rect2()
 var _path_shadow: Line2D
 var _path_stroke: Line2D
+var _grenade_target_visuals: Node2D
+var _grenade_area_visuals: Node2D
+var _reachable_visuals: Node2D
+var _selection_visuals: Node2D
+var _hover_visuals: Node2D
+var _cursor_mode := CursorMode.DEFAULT
 
 
 func _enter_tree() -> void:
@@ -46,12 +62,47 @@ func _ready() -> void:
 	_input_router.hex_hover_exited.connect(_clear_hover)
 	_capture_terrain_tiles()
 	_mount_path_visuals()
+	_mount_grenade_visuals()
+	_mount_interaction_visuals()
+	set_cursor_mode(CursorMode.DEFAULT)
 	_fit_battlefield_to_viewport()
 
 	if not get_viewport().size_changed.is_connected(
 		_fit_battlefield_to_viewport
 	):
 		get_viewport().size_changed.connect(_fit_battlefield_to_viewport)
+
+
+func _exit_tree() -> void:
+	if DisplayServer.get_name() != "headless":
+		Input.set_custom_mouse_cursor(null, Input.CURSOR_ARROW)
+
+
+func set_cursor_mode(mode: CursorMode) -> void:
+	_cursor_mode = mode
+
+	if DisplayServer.get_name() == "headless":
+		return
+
+	match mode:
+		CursorMode.MELEE:
+			Input.set_custom_mouse_cursor(
+				CURSOR_MELEE,
+				Input.CURSOR_ARROW,
+				Vector2(24, 24)
+			)
+		CursorMode.RANGED:
+			Input.set_custom_mouse_cursor(
+				CURSOR_RANGED,
+				Input.CURSOR_ARROW,
+				Vector2(24, 24)
+			)
+		_:
+			Input.set_custom_mouse_cursor(
+				CURSOR_DEFAULT,
+				Input.CURSOR_ARROW,
+				Vector2(5, 3)
+			)
 
 
 func _mount_battle_backdrop() -> void:
@@ -63,6 +114,7 @@ func _mount_battle_backdrop() -> void:
 	_battle_backdrop = TextureRect.new()
 	_battle_backdrop.name = "BattleBackdrop"
 	_battle_backdrop.texture = BATTLE_BACKDROP
+	_battle_backdrop.modulate = Color(0.96, 0.97, 0.95)
 	_battle_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_battle_backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_battle_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -73,7 +125,7 @@ func _mount_path_visuals() -> void:
 	_path_shadow = Line2D.new()
 	_path_shadow.name = "PathShadow"
 	_path_shadow.width = 9.0
-	_path_shadow.default_color = Color(0.07, 0.06, 0.045, 0.92)
+	_path_shadow.default_color = Color(0.08, 0.09, 0.085, 0.80)
 	_path_shadow.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	_path_shadow.end_cap_mode = Line2D.LINE_CAP_ROUND
 	_path_shadow.joint_mode = Line2D.LINE_JOINT_ROUND
@@ -84,7 +136,7 @@ func _mount_path_visuals() -> void:
 	_path_stroke = Line2D.new()
 	_path_stroke.name = "PathStroke"
 	_path_stroke.width = 4.5
-	_path_stroke.default_color = Color(0.96, 0.73, 0.24, 1.0)
+	_path_stroke.default_color = Color(0.88, 0.86, 0.75, 0.96)
 	_path_stroke.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	_path_stroke.end_cap_mode = Line2D.LINE_CAP_ROUND
 	_path_stroke.joint_mode = Line2D.LINE_JOINT_ROUND
@@ -92,6 +144,34 @@ func _mount_path_visuals() -> void:
 	_path_stroke.z_index = 2
 	_path_layer.add_child(_path_stroke)
 
+
+func _mount_grenade_visuals() -> void:
+	_grenade_target_visuals = Node2D.new()
+	_grenade_target_visuals.name = "GrenadeTargetVisuals"
+	_grenade_target_visuals.z_index = 10
+	add_child(_grenade_target_visuals)
+
+	_grenade_area_visuals = Node2D.new()
+	_grenade_area_visuals.name = "GrenadeAreaVisuals"
+	_grenade_area_visuals.z_index = 14
+	add_child(_grenade_area_visuals)
+
+
+func _mount_interaction_visuals() -> void:
+	_reachable_visuals = Node2D.new()
+	_reachable_visuals.name = "ReachableVisuals"
+	_reachable_visuals.z_index = 8
+	add_child(_reachable_visuals)
+
+	_selection_visuals = Node2D.new()
+	_selection_visuals.name = "SelectionVisuals"
+	_selection_visuals.z_index = 12
+	add_child(_selection_visuals)
+
+	_hover_visuals = Node2D.new()
+	_hover_visuals.name = "HoverVisuals"
+	_hover_visuals.z_index = 13
+	add_child(_hover_visuals)
 
 func _fit_battle_backdrop() -> void:
 	if _battle_backdrop == null:
@@ -162,13 +242,14 @@ func _calculate_grid_local_bounds() -> Rect2:
 
 func _apply_visual_profile() -> void:
 	# Цвет не кодирует правила: он только делает слои читаемыми на живописном фоне.
-	_background_layer.modulate = Color(0.64, 0.70, 0.67, 0.18)
-	_reachable_layer.modulate = Color(0.83, 0.79, 0.61, 0.46)
-	_path_layer.modulate = Color(1.0, 0.82, 0.36, 0.92)
-	_targetable_layer.modulate = Color(0.66, 0.25, 0.20, 0.58)
-	_ability_area_layer.modulate = Color(0.92, 0.25, 0.18, 0.66)
-	_selection_layer.modulate = Color(0.91, 0.86, 0.67, 0.72)
-	_highlight_layer.modulate = Color(0.72, 0.73, 0.63, 0.48)
+	_background_layer.modulate = Color(0.68, 0.69, 0.64, 0.035)
+	_terrain_layer.modulate = Color(0.92, 0.93, 0.89, 0.46)
+	_reachable_layer.modulate = Color(0.90, 0.88, 0.76, 0.44)
+	_path_layer.modulate = Color(0.92, 0.90, 0.79, 0.82)
+	_targetable_layer.modulate = Color(0.55, 0.20, 0.18, 0.50)
+	_ability_area_layer.modulate = Color(0.74, 0.25, 0.17, 0.62)
+	_selection_layer.modulate = Color(0.92, 0.90, 0.75, 0.66)
+	_highlight_layer.modulate = Color(0.82, 0.82, 0.73, 0.34)
 
 
 func render_grid(grid: HexGrid) -> void:
@@ -220,14 +301,30 @@ func hex_to_global_position(axial_cell: Vector2i) -> Vector2:
 
 func show_selected_hex(axial_cell: Vector2i) -> void:
 	_selection_layer.clear()
+	_clear_hex_visuals(_selection_visuals)
 	_paint_cell_on_layer(axial_cell, _selection_layer)
+	_add_hex_visual(
+		_selection_visuals,
+		axial_cell,
+		Color(0.92, 0.90, 0.75, 0.10),
+		Color(0.94, 0.92, 0.78, 0.88),
+		1.7
+	)
 
 
 func show_reachable_cells(cells: Array[Vector2i]) -> void:
 	_reachable_layer.clear()
+	_clear_hex_visuals(_reachable_visuals)
 
 	for cell in cells:
 		_paint_cell_on_layer(cell, _reachable_layer)
+		_add_hex_visual(
+			_reachable_visuals,
+			cell,
+			Color(0.86, 0.85, 0.76, 0.035),
+			Color(0.88, 0.87, 0.78, 0.42),
+			1.05
+		)
 
 
 func show_path(cells: Array[Vector2i]) -> void:
@@ -241,20 +338,42 @@ func show_path(cells: Array[Vector2i]) -> void:
 
 func show_targetable_cells(cells: Array[Vector2i]) -> void:
 	_targetable_layer.clear()
+	_clear_hex_visuals(_grenade_target_visuals)
 
 	for cell in cells:
 		_paint_cell_on_layer(cell, _targetable_layer)
 
 
+func show_grenade_targets(cells: Array[Vector2i]) -> void:
+	_clear_hex_visuals(_grenade_target_visuals)
+
+	for cell in cells:
+		_add_hex_visual(
+			_grenade_target_visuals,
+			cell,
+			Color(0.92, 0.38, 0.12, 0.16),
+			Color(1.0, 0.62, 0.25, 0.72),
+			1.4
+		)
+
+
 func show_ability_area(cells: Array[Vector2i]) -> void:
-	_ability_area_layer.clear()
+	clear_ability_area()
 
 	for cell in cells:
 		_paint_cell_on_layer(cell, _ability_area_layer)
+		_add_hex_visual(
+			_grenade_area_visuals,
+			cell,
+			Color(0.96, 0.21, 0.10, 0.36),
+			Color(1.0, 0.75, 0.30, 0.98),
+			2.8
+		)
 
 
 func clear_ability_area() -> void:
 	_ability_area_layer.clear()
+	_clear_hex_visuals(_grenade_area_visuals)
 
 
 func clear_path() -> void:
@@ -269,11 +388,15 @@ func clear_path() -> void:
 
 func clear_overlays() -> void:
 	_reachable_layer.clear()
+	_clear_hex_visuals(_reachable_visuals)
 	clear_path()
 	_targetable_layer.clear()
-	_ability_area_layer.clear()
+	_clear_hex_visuals(_grenade_target_visuals)
+	clear_ability_area()
 	_selection_layer.clear()
+	_clear_hex_visuals(_selection_visuals)
 	_highlight_layer.clear()
+	_clear_hex_visuals(_hover_visuals)
 
 func apply_map_event(event: MapMutationEvent) -> void:
 	if event == null:
@@ -340,7 +463,15 @@ func _get_terrain_tile(movement_cost: int) -> Dictionary:
 
 func _show_hover(axial_cell: Vector2i) -> void:
 	_highlight_layer.clear()
+	_clear_hex_visuals(_hover_visuals)
 	_paint_cell_on_layer(axial_cell, _highlight_layer)
+	_add_hex_visual(
+		_hover_visuals,
+		axial_cell,
+		Color(0.84, 0.84, 0.76, 0.045),
+		Color(0.91, 0.90, 0.81, 0.52),
+		1.2
+	)
 
 
 ## Слои представления копируют внешний вид TerrainLayer и не решают игровых правил.
@@ -360,6 +491,66 @@ func _paint_cell_on_layer(
 		_terrain_layer.get_cell_atlas_coords(map_cell),
 		_terrain_layer.get_cell_alternative_tile(map_cell)
 	)
+
+
+func _clear_hex_visuals(container: Node2D) -> void:
+	if container == null:
+		return
+
+	for child: Node in container.get_children():
+		container.remove_child(child)
+		child.queue_free()
+
+
+func _add_hex_visual(
+	container: Node2D,
+	axial_cell: Vector2i,
+	fill_color: Color,
+	outline_color: Color,
+	outline_width: float
+) -> void:
+	if container == null:
+		return
+
+	var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
+
+	if _terrain_layer.get_cell_source_id(map_cell) == -1:
+		return
+
+	var center := to_local(
+		_terrain_layer.to_global(_terrain_layer.map_to_local(map_cell))
+	)
+	var corners := PackedVector2Array([
+		Vector2(0, -31),
+		Vector2(27, -15.5),
+		Vector2(27, 15.5),
+		Vector2(0, 31),
+		Vector2(-27, 15.5),
+		Vector2(-27, -15.5),
+	])
+
+	var fill := Polygon2D.new()
+	fill.position = center
+	fill.polygon = corners
+	fill.color = fill_color
+	container.add_child(fill)
+
+	var outline := Line2D.new()
+	outline.position = center
+	outline.points = PackedVector2Array([
+		corners[0],
+		corners[1],
+		corners[2],
+		corners[3],
+		corners[4],
+		corners[5],
+		corners[0],
+	])
+	outline.width = outline_width
+	outline.default_color = outline_color
+	outline.joint_mode = Line2D.LINE_JOINT_ROUND
+	outline.antialiased = true
+	container.add_child(outline)
 
 
 func _show_path_polyline(cells: Array[Vector2i]) -> void:
@@ -382,3 +573,4 @@ func _show_path_polyline(cells: Array[Vector2i]) -> void:
 
 func _clear_hover() -> void:
 	_highlight_layer.clear()
+	_clear_hex_visuals(_hover_visuals)

@@ -20,8 +20,8 @@ mouse_filter = 2
 layout_mode = 0
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 326.0
-offset_bottom = 148.0
+offset_right = 286.0
+offset_bottom = 128.0
 
 [node name="Margin" type="MarginContainer" parent="StrategistPanel"]
 layout_mode = 2
@@ -31,7 +31,7 @@ layout_mode = 2
 theme_override_constants/separation = 9
 
 [node name="Portrait" type="TextureRect" parent="StrategistPanel/Margin/Content"]
-custom_minimum_size = Vector2(62, 62)
+custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 texture = ExtResource("1_strategist")
 expand_mode = 1
@@ -80,10 +80,10 @@ layout_mode = 1
 anchors_preset = 10
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -370.0
-offset_top = 14.0
-offset_right = 370.0
-offset_bottom = 94.0
+offset_left = -320.0
+offset_top = 12.0
+offset_right = 320.0
+offset_bottom = 82.0
 grow_horizontal = 2
 
 [node name="Content" type="VBoxContainer" parent="TurnQueuePanel"]
@@ -107,10 +107,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -196.0
-offset_top = 16.0
-offset_right = -16.0
-offset_bottom = 64.0
+offset_left = -176.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = 58.0
 grow_horizontal = 0
 
 [node name="Content" type="HBoxContainer" parent="SystemPanel"]
@@ -135,10 +135,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -326.0
-offset_top = 80.0
-offset_right = -16.0
-offset_bottom = 310.0
+offset_left = -296.0
+offset_top = 68.0
+offset_right = -14.0
+offset_bottom = 228.0
 grow_horizontal = 0
 
 [node name="Content" type="VBoxContainer" parent="TargetPanel"]
@@ -152,7 +152,7 @@ theme_override_font_sizes/font_size = 9
 text = "ТАКТИЧЕСКИЙ АНАЛИЗ"
 
 [node name="TargetPlaceholder" type="Label" parent="TargetPanel/Content"]
-custom_minimum_size = Vector2(0, 166)
+custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.48, 0.47, 0.42, 1)
@@ -167,7 +167,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 9
 
 [node name="TargetPortrait" type="TextureRect" parent="TargetPanel/Content/TargetContent"]
-custom_minimum_size = Vector2(88, 88)
+custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
@@ -214,8 +214,8 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 16.0
-offset_top = -206.0
-offset_right = 462.0
+offset_top = -168.0
+offset_right = 386.0
 offset_bottom = -16.0
 grow_vertical = 0
 z_index = 2
@@ -235,7 +235,7 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="ActivePortrait" type="TextureRect" parent="ActiveUnitPanel/Content/UnitHeader"]
-custom_minimum_size = Vector2(112, 124)
+custom_minimum_size = Vector2(86, 102)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
@@ -247,7 +247,7 @@ theme_override_constants/separation = 2
 
 [node name="ActiveUnitLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
+theme_override_font_sizes/font_size = 15
 text = "—"
 autowrap_mode = 2
 
@@ -277,16 +277,13 @@ text = "УКРЫТИЕ 0% · СОСТОЯНИЕ НОРМА"
 
 [node name="ActionPanel" type="PanelContainer" parent="."]
 layout_mode = 1
-anchors_preset = 12
-anchor_left = 0.5
+anchors_preset = 2
 anchor_top = 1.0
-anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -274.0
-offset_top = -110.0
-offset_right = 274.0
+offset_left = 398.0
+offset_top = -102.0
+offset_right = 1028.0
 offset_bottom = -16.0
-grow_horizontal = 2
 grow_vertical = 0
 z_index = 3
 
@@ -307,7 +304,7 @@ layout_mode = 2
 theme_override_constants/separation = 5
 
 [node name="MovementButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(124, 56)
+custom_minimum_size = Vector2(112, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("2_move")
@@ -315,7 +312,7 @@ text = "ПЕРЕМЕЩЕНИЕ"
 expand_icon = true
 
 [node name="BasicAttackButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(124, 56)
+custom_minimum_size = Vector2(112, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("3_attack")
@@ -323,7 +320,7 @@ text = "АТАКА"
 expand_icon = true
 
 [node name="GrenadeButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(124, 56)
+custom_minimum_size = Vector2(112, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("4_grenade")
@@ -331,7 +328,7 @@ text = "ГРАНАТА"
 expand_icon = true
 
 [node name="EndTurnButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-custom_minimum_size = Vector2(124, 56)
+custom_minimum_size = Vector2(112, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 icon = ExtResource("5_end")
@@ -344,10 +341,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -376.0
-offset_top = 76.0
-offset_right = -16.0
-offset_bottom = 326.0
+offset_left = -346.0
+offset_top = 68.0
+offset_right = -14.0
+offset_bottom = 304.0
 grow_horizontal = 0
 z_index = 10
 

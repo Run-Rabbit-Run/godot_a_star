@@ -227,6 +227,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 
 func _on_hex_hovered(axial_cell: Vector2i) -> void:
 	if not _selected_ability_id.is_empty():
+		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 		_map_view.clear_path()
 
 		if not _ability_target_hexes.has(axial_cell):
@@ -247,6 +248,7 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 		return
 
 	_show_hovered_target(axial_cell)
+	_update_attack_cursor(axial_cell)
 
 	if (
 		_battle_session != null
@@ -264,6 +266,36 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 
 	_map_view.show_path(
 		_movement_search_result.build_path(axial_cell)
+	)
+
+
+func _update_attack_cursor(axial_cell: Vector2i) -> void:
+	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
+
+	if (
+		_battle_session == null
+		or _is_presenting
+		or not _attackable_target_hexes.has(axial_cell)
+	):
+		return
+
+	var active_unit_id := _battle_session.get_active_unit_id()
+	var active := _battle_session.get_unit(active_unit_id)
+	var target := _battle_session.get_unit_at(axial_cell)
+
+	if (
+		active == null
+		or target == null
+		or _battle_session.is_unit_ai_controlled(active_unit_id)
+		or not active.turn.main_action_available
+		or target.faction == active.faction
+	):
+		return
+
+	_map_view.set_cursor_mode(
+		BattleMapView.CursorMode.RANGED
+		if active.basic_attack_range > 1
+		else BattleMapView.CursorMode.MELEE
 	)
 
 
@@ -294,6 +326,7 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 
 
 func _on_hex_hover_exited() -> void:
+	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_map_view.clear_path()
 	_map_view.clear_ability_area()
 	_hud.clear_target()
@@ -317,6 +350,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		return
 
 	_selected_ability_id = ability_id
+	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_ability_target_hexes = _hex_grid.get_cells_in_range(
 		active.hex,
 		active.ability_ranges.get(ability_id, 0)
@@ -324,6 +358,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 	var empty_cells: Array[Vector2i] = []
 	_map_view.show_reachable_cells(empty_cells)
 	_map_view.show_targetable_cells(_ability_target_hexes)
+	_map_view.show_grenade_targets(_ability_target_hexes)
 	_map_view.clear_ability_area()
 	_hud.show_ability_targeting(
 		"Граната",
@@ -513,6 +548,7 @@ func _set_presenting(is_presenting: bool) -> void:
 	_hud.set_interaction_enabled(not is_presenting)
 
 	if is_presenting:
+		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 		_selected_ability_id = StringName()
 		_ability_target_hexes.clear()
 		_attackable_target_hexes.clear()
@@ -559,6 +595,7 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 
 
 func _show_unit_movement(state: UnitSnapshot) -> void:
+	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
 	_ability_target_hexes.clear()
 	_map_view.clear_ability_area()
