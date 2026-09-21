@@ -200,13 +200,46 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 	if not result.is_successful:
 		return _rejected("Move command was rejected.")
 
-	var events: Array[BattleEvent] = [
-		UnitMovedEvent.new(
+	var moved_unit := get_unit(result.unit_id)
+	var events: Array[BattleEvent] = []
+	var segment_path: Array[Vector2i] = [moved_unit.hex]
+	var segment_cost := 0
+
+	for path_index in range(1, result.path.size()):
+		var next_hex := result.path[path_index]
+		var step_cost := _state.hex_grid.get_movement_cost(next_hex)
+		# The entire route was validated before entering it, so every step can be paid.
+		moved_unit.turn.spend_movement(step_cost)
+		moved_unit.hex = next_hex
+		segment_path.append(next_hex)
+		segment_cost += step_cost
+
+		var state_id := _state.hex_grid.get_hex_state_id(next_hex)
+
+		if HexStateCatalog.get_damage(state_id) <= 0:
+			continue
+
+		events.append(UnitMovedEvent.new(result.unit_id, segment_path, segment_cost))
+		segment_path = [next_hex]
+		segment_cost = 0
+		_apply_hex_state_damage(result.unit_id, events)
+
+		if moved_unit.health.is_defeated():
+			break
+
+	if segment_cost > 0:
+		events.append(UnitMovedEvent.new(result.unit_id, segment_path, segment_cost))
+
+	if moved_unit.health.is_defeated() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+		var turn_damage_events: Array[BattleEvent] = []
+		var next_unit_id := _end_turn(turn_damage_events)
+		events.append(TurnEndedEvent.new(
 			result.unit_id,
-			result.path,
-			result.movement_cost
-		),
-	]
+			next_unit_id,
+			get_round_number()
+		))
+		events.append_array(turn_damage_events)
+
 	return _accepted(events)
 
 
@@ -242,9 +275,10 @@ func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 		return _rejected("Only the active unit can end its turn.")
 
 	var previous_unit_id := command.unit_id
-	var next_unit_id := _end_turn()
+	var turn_damage_events: Array[BattleEvent] = []
+	var next_unit_id := _end_turn(turn_damage_events)
 
-	if next_unit_id.is_empty():
+	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		return _rejected("The next unit turn could not be started.")
 
 	var events: Array[BattleEvent] = [
@@ -254,6 +288,7 @@ func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 			get_round_number()
 		),
 	]
+	events.append_array(turn_damage_events)
 	return _accepted(events)
 
 
@@ -267,17 +302,51 @@ func _start_unit_turn(unit_id: StringName) -> bool:
 	return true
 
 
-func _end_turn() -> StringName:
+func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return StringName()
 
 	for _attempt in range(_state.turn_service.get_participant_count()):
 		var next_unit_id := _state.turn_service.advance_turn()
 
-		if _start_unit_turn(next_unit_id):
+		if not _start_unit_turn(next_unit_id):
+			continue
+
+		_apply_hex_state_damage(next_unit_id, damage_events)
+
+		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+			return StringName()
+
+		if not get_unit(next_unit_id).health.is_defeated():
 			return next_unit_id
 
 	return StringName()
+
+
+func _apply_hex_state_damage(
+	unit_id: StringName,
+	events: Array[BattleEvent]
+) -> void:
+	var unit := get_unit(unit_id)
+
+	if unit == null or unit.health.is_defeated():
+		return
+
+	var state_id := _state.hex_grid.get_hex_state_id(unit.hex)
+	var damage := HexStateCatalog.get_damage(state_id)
+
+	if damage <= 0:
+		return
+
+	var applied_damage := unit.health.apply_damage(damage)
+	events.append(UnitDamagedEvent.new(
+		StringName(),
+		unit_id,
+		applied_damage,
+		unit.health.current,
+		unit.health.is_defeated(),
+		state_id
+	))
 
 
 func _execute_move(command: MoveCommand) -> MoveResult:
@@ -297,10 +366,6 @@ func _execute_move(command: MoveCommand) -> MoveResult:
 
 	var path := search_result.build_path(command.destination)
 
-	if not state.turn.spend_movement(movement_cost):
-		return MoveResult.failure()
-
-	state.hex = command.destination
 	return MoveResult.success(
 		command.unit_id,
 		path,

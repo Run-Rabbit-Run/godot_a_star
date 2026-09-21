@@ -14,6 +14,35 @@ const CURSOR_MELEE := preload(
 const CURSOR_RANGED := preload(
 	"res://features/battle/ui/icons/cursor_ranged.svg"
 )
+const HEX_STATE_MANIFEST_PATH := "res://features/battle/art/hex_states/manifest.json"
+const HEX_STATE_TEXTURES := {
+	&"core:electricity": preload("res://features/battle/art/hex_states/01-electricity.png"),
+	&"core:water": preload("res://features/battle/art/hex_states/02-water.png"),
+	&"core:fire": preload("res://features/battle/art/hex_states/03-fire.png"),
+	&"core:oil": preload("res://features/battle/art/hex_states/04-oil.png"),
+	&"core:acid": preload("res://features/battle/art/hex_states/05-acid.png"),
+	&"core:electrified_water": preload("res://features/battle/art/hex_states/06-electrified-water.png"),
+	&"core:plasma": preload("res://features/battle/art/hex_states/07-plasma.png"),
+	&"core:electrified_acid": preload("res://features/battle/art/hex_states/08-electrified-acid.png"),
+	&"core:steam": preload("res://features/battle/art/hex_states/09-steam.png"),
+	&"core:boiling_acid": preload("res://features/battle/art/hex_states/10-boiling-acid.png"),
+	&"core:burning_oil": preload("res://features/battle/art/hex_states/11-burning-oil.png"),
+	&"core:acid_vapour": preload("res://features/battle/art/hex_states/12-acid-vapour.png"),
+}
+const HEX_STATE_ASSET_IDS := {
+	&"core:electricity": "01-electricity",
+	&"core:water": "02-water",
+	&"core:fire": "03-fire",
+	&"core:oil": "04-oil",
+	&"core:acid": "05-acid",
+	&"core:electrified_water": "06-electrified-water",
+	&"core:plasma": "07-plasma",
+	&"core:electrified_acid": "08-electrified-acid",
+	&"core:steam": "09-steam",
+	&"core:boiling_acid": "10-boiling-acid",
+	&"core:burning_oil": "11-burning-oil",
+	&"core:acid_vapour": "12-acid-vapour",
+}
 enum CursorMode { DEFAULT, MELEE, RANGED }
 const GRID_TILE_SIZE := Vector2(56.0, 64.0)
 const SAFE_SIDE_MARGIN := 270.0
@@ -45,6 +74,8 @@ var _grenade_area_visuals: Node2D
 var _reachable_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
+var _hex_state_visuals: Node2D
+var _hex_state_placements: Dictionary = {}
 var _cursor_mode := CursorMode.DEFAULT
 
 
@@ -61,6 +92,8 @@ func _ready() -> void:
 	_input_router.hex_hovered.connect(_show_hover)
 	_input_router.hex_hover_exited.connect(_clear_hover)
 	_capture_terrain_tiles()
+	_mount_hex_state_visuals()
+	_load_hex_state_placements()
 	_mount_path_visuals()
 	_mount_grenade_visuals()
 	_mount_interaction_visuals()
@@ -120,6 +153,80 @@ func _mount_battle_backdrop() -> void:
 	_battle_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	backdrop_layer.add_child(_battle_backdrop)
 
+
+func _mount_hex_state_visuals() -> void:
+	_hex_state_visuals = Node2D.new()
+	_hex_state_visuals.name = "HexStateVisuals"
+	_hex_state_visuals.z_index = 5
+	add_child(_hex_state_visuals)
+
+
+func _load_hex_state_placements() -> void:
+	var file := FileAccess.open(HEX_STATE_MANIFEST_PATH, FileAccess.READ)
+
+	if file == null:
+		push_error("Hex state visual manifest could not be opened.")
+		return
+
+	var manifest := JSON.parse_string(file.get_as_text()) as Dictionary
+
+	if manifest == null:
+		push_error("Hex state visual manifest is invalid JSON.")
+		return
+
+	for item: Variant in manifest.get("assets", []):
+		if item is not Dictionary:
+			continue
+
+		var entry := item as Dictionary
+		_hex_state_placements[String(entry.get("id", ""))] = entry
+
+
+func _render_hex_states(grid: HexGrid) -> void:
+	for child: Node in _hex_state_visuals.get_children():
+		_hex_state_visuals.remove_child(child)
+		child.queue_free()
+
+	for hex: Vector2i in grid.get_cells():
+		var state_id := grid.get_hex_state_id(hex)
+
+		if state_id.is_empty():
+			continue
+
+		var texture := HEX_STATE_TEXTURES.get(state_id) as Texture2D
+		var asset_id := String(HEX_STATE_ASSET_IDS.get(state_id, ""))
+		var placement := _hex_state_placements.get(asset_id) as Dictionary
+
+		if texture == null or placement == null:
+			push_warning("Hex state visual is missing for %s." % state_id)
+			continue
+
+		var anchor_values: Array = placement.get("anchor_px", [])
+
+		if anchor_values.size() != 2:
+			push_warning("Hex state anchor is invalid for %s." % state_id)
+			continue
+
+		var sprite := Sprite2D.new()
+		var sprite_scale := float(placement.get("sprite_scale_for_local_hex_56x64", 0.0))
+
+		if sprite_scale <= 0.0:
+			push_warning("Hex state scale is invalid for %s." % state_id)
+			continue
+
+		sprite.name = "HexState_%d_%d" % [hex.x, hex.y]
+		sprite.texture = texture
+		sprite.centered = false
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		sprite.scale = Vector2.ONE * sprite_scale
+		var center := to_local(
+			_terrain_layer.to_global(
+				_terrain_layer.map_to_local(HexCoordinateMapper.axial_to_offset(hex))
+			)
+		)
+		var anchor := Vector2(float(anchor_values[0]), float(anchor_values[1]))
+		sprite.position = center - anchor * sprite_scale
+		_hex_state_visuals.add_child(sprite)
 
 func _mount_path_visuals() -> void:
 	_path_shadow = Line2D.new()
@@ -277,6 +384,7 @@ func render_grid(grid: HexGrid) -> void:
 			tile["alternative_tile"]
 		)
 
+	_render_hex_states(grid)
 	_fit_battlefield_to_viewport()
 
 
@@ -407,6 +515,11 @@ func apply_map_event(event: MapMutationEvent) -> void:
 
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:
 		_terrain_layer.erase_cell(map_cell)
+		var state_sprite := _hex_state_visuals.get_node_or_null(
+			"HexState_%d_%d" % [event.hex.x, event.hex.y]
+		)
+		if state_sprite != null:
+			state_sprite.queue_free()
 		return
 
 	if event.kind == MapMutationKind.Value.ADD_HEX:
@@ -451,9 +564,9 @@ func _capture_terrain_tiles() -> void:
 		}
 
 
-func _get_terrain_tile(movement_cost: int) -> Dictionary:
+func _get_terrain_tile(_movement_cost: int) -> Dictionary:
 	return _terrain_tiles_by_movement_cost.get(
-		movement_cost,
+		1,
 		{
 			"source_id": _default_source_id,
 			"atlas_coords": _default_atlas_coords,

@@ -17,6 +17,7 @@ func _run() -> void:
 	_check_turn_state()
 	_check_turn_service()
 	_check_battle_engine()
+	_check_hex_state_path_impacts()
 	_check_ranged_attack()
 	_check_grenade_ability()
 	_check_battle_session_factory()
@@ -231,6 +232,98 @@ func _check_battle_engine() -> void:
 	_expect(player.turn.movement_remaining == 3, "Starting player turn must restore its movement.")
 	var unknown_turn := engine.execute(EndTurnCommand.new(&"missing"))
 	_expect(not unknown_turn.accepted, "Unknown unit turn must be rejected.")
+
+
+func _create_hex_state_path_engine(
+	state_ids: Dictionary[Vector2i, StringName],
+	player_health: int = 10
+) -> BattleEngine:
+	var cells: Array[Vector2i] = [
+		Vector2i(0, 0),
+		Vector2i(1, 0),
+		Vector2i(2, 0),
+		Vector2i(3, 0),
+		Vector2i(4, 0),
+	]
+	var costs: Dictionary[Vector2i, int] = {}
+
+	for cell: Vector2i in cells:
+		costs[cell] = HexStateCatalog.get_movement_cost(
+			state_ids.get(cell, StringName())
+		)
+
+	var grid := HexGrid.new(cells, costs, {}, {}, state_ids)
+	var player := UnitState.new(
+		&"player", &"player_definition", BattleFaction.Value.PLAYER,
+		Vector2i.ZERO, TurnState.new(5), HealthState.new(player_health), 2
+	)
+	var enemy := UnitState.new(
+		&"enemy", &"enemy_definition", BattleFaction.Value.ENEMY,
+		Vector2i(4, 0), TurnState.new(5), HealthState.new(10), 2
+	)
+	var states: Dictionary[StringName, UnitState] = {
+		player.unit_id: player,
+		enemy.unit_id: enemy,
+	}
+	var order: Array[StringName] = [player.unit_id, enemy.unit_id]
+	var objective := EliminateFactionObjective.new(
+		BattleFaction.Value.ENEMY, "Eliminate enemies."
+	)
+	return BattleEngine.new(BattleState.new(
+		&"hex_state_path_smoke", grid, states, order,
+		ObjectiveSystem.new(objective, BattleFaction.Value.PLAYER), 123
+	))
+
+
+func _check_hex_state_path_impacts() -> void:
+	var intermediate: Dictionary[Vector2i, StringName] = {
+		Vector2i(1, 0): &"core:fire",
+	}
+	var engine := _create_hex_state_path_engine(intermediate)
+	var resolution := engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	var player := engine.get_unit(&"player")
+	_expect(resolution.accepted, "A route through fire must be accepted.")
+	_expect(player.hex == Vector2i(3, 0), "The unit must reach the destination after surviving fire.")
+	_expect(player.health.current == 9, "Intermediate fire must deal damage even when not the destination.")
+	_expect(player.turn.movement_remaining == 2, "The traversed route must spend three movement points.")
+	_expect(resolution.events.size() == 3, "Intermediate fire must split movement and damage events.")
+	if resolution.events.size() == 3:
+		_expect(resolution.events[0] is UnitMovedEvent and resolution.events[1] is UnitDamagedEvent and resolution.events[2] is UnitMovedEvent, "Damage must be presented at the crossed hex before movement continues.")
+		var damage := resolution.events[1] as UnitDamagedEvent
+		_expect(damage.source_hex_state_id == &"core:fire", "Damage event must identify the crossed hex state.")
+
+	var destination: Dictionary[Vector2i, StringName] = {
+		Vector2i(3, 0): &"core:fire",
+	}
+	engine = _create_hex_state_path_engine(destination)
+	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	_expect(engine.get_unit(&"player").health.current == 9, "Fire must also damage a unit stopping on it.")
+	_expect(resolution.events.size() == 2 and resolution.events[0] is UnitMovedEvent and resolution.events[1] is UnitDamagedEvent, "Destination impact must follow arrival.")
+
+	var repeated: Dictionary[Vector2i, StringName] = {
+		Vector2i(1, 0): &"core:fire",
+		Vector2i(2, 0): &"core:plasma",
+	}
+	engine = _create_hex_state_path_engine(repeated)
+	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	_expect(engine.get_unit(&"player").health.current == 7, "Every crossed damaging hex must apply its own damage once.")
+	_expect(resolution.events.size() == 5, "Both crossed hazards must emit movement and damage in order.")
+	if resolution.events.size() == 5:
+		_expect((resolution.events[1] as UnitDamagedEvent).source_hex_state_id == &"core:fire" and (resolution.events[3] as UnitDamagedEvent).source_hex_state_id == &"core:plasma", "Hazards must resolve in route order.")
+
+	engine = _create_hex_state_path_engine(intermediate, 1)
+	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	player = engine.get_unit(&"player")
+	_expect(player.health.is_defeated() and player.hex == Vector2i(1, 0), "A lethal intermediate hazard must stop the unit on that hex.")
+	_expect(player.turn.movement_remaining == 4, "A fatal route must only spend movement for traversed cells.")
+	_expect(resolution.events.size() == 2 and resolution.events[0] is UnitMovedEvent and resolution.events[1] is UnitDamagedEvent, "A fatal intermediate impact must not animate the remaining route.")
+
+	var costly: Dictionary[Vector2i, StringName] = {
+		Vector2i(1, 0): &"core:oil",
+	}
+	engine = _create_hex_state_path_engine(costly)
+	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	_expect(resolution.accepted and engine.get_unit(&"player").turn.movement_remaining == 1, "A crossed oil hex must spend two movement points without dealing damage.")
 
 
 func _check_ranged_attack() -> void:
@@ -757,15 +850,18 @@ func _check_battle_scene() -> void:
 	_expect(session.get_active_unit_id() == player.unit_id, "Battle scene must start with the first player active.")
 	_expect(movement_label.text == "ОД   3 / 3", "HUD must show full player movement.")
 	_expect(turn_order_container.get_child_count() == 4, "Turn queue must show all four combatants.")
-	_expect(hex_grid.get_movement_cost(Vector2i(8, 6)) == 2, "Scene grid must read difficult terrain cost.")
+	_expect(hex_grid.get_movement_cost(Vector2i(8, 6)) == 1, "Former anonymous difficult hex must use normal movement cost.")
+	_expect(hex_grid.get_movement_cost(Vector2i(13, 4)) == 2 and hex_grid.get_hex_state_id(Vector2i(13, 4)) == &"core:oil", "Oil must explicitly define a two-point traversal cost.")
 	_expect(
 		terrain_layer.get_cell_source_id(
 			HexCoordinateMapper.axial_to_offset(Vector2i(8, 6))
-		) != terrain_layer.get_cell_source_id(
+		) == terrain_layer.get_cell_source_id(
 			HexCoordinateMapper.axial_to_offset(Vector2i(7, 7))
 		),
-		"Difficult terrain must keep a visibly distinct tile after grid rendering."
+		"Former difficult hex must use the normal terrain tile."
 	)
+	var state_visuals := map_view.get_node_or_null("HexStateVisuals") as Node2D
+	_expect(state_visuals != null and state_visuals.get_child_count() == 12, "Battlefield must display all twelve hex state assets.")
 	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
 	_expect(
 		hex_grid.get_cells().size() == 216

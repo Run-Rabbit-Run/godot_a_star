@@ -214,6 +214,10 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _finish_battle_if_needed(resolution):
 		return
 
+	if was_presented and _battle_session.get_active_unit_id() != active_unit_id:
+		await _continue_turn_cycle()
+		return
+
 	_set_presenting(false)
 
 	if not was_presented:
@@ -430,6 +434,8 @@ func _on_end_turn_requested() -> void:
 		_map_view,
 		_hud
 	)
+	if _finish_battle_if_needed(resolution):
+		return
 	await _continue_turn_cycle()
 
 

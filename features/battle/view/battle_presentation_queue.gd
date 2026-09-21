@@ -144,8 +144,13 @@ func _present_damage(
 			map_view
 		)
 
+	var source_name := _get_display_name(event.attacker_id, unit_definitions)
+
+	if not event.source_hex_state_id.is_empty():
+		source_name = HexStateCatalog.get_display_name(event.source_hex_state_id)
+
 	hud.show_attack(
-		_get_display_name(event.attacker_id, unit_definitions),
+		source_name,
 		_get_display_name(event.target_id, unit_definitions),
 		event.damage,
 		event.target_health_remaining

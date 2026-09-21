@@ -16,19 +16,22 @@ var _cells: Dictionary[Vector2i, bool] = {}
 var _movement_costs: Dictionary[Vector2i, int] = {}
 var _terrain_ids: Dictionary[Vector2i, StringName] = {}
 var _traversable: Dictionary[Vector2i, bool] = {}
+var _hex_state_ids: Dictionary[Vector2i, StringName] = {}
 
 
 func _init(
 	cells: Array[Vector2i],
 	movement_costs: Dictionary[Vector2i, int] = {},
 	terrain_ids: Dictionary[Vector2i, StringName] = {},
-	traversal: Dictionary[Vector2i, bool] = {}
+	traversal: Dictionary[Vector2i, bool] = {},
+	hex_state_ids: Dictionary[Vector2i, StringName] = {}
 ) -> void:
 	for cell: Vector2i in cells:
 		_cells[cell] = true
 		_movement_costs[cell] = maxi(movement_costs.get(cell, 1), 1)
 		_terrain_ids[cell] = terrain_ids.get(cell, &"core:default")
 		_traversable[cell] = traversal.get(cell, true)
+		_hex_state_ids[cell] = hex_state_ids.get(cell, StringName())
 
 
 func has_cell(cell: Vector2i) -> bool:
@@ -55,6 +58,10 @@ func get_configured_movement_cost(cell: Vector2i) -> int:
 
 func get_terrain_id(cell: Vector2i) -> StringName:
 	return _terrain_ids.get(cell, StringName())
+
+
+func get_hex_state_id(cell: Vector2i) -> StringName:
+	return _hex_state_ids.get(cell, StringName())
 
 
 func get_cells() -> Array[Vector2i]:
@@ -99,7 +106,8 @@ func duplicate_grid() -> HexGrid:
 		get_cells(),
 		_movement_costs,
 		_terrain_ids,
-		_traversable
+		_traversable,
+		_hex_state_ids
 	)
 
 
@@ -111,12 +119,14 @@ func replace_with(other: HexGrid) -> bool:
 	_movement_costs.clear()
 	_terrain_ids.clear()
 	_traversable.clear()
+	_hex_state_ids.clear()
 
 	for cell: Vector2i in other.get_cells():
 		_cells[cell] = true
 		_movement_costs[cell] = other._movement_costs[cell]
 		_terrain_ids[cell] = other._terrain_ids[cell]
 		_traversable[cell] = other._traversable[cell]
+		_hex_state_ids[cell] = other._hex_state_ids[cell]
 
 	return true
 
@@ -125,15 +135,23 @@ func add_cell(
 	cell: Vector2i,
 	terrain_id: StringName,
 	movement_cost: int,
-	traversable: bool
+	traversable: bool,
+	hex_state_id: StringName = StringName()
 ) -> bool:
 	if has_cell(cell) or terrain_id.is_empty() or movement_cost < 1:
+		return false
+
+	if not hex_state_id.is_empty() and (
+		not HexStateCatalog.has_state(hex_state_id)
+		or movement_cost != HexStateCatalog.get_movement_cost(hex_state_id)
+	):
 		return false
 
 	_cells[cell] = true
 	_movement_costs[cell] = movement_cost
 	_terrain_ids[cell] = terrain_id
 	_traversable[cell] = traversable
+	_hex_state_ids[cell] = hex_state_id
 	return true
 
 
@@ -145,6 +163,7 @@ func remove_cell(cell: Vector2i) -> bool:
 	_movement_costs.erase(cell)
 	_terrain_ids.erase(cell)
 	_traversable.erase(cell)
+	_hex_state_ids.erase(cell)
 	return true
 
 
@@ -162,6 +181,11 @@ func set_traversal(
 	movement_cost: int
 ) -> bool:
 	if not has_cell(cell) or movement_cost < 1:
+		return false
+
+	var state_id := get_hex_state_id(cell)
+
+	if not state_id.is_empty() and movement_cost != HexStateCatalog.get_movement_cost(state_id):
 		return false
 
 	_traversable[cell] = traversable

@@ -80,6 +80,9 @@ static func _validate_mutation(
 				return "SetTraversal target does not exist: %s." % mutation.hex
 			if mutation.movement_cost < 1:
 				return "SetTraversal movement cost must be at least 1."
+			var state_id := candidate.get_hex_state_id(mutation.hex)
+			if not state_id.is_empty() and mutation.movement_cost != HexStateCatalog.get_movement_cost(state_id):
+				return "SetTraversal cost conflicts with hex state at %s." % mutation.hex
 			if not mutation.traversable and _is_occupied(state, mutation.hex):
 				return "An occupied hex cannot become non-traversable: %s." % mutation.hex
 
