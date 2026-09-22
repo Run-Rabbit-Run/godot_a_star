@@ -43,6 +43,12 @@ const HEX_STATE_ASSET_IDS := {
 	&"core:burning_oil": "11-burning-oil",
 	&"core:acid_vapour": "12-acid-vapour",
 }
+const ELECTRIC_SPARK_COLORS := {
+	&"core:electricity": Color(0.52, 0.87, 1.0),
+	&"core:electrified_water": Color(0.46, 0.82, 1.0),
+	&"core:electrified_acid": Color(0.70, 1.0, 0.54),
+}
+
 enum CursorMode { DEFAULT, MELEE, RANGED }
 const GRID_TILE_SIZE := Vector2(56.0, 64.0)
 const SAFE_SIDE_MARGIN := 270.0
@@ -227,6 +233,15 @@ func _render_hex_states(grid: HexGrid) -> void:
 		var anchor := Vector2(float(anchor_values[0]), float(anchor_values[1]))
 		sprite.position = center - anchor * sprite_scale
 		_hex_state_visuals.add_child(sprite)
+
+		if ELECTRIC_SPARK_COLORS.has(state_id):
+			var sparks := ElectricHexParticles.new()
+			sparks.name = "ElectricSparks_%d_%d" % [hex.x, hex.y]
+			sparks.position = center
+			sparks.z_index = 1
+			sparks.configure(hex, ELECTRIC_SPARK_COLORS[state_id])
+			_hex_state_visuals.add_child(sparks)
+
 
 func _mount_path_visuals() -> void:
 	_path_shadow = Line2D.new()
@@ -515,11 +530,14 @@ func apply_map_event(event: MapMutationEvent) -> void:
 
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:
 		_terrain_layer.erase_cell(map_cell)
-		var state_sprite := _hex_state_visuals.get_node_or_null(
-			"HexState_%d_%d" % [event.hex.x, event.hex.y]
-		)
-		if state_sprite != null:
-			state_sprite.queue_free()
+		for name in [
+			"HexState_%d_%d" % [event.hex.x, event.hex.y],
+			"ElectricSparks_%d_%d" % [event.hex.x, event.hex.y],
+		]:
+			var visual := _hex_state_visuals.get_node_or_null(name)
+			if visual != null:
+				_hex_state_visuals.remove_child(visual)
+				visual.queue_free()
 		return
 
 	if event.kind == MapMutationKind.Value.ADD_HEX:

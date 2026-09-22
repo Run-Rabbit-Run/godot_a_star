@@ -63,6 +63,7 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _grenade_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/GrenadeButton
 @onready var _settings_button: Button = $HUDRoot/SystemPanel/Content/SettingsButton
 @onready var _end_turn_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/EndTurnButton
+@onready var _speed_half_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/SpeedHalfButton
 @onready var _speed_1_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed1Button
 @onready var _speed_2_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed2Button
 @onready var _speed_4_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed4Button
@@ -117,6 +118,7 @@ func _ready() -> void:
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
 	_grenade_button.pressed.connect(_on_grenade_button_pressed)
 	_settings_button.pressed.connect(_on_settings_button_pressed)
+	_speed_half_button.pressed.connect(_on_speed_requested.bind(0.5))
 	_speed_1_button.pressed.connect(_on_speed_requested.bind(1.0))
 	_speed_2_button.pressed.connect(_on_speed_requested.bind(2.0))
 	_speed_4_button.pressed.connect(_on_speed_requested.bind(4.0))
@@ -130,6 +132,7 @@ func set_interaction_enabled(enabled: bool) -> void:
 	_interaction_enabled = enabled
 	_end_turn_button.disabled = not enabled
 	_settings_button.disabled = not enabled
+	_speed_half_button.disabled = not enabled
 	_speed_1_button.disabled = not enabled
 	_speed_2_button.disabled = not enabled
 	_speed_4_button.disabled = not enabled
@@ -331,7 +334,9 @@ func _on_settings_button_pressed() -> void:
 
 
 func _on_speed_requested(speed: float) -> void:
-	_speed_label.text = "СКОРОСТЬ АНИМАЦИИ: %sx" % String.num(speed, 0)
+	var speed_text := String.num(speed, 1).trim_suffix("0").trim_suffix(".")
+	speed_text = speed_text.replace(".", ",")
+	_speed_label.text = "СКОРОСТЬ АНИМАЦИИ: %sx" % speed_text
 	playback_speed_requested.emit(speed)
 
 
@@ -598,6 +603,7 @@ func _apply_styles() -> void:
 		_grenade_button,
 		_settings_button,
 		_end_turn_button,
+		_speed_half_button,
 		_speed_1_button,
 		_speed_2_button,
 		_speed_4_button,
