@@ -13,6 +13,6 @@ basic_attack_damage = 2
 script = ExtResource("1_definition")
 id = &"core:debug_enemy"
 display_name = "Штурмовая машина"
-presentation_id = &"core:debug_enemy_actor"
 base_stats = SubResource("Resource_enemy_stats")
 ability_ids = Array[StringName]([&"core:grenade"])
+presentation_id = &"core:debug_enemy_actor"
