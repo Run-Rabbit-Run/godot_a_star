@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UnitPresentationDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="1_presentation"]
+[ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="2_actor"]
+[ext_resource type="Texture2D" path="res://features/battle/units/art/ash_machine_gunner_v3.png" id="3_texture"]
+
+[resource]
+script = ExtResource("1_presentation")
+id = &"core:debug_enemy_ranged_actor"
+actor_scene = ExtResource("2_actor")
+actor_texture = ExtResource("3_texture")
+actor_foot_anchor = Vector2(0.64, 0.94)

@@ -21,6 +21,8 @@
 [ext_resource type="Resource" uid="uid://17hb2x1tn0ut" path="res://content/packages/ember_pack/ash_gate_scenario.tres" id="18_scenario_two"]
 [ext_resource type="Script" uid="uid://bse3066paqbd5" path="res://features/campaign/campaign_definition.gd" id="19_campaign_type"]
 [ext_resource type="Resource" path="res://content/packages/ember_pack/two_battles_campaign.tres" id="20_campaign"]
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="21_presentation_type"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ember_scout_presentation.tres" id="22_scout_presentation"]
 
 [sub_resource type="Resource" id="Dependency_core"]
 script = ExtResource("3_dependency")
@@ -40,6 +42,7 @@ manifest = SubResource("Manifest_ember")
 battles = Array[ExtResource("13_battle_type")]([ExtResource("14_battle_one"), ExtResource("15_battle_two")])
 maps = Array[ExtResource("10_map_type")]([ExtResource("11_map_one"), ExtResource("12_map_two")])
 units = Array[ExtResource("6_unit_type")]([ExtResource("7_unit")])
+unit_presentations = Array[ExtResource("21_presentation_type")]([ExtResource("22_scout_presentation")])
 races = Array[ExtResource("4_race_type")]([ExtResource("5_race")])
 abilities = Array[ExtResource("8_ability_type")]([ExtResource("9_ability")])
 scenarios = Array[ExtResource("16_scenario_type")]([ExtResource("17_scenario_one"), ExtResource("18_scenario_two")])

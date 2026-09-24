@@ -33,6 +33,7 @@ static func load_packages(
 	var battles: Array[BattleDefinition] = []
 	var maps: Array[BattleMapDefinition] = []
 	var units: Array[UnitDefinition] = []
+	var unit_presentations: Array[UnitPresentationDefinition] = []
 	var ai_profiles: Array[AIProfileDefinition] = []
 	var races: Array[RaceDefinition] = []
 	var abilities: Array[AbilityDefinition] = []
@@ -47,6 +48,7 @@ static func load_packages(
 			battles,
 			maps,
 			units,
+			unit_presentations,
 			ai_profiles,
 			races,
 			abilities,
@@ -70,7 +72,8 @@ static func load_packages(
 		scenarios,
 		campaigns,
 		ContentLock.new(ModAPI.VERSION, lock_entries),
-		api
+		api,
+		unit_presentations
 	)
 
 	if not snapshot.is_valid:
@@ -211,6 +214,7 @@ static func _collect_package(
 	battles: Array[BattleDefinition],
 	maps: Array[BattleMapDefinition],
 	units: Array[UnitDefinition],
+	unit_presentations: Array[UnitPresentationDefinition],
 	ai_profiles: Array[AIProfileDefinition],
 	races: Array[RaceDefinition],
 	abilities: Array[AbilityDefinition],
@@ -222,6 +226,14 @@ static func _collect_package(
 	_collect_definitions(package, "battle", package.battles, battles, ids_by_type, result)
 	_collect_definitions(package, "map", package.maps, maps, ids_by_type, result)
 	_collect_definitions(package, "unit", package.units, units, ids_by_type, result)
+	_collect_definitions(
+		package,
+		"unit_presentation",
+		package.unit_presentations,
+		unit_presentations,
+		ids_by_type,
+		result
+	)
 	_collect_definitions(package, "ai_profile", package.ai_profiles, ai_profiles, ids_by_type, result)
 	_collect_definitions(package, "race", package.races, races, ids_by_type, result)
 	_collect_definitions(package, "ability", package.abilities, abilities, ids_by_type, result)
@@ -291,13 +303,21 @@ static func _validate_references(
 				% [unit.id, unit.race_id]
 			)
 
+		if (
+			not unit.presentation_id.is_empty()
+			and snapshot.get_unit_presentation_definition(unit.presentation_id) == null
+		):
+			result.add_warning(
+				"UnitDefinition %s references missing optional UnitPresentationDefinition %s; graphical adapters will use a fallback."
+				% [unit.id, unit.presentation_id]
+			)
+
 		for ability_id: StringName in unit.ability_ids:
 			if snapshot.get_ability_definition(ability_id) == null:
 				result.add_error(
 					"UnitDefinition %s references missing AbilityDefinition %s."
 					% [unit.id, ability_id]
 				)
-
 	for ability_id: StringName in snapshot.get_ability_definition_ids():
 		var ability := snapshot.get_ability_definition(ability_id)
 
@@ -375,6 +395,7 @@ static func _create_lock_entry(package: ContentPackage) -> ContentLockEntry:
 		package.battles,
 		package.maps,
 		package.units,
+		package.unit_presentations,
 		package.ai_profiles,
 		package.races,
 		package.abilities,

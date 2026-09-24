@@ -19,6 +19,11 @@
 [ext_resource type="Resource" uid="uid://doncxt1ib2npb" path="res://features/battle/units/definitions/debug_enemy_ranged.tres" id="13_enemy_ranged"]
 [ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="14_ability_type"]
 [ext_resource type="Resource" uid="uid://dm60fglme5bak" path="res://features/abilities/definitions/grenade.tres" id="15_grenade"]
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="16_presentation_type"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_presentation.tres" id="17_player_presentation"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_presentation.tres" id="18_enemy_presentation"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_ranged_presentation.tres" id="19_player_ranged_presentation"]
+[ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged_presentation.tres" id="20_enemy_ranged_presentation"]
 
 [sub_resource type="Resource" id="Manifest_core"]
 script = ExtResource("2_manifest")
@@ -31,5 +36,6 @@ manifest = SubResource("Manifest_core")
 battles = Array[ExtResource("3_battle_type")]([ExtResource("4_battle")])
 maps = Array[ExtResource("5_map_type")]([ExtResource("6_map")])
 units = Array[ExtResource("7_unit_type")]([ExtResource("8_player"), ExtResource("9_enemy"), ExtResource("12_player_ranged"), ExtResource("13_enemy_ranged")])
+unit_presentations = Array[ExtResource("16_presentation_type")]([ExtResource("17_player_presentation"), ExtResource("18_enemy_presentation"), ExtResource("19_player_ranged_presentation"), ExtResource("20_enemy_ranged_presentation")])
 ai_profiles = Array[ExtResource("10_ai_type")]([ExtResource("11_ai")])
 abilities = Array[ExtResource("14_ability_type")]([ExtResource("15_grenade")])

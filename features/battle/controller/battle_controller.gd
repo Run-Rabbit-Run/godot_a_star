@@ -26,8 +26,13 @@ var _attackable_target_hexes: Array[Vector2i] = []
 var _ability_target_hexes: Array[Vector2i] = []
 var _selected_ability_id := StringName()
 var _is_presenting := false
-var _unit_actors: Dictionary[StringName, UnitActor] = {}
-var _unit_definitions: Dictionary[StringName, UnitDefinition] = {}
+var _unit_views := BattleUnitViewRegistry.new()
+
+# Read-only compatibility bridge for diagnostics that inspect the old field name.
+var _unit_actors: Dictionary[StringName, UnitActor]:
+	get:
+		return _unit_views.actors
+
 
 
 func setup(request: BattleStartRequest) -> bool:
@@ -70,8 +75,8 @@ func apply_map_mutations(
 
 	await _presentation_queue.present(
 		resolution,
-		_unit_actors,
-		_unit_definitions,
+		_unit_views.actors,
+		_unit_views.definitions,
 		_map_view,
 		_hud
 	)
@@ -99,9 +104,12 @@ func _initialize_battle() -> void:
 	_known_map_revision = _battle_session.get_map_revision()
 	_map_view.render_grid(_hex_grid)
 	_input_router.setup(_hex_grid)
+	_unit_views.setup(_start_request.content_snapshot, _units, _map_view)
 
-	if not _create_unit_actors(_battle_setup.unit_spawns):
-		_clear_created_units()
+	if not _unit_views.create_units(
+		_battle_setup.unit_spawns,
+		_battle_session
+	):
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
@@ -125,39 +133,6 @@ func _initialize_battle() -> void:
 		if _battle_session.is_active_unit_ai_controlled():
 			_set_presenting(true)
 			await _run_ai_turns()
-
-
-func _create_unit_actors(spawns: Array[UnitSpawnData]) -> bool:
-	for spawn: UnitSpawnData in spawns:
-		var state := _battle_session.get_unit(spawn.unit_id)
-
-		if state == null:
-			push_error("Unit state is missing: %s." % spawn.unit_id)
-			return false
-
-		var actor := UnitActorFactory.create(
-			state,
-			spawn.unit_definition,
-			_units
-		)
-
-		if actor == null:
-			push_error("Unit actor could not be created: %s." % spawn.unit_id)
-			return false
-
-		actor.global_position = _map_view.hex_to_global_position(state.hex)
-		_unit_actors[state.unit_id] = actor
-		_unit_definitions[state.unit_id] = spawn.unit_definition
-
-	return true
-
-
-func _clear_created_units() -> void:
-	for actor: UnitActor in _unit_actors.values():
-		actor.queue_free()
-
-	_unit_actors.clear()
-	_unit_definitions.clear()
 
 
 func _on_hex_selected(axial_cell: Vector2i) -> void:
@@ -205,8 +180,8 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	_set_presenting(true)
 	var was_presented := await _presentation_queue.present(
 		resolution,
-		_unit_actors,
-		_unit_definitions,
+		_unit_views.actors,
+		_unit_views.definitions,
 		_map_view,
 		_hud
 	)
@@ -314,10 +289,12 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 		_hud.clear_target()
 		return
 
-	var definition := _unit_definitions.get(target.unit_id) as UnitDefinition
+	var presentation := _unit_views.presentations.get(
+		target.unit_id
+	) as UnitPresentationDefinition
 	_hud.show_target(
-		_get_unit_display_name(target.unit_id),
-		definition.actor_texture if definition != null else null,
+		_unit_views.get_display_name(target.unit_id),
+		presentation.actor_texture if presentation != null else null,
 		"Союзник" if target.faction == BattleFaction.Value.PLAYER else "Противник",
 		target.health.current,
 		target.health.maximum,
@@ -429,8 +406,8 @@ func _on_end_turn_requested() -> void:
 
 	await _presentation_queue.present(
 		resolution,
-		_unit_actors,
-		_unit_definitions,
+		_unit_views.actors,
+		_unit_views.definitions,
 		_map_view,
 		_hud
 	)
@@ -495,8 +472,8 @@ func _run_ai_turns() -> void:
 
 		if not await _presentation_queue.present(
 			resolution,
-			_unit_actors,
-			_unit_definitions,
+			_unit_views.actors,
+			_unit_views.definitions,
 			_map_view,
 			_hud
 		):
@@ -536,16 +513,6 @@ func _refresh_map_revision() -> void:
 
 	if active != null:
 		_show_unit_movement(active)
-
-
-func _get_unit_display_name(unit_id: StringName) -> String:
-	var definition := _unit_definitions.get(unit_id) as UnitDefinition
-
-	if definition == null:
-		push_warning("UnitDefinition is not registered for presentation.")
-		return String(unit_id)
-
-	return definition.display_name
 
 
 func _set_presenting(is_presenting: bool) -> void:
@@ -627,7 +594,7 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 		state.turn.main_action_available
 	)
 
-	var definition := _unit_definitions.get(state.unit_id) as UnitDefinition
+	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition
 
 	if definition == null:
 		push_error("Active unit definition is not registered.")
@@ -636,7 +603,12 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 	_hud.show_active_unit(
 		definition.display_name
 	)
-	_hud.show_active_portrait(definition.actor_texture)
+	var presentation := _unit_views.presentations.get(
+		state.unit_id
+	) as UnitPresentationDefinition
+	_hud.show_active_portrait(
+		presentation.actor_texture if presentation != null else null
+	)
 	_hud.show_combat_stats(
 		state.basic_attack_damage,
 		state.basic_attack_range
@@ -657,13 +629,18 @@ func _refresh_turn_order() -> void:
 		if state == null:
 			continue
 
-		var definition := _unit_definitions.get(unit_id) as UnitDefinition
+		var definition := _unit_views.definitions.get(unit_id) as UnitDefinition
+		var presentation := _unit_views.presentations.get(
+			unit_id
+		) as UnitPresentationDefinition
 		var display_name := String(unit_id)
 		var texture: Texture2D
 
 		if definition != null:
 			display_name = definition.display_name
-			texture = definition.actor_texture
+
+		if presentation != null:
+			texture = presentation.actor_texture
 
 		entries.append({
 			"unit_id": unit_id,

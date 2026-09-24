@@ -10,6 +10,7 @@ signal battle_finished(result: BattleResult)
 @export var battle_definitions: Array[BattleDefinition] = []
 @export var map_definitions: Array[BattleMapDefinition] = []
 @export var unit_definitions: Array[UnitDefinition] = []
+@export var unit_presentation_definitions: Array[UnitPresentationDefinition] = []
 @export var ai_profile_definitions: Array[AIProfileDefinition] = []
 @export var deterministic_seed := 1
 
@@ -41,7 +42,14 @@ func _load_content() -> ContentSnapshot:
 			battle_definitions,
 			map_definitions,
 			unit_definitions,
-			ai_profile_definitions
+			ai_profile_definitions,
+			[],
+			[],
+			[],
+			[],
+			null,
+			null,
+			unit_presentation_definitions
 		)
 
 	var load_result := ContentLoader.load_packages(content_packages)

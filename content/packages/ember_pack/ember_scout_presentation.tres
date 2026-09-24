@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="UnitPresentationDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="1_presentation"]
+[ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="2_actor"]
+
+[resource]
+script = ExtResource("1_presentation")
+id = &"ember_pack:scout_actor"
+actor_scene = ExtResource("2_actor")
+actor_color = Color(1, 0.35, 0.12, 1)

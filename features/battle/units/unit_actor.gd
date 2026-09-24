@@ -43,6 +43,7 @@ func _draw() -> void:
 func setup(
 	p_unit_id: StringName,
 	definition: UnitDefinition,
+	presentation: UnitPresentationDefinition,
 	faction: BattleFaction.Value,
 	current_health: int,
 	maximum_health: int
@@ -58,8 +59,8 @@ func setup(
 	_unit_id_label.text = definition.display_name
 	_unit_id_label.visible = false
 
-	if definition.actor_texture != null:
-		_sprite.texture = definition.actor_texture
+	if presentation != null and presentation.actor_texture != null:
+		_sprite.texture = presentation.actor_texture
 		var rim_material := ShaderMaterial.new()
 		rim_material.shader = READABILITY_SHADER
 		rim_material.set_shader_parameter(
@@ -67,7 +68,7 @@ func setup(
 			Color(0.075, 0.082, 0.075, 0.74)
 		)
 		_sprite.material = rim_material
-		var texture_size := definition.actor_texture.get_size()
+		var texture_size := presentation.actor_texture.get_size()
 		var longest_side := maxf(texture_size.x, texture_size.y)
 
 		if longest_side > 0.0:
@@ -76,7 +77,7 @@ func setup(
 			)
 			# The actor origin is the hex center; align the painted feet to it.
 			_sprite.offset = (
-				Vector2.ONE * 0.5 - definition.actor_foot_anchor
+				Vector2.ONE * 0.5 - presentation.actor_foot_anchor
 			) * texture_size
 
 	_combat_role_label.visible = (
@@ -85,7 +86,9 @@ func setup(
 	)
 	_combat_role_label.text = "◎"
 	show_health(current_health, maximum_health)
-	modulate = definition.actor_color
+	modulate = (
+		presentation.actor_color if presentation != null else Color.WHITE
+	)
 
 
 func show_health(current: int, maximum: int) -> void:

@@ -6,6 +6,7 @@ extends Resource
 @export var battles: Array[BattleDefinition] = []
 @export var maps: Array[BattleMapDefinition] = []
 @export var units: Array[UnitDefinition] = []
+@export var unit_presentations: Array[UnitPresentationDefinition] = []
 @export var ai_profiles: Array[AIProfileDefinition] = []
 @export var races: Array[RaceDefinition] = []
 @export var abilities: Array[AbilityDefinition] = []
