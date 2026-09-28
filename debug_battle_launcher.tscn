@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://features/battle/debug_battle_launcher.gd" id="1_launcher"]
 [ext_resource type="PackedScene" path="res://features/battle/battle_screen.tscn" id="2_screen"]
@@ -17,10 +17,12 @@
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_ranged.tres" id="15_player_ranged"]
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged.tres" id="16_enemy_ranged"]
 
+[ext_resource type="Resource" path="res://content/packages/plateau/plateau_package.tres" id="17_plateau"]
+
 [node name="DebugBattleLauncher" type="Node"]
 script = ExtResource("1_launcher")
-battle_id = &"core:debug_battle"
-content_packages = Array[ExtResource("12_package_type")]([ExtResource("13_core_package"), ExtResource("14_ember_package")])
+battle_id = &"plateau:battle"
+content_packages = Array[ExtResource("12_package_type")]([ExtResource("13_core_package"), ExtResource("14_ember_package"), ExtResource("17_plateau")])
 battle_definitions = Array[ExtResource("3_battle_definition")]([ExtResource("4_battle")])
 map_definitions = Array[ExtResource("5_map_definition")]([ExtResource("6_map")])
 unit_definitions = Array[ExtResource("7_unit_definition")]([ExtResource("8_player"), ExtResource("9_enemy"), ExtResource("15_player_ranged"), ExtResource("16_enemy_ranged")])

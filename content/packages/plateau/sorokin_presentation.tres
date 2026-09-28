@@ -1,0 +1,15 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="presentation"]
+[ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="actor"]
+[ext_resource type="Texture2D" path="res://features/battle/art/plateau_units/0.png" id="texture"]
+[ext_resource type="Texture2D" path="res://features/battle/art/plateau_units/0-portrait.png" id="portrait"]
+
+[resource]
+script = ExtResource("presentation")
+id = &"plateau:sorokin_actor"
+actor_scene = ExtResource("actor")
+actor_texture = ExtResource("texture")
+portrait_texture = ExtResource("portrait")
+actor_height = 108.0
+actor_foot_anchor = Vector2(0.38611111, 0.95936795)

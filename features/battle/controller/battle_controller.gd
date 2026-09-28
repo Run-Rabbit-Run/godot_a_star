@@ -577,9 +577,11 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 		state.unit_id
 	)
 	_map_view.show_selected_hex(state.hex)
-	_map_view.show_reachable_cells(
-		_movement_search_result.get_reachable_cells()
-	)
+	var reachable := _movement_search_result.get_reachable_cells()
+	reachable.erase(state.hex)
+	if _battle_session.is_unit_ai_controlled(state.unit_id):
+		reachable.clear()
+	_map_view.show_reachable_cells(reachable)
 	_refresh_attack_targets(state)
 	_hud.show_round(_battle_session.get_round_number())
 	_hud.show_health(state.health.current, state.health.maximum)
@@ -640,7 +642,7 @@ func _refresh_turn_order() -> void:
 			display_name = definition.display_name
 
 		if presentation != null:
-			texture = presentation.actor_texture
+			texture = presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture
 
 		entries.append({
 			"unit_id": unit_id,

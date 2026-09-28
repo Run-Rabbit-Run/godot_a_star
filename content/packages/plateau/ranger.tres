@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="unit"]
+[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="stats"]
+
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("stats")
+max_health = 90
+movement_points = 3
+basic_attack_damage = 24
+basic_attack_range = 5
+
+[resource]
+script = ExtResource("unit")
+id = &"plateau:ranger"
+display_name = "Следопыт"
+base_stats = SubResource("Stats")
+presentation_id = &"plateau:ranger_actor"
+ability_ids = Array[StringName]([&"core:grenade"])

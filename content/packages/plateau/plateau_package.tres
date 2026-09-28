@@ -1,0 +1,46 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/content/content_package.gd" id="package"]
+[ext_resource type="Script" path="res://features/content/content_package_manifest.gd" id="manifest"]
+[ext_resource type="Script" path="res://features/content/content_package_dependency.gd" id="dependency"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="battle"]
+[ext_resource type="Script" path="res://features/battle/map/battle_map_definition.gd" id="map"]
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="unit"]
+[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="presentation"]
+[ext_resource type="Resource" path="res://content/packages/plateau/battle.tres" id="battle_data"]
+[ext_resource type="Resource" path="res://content/packages/plateau/map.tres" id="map_data"]
+[ext_resource type="Resource" path="res://content/packages/plateau/sorokin.tres" id="sorokin"]
+[ext_resource type="Resource" path="res://content/packages/plateau/sorokin_presentation.tres" id="sorokin_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/ranger.tres" id="ranger"]
+[ext_resource type="Resource" path="res://content/packages/plateau/ranger_presentation.tres" id="ranger_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/bastion.tres" id="bastion"]
+[ext_resource type="Resource" path="res://content/packages/plateau/bastion_presentation.tres" id="bastion_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/guide.tres" id="guide"]
+[ext_resource type="Resource" path="res://content/packages/plateau/guide_presentation.tres" id="guide_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/carapace.tres" id="carapace"]
+[ext_resource type="Resource" path="res://content/packages/plateau/carapace_presentation.tres" id="carapace_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/reaper.tres" id="reaper"]
+[ext_resource type="Resource" path="res://content/packages/plateau/reaper_presentation.tres" id="reaper_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/spore.tres" id="spore"]
+[ext_resource type="Resource" path="res://content/packages/plateau/spore_presentation.tres" id="spore_actor"]
+[ext_resource type="Resource" path="res://content/packages/plateau/sentry.tres" id="sentry"]
+[ext_resource type="Resource" path="res://content/packages/plateau/sentry_presentation.tres" id="sentry_actor"]
+
+[sub_resource type="Resource" id="Core"]
+script = ExtResource("dependency")
+package_id = &"core"
+exact_version = "1.0.0"
+
+[sub_resource type="Resource" id="Manifest"]
+script = ExtResource("manifest")
+package_id = &"plateau"
+dependencies = Array[ExtResource("dependency")]([SubResource("Core")])
+entry_battle_ids = Array[StringName]([&"plateau:battle"])
+
+[resource]
+script = ExtResource("package")
+manifest = SubResource("Manifest")
+battles = Array[ExtResource("battle")]([ExtResource("battle_data")])
+maps = Array[ExtResource("map")]([ExtResource("map_data")])
+units = Array[ExtResource("unit")]([ExtResource("sorokin"), ExtResource("ranger"), ExtResource("bastion"), ExtResource("guide"), ExtResource("carapace"), ExtResource("reaper"), ExtResource("spore"), ExtResource("sentry")])
+unit_presentations = Array[ExtResource("presentation")]([ExtResource("sorokin_actor"), ExtResource("ranger_actor"), ExtResource("bastion_actor"), ExtResource("guide_actor"), ExtResource("carapace_actor"), ExtResource("reaper_actor"), ExtResource("spore_actor"), ExtResource("sentry_actor")])

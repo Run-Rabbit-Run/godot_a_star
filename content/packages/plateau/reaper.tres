@@ -1,0 +1,18 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="unit"]
+[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="stats"]
+
+[sub_resource type="Resource" id="Stats"]
+script = ExtResource("stats")
+max_health = 100
+movement_points = 4
+basic_attack_damage = 24
+basic_attack_range = 1
+
+[resource]
+script = ExtResource("unit")
+id = &"plateau:reaper"
+display_name = "Жнец"
+base_stats = SubResource("Stats")
+presentation_id = &"plateau:reaper_actor"

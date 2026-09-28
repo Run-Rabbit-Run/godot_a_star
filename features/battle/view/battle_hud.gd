@@ -46,7 +46,7 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _target_health_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetHealthLabel
 @onready var _target_stats_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetStatsLabel
 @onready var _target_effects_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetEffectsLabel
-@onready var _action_label: Label = $HUDRoot/ActionPanel/Content/ActionLabel
+@onready var _action_label: Label = $HUDRoot/ActionLabel
 @onready var _turn_order_container: HBoxContainer = $HUDRoot/TurnQueuePanel/Content/TurnOrderContainer
 @onready var _speed_panel: PanelContainer = $HUDRoot/SpeedPanel
 @onready var _speed_label: Label = $HUDRoot/SpeedPanel/Content/SpeedLabel
@@ -59,7 +59,11 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _speed_1_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed1Button
 @onready var _speed_2_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed2Button
 @onready var _speed_4_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed4Button
+@onready var _resolution_option: OptionButton = $HUDRoot/SpeedPanel/Content/ResolutionRow/ResolutionOption
+@onready var _fullscreen_check: CheckButton = $HUDRoot/SpeedPanel/Content/FullscreenCheck
+@onready var _display_status_label: Label = $HUDRoot/SpeedPanel/Content/DisplayStatusLabel
 var _objective_description := ""
+var _health_text := ""
 var _interaction_enabled := true
 var _movement_available := false
 var _main_action_available := false
@@ -102,9 +106,9 @@ func _ready() -> void:
 	_display_settings.name = "DisplaySettingsController"
 	add_child(_display_settings)
 	_display_settings.setup(
-		$HUDRoot/SpeedPanel/Content/ResolutionRow/ResolutionOption as OptionButton,
-		$HUDRoot/SpeedPanel/Content/FullscreenCheck as CheckButton,
-		$HUDRoot/SpeedPanel/Content/DisplayStatusLabel as Label
+		_resolution_option,
+		_fullscreen_check,
+		_display_status_label
 	)
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
@@ -118,10 +122,11 @@ func _ready() -> void:
 	clear_target()
 
 
+
 func set_interaction_enabled(enabled: bool) -> void:
 	_interaction_enabled = enabled
 	_end_turn_button.disabled = not enabled
-	_settings_button.disabled = not enabled
+	# Display settings remain accessible during AI turns and after battle.
 	_speed_half_button.disabled = not enabled
 	_speed_1_button.disabled = not enabled
 	_speed_2_button.disabled = not enabled
@@ -132,7 +137,7 @@ func set_interaction_enabled(enabled: bool) -> void:
 func show_basic_attack_button(attack_range: int, available: bool) -> void:
 	_main_action_available = available
 	_basic_attack_button.text = (
-		"ДАЛЬНИЙ ВЫСТРЕЛ" if attack_range > 1 else "БЛИЖНЯЯ АТАКА"
+		"Выстрел" if attack_range > 1 else "Атака"
 	)
 	_refresh_action_button_states()
 
@@ -174,20 +179,23 @@ func show_round(round_number: int) -> void:
 
 func show_objective(description: String) -> void:
 	_objective_description = description
-	_objective_label.text = "ЦЕЛЬ: %s" % description.to_upper()
+	_objective_label.text = description.to_upper()
+	_objective_label.tooltip_text = description
 
 
 func show_active_unit(display_name: String) -> void:
 	_active_unit_label.text = display_name.to_upper()
+	$HUDRoot/SkillsCaption.text = "УМЕНИЯ · %s" % display_name.to_upper()
 
 
 func show_health(current: int, maximum: int) -> void:
-	_health_label.text = "ОЗ   %d / %d" % [current, maximum]
-	_apply_health_badge(_health_label, current, maximum)
+	_health_text = "%d / %d" % [current, maximum]
+	_health_label.text = _health_text
 
 
 func show_movement(remaining: int, maximum: int) -> void:
-	_movement_label.text = "ОД   %d / %d" % [remaining, maximum]
+	_movement_label.text = "Движение: %d / %d" % [remaining, maximum]
+	_health_label.text = "%s  ·  %s" % [_health_text, _movement_label.text]
 	_movement_available = remaining > 0
 	_refresh_action_button_states()
 
@@ -262,12 +270,12 @@ func show_turn_order(entries: Array[Dictionary], active_unit_id: StringName) -> 
 	for offset in range(entries.size()):
 		var entry: Dictionary = entries[(active_index + offset) % entries.size()]
 		_turn_order_container.add_child(
-			_create_turn_card(entry, offset == 0)
+			_create_turn_card(entry, offset == 0, offset + 1)
 		)
 
 
 func clear_action() -> void:
-	_action_label.text = "СИСТЕМА ГОТОВА"
+	_action_label.text = ""
 
 
 func show_attack(
@@ -345,9 +353,9 @@ func _refresh_action_button_states() -> void:
 	)
 
 
-func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
+func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(62.0, 54.0)
+	card.custom_minimum_size = Vector2(32.0, 44.0)
 	var faction: int = entry.get("faction", BattleFaction.Value.PLAYER)
 	var border_color := COLOR_IVORY if faction == BattleFaction.Value.PLAYER else COLOR_ENEMY
 	card.add_theme_stylebox_override(
@@ -364,7 +372,7 @@ func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
 	stack.add_theme_constant_override("separation", 1)
 	card.add_child(stack)
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(52.0, 32.0)
+	portrait.custom_minimum_size = Vector2(27.0, 27.0)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.texture = entry.get("texture") as Texture2D
@@ -372,39 +380,23 @@ func _create_turn_card(entry: Dictionary, is_active: bool) -> PanelContainer:
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(portrait)
 	var caption := Label.new()
-	caption.text = "СЕЙЧАС" if is_active else String(entry.get("short_name", "—"))
+	caption.text = str(order)
+	card.tooltip_text = String(entry.get("short_name", ""))
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.add_theme_font_size_override("font_size", 9)
-	caption.modulate = COLOR_BRONZE if is_active else COLOR_MUTED
+	caption.modulate = COLOR_IVORY
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(caption)
+	var card_style := card.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
+	card_style.set_content_margin_all(2.0)
+	card.add_theme_stylebox_override("panel", card_style)
 	return card
 
 
 func _apply_styles() -> void:
-	_strategist_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 3)
-	)
-	_active_unit_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_IVORY, 1, 2)
-	)
-	_turn_queue_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 1)
-	)
 	_target_panel.add_theme_stylebox_override(
 		"panel",
 		_make_panel_style(COLOR_PANEL, COLOR_ENEMY, 1, 1)
-	)
-	_action_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 1)
-	)
-	_system_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 1)
 	)
 	_speed_panel.add_theme_stylebox_override(
 		"panel",
@@ -438,6 +430,25 @@ func _apply_styles() -> void:
 			"pressed",
 			_make_panel_style(Color(0.31, 0.20, 0.17, 1.0), COLOR_SIGNAL, 2, 3)
 		)
+
+	for panel: PanelContainer in [_strategist_panel, _active_unit_panel, _turn_queue_panel, _action_panel, _system_panel]:
+		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	for button: Button in [_movement_button, _basic_attack_button, _grenade_button, _end_turn_button]:
+		button.icon = null
+		button.add_theme_font_size_override("font_size", 16)
+		for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var line_style := StyleBoxFlat.new()
+			line_style.bg_color = Color(0.07, 0.09, 0.086, 0.0 if state_name == "normal" else 0.30)
+			line_style.border_color = Color("d4c28c") if button == _end_turn_button else Color("829281")
+			if state_name == "disabled":
+				line_style.border_color.a = 0.25
+			line_style.border_width_bottom = 2 if state_name == "focus" else 1
+			line_style.content_margin_bottom = 10
+			button.add_theme_stylebox_override(state_name, line_style)
+		button.add_theme_color_override("font_disabled_color", Color(0.72, 0.75, 0.68, 0.4))
+	_end_turn_button.add_theme_color_override("font_color", Color("e4d09d"))
+	_settings_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	_settings_button.add_theme_color_override("icon_normal_color", Color("f2ead6"))
 
 
 func _apply_health_badge(label: Label, current: int, maximum: int) -> void:

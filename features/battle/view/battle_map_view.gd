@@ -3,7 +3,7 @@ extends Node2D
 
 
 const BATTLE_BACKDROP := preload(
-	"res://features/battle/art/forest_outskirts_battlefield_v1.png"
+	"res://features/battle/art/plateau.png"
 )
 const CURSOR_DEFAULT := preload(
 	"res://features/battle/ui/icons/cursor_default.svg"
@@ -16,10 +16,6 @@ const CURSOR_RANGED := preload(
 )
 enum CursorMode { DEFAULT, MELEE, RANGED }
 const GRID_TILE_SIZE := Vector2(56.0, 64.0)
-const SAFE_SIDE_MARGIN := 270.0
-const SAFE_TOP_MARGIN := 112.0
-const SAFE_BOTTOM_MARGIN := 168.0
-const MAX_BATTLEFIELD_SCALE := 1.15
 
 
 @onready var _background_layer: TileMapLayer = $BackgroundLayer
@@ -47,6 +43,7 @@ var _selection_visuals: Node2D
 var _hover_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
 var _cursor_mode := CursorMode.DEFAULT
+var _grid_rulers: Node2D
 
 
 func _enter_tree() -> void:
@@ -116,7 +113,7 @@ func _mount_battle_backdrop() -> void:
 	_battle_backdrop = TextureRect.new()
 	_battle_backdrop.name = "BattleBackdrop"
 	_battle_backdrop.texture = BATTLE_BACKDROP
-	_battle_backdrop.modulate = Color(0.96, 0.97, 0.95)
+	_battle_backdrop.modulate = Color.WHITE
 	_battle_backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_battle_backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_battle_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -200,30 +197,48 @@ func _fit_battlefield_to_viewport() -> void:
 		return
 
 	var viewport_size := get_viewport().get_visible_rect().size
-	var available_size := Vector2(
-		maxf(viewport_size.x - SAFE_SIDE_MARGIN * 2.0, 1.0),
-		maxf(
-			viewport_size.y - SAFE_TOP_MARGIN - SAFE_BOTTOM_MARGIN,
-			1.0
-		)
-	)
-	var fitted_scale := minf(
-		MAX_BATTLEFIELD_SCALE,
-		minf(
-			available_size.x / _grid_local_bounds.size.x,
-			available_size.y / _grid_local_bounds.size.y
-		)
-	)
-	var safe_center := Vector2(
-		viewport_size.x * 0.5,
-		SAFE_TOP_MARGIN + available_size.y * 0.5
-	)
+	# Match the reference's 94 x 78 projected hexes at 1920 x 1080.
+	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+	var available_size := Vector2(1739.0, 721.5) * screen_scale
+	scale = available_size / _grid_local_bounds.size
+	position = viewport_size * 0.5 + Vector2(0, -21.25) * screen_scale - _grid_local_bounds.get_center() * scale
+	# Figures stay upright, independent of the board's perspective compression.
+	var units := get_node_or_null("Units") as Node2D
+	if units != null:
+		for actor: Node2D in units.get_children():
+			actor.scale = Vector2.ONE * screen_scale / scale
+	_rebuild_grid_rulers(screen_scale)
 
-	scale = Vector2.ONE * fitted_scale
-	position = (
-		safe_center
-		- _grid_local_bounds.get_center() * fitted_scale
-	)
+
+func _rebuild_grid_rulers(screen_scale: float) -> void:
+	if _grid_rulers == null:
+		_grid_rulers = Node2D.new()
+		_grid_rulers.name = "GridRulers"
+		add_child(_grid_rulers)
+	_clear_hex_visuals(_grid_rulers)
+	var bounds := _terrain_layer.get_used_rect()
+	var label_scale := Vector2.ONE * screen_scale / scale
+	for column in range(bounds.position.x, bounds.end.x):
+		var center := _terrain_layer.map_to_local(Vector2i(column, bounds.position.y))
+		_add_grid_number(column - bounds.position.x + 1, center + Vector2(0, -42), label_scale)
+	for row in range(bounds.position.y, bounds.end.y):
+		var center := _terrain_layer.map_to_local(Vector2i(bounds.position.x, row))
+		center.x = _grid_local_bounds.position.x - 8
+		_add_grid_number(row - bounds.position.y + 1, center, label_scale)
+
+
+func _add_grid_number(number: int, center: Vector2, label_scale: Vector2) -> void:
+	var label := Label.new()
+	label.text = "%02d" % number
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", Color("463831"))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.size = Vector2(24, 18)
+	label.scale = label_scale
+	label.position = center - label.size * label_scale * 0.5
+	_grid_rulers.add_child(label)
+
 
 
 func _calculate_grid_local_bounds() -> Rect2:
@@ -251,8 +266,8 @@ func _calculate_grid_local_bounds() -> Rect2:
 
 func _apply_visual_profile() -> void:
 	# Цвет не кодирует правила: он только делает слои читаемыми на живописном фоне.
-	_background_layer.modulate = Color(0.68, 0.69, 0.64, 0.035)
-	_terrain_layer.modulate = Color(0.92, 0.93, 0.89, 0.46)
+	_background_layer.visible = false
+	_terrain_layer.modulate = Color.WHITE
 	_reachable_layer.modulate = Color(0.90, 0.88, 0.76, 0.44)
 	_path_layer.modulate = Color(0.92, 0.90, 0.79, 0.82)
 	_targetable_layer.modulate = Color(0.55, 0.20, 0.18, 0.50)
@@ -327,12 +342,11 @@ func show_reachable_cells(cells: Array[Vector2i]) -> void:
 	_clear_hex_visuals(_reachable_visuals)
 
 	for cell in cells:
-		_paint_cell_on_layer(cell, _reachable_layer)
 		_add_hex_visual(
 			_reachable_visuals,
 			cell,
-			Color(0.86, 0.85, 0.76, 0.035),
-			Color(0.88, 0.87, 0.78, 0.42),
+			Color(0.51, 0.75, 0.75, 0.20),
+			Color(0.67, 0.86, 0.86, 0.70),
 			1.05
 		)
 
@@ -532,12 +546,12 @@ func _add_hex_visual(
 		_terrain_layer.to_global(_terrain_layer.map_to_local(map_cell))
 	)
 	var corners := PackedVector2Array([
-		Vector2(0, -31),
-		Vector2(27, -15.5),
-		Vector2(27, 15.5),
-		Vector2(0, 31),
-		Vector2(-27, 15.5),
-		Vector2(-27, -15.5),
+		Vector2(0, -32),
+		Vector2(28, -16),
+		Vector2(28, 16),
+		Vector2(0, 32),
+		Vector2(-28, 16),
+		Vector2(-28, -16),
 	])
 
 	var fill := Polygon2D.new()

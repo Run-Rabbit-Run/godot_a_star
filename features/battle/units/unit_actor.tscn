@@ -8,7 +8,7 @@ z_index = 20
 script = ExtResource("1_script")
 
 [node name="VisualRoot" type="Node2D" parent="."]
-position = Vector2(0, 16)
+position = Vector2(0, 0)
 
 [node name="Sprite" type="Sprite2D" parent="VisualRoot"]
 unique_name_in_owner = true

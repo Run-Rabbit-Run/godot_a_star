@@ -59,6 +59,9 @@ func create_units(
 			clear()
 			return false
 
+		var viewport_size := _map_view.get_viewport_rect().size
+		var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+		actor.scale = Vector2.ONE * screen_scale / _map_view.scale
 		actor.global_position = _map_view.hex_to_global_position(state.hex)
 		actors[state.unit_id] = actor
 		definitions[state.unit_id] = spawn.unit_definition
@@ -99,4 +102,6 @@ func get_display_name(unit_id: StringName) -> String:
 
 func get_texture(unit_id: StringName) -> Texture2D:
 	var presentation := get_presentation(unit_id)
-	return presentation.actor_texture if presentation != null else null
+	if presentation == null:
+		return null
+	return presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture

@@ -3,7 +3,6 @@ extends Node2D
 
 
 const CUSTOM_TEXTURE_SIZE := 82.0
-const READABILITY_SHADER := preload("res://features/battle/units/art/unit_readability.gdshader")
 
 
 @export_range(0.01, 1.0, 0.01)
@@ -26,19 +25,12 @@ func _draw() -> void:
 	if not _show_base:
 		return
 
-	var base_points := PackedVector2Array([
-		Vector2(0, -6),
-		Vector2(22, 1),
-		Vector2(22, 13),
-		Vector2(0, 20),
-		Vector2(-22, 13),
-		Vector2(-22, 1),
-	])
-	var outline := base_points.duplicate()
-	outline.append(base_points[0])
-	draw_colored_polygon(base_points, Color(0.08, 0.09, 0.08, 0.28))
-	draw_polyline(outline, Color(0.06, 0.07, 0.07, 0.62), 3.2, true)
-	draw_polyline(outline, _faction_color, 1.35, true)
+	var base_points := PackedVector2Array()
+	for i in range(49):
+		var angle := TAU * float(i) / 48.0
+		base_points.append(Vector2(cos(angle) * 29.0, sin(angle) * 11.0))
+	draw_colored_polygon(base_points, Color(0.0, 0.0, 0.0, 0.25))
+	draw_polyline(base_points, _faction_color, 1.5, true)
 
 func setup(
 	p_unit_id: StringName,
@@ -61,29 +53,24 @@ func setup(
 
 	if presentation != null and presentation.actor_texture != null:
 		_sprite.texture = presentation.actor_texture
-		var rim_material := ShaderMaterial.new()
-		rim_material.shader = READABILITY_SHADER
-		rim_material.set_shader_parameter(
-			"rim_color",
-			Color(0.075, 0.082, 0.075, 0.74)
-		)
-		_sprite.material = rim_material
+		_sprite.material = null
+		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		var texture_size := presentation.actor_texture.get_size()
 		var longest_side := maxf(texture_size.x, texture_size.y)
 
 		if longest_side > 0.0:
 			_sprite.scale = Vector2.ONE * (
-				CUSTOM_TEXTURE_SIZE / longest_side
+				presentation.actor_height / texture_size.y
 			)
 			# The actor origin is the hex center; align the painted feet to it.
 			_sprite.offset = (
 				Vector2.ONE * 0.5 - presentation.actor_foot_anchor
 			) * texture_size
 
-	_combat_role_label.visible = (
-		definition.base_stats != null
-		and definition.base_stats.basic_attack_range > 1
-	)
+	_combat_role_label.visible = false
+	var figure_height := presentation.actor_height if presentation != null else CUSTOM_TEXTURE_SIZE
+	_health_label.position = Vector2(-36, -figure_height - 29)
+	_health_label.size = Vector2(72, 23)
 	_combat_role_label.text = "◎"
 	show_health(current_health, maximum_health)
 	modulate = (
@@ -92,15 +79,15 @@ func setup(
 
 
 func show_health(current: int, maximum: int) -> void:
-	_health_label.text = str(maxi(current, 0))
+	_health_label.text = "%d / %d" % [maxi(current, 0), maximum]
 	_health_label.visible = current > 0
 	var ratio := 0.0 if maximum <= 0 else float(current) / float(maximum)
-	var badge_color := Color(0.30, 0.36, 0.27, 0.92)
+	var badge_color := Color(0.07, 0.10, 0.09, 0.94)
 
 	if ratio <= 0.33:
-		badge_color = Color(0.38, 0.12, 0.11, 0.94)
+		badge_color = Color(0.20, 0.08, 0.07, 0.94)
 	elif ratio <= 0.66:
-		badge_color = Color(0.48, 0.34, 0.17, 0.93)
+		badge_color = Color(0.12, 0.11, 0.08, 0.94)
 
 	var style := StyleBoxFlat.new()
 	style.bg_color = badge_color

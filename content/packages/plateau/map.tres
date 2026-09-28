@@ -1,0 +1,873 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/battle/map/battle_map_definition.gd" id="map"]
+[ext_resource type="Script" path="res://features/battle/map/battle_map_cell_definition.gd" id="cell"]
+
+[sub_resource type="Resource" id="c0"]
+script = ExtResource("cell")
+hex = Vector2i(0, 0)
+
+[sub_resource type="Resource" id="c1"]
+script = ExtResource("cell")
+hex = Vector2i(1, 0)
+
+[sub_resource type="Resource" id="c2"]
+script = ExtResource("cell")
+hex = Vector2i(2, 0)
+
+[sub_resource type="Resource" id="c3"]
+script = ExtResource("cell")
+hex = Vector2i(3, 0)
+
+[sub_resource type="Resource" id="c4"]
+script = ExtResource("cell")
+hex = Vector2i(4, 0)
+
+[sub_resource type="Resource" id="c5"]
+script = ExtResource("cell")
+hex = Vector2i(5, 0)
+
+[sub_resource type="Resource" id="c6"]
+script = ExtResource("cell")
+hex = Vector2i(6, 0)
+
+[sub_resource type="Resource" id="c7"]
+script = ExtResource("cell")
+hex = Vector2i(7, 0)
+
+[sub_resource type="Resource" id="c8"]
+script = ExtResource("cell")
+hex = Vector2i(8, 0)
+
+[sub_resource type="Resource" id="c9"]
+script = ExtResource("cell")
+hex = Vector2i(9, 0)
+
+[sub_resource type="Resource" id="c10"]
+script = ExtResource("cell")
+hex = Vector2i(10, 0)
+
+[sub_resource type="Resource" id="c11"]
+script = ExtResource("cell")
+hex = Vector2i(11, 0)
+
+[sub_resource type="Resource" id="c12"]
+script = ExtResource("cell")
+hex = Vector2i(12, 0)
+
+[sub_resource type="Resource" id="c13"]
+script = ExtResource("cell")
+hex = Vector2i(13, 0)
+
+[sub_resource type="Resource" id="c14"]
+script = ExtResource("cell")
+hex = Vector2i(14, 0)
+
+[sub_resource type="Resource" id="c15"]
+script = ExtResource("cell")
+hex = Vector2i(15, 0)
+
+[sub_resource type="Resource" id="c16"]
+script = ExtResource("cell")
+hex = Vector2i(16, 0)
+
+[sub_resource type="Resource" id="c17"]
+script = ExtResource("cell")
+hex = Vector2i(17, 0)
+
+[sub_resource type="Resource" id="c18"]
+script = ExtResource("cell")
+hex = Vector2i(0, 1)
+
+[sub_resource type="Resource" id="c19"]
+script = ExtResource("cell")
+hex = Vector2i(1, 1)
+
+[sub_resource type="Resource" id="c20"]
+script = ExtResource("cell")
+hex = Vector2i(2, 1)
+
+[sub_resource type="Resource" id="c21"]
+script = ExtResource("cell")
+hex = Vector2i(3, 1)
+
+[sub_resource type="Resource" id="c22"]
+script = ExtResource("cell")
+hex = Vector2i(4, 1)
+
+[sub_resource type="Resource" id="c23"]
+script = ExtResource("cell")
+hex = Vector2i(5, 1)
+
+[sub_resource type="Resource" id="c24"]
+script = ExtResource("cell")
+hex = Vector2i(6, 1)
+
+[sub_resource type="Resource" id="c25"]
+script = ExtResource("cell")
+hex = Vector2i(7, 1)
+
+[sub_resource type="Resource" id="c26"]
+script = ExtResource("cell")
+hex = Vector2i(8, 1)
+
+[sub_resource type="Resource" id="c27"]
+script = ExtResource("cell")
+hex = Vector2i(9, 1)
+
+[sub_resource type="Resource" id="c28"]
+script = ExtResource("cell")
+hex = Vector2i(10, 1)
+
+[sub_resource type="Resource" id="c29"]
+script = ExtResource("cell")
+hex = Vector2i(11, 1)
+
+[sub_resource type="Resource" id="c30"]
+script = ExtResource("cell")
+hex = Vector2i(12, 1)
+
+[sub_resource type="Resource" id="c31"]
+script = ExtResource("cell")
+hex = Vector2i(13, 1)
+
+[sub_resource type="Resource" id="c32"]
+script = ExtResource("cell")
+hex = Vector2i(14, 1)
+
+[sub_resource type="Resource" id="c33"]
+script = ExtResource("cell")
+hex = Vector2i(15, 1)
+
+[sub_resource type="Resource" id="c34"]
+script = ExtResource("cell")
+hex = Vector2i(16, 1)
+
+[sub_resource type="Resource" id="c35"]
+script = ExtResource("cell")
+hex = Vector2i(17, 1)
+
+[sub_resource type="Resource" id="c36"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 2)
+
+[sub_resource type="Resource" id="c37"]
+script = ExtResource("cell")
+hex = Vector2i(0, 2)
+
+[sub_resource type="Resource" id="c38"]
+script = ExtResource("cell")
+hex = Vector2i(1, 2)
+
+[sub_resource type="Resource" id="c39"]
+script = ExtResource("cell")
+hex = Vector2i(2, 2)
+
+[sub_resource type="Resource" id="c40"]
+script = ExtResource("cell")
+hex = Vector2i(3, 2)
+
+[sub_resource type="Resource" id="c41"]
+script = ExtResource("cell")
+hex = Vector2i(4, 2)
+
+[sub_resource type="Resource" id="c42"]
+script = ExtResource("cell")
+hex = Vector2i(5, 2)
+
+[sub_resource type="Resource" id="c43"]
+script = ExtResource("cell")
+hex = Vector2i(6, 2)
+
+[sub_resource type="Resource" id="c44"]
+script = ExtResource("cell")
+hex = Vector2i(7, 2)
+
+[sub_resource type="Resource" id="c45"]
+script = ExtResource("cell")
+hex = Vector2i(8, 2)
+
+[sub_resource type="Resource" id="c46"]
+script = ExtResource("cell")
+hex = Vector2i(9, 2)
+
+[sub_resource type="Resource" id="c47"]
+script = ExtResource("cell")
+hex = Vector2i(10, 2)
+
+[sub_resource type="Resource" id="c48"]
+script = ExtResource("cell")
+hex = Vector2i(11, 2)
+
+[sub_resource type="Resource" id="c49"]
+script = ExtResource("cell")
+hex = Vector2i(12, 2)
+
+[sub_resource type="Resource" id="c50"]
+script = ExtResource("cell")
+hex = Vector2i(13, 2)
+
+[sub_resource type="Resource" id="c51"]
+script = ExtResource("cell")
+hex = Vector2i(14, 2)
+
+[sub_resource type="Resource" id="c52"]
+script = ExtResource("cell")
+hex = Vector2i(15, 2)
+
+[sub_resource type="Resource" id="c53"]
+script = ExtResource("cell")
+hex = Vector2i(16, 2)
+
+[sub_resource type="Resource" id="c54"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 3)
+
+[sub_resource type="Resource" id="c55"]
+script = ExtResource("cell")
+hex = Vector2i(0, 3)
+
+[sub_resource type="Resource" id="c56"]
+script = ExtResource("cell")
+hex = Vector2i(1, 3)
+
+[sub_resource type="Resource" id="c57"]
+script = ExtResource("cell")
+hex = Vector2i(2, 3)
+
+[sub_resource type="Resource" id="c58"]
+script = ExtResource("cell")
+hex = Vector2i(3, 3)
+
+[sub_resource type="Resource" id="c59"]
+script = ExtResource("cell")
+hex = Vector2i(4, 3)
+
+[sub_resource type="Resource" id="c60"]
+script = ExtResource("cell")
+hex = Vector2i(5, 3)
+
+[sub_resource type="Resource" id="c61"]
+script = ExtResource("cell")
+hex = Vector2i(6, 3)
+
+[sub_resource type="Resource" id="c62"]
+script = ExtResource("cell")
+hex = Vector2i(7, 3)
+
+[sub_resource type="Resource" id="c63"]
+script = ExtResource("cell")
+hex = Vector2i(8, 3)
+
+[sub_resource type="Resource" id="c64"]
+script = ExtResource("cell")
+hex = Vector2i(9, 3)
+
+[sub_resource type="Resource" id="c65"]
+script = ExtResource("cell")
+hex = Vector2i(10, 3)
+
+[sub_resource type="Resource" id="c66"]
+script = ExtResource("cell")
+hex = Vector2i(11, 3)
+
+[sub_resource type="Resource" id="c67"]
+script = ExtResource("cell")
+hex = Vector2i(12, 3)
+
+[sub_resource type="Resource" id="c68"]
+script = ExtResource("cell")
+hex = Vector2i(13, 3)
+
+[sub_resource type="Resource" id="c69"]
+script = ExtResource("cell")
+hex = Vector2i(14, 3)
+
+[sub_resource type="Resource" id="c70"]
+script = ExtResource("cell")
+hex = Vector2i(15, 3)
+
+[sub_resource type="Resource" id="c71"]
+script = ExtResource("cell")
+hex = Vector2i(16, 3)
+
+[sub_resource type="Resource" id="c72"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 4)
+
+[sub_resource type="Resource" id="c73"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 4)
+
+[sub_resource type="Resource" id="c74"]
+script = ExtResource("cell")
+hex = Vector2i(0, 4)
+
+[sub_resource type="Resource" id="c75"]
+script = ExtResource("cell")
+hex = Vector2i(1, 4)
+
+[sub_resource type="Resource" id="c76"]
+script = ExtResource("cell")
+hex = Vector2i(2, 4)
+
+[sub_resource type="Resource" id="c77"]
+script = ExtResource("cell")
+hex = Vector2i(3, 4)
+
+[sub_resource type="Resource" id="c78"]
+script = ExtResource("cell")
+hex = Vector2i(4, 4)
+
+[sub_resource type="Resource" id="c79"]
+script = ExtResource("cell")
+hex = Vector2i(5, 4)
+
+[sub_resource type="Resource" id="c80"]
+script = ExtResource("cell")
+hex = Vector2i(6, 4)
+
+[sub_resource type="Resource" id="c81"]
+script = ExtResource("cell")
+hex = Vector2i(7, 4)
+
+[sub_resource type="Resource" id="c82"]
+script = ExtResource("cell")
+hex = Vector2i(8, 4)
+
+[sub_resource type="Resource" id="c83"]
+script = ExtResource("cell")
+hex = Vector2i(9, 4)
+
+[sub_resource type="Resource" id="c84"]
+script = ExtResource("cell")
+hex = Vector2i(10, 4)
+
+[sub_resource type="Resource" id="c85"]
+script = ExtResource("cell")
+hex = Vector2i(11, 4)
+
+[sub_resource type="Resource" id="c86"]
+script = ExtResource("cell")
+hex = Vector2i(12, 4)
+
+[sub_resource type="Resource" id="c87"]
+script = ExtResource("cell")
+hex = Vector2i(13, 4)
+
+[sub_resource type="Resource" id="c88"]
+script = ExtResource("cell")
+hex = Vector2i(14, 4)
+
+[sub_resource type="Resource" id="c89"]
+script = ExtResource("cell")
+hex = Vector2i(15, 4)
+
+[sub_resource type="Resource" id="c90"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 5)
+
+[sub_resource type="Resource" id="c91"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 5)
+
+[sub_resource type="Resource" id="c92"]
+script = ExtResource("cell")
+hex = Vector2i(0, 5)
+
+[sub_resource type="Resource" id="c93"]
+script = ExtResource("cell")
+hex = Vector2i(1, 5)
+
+[sub_resource type="Resource" id="c94"]
+script = ExtResource("cell")
+hex = Vector2i(2, 5)
+
+[sub_resource type="Resource" id="c95"]
+script = ExtResource("cell")
+hex = Vector2i(3, 5)
+
+[sub_resource type="Resource" id="c96"]
+script = ExtResource("cell")
+hex = Vector2i(4, 5)
+
+[sub_resource type="Resource" id="c97"]
+script = ExtResource("cell")
+hex = Vector2i(5, 5)
+
+[sub_resource type="Resource" id="c98"]
+script = ExtResource("cell")
+hex = Vector2i(6, 5)
+
+[sub_resource type="Resource" id="c99"]
+script = ExtResource("cell")
+hex = Vector2i(7, 5)
+
+[sub_resource type="Resource" id="c100"]
+script = ExtResource("cell")
+hex = Vector2i(8, 5)
+
+[sub_resource type="Resource" id="c101"]
+script = ExtResource("cell")
+hex = Vector2i(9, 5)
+
+[sub_resource type="Resource" id="c102"]
+script = ExtResource("cell")
+hex = Vector2i(10, 5)
+
+[sub_resource type="Resource" id="c103"]
+script = ExtResource("cell")
+hex = Vector2i(11, 5)
+
+[sub_resource type="Resource" id="c104"]
+script = ExtResource("cell")
+hex = Vector2i(12, 5)
+
+[sub_resource type="Resource" id="c105"]
+script = ExtResource("cell")
+hex = Vector2i(13, 5)
+
+[sub_resource type="Resource" id="c106"]
+script = ExtResource("cell")
+hex = Vector2i(14, 5)
+
+[sub_resource type="Resource" id="c107"]
+script = ExtResource("cell")
+hex = Vector2i(15, 5)
+
+[sub_resource type="Resource" id="c108"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 6)
+
+[sub_resource type="Resource" id="c109"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 6)
+
+[sub_resource type="Resource" id="c110"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 6)
+
+[sub_resource type="Resource" id="c111"]
+script = ExtResource("cell")
+hex = Vector2i(0, 6)
+
+[sub_resource type="Resource" id="c112"]
+script = ExtResource("cell")
+hex = Vector2i(1, 6)
+
+[sub_resource type="Resource" id="c113"]
+script = ExtResource("cell")
+hex = Vector2i(2, 6)
+
+[sub_resource type="Resource" id="c114"]
+script = ExtResource("cell")
+hex = Vector2i(3, 6)
+
+[sub_resource type="Resource" id="c115"]
+script = ExtResource("cell")
+hex = Vector2i(4, 6)
+
+[sub_resource type="Resource" id="c116"]
+script = ExtResource("cell")
+hex = Vector2i(5, 6)
+
+[sub_resource type="Resource" id="c117"]
+script = ExtResource("cell")
+hex = Vector2i(6, 6)
+
+[sub_resource type="Resource" id="c118"]
+script = ExtResource("cell")
+hex = Vector2i(7, 6)
+
+[sub_resource type="Resource" id="c119"]
+script = ExtResource("cell")
+hex = Vector2i(8, 6)
+
+[sub_resource type="Resource" id="c120"]
+script = ExtResource("cell")
+hex = Vector2i(9, 6)
+
+[sub_resource type="Resource" id="c121"]
+script = ExtResource("cell")
+hex = Vector2i(10, 6)
+
+[sub_resource type="Resource" id="c122"]
+script = ExtResource("cell")
+hex = Vector2i(11, 6)
+
+[sub_resource type="Resource" id="c123"]
+script = ExtResource("cell")
+hex = Vector2i(12, 6)
+
+[sub_resource type="Resource" id="c124"]
+script = ExtResource("cell")
+hex = Vector2i(13, 6)
+
+[sub_resource type="Resource" id="c125"]
+script = ExtResource("cell")
+hex = Vector2i(14, 6)
+
+[sub_resource type="Resource" id="c126"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 7)
+
+[sub_resource type="Resource" id="c127"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 7)
+
+[sub_resource type="Resource" id="c128"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 7)
+
+[sub_resource type="Resource" id="c129"]
+script = ExtResource("cell")
+hex = Vector2i(0, 7)
+
+[sub_resource type="Resource" id="c130"]
+script = ExtResource("cell")
+hex = Vector2i(1, 7)
+
+[sub_resource type="Resource" id="c131"]
+script = ExtResource("cell")
+hex = Vector2i(2, 7)
+
+[sub_resource type="Resource" id="c132"]
+script = ExtResource("cell")
+hex = Vector2i(3, 7)
+
+[sub_resource type="Resource" id="c133"]
+script = ExtResource("cell")
+hex = Vector2i(4, 7)
+
+[sub_resource type="Resource" id="c134"]
+script = ExtResource("cell")
+hex = Vector2i(5, 7)
+
+[sub_resource type="Resource" id="c135"]
+script = ExtResource("cell")
+hex = Vector2i(6, 7)
+
+[sub_resource type="Resource" id="c136"]
+script = ExtResource("cell")
+hex = Vector2i(7, 7)
+
+[sub_resource type="Resource" id="c137"]
+script = ExtResource("cell")
+hex = Vector2i(8, 7)
+
+[sub_resource type="Resource" id="c138"]
+script = ExtResource("cell")
+hex = Vector2i(9, 7)
+
+[sub_resource type="Resource" id="c139"]
+script = ExtResource("cell")
+hex = Vector2i(10, 7)
+
+[sub_resource type="Resource" id="c140"]
+script = ExtResource("cell")
+hex = Vector2i(11, 7)
+
+[sub_resource type="Resource" id="c141"]
+script = ExtResource("cell")
+hex = Vector2i(12, 7)
+
+[sub_resource type="Resource" id="c142"]
+script = ExtResource("cell")
+hex = Vector2i(13, 7)
+
+[sub_resource type="Resource" id="c143"]
+script = ExtResource("cell")
+hex = Vector2i(14, 7)
+
+[sub_resource type="Resource" id="c144"]
+script = ExtResource("cell")
+hex = Vector2i(-4, 8)
+
+[sub_resource type="Resource" id="c145"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 8)
+
+[sub_resource type="Resource" id="c146"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 8)
+
+[sub_resource type="Resource" id="c147"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 8)
+
+[sub_resource type="Resource" id="c148"]
+script = ExtResource("cell")
+hex = Vector2i(0, 8)
+
+[sub_resource type="Resource" id="c149"]
+script = ExtResource("cell")
+hex = Vector2i(1, 8)
+
+[sub_resource type="Resource" id="c150"]
+script = ExtResource("cell")
+hex = Vector2i(2, 8)
+
+[sub_resource type="Resource" id="c151"]
+script = ExtResource("cell")
+hex = Vector2i(3, 8)
+
+[sub_resource type="Resource" id="c152"]
+script = ExtResource("cell")
+hex = Vector2i(4, 8)
+
+[sub_resource type="Resource" id="c153"]
+script = ExtResource("cell")
+hex = Vector2i(5, 8)
+
+[sub_resource type="Resource" id="c154"]
+script = ExtResource("cell")
+hex = Vector2i(6, 8)
+
+[sub_resource type="Resource" id="c155"]
+script = ExtResource("cell")
+hex = Vector2i(7, 8)
+
+[sub_resource type="Resource" id="c156"]
+script = ExtResource("cell")
+hex = Vector2i(8, 8)
+
+[sub_resource type="Resource" id="c157"]
+script = ExtResource("cell")
+hex = Vector2i(9, 8)
+
+[sub_resource type="Resource" id="c158"]
+script = ExtResource("cell")
+hex = Vector2i(10, 8)
+
+[sub_resource type="Resource" id="c159"]
+script = ExtResource("cell")
+hex = Vector2i(11, 8)
+
+[sub_resource type="Resource" id="c160"]
+script = ExtResource("cell")
+hex = Vector2i(12, 8)
+
+[sub_resource type="Resource" id="c161"]
+script = ExtResource("cell")
+hex = Vector2i(13, 8)
+
+[sub_resource type="Resource" id="c162"]
+script = ExtResource("cell")
+hex = Vector2i(-4, 9)
+
+[sub_resource type="Resource" id="c163"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 9)
+
+[sub_resource type="Resource" id="c164"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 9)
+
+[sub_resource type="Resource" id="c165"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 9)
+
+[sub_resource type="Resource" id="c166"]
+script = ExtResource("cell")
+hex = Vector2i(0, 9)
+
+[sub_resource type="Resource" id="c167"]
+script = ExtResource("cell")
+hex = Vector2i(1, 9)
+
+[sub_resource type="Resource" id="c168"]
+script = ExtResource("cell")
+hex = Vector2i(2, 9)
+
+[sub_resource type="Resource" id="c169"]
+script = ExtResource("cell")
+hex = Vector2i(3, 9)
+
+[sub_resource type="Resource" id="c170"]
+script = ExtResource("cell")
+hex = Vector2i(4, 9)
+
+[sub_resource type="Resource" id="c171"]
+script = ExtResource("cell")
+hex = Vector2i(5, 9)
+
+[sub_resource type="Resource" id="c172"]
+script = ExtResource("cell")
+hex = Vector2i(6, 9)
+
+[sub_resource type="Resource" id="c173"]
+script = ExtResource("cell")
+hex = Vector2i(7, 9)
+
+[sub_resource type="Resource" id="c174"]
+script = ExtResource("cell")
+hex = Vector2i(8, 9)
+
+[sub_resource type="Resource" id="c175"]
+script = ExtResource("cell")
+hex = Vector2i(9, 9)
+
+[sub_resource type="Resource" id="c176"]
+script = ExtResource("cell")
+hex = Vector2i(10, 9)
+
+[sub_resource type="Resource" id="c177"]
+script = ExtResource("cell")
+hex = Vector2i(11, 9)
+
+[sub_resource type="Resource" id="c178"]
+script = ExtResource("cell")
+hex = Vector2i(12, 9)
+
+[sub_resource type="Resource" id="c179"]
+script = ExtResource("cell")
+hex = Vector2i(13, 9)
+
+[sub_resource type="Resource" id="c180"]
+script = ExtResource("cell")
+hex = Vector2i(-5, 10)
+
+[sub_resource type="Resource" id="c181"]
+script = ExtResource("cell")
+hex = Vector2i(-4, 10)
+
+[sub_resource type="Resource" id="c182"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 10)
+
+[sub_resource type="Resource" id="c183"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 10)
+
+[sub_resource type="Resource" id="c184"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 10)
+
+[sub_resource type="Resource" id="c185"]
+script = ExtResource("cell")
+hex = Vector2i(0, 10)
+
+[sub_resource type="Resource" id="c186"]
+script = ExtResource("cell")
+hex = Vector2i(1, 10)
+
+[sub_resource type="Resource" id="c187"]
+script = ExtResource("cell")
+hex = Vector2i(2, 10)
+
+[sub_resource type="Resource" id="c188"]
+script = ExtResource("cell")
+hex = Vector2i(3, 10)
+
+[sub_resource type="Resource" id="c189"]
+script = ExtResource("cell")
+hex = Vector2i(4, 10)
+
+[sub_resource type="Resource" id="c190"]
+script = ExtResource("cell")
+hex = Vector2i(5, 10)
+
+[sub_resource type="Resource" id="c191"]
+script = ExtResource("cell")
+hex = Vector2i(6, 10)
+
+[sub_resource type="Resource" id="c192"]
+script = ExtResource("cell")
+hex = Vector2i(7, 10)
+
+[sub_resource type="Resource" id="c193"]
+script = ExtResource("cell")
+hex = Vector2i(8, 10)
+
+[sub_resource type="Resource" id="c194"]
+script = ExtResource("cell")
+hex = Vector2i(9, 10)
+
+[sub_resource type="Resource" id="c195"]
+script = ExtResource("cell")
+hex = Vector2i(10, 10)
+
+[sub_resource type="Resource" id="c196"]
+script = ExtResource("cell")
+hex = Vector2i(11, 10)
+
+[sub_resource type="Resource" id="c197"]
+script = ExtResource("cell")
+hex = Vector2i(12, 10)
+
+[sub_resource type="Resource" id="c198"]
+script = ExtResource("cell")
+hex = Vector2i(-5, 11)
+
+[sub_resource type="Resource" id="c199"]
+script = ExtResource("cell")
+hex = Vector2i(-4, 11)
+
+[sub_resource type="Resource" id="c200"]
+script = ExtResource("cell")
+hex = Vector2i(-3, 11)
+
+[sub_resource type="Resource" id="c201"]
+script = ExtResource("cell")
+hex = Vector2i(-2, 11)
+
+[sub_resource type="Resource" id="c202"]
+script = ExtResource("cell")
+hex = Vector2i(-1, 11)
+
+[sub_resource type="Resource" id="c203"]
+script = ExtResource("cell")
+hex = Vector2i(0, 11)
+
+[sub_resource type="Resource" id="c204"]
+script = ExtResource("cell")
+hex = Vector2i(1, 11)
+
+[sub_resource type="Resource" id="c205"]
+script = ExtResource("cell")
+hex = Vector2i(2, 11)
+
+[sub_resource type="Resource" id="c206"]
+script = ExtResource("cell")
+hex = Vector2i(3, 11)
+
+[sub_resource type="Resource" id="c207"]
+script = ExtResource("cell")
+hex = Vector2i(4, 11)
+
+[sub_resource type="Resource" id="c208"]
+script = ExtResource("cell")
+hex = Vector2i(5, 11)
+
+[sub_resource type="Resource" id="c209"]
+script = ExtResource("cell")
+hex = Vector2i(6, 11)
+
+[sub_resource type="Resource" id="c210"]
+script = ExtResource("cell")
+hex = Vector2i(7, 11)
+
+[sub_resource type="Resource" id="c211"]
+script = ExtResource("cell")
+hex = Vector2i(8, 11)
+
+[sub_resource type="Resource" id="c212"]
+script = ExtResource("cell")
+hex = Vector2i(9, 11)
+
+[sub_resource type="Resource" id="c213"]
+script = ExtResource("cell")
+hex = Vector2i(10, 11)
+
+[sub_resource type="Resource" id="c214"]
+script = ExtResource("cell")
+hex = Vector2i(11, 11)
+
+[sub_resource type="Resource" id="c215"]
+script = ExtResource("cell")
+hex = Vector2i(12, 11)
+
+[resource]
+script = ExtResource("map")
+id = &"plateau:map"
+cells = Array[ExtResource("cell")]([SubResource("c0"), SubResource("c1"), SubResource("c2"), SubResource("c3"), SubResource("c4"), SubResource("c5"), SubResource("c6"), SubResource("c7"), SubResource("c8"), SubResource("c9"), SubResource("c10"), SubResource("c11"), SubResource("c12"), SubResource("c13"), SubResource("c14"), SubResource("c15"), SubResource("c16"), SubResource("c17"), SubResource("c18"), SubResource("c19"), SubResource("c20"), SubResource("c21"), SubResource("c22"), SubResource("c23"), SubResource("c24"), SubResource("c25"), SubResource("c26"), SubResource("c27"), SubResource("c28"), SubResource("c29"), SubResource("c30"), SubResource("c31"), SubResource("c32"), SubResource("c33"), SubResource("c34"), SubResource("c35"), SubResource("c36"), SubResource("c37"), SubResource("c38"), SubResource("c39"), SubResource("c40"), SubResource("c41"), SubResource("c42"), SubResource("c43"), SubResource("c44"), SubResource("c45"), SubResource("c46"), SubResource("c47"), SubResource("c48"), SubResource("c49"), SubResource("c50"), SubResource("c51"), SubResource("c52"), SubResource("c53"), SubResource("c54"), SubResource("c55"), SubResource("c56"), SubResource("c57"), SubResource("c58"), SubResource("c59"), SubResource("c60"), SubResource("c61"), SubResource("c62"), SubResource("c63"), SubResource("c64"), SubResource("c65"), SubResource("c66"), SubResource("c67"), SubResource("c68"), SubResource("c69"), SubResource("c70"), SubResource("c71"), SubResource("c72"), SubResource("c73"), SubResource("c74"), SubResource("c75"), SubResource("c76"), SubResource("c77"), SubResource("c78"), SubResource("c79"), SubResource("c80"), SubResource("c81"), SubResource("c82"), SubResource("c83"), SubResource("c84"), SubResource("c85"), SubResource("c86"), SubResource("c87"), SubResource("c88"), SubResource("c89"), SubResource("c90"), SubResource("c91"), SubResource("c92"), SubResource("c93"), SubResource("c94"), SubResource("c95"), SubResource("c96"), SubResource("c97"), SubResource("c98"), SubResource("c99"), SubResource("c100"), SubResource("c101"), SubResource("c102"), SubResource("c103"), SubResource("c104"), SubResource("c105"), SubResource("c106"), SubResource("c107"), SubResource("c108"), SubResource("c109"), SubResource("c110"), SubResource("c111"), SubResource("c112"), SubResource("c113"), SubResource("c114"), SubResource("c115"), SubResource("c116"), SubResource("c117"), SubResource("c118"), SubResource("c119"), SubResource("c120"), SubResource("c121"), SubResource("c122"), SubResource("c123"), SubResource("c124"), SubResource("c125"), SubResource("c126"), SubResource("c127"), SubResource("c128"), SubResource("c129"), SubResource("c130"), SubResource("c131"), SubResource("c132"), SubResource("c133"), SubResource("c134"), SubResource("c135"), SubResource("c136"), SubResource("c137"), SubResource("c138"), SubResource("c139"), SubResource("c140"), SubResource("c141"), SubResource("c142"), SubResource("c143"), SubResource("c144"), SubResource("c145"), SubResource("c146"), SubResource("c147"), SubResource("c148"), SubResource("c149"), SubResource("c150"), SubResource("c151"), SubResource("c152"), SubResource("c153"), SubResource("c154"), SubResource("c155"), SubResource("c156"), SubResource("c157"), SubResource("c158"), SubResource("c159"), SubResource("c160"), SubResource("c161"), SubResource("c162"), SubResource("c163"), SubResource("c164"), SubResource("c165"), SubResource("c166"), SubResource("c167"), SubResource("c168"), SubResource("c169"), SubResource("c170"), SubResource("c171"), SubResource("c172"), SubResource("c173"), SubResource("c174"), SubResource("c175"), SubResource("c176"), SubResource("c177"), SubResource("c178"), SubResource("c179"), SubResource("c180"), SubResource("c181"), SubResource("c182"), SubResource("c183"), SubResource("c184"), SubResource("c185"), SubResource("c186"), SubResource("c187"), SubResource("c188"), SubResource("c189"), SubResource("c190"), SubResource("c191"), SubResource("c192"), SubResource("c193"), SubResource("c194"), SubResource("c195"), SubResource("c196"), SubResource("c197"), SubResource("c198"), SubResource("c199"), SubResource("c200"), SubResource("c201"), SubResource("c202"), SubResource("c203"), SubResource("c204"), SubResource("c205"), SubResource("c206"), SubResource("c207"), SubResource("c208"), SubResource("c209"), SubResource("c210"), SubResource("c211"), SubResource("c212"), SubResource("c213"), SubResource("c214"), SubResource("c215")])

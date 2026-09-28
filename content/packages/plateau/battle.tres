@@ -1,0 +1,127 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="battle"]
+[ext_resource type="Script" path="res://features/battle/engine/battle_objective_definition.gd" id="objective"]
+[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="side"]
+[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="placement"]
+
+[sub_resource type="Resource" id="Objective"]
+script = ExtResource("objective")
+description = "АЭР / ПАРЯЩЕЕ ПЛАТО"
+
+[sub_resource type="Resource" id="Player"]
+script = ExtResource("side")
+side_id = &"player"
+
+[sub_resource type="Resource" id="Enemy"]
+script = ExtResource("side")
+side_id = &"enemy"
+faction = 1
+control_source = 1
+ai_profile_id = &"core:basic_enemy_ai"
+
+[sub_resource type="Resource" id="p0"]
+script = ExtResource("placement")
+placement_id = &"unit_01"
+definition_id = &"plateau:sorokin"
+side_id = &"player"
+start_hex = Vector2i(3, 5)
+
+[sub_resource type="Resource" id="p1"]
+script = ExtResource("placement")
+placement_id = &"unit_02"
+definition_id = &"plateau:reaper"
+side_id = &"enemy"
+start_hex = Vector2i(13, 2)
+
+[sub_resource type="Resource" id="p2"]
+script = ExtResource("placement")
+placement_id = &"unit_03"
+definition_id = &"plateau:bastion"
+side_id = &"player"
+start_hex = Vector2i(3, 2)
+
+[sub_resource type="Resource" id="p3"]
+script = ExtResource("placement")
+placement_id = &"unit_04"
+definition_id = &"plateau:carapace"
+side_id = &"enemy"
+start_hex = Vector2i(11, 3)
+
+[sub_resource type="Resource" id="p4"]
+script = ExtResource("placement")
+placement_id = &"unit_05"
+definition_id = &"plateau:ranger"
+side_id = &"player"
+start_hex = Vector2i(0, 2)
+
+[sub_resource type="Resource" id="p5"]
+script = ExtResource("placement")
+placement_id = &"unit_06"
+definition_id = &"plateau:sentry"
+side_id = &"enemy"
+start_hex = Vector2i(13, 4)
+
+[sub_resource type="Resource" id="p6"]
+script = ExtResource("placement")
+placement_id = &"unit_07"
+definition_id = &"plateau:guide"
+side_id = &"player"
+start_hex = Vector2i(0, 4)
+
+[sub_resource type="Resource" id="p7"]
+script = ExtResource("placement")
+placement_id = &"unit_08"
+definition_id = &"plateau:sentry"
+side_id = &"enemy"
+start_hex = Vector2i(9, 6)
+
+[sub_resource type="Resource" id="p8"]
+script = ExtResource("placement")
+placement_id = &"unit_09"
+definition_id = &"plateau:ranger"
+side_id = &"player"
+start_hex = Vector2i(0, 7)
+
+[sub_resource type="Resource" id="p9"]
+script = ExtResource("placement")
+placement_id = &"unit_10"
+definition_id = &"plateau:carapace"
+side_id = &"enemy"
+start_hex = Vector2i(12, 7)
+
+[sub_resource type="Resource" id="p10"]
+script = ExtResource("placement")
+placement_id = &"unit_11"
+definition_id = &"plateau:bastion"
+side_id = &"player"
+start_hex = Vector2i(-2, 9)
+
+[sub_resource type="Resource" id="p11"]
+script = ExtResource("placement")
+placement_id = &"unit_12"
+definition_id = &"plateau:reaper"
+side_id = &"enemy"
+start_hex = Vector2i(9, 9)
+
+[sub_resource type="Resource" id="p12"]
+script = ExtResource("placement")
+placement_id = &"unit_13"
+definition_id = &"plateau:guide"
+side_id = &"player"
+start_hex = Vector2i(-1, 10)
+
+[sub_resource type="Resource" id="p13"]
+script = ExtResource("placement")
+placement_id = &"unit_14"
+definition_id = &"plateau:spore"
+side_id = &"enemy"
+start_hex = Vector2i(10, 10)
+
+[resource]
+script = ExtResource("battle")
+id = &"plateau:battle"
+map_id = &"plateau:map"
+primary_objective = SubResource("Objective")
+sides = Array[ExtResource("side")]([SubResource("Player"), SubResource("Enemy")])
+unit_placements = Array[ExtResource("placement")]([SubResource("p0"), SubResource("p1"), SubResource("p2"), SubResource("p3"), SubResource("p4"), SubResource("p5"), SubResource("p6"), SubResource("p7"), SubResource("p8"), SubResource("p9"), SubResource("p10"), SubResource("p11"), SubResource("p12"), SubResource("p13")])
