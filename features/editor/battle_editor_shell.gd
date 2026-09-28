@@ -121,9 +121,10 @@ func _build_ui() -> void:
 	title.text = "РЕДАКТОР БОЯ"
 	title.add_theme_font_size_override("font_size", 22)
 	root.add_child(title)
+	root.add_child(EditorDisplaySettings.new())
 
 	var hint := Label.new()
-	hint.text = "ЛКМ — инструмент · ПКМ — стереть состояние / юнита · СКМ — панорама · колесо — масштаб"
+	hint.text = "ЛКМ — инструмент · ПКМ — стереть состояние / юнита · СКМ — панорама"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
 

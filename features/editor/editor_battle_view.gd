@@ -178,16 +178,6 @@ func _input(event: InputEvent) -> void:
 	if not mouse.pressed or not _is_pointer_in_workspace(mouse.position):
 		return
 
-	if mouse.button_index == MOUSE_BUTTON_WHEEL_UP:
-		_zoom_at(mouse.position, 1.12)
-		get_viewport().set_input_as_handled()
-		return
-
-	if mouse.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-		_zoom_at(mouse.position, 1.0 / 1.12)
-		get_viewport().set_input_as_handled()
-		return
-
 	if mouse.button_index == MOUSE_BUTTON_RIGHT:
 		var erased := screen_position_to_hex(mouse.position)
 		if is_in_frame(erased):
@@ -247,23 +237,6 @@ func _handle_mouse_motion(motion: InputEventMouseMotion) -> void:
 		_last_painted_hex = hex
 		hex_activated.emit(hex)
 		get_viewport().set_input_as_handled()
-
-
-func _zoom_at(screen_position: Vector2, factor: float) -> void:
-	var next_zoom := clampf(_zoom * factor, MIN_ZOOM, MAX_ZOOM)
-
-	if is_equal_approx(next_zoom, _zoom):
-		return
-
-	var local_before := to_local(screen_position)
-	var parent_position: Vector2 = (
-		get_parent().get_global_transform().affine_inverse()
-		* screen_position
-	)
-	_zoom = next_zoom
-	scale = Vector2.ONE * _zoom
-	position = parent_position - local_before * _zoom
-	queue_redraw()
 
 
 func _tool_supports_drag() -> bool:
