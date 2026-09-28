@@ -1,9 +1,9 @@
-[gd_resource type="Resource" format=3]
+[gd_resource type="Resource" script_class="BattleDefinition" format=3 uid="uid://cde4k6gyj56ll"]
 
-[ext_resource type="Script" path="res://features/battle/definitions/battle_definition.gd" id="battle"]
-[ext_resource type="Script" path="res://features/battle/engine/battle_objective_definition.gd" id="objective"]
-[ext_resource type="Script" path="res://features/battle/definitions/battle_side_definition.gd" id="side"]
-[ext_resource type="Script" path="res://features/battle/definitions/unit_placement_definition.gd" id="placement"]
+[ext_resource type="Script" uid="uid://dk2e5f3wrf5jk" path="res://features/battle/definitions/battle_definition.gd" id="battle"]
+[ext_resource type="Script" uid="uid://c12lcgys5dmb4" path="res://features/battle/engine/battle_objective_definition.gd" id="objective"]
+[ext_resource type="Script" uid="uid://dkl3ubj3im2by" path="res://features/battle/definitions/unit_placement_definition.gd" id="placement"]
+[ext_resource type="Script" uid="uid://bhr4j34ggmq40" path="res://features/battle/definitions/battle_side_definition.gd" id="side"]
 
 [sub_resource type="Resource" id="Objective"]
 script = ExtResource("objective")

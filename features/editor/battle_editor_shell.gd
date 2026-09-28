@@ -7,10 +7,12 @@ const BATTLE_SCREEN_SCENE := preload("res://features/battle/battle_screen.tscn")
 
 
 @export var content_packages: Array[ContentPackage] = []
-@export var initial_battle_id: StringName = &"ember_pack:crossing_battle"
+@export var initial_battle_id: StringName = &"plateau:battle"
 @export var trial_seed := 1
 
 
+var _background_option: OptionButton
+var _selected_state_id: StringName = &"core:electricity"
 var _snapshot: ContentSnapshot
 var _document: EditorDocument
 var _history := EditorCommandHistory.new()
@@ -40,6 +42,7 @@ var _selected_hex := Vector2i.ZERO
 var _has_selected_hex := false
 var _next_placement_number := 1
 var _current_document_path := ""
+var _trial_return_layer: CanvasLayer
 var _trial_screen: BattleScreen
 
 
@@ -59,6 +62,8 @@ func _ready() -> void:
 		_set_status("Не удалось открыть стартовый бой.")
 		return
 
+	_document.map_definition.presentation_frame = Vector2i(18, 12)
+	_view.snapshot = _snapshot
 	_view.setup(_document)
 	_populate_palette()
 	_populate_side_options()
@@ -79,15 +84,20 @@ func _build_ui() -> void:
 	_map_workspace.name = "MapWorkspace"
 	_map_workspace.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_map_workspace.offset_right = -380.0
+	_map_workspace.offset_top = 52.0
+	_map_workspace.offset_bottom = -150.0
 	_map_workspace.clip_contents = true
 	_map_workspace.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background.add_child(_map_workspace)
 
 	_view = EditorBattleView.new()
 	_view.hex_activated.connect(_on_hex_activated)
+	_view.hex_erased.connect(_on_hex_erased)
 	_view.placement_selected.connect(_on_placement_selected)
 	_view.hovered_hex_changed.connect(_on_hovered_hex_changed)
 	_map_workspace.add_child(_view)
+	_map_workspace.resized.connect(_frame_map)
+	_build_visual_controls(background)
 
 	var panel := PanelContainer.new()
 	panel.name = "ToolsPanel"
@@ -113,7 +123,7 @@ func _build_ui() -> void:
 	root.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "ЛКМ — применить инструмент · СКМ — панорама · колесо — масштаб"
+	hint.text = "ЛКМ — инструмент · ПКМ — стереть состояние / юнита · СКМ — панорама · колесо — масштаб"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
 
@@ -124,6 +134,8 @@ func _build_ui() -> void:
 
 	_tool_option = OptionButton.new()
 	_add_tool("Выбор клетки / юнита", EditorBattleView.Tool.SELECT)
+	_add_tool("Кисть: состояние", EditorBattleView.Tool.PAINT_STATE)
+	_add_tool("Ластик: состояние", EditorBattleView.Tool.ERASE_STATE)
 	_add_tool("Кисть: добавить гексы", EditorBattleView.Tool.ADD_HEX)
 	_add_tool("Кисть: удалить гексы", EditorBattleView.Tool.REMOVE_HEX)
 	_add_tool("Кисть: поверхность", EditorBattleView.Tool.PAINT_TERRAIN)
@@ -185,7 +197,8 @@ func _build_ui() -> void:
 	root.add_child(_palette_search)
 
 	_palette = ItemList.new()
-	_palette.custom_minimum_size = Vector2(0, 120)
+	_palette.custom_minimum_size = Vector2(0, 180)
+	_palette.fixed_icon_size = Vector2i(40, 40)
 	_palette.item_selected.connect(_on_palette_selected)
 	root.add_child(_palette)
 
@@ -275,6 +288,8 @@ func _create_file_dialog(mode: FileDialog.FileMode) -> FileDialog:
 	dialog.file_mode = mode
 	dialog.filters = PackedStringArray(["*.json ; Документ редактора боя"])
 	dialog.size = Vector2i(820, 560)
+	dialog.about_to_popup.connect(func() -> void: _view.set_process_input(false))
+	dialog.visibility_changed.connect(func() -> void: _view.set_process_input(not dialog.visible))
 	add_child(dialog)
 	return dialog
 
@@ -313,6 +328,9 @@ func _populate_palette(filter_text: String = "") -> void:
 			"%s  [%s]" % [definition.display_name, definition.id]
 		)
 		_palette.set_item_metadata(index, definition.id)
+		var presentation := _snapshot.get_unit_presentation_definition(definition.presentation_id)
+		if presentation != null:
+			_palette.set_item_icon(index, presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture)
 
 
 func _populate_side_options() -> void:
@@ -377,10 +395,16 @@ func _on_hovered_hex_changed(hex: Vector2i, is_inside: bool) -> void:
 
 
 func _on_hex_activated(hex: Vector2i) -> void:
+	if not EditorBattleView.is_in_frame(hex):
+		return
 	_q_spin.value = hex.x
 	_r_spin.value = hex.y
 
 	match _view.active_tool:
+		EditorBattleView.Tool.PAINT_STATE:
+			_paint_state(hex, _selected_state_id)
+		EditorBattleView.Tool.ERASE_STATE:
+			_paint_state(hex, StringName())
 		EditorBattleView.Tool.SELECT:
 			_select_hex(hex)
 
@@ -425,6 +449,9 @@ func _select_hex(hex: Vector2i) -> void:
 
 
 func _add_hex(hex: Vector2i) -> void:
+	if not EditorBattleView.is_in_frame(hex):
+		_set_status("Максимальная сетка — 18×12.")
+		return
 	if _find_cell(hex) != null:
 		return
 
@@ -440,6 +467,10 @@ func _remove_hex(hex: Vector2i) -> void:
 	if _find_cell(hex) == null:
 		return
 
+	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+		if placement.start_hex == hex:
+			_set_status("Сначала переместите или удалите юнита с этого гекса.")
+			return
 	_execute(EditCommand.remove_hex(hex))
 
 	if _has_selected_hex and _selected_hex == hex:
@@ -465,6 +496,8 @@ func _update_hex(
 		updated.terrain_id = _brush_terrain_id()
 	if change_cost:
 		updated.movement_cost = int(_movement_cost_spin.value)
+		if not updated.hex_state_id.is_empty():
+			updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
 	if make_obstacle:
 		updated.traversable = false
 
@@ -485,6 +518,8 @@ func _apply_selected_hex() -> void:
 	var updated := cell.duplicate(true) as BattleMapCellDefinition
 	updated.terrain_id = _brush_terrain_id()
 	updated.movement_cost = int(_movement_cost_spin.value)
+	if not updated.hex_state_id.is_empty():
+		updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
 	updated.traversable = _traversable_check.button_pressed
 	_execute(EditCommand.update_hex(updated))
 	_set_status("Свойства гекса q=%d, r=%d обновлены." % [_selected_hex.x, _selected_hex.y])
@@ -508,10 +543,17 @@ func _selected_coordinate() -> Vector2i:
 
 
 func _place_or_move_unit(hex: Vector2i) -> void:
+	for existing: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+		if existing.start_hex == hex and existing.placement_id != _selected_placement_id:
+			_set_status("Гекс уже занят юнитом.")
+			return
 	if _find_cell(hex) == null:
 		_set_status("Юнита можно поставить только на существующий гекс.")
 		return
 
+	if not _find_cell(hex).traversable:
+		_set_status("Нельзя поставить юнита на непроходимый гекс.")
+		return
 	if not _selected_placement_id.is_empty():
 		_execute(EditCommand.move_placement(_selected_placement_id, hex))
 		_select_tool(EditorBattleView.Tool.SELECT)
@@ -522,17 +564,13 @@ func _place_or_move_unit(hex: Vector2i) -> void:
 		return
 
 	var placement := UnitPlacementDefinition.new()
-	placement.placement_id = StringName("author:placement_%s" % _next_placement_number)
-	_next_placement_number += 1
+	placement.placement_id = _new_placement_id()
 	placement.definition_id = _selected_definition_id
 	placement.side_id = _side_option.get_selected_metadata()
 	placement.start_hex = hex
 	placement.ai_profile_override_id = _ai_option.get_selected_metadata()
-	_selected_placement_id = placement.placement_id
-	_selected_definition_id = StringName()
 	_execute(EditCommand.add_placement(placement))
-	_view.select_placement(_selected_placement_id)
-	_select_tool(EditorBattleView.Tool.SELECT)
+	_view.select_placement(StringName())
 
 
 func _on_side_changed(_index: int) -> void:
@@ -564,13 +602,16 @@ func _duplicate_selected() -> void:
 		_set_status("Сначала выберите маркер юнита на поле.")
 		return
 
-	var new_id := StringName("author:placement_%s" % _next_placement_number)
-	_next_placement_number += 1
+	var destination := _free_hex_near(placement.start_hex)
+	if destination == Vector2i(999999, 999999):
+		_set_status("Нет свободного проходимого гекса для копии.")
+		return
+	var new_id := _new_placement_id()
 	_selected_placement_id = new_id
 	_execute(EditCommand.duplicate_placement(
 		placement.placement_id,
 		new_id,
-		placement.start_hex + Vector2i(1, 0)
+		destination
 	))
 	_view.select_placement(new_id)
 
@@ -609,6 +650,7 @@ func _redo() -> void:
 
 func _after_document_changed() -> void:
 	_view.setup(_document)
+	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_validate_document()
 
 
@@ -686,6 +728,7 @@ func _on_open_path_selected(path: String) -> void:
 	_selected_definition_id = StringName()
 	_has_selected_hex = false
 	_current_document_path = path
+	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_view.setup(_document)
 	_view.select_placement(StringName())
 	_populate_side_options()
@@ -740,9 +783,23 @@ func _start_trial() -> void:
 	_trial_screen.battle_finished.connect(_on_trial_finished)
 	_ui.visible = false
 	add_child(_trial_screen)
+	_trial_return_layer = CanvasLayer.new()
+	_trial_return_layer.layer = 100
+	add_child(_trial_return_layer)
+	var back := _button("Вернуться в редактор", _return_from_trial)
+	back.position = Vector2(20, 12)
+	_trial_return_layer.add_child(back)
 
 
 func _on_trial_finished(_result: BattleResult) -> void:
+	_return_from_trial()
+
+
+func _return_from_trial() -> void:
+	if _trial_screen == null:
+		return
+	_trial_return_layer.queue_free()
+	_trial_return_layer = null
 	_trial_screen.queue_free()
 	_trial_screen = null
 	_ui.visible = true
@@ -786,3 +843,98 @@ func _show_load_errors(errors: Array[String]) -> void:
 
 func _set_status(message: String) -> void:
 	_status.text = message
+
+
+func _build_visual_controls(parent: Control) -> void:
+	var toolbar := HBoxContainer.new()
+	toolbar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	toolbar.offset_left = 16
+	toolbar.offset_top = 8
+	toolbar.offset_right = -380
+	parent.add_child(toolbar)
+	_background_option = OptionButton.new()
+	for id: StringName in BattleBackdrops.NAMES:
+		var index := _background_option.item_count
+		_background_option.add_item(BattleBackdrops.NAMES[id])
+		_background_option.set_item_metadata(index, id)
+	_background_option.item_selected.connect(func(_index: int) -> void:
+		if _document != null:
+			_execute(EditCommand.set_background(_background_option.get_selected_metadata()))
+	)
+	toolbar.add_child(_background_option)
+	for title: String in ["Сетка", "Юниты"]:
+		var check := CheckButton.new()
+		check.text = title
+		check.button_pressed = true
+		check.toggled.connect(func(enabled: bool) -> void:
+			if title == "Сетка":
+				_view.show_grid = enabled
+			else:
+				_view.show_units = enabled
+			_view.refresh()
+		)
+		toolbar.add_child(check)
+	toolbar.add_child(_button("По размеру окна", _frame_map))
+	toolbar.add_child(_button("Отменить", _undo))
+	toolbar.add_child(_button("Повторить", _redo))
+	toolbar.add_child(_button("Сохранить", _save))
+	toolbar.add_child(_button("Пробный бой", _start_trial))
+	var palette := EditorStatePalette.new()
+	palette.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	palette.offset_left = 16
+	palette.offset_right = -380
+	palette.offset_top = -142
+	palette.offset_bottom = -8
+	palette.state_selected.connect(func(id: StringName) -> void:
+		_selected_state_id = id
+		_select_tool(EditorBattleView.Tool.PAINT_STATE)
+	)
+	palette.erase_selected.connect(func() -> void: _select_tool(EditorBattleView.Tool.ERASE_STATE))
+	parent.add_child(palette)
+
+
+func _paint_state(hex: Vector2i, state_id: StringName) -> void:
+	var cell := _find_cell(hex)
+	if cell == null or cell.hex_state_id == state_id:
+		return
+	var updated := cell.duplicate(true) as BattleMapCellDefinition
+	updated.hex_state_id = state_id
+	updated.movement_cost = HexStateCatalog.get_movement_cost(state_id)
+	_execute(EditCommand.update_hex(updated))
+
+
+func _on_hex_erased(hex: Vector2i) -> void:
+	if _view.active_tool == EditorBattleView.Tool.PLACE_UNIT or _view.active_tool == EditorBattleView.Tool.SELECT:
+		for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+			if placement.start_hex == hex:
+				_execute(EditCommand.remove_placement(placement.placement_id))
+				_selected_placement_id = StringName()
+				_view.select_placement(StringName())
+				return
+	_paint_state(hex, StringName())
+
+
+func _new_placement_id() -> StringName:
+	var id := StringName("author:placement_%s" % _next_placement_number)
+	while _find_placement(id) != null:
+		_next_placement_number += 1
+		id = StringName("author:placement_%s" % _next_placement_number)
+	_next_placement_number += 1
+	return id
+
+
+func _free_hex_near(origin: Vector2i) -> Vector2i:
+	var occupied: Dictionary[Vector2i, bool] = {}
+	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+		occupied[placement.start_hex] = true
+	var best := Vector2i(999999, 999999)
+	var best_distance := 999999
+	for cell: BattleMapCellDefinition in _document.map_definition.cells:
+		if not cell.traversable or occupied.has(cell.hex) or not EditorBattleView.is_in_frame(cell.hex):
+			continue
+		var delta := cell.hex - origin
+		var distance := maxi(absi(delta.x), maxi(absi(delta.y), absi(delta.x + delta.y)))
+		if distance < best_distance:
+			best_distance = distance
+			best = cell.hex
+	return best

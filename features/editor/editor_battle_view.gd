@@ -3,6 +3,7 @@ extends Node2D
 
 
 signal hex_activated(hex: Vector2i)
+signal hex_erased(hex: Vector2i)
 signal placement_selected(placement_id: StringName)
 signal hovered_hex_changed(hex: Vector2i, is_inside: bool)
 
@@ -15,19 +16,20 @@ enum Tool {
 	PAINT_COST,
 	PAINT_OBSTACLE,
 	PLACE_UNIT,
+	PAINT_STATE,
+	ERASE_STATE,
 }
 
 
-const HEX_SIZE := 34.0
-const MIN_ZOOM := 0.45
+const MIN_ZOOM := 0.15
 const MAX_ZOOM := 2.2
-const DEFAULT_CELL_COLOR := Color(0.18, 0.24, 0.28, 1.0)
-const ASH_CELL_COLOR := Color(0.38, 0.25, 0.16, 1.0)
-const GRID_COLOR := Color(0.52, 0.62, 0.68, 1.0)
 const SELECTED_COLOR := Color(0.96, 0.78, 0.23, 1.0)
 const HOVER_COLOR := Color(0.2, 0.82, 0.9, 0.85)
 
 
+var snapshot: ContentSnapshot
+var show_grid := true
+var show_units := true
 var document: EditorDocument
 var selected_placement_id: StringName
 var selected_hex := Vector2i.ZERO
@@ -70,35 +72,9 @@ func select_hex(hex: Vector2i, selected: bool = true) -> void:
 
 
 func frame_document(view_size: Vector2) -> void:
-	if document == null or document.map_definition.cells.is_empty():
-		_zoom = 1.0
-		scale = Vector2.ONE
-		position = view_size * 0.5
-		return
-
-	var first := _hex_center(document.map_definition.cells[0].hex)
-	var minimum := first
-	var maximum := first
-
-	for cell: BattleMapCellDefinition in document.map_definition.cells:
-		var center := _hex_center(cell.hex)
-		minimum.x = minf(minimum.x, center.x)
-		minimum.y = minf(minimum.y, center.y)
-		maximum.x = maxf(maximum.x, center.x)
-		maximum.y = maxf(maximum.y, center.y)
-
-	var map_size := maximum - minimum + Vector2(HEX_SIZE * 2.4, HEX_SIZE * 2.4)
-	var available := Vector2(
-		maxf(view_size.x - 80.0, 120.0),
-		maxf(view_size.y - 80.0, 120.0)
-	)
-	_zoom = clampf(
-		minf(available.x / map_size.x, available.y / map_size.y),
-		MIN_ZOOM,
-		1.35
-	)
+	_zoom = clampf(minf(view_size.x / 1920.0, view_size.y / 1080.0), MIN_ZOOM, MAX_ZOOM)
 	scale = Vector2.ONE * _zoom
-	position = view_size * 0.5 - (minimum + maximum) * 0.5 * _zoom
+	position = (view_size - Vector2(1920, 1080) * _zoom) * 0.5
 
 
 func get_zoom() -> float:
@@ -112,100 +88,67 @@ func screen_position_to_hex(screen_position: Vector2) -> Vector2i:
 func _draw() -> void:
 	if document == null:
 		return
-
-	var existing_hexes: Dictionary[Vector2i, bool] = {}
+	draw_texture_rect(BattleBackdrops.texture(document.map_definition.background_id), Rect2(0, 0, 1920, 1080), false)
+	var existing: Dictionary[Vector2i, bool] = {}
 	var occupancy: Dictionary[Vector2i, int] = {}
-
 	for cell: BattleMapCellDefinition in document.map_definition.cells:
-		existing_hexes[cell.hex] = true
+		existing[cell.hex] = true
 		var center := _hex_center(cell.hex)
-		var fill := _get_terrain_color(cell.terrain_id)
-
+		var texture := HexStateArt.texture(cell.hex_state_id)
+		if texture != null:
+			draw_texture_rect(texture, Rect2(center - Vector2(45, 30), Vector2(90, 58)), false)
+		if show_grid:
+			draw_polyline(_closed_hex_polygon(center), Color(0.85, 0.84, 0.72, 0.5), 1.2, true)
 		if not cell.traversable:
-			fill = Color(0.09, 0.1, 0.12, 1.0)
-		elif cell.movement_cost > 1:
-			fill = fill.lerp(Color(0.58, 0.34, 0.12, 1.0), 0.58)
-
-		draw_colored_polygon(_hex_polygon(center), fill)
-		draw_polyline(_closed_hex_polygon(center), GRID_COLOR, 2.0)
-
-		if not cell.traversable:
-			draw_line(
-				center + Vector2(-13.0, -13.0),
-				center + Vector2(13.0, 13.0),
-				Color(0.92, 0.3, 0.24),
-				3.0
-			)
-			draw_line(
-				center + Vector2(13.0, -13.0),
-				center + Vector2(-13.0, 13.0),
-				Color(0.92, 0.3, 0.24),
-				3.0
-			)
-		elif cell.movement_cost > 1:
-			draw_string(
-				ThemeDB.fallback_font,
-				center + Vector2(-10.0, 6.0),
-				"×%d" % cell.movement_cost,
-				HORIZONTAL_ALIGNMENT_CENTER,
-				20.0,
-				13,
-				Color(1.0, 0.88, 0.58)
-			)
-
+			draw_colored_polygon(_hex_polygon(center), Color(0.12, 0.09, 0.08, 0.65))
+			draw_line(center - Vector2(13, 13), center + Vector2(13, 13), Color.SALMON, 3)
+			draw_line(center + Vector2(13, -13), center + Vector2(-13, 13), Color.SALMON, 3)
 		if has_selected_hex and cell.hex == selected_hex:
-			draw_polyline(
-				_closed_hex_polygon(center),
-				SELECTED_COLOR,
-				4.0
-			)
+			draw_polyline(_closed_hex_polygon(center), SELECTED_COLOR, 3, true)
+	# Missing cells remain recoverable but never become logical cells through drawing.
+	for row in range(12):
+		for column in range(18):
+			var hex := HexCoordinateMapper.offset_to_axial(Vector2i(column, row))
+			if not existing.has(hex):
+				var center := _hex_center(hex)
+				draw_colored_polygon(_hex_polygon(center), Color(0.025, 0.035, 0.03, 0.65))
+				if active_tool == Tool.ADD_HEX:
+					draw_polyline(_closed_hex_polygon(center), Color(0.5, 0.8, 0.6, 0.3), 1)
+	if show_units:
+		var placements := document.battle_definition.unit_placements.duplicate()
+		placements.sort_custom(func(a: UnitPlacementDefinition, b: UnitPlacementDefinition) -> bool: return a.start_hex.y < b.start_hex.y)
+		for placement: UnitPlacementDefinition in placements:
+			occupancy[placement.start_hex] = occupancy.get(placement.start_hex, 0) + 1
+		for placement: UnitPlacementDefinition in placements:
+			_draw_unit(placement, not existing.has(placement.start_hex) or occupancy[placement.start_hex] > 1)
+	if _has_hovered_hex and is_in_frame(_hovered_hex):
+		draw_polyline(_closed_hex_polygon(_hex_center(_hovered_hex)), HOVER_COLOR, 3, true)
 
-	for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
-		occupancy[placement.start_hex] = occupancy.get(placement.start_hex, 0) + 1
 
-	for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
-		var center := _hex_center(placement.start_hex)
-		var marker_color := _get_side_color(placement.side_id)
-		var invalid: bool = (
-			not existing_hexes.has(placement.start_hex)
-			or occupancy.get(placement.start_hex, 0) > 1
-		)
+func _draw_unit(placement: UnitPlacementDefinition, invalid: bool) -> void:
+	var center := _hex_center(placement.start_hex)
+	var color := Color.RED if invalid else _get_side_color(placement.side_id)
+	var presentation: UnitPresentationDefinition
+	if snapshot != null:
+		var definition := snapshot.get_unit_definition(placement.definition_id)
+		if definition != null:
+			presentation = snapshot.get_unit_presentation_definition(definition.presentation_id)
+	draw_circle(center, 17, Color(0, 0, 0, 0.25))
+	if presentation != null and presentation.actor_texture != null:
+		var texture := presentation.actor_texture
+		var dimensions := texture.get_size() * presentation.actor_height / texture.get_height()
+		draw_texture_rect(texture, Rect2(center - dimensions * presentation.actor_foot_anchor, dimensions), false, presentation.actor_color)
+	else:
+		draw_circle(center, 14, color)
+		draw_string(ThemeDB.fallback_font, center + Vector2(-30, -23), _short_placement_name(placement.definition_id), HORIZONTAL_ALIGNMENT_CENTER, 60, 13)
+	draw_line(center + Vector2(-13, 10), center + Vector2(13, 10), color, 3)
+	if placement.placement_id == selected_placement_id:
+		draw_polyline(_closed_hex_polygon(center), SELECTED_COLOR, 3, true)
 
-		if invalid:
-			marker_color = Color(1.0, 0.1, 0.2)
 
-		draw_circle(center, 14.0, marker_color)
-		draw_arc(center, 15.0, 0.0, TAU, 24, Color.WHITE, 2.0)
-
-		if placement.placement_id == selected_placement_id:
-			draw_arc(center, 21.0, 0.0, TAU, 24, SELECTED_COLOR, 3.0)
-
-		draw_string(
-			ThemeDB.fallback_font,
-			center + Vector2(-30.0, -21.0),
-			_short_placement_name(placement.placement_id),
-			HORIZONTAL_ALIGNMENT_CENTER,
-			60.0,
-			11,
-			Color.WHITE
-		)
-
-	if _has_hovered_hex:
-		var hover_center := _hex_center(_hovered_hex)
-		var hover_color := HOVER_COLOR
-
-		if active_tool == Tool.REMOVE_HEX or active_tool == Tool.PAINT_OBSTACLE:
-			hover_color = Color(0.95, 0.3, 0.24, 0.9)
-		elif active_tool == Tool.ADD_HEX:
-			hover_color = Color(0.3, 0.9, 0.5, 0.9)
-
-		draw_polyline(_closed_hex_polygon(hover_center), hover_color, 3.0)
-
-		if active_tool == Tool.ADD_HEX and not existing_hexes.has(_hovered_hex):
-			draw_colored_polygon(
-				_hex_polygon(hover_center),
-				Color(0.24, 0.72, 0.43, 0.25)
-			)
+static func is_in_frame(hex: Vector2i) -> bool:
+	var offset := HexCoordinateMapper.axial_to_offset(hex)
+	return offset.x >= 0 and offset.x < 18 and offset.y >= 0 and offset.y < 12
 
 
 func _input(event: InputEvent) -> void:
@@ -245,14 +188,24 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	if mouse.button_index == MOUSE_BUTTON_RIGHT:
+		var erased := screen_position_to_hex(mouse.position)
+		if is_in_frame(erased):
+			hex_erased.emit(erased)
+		get_viewport().set_input_as_handled()
+		return
+
 	if mouse.button_index != MOUSE_BUTTON_LEFT:
 		return
 
 	var hex := screen_position_to_hex(mouse.position)
 
-	if active_tool == Tool.SELECT:
+	if not is_in_frame(hex):
+		return
+
+	if active_tool == Tool.SELECT and show_units:
 		for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
-			if to_local(mouse.position).distance_to(_hex_center(placement.start_hex)) <= 18.0:
+			if placement.start_hex == hex:
 				placement_selected.emit(placement.placement_id)
 				get_viewport().set_input_as_handled()
 				return
@@ -282,12 +235,13 @@ func _handle_mouse_motion(motion: InputEventMouseMotion) -> void:
 	if not _has_hovered_hex or hex != _hovered_hex:
 		_hovered_hex = hex
 		_has_hovered_hex = true
-		hovered_hex_changed.emit(hex, true)
+		hovered_hex_changed.emit(hex, is_in_frame(hex))
 		queue_redraw()
 
 	if (
 		_is_painting
 		and _tool_supports_drag()
+		and is_in_frame(hex)
 		and hex != _last_painted_hex
 	):
 		_last_painted_hex = hex
@@ -314,6 +268,8 @@ func _zoom_at(screen_position: Vector2, factor: float) -> void:
 
 func _tool_supports_drag() -> bool:
 	return active_tool in [
+		Tool.PAINT_STATE,
+		Tool.ERASE_STATE,
 		Tool.ADD_HEX,
 		Tool.REMOVE_HEX,
 		Tool.PAINT_TERRAIN,
@@ -331,66 +287,33 @@ func _is_pointer_in_workspace(screen_position: Vector2) -> bool:
 
 
 func _pixel_to_hex(point: Vector2) -> Vector2i:
-	var fractional_r := point.y / (HEX_SIZE * 1.5)
-	var fractional_q := (
-		point.x / (HEX_SIZE * sqrt(3.0))
-		- fractional_r * 0.5
-	)
-	return _round_axial(fractional_q, fractional_r)
-
-
-func _round_axial(q: float, r: float) -> Vector2i:
-	var cube_x := q
-	var cube_z := r
-	var cube_y := -cube_x - cube_z
-	var rounded_x := roundi(cube_x)
-	var rounded_y := roundi(cube_y)
-	var rounded_z := roundi(cube_z)
-	var difference_x := absf(rounded_x - cube_x)
-	var difference_y := absf(rounded_y - cube_y)
-	var difference_z := absf(rounded_z - cube_z)
-
-	if difference_x > difference_y and difference_x > difference_z:
-		rounded_x = -rounded_y - rounded_z
-	elif difference_y > difference_z:
-		rounded_y = -rounded_x - rounded_z
-	else:
-		rounded_z = -rounded_x - rounded_y
-
-	return Vector2i(rounded_x, rounded_z)
+	# Test the projected polygon, including the sloping shared edges.
+	var row_guess := roundi((point.y - 197.0) / 58.5)
+	for row in range(row_guess - 1, row_guess + 2):
+		var column := roundi((point.x - 137.0 - posmod(row, 2) * 47.0) / 94.0)
+		var hex := HexCoordinateMapper.offset_to_axial(Vector2i(column, row))
+		var delta := (point - _hex_center(hex)).abs()
+		if delta.x <= 47.0 and delta.y <= 39.0 - delta.x * 19.5 / 47.0:
+			return hex
+	return Vector2i(999999, 999999)
 
 
 func _hex_center(hex: Vector2i) -> Vector2:
-	return Vector2(
-		HEX_SIZE * sqrt(3.0) * (hex.x + hex.y * 0.5),
-		HEX_SIZE * 1.5 * hex.y
-	)
+	return Vector2(137.0 + (hex.x + hex.y * 0.5) * 94.0, 197.0 + hex.y * 58.5)
 
 
 func _hex_polygon(center: Vector2) -> PackedVector2Array:
-	var points := PackedVector2Array()
-
-	for index: int in range(6):
-		var angle := deg_to_rad(60.0 * index - 30.0)
-		points.append(center + Vector2(cos(angle), sin(angle)) * HEX_SIZE)
-
-	return points
+	return PackedVector2Array([
+		center + Vector2(0, -39), center + Vector2(47, -19.5),
+		center + Vector2(47, 19.5), center + Vector2(0, 39),
+		center + Vector2(-47, 19.5), center + Vector2(-47, -19.5),
+	])
 
 
 func _closed_hex_polygon(center: Vector2) -> PackedVector2Array:
 	var points := _hex_polygon(center)
 	points.append(points[0])
 	return points
-
-
-func _get_terrain_color(terrain_id: StringName) -> Color:
-	if terrain_id == &"ember_pack:ash":
-		return ASH_CELL_COLOR
-	if terrain_id == &"core:default":
-		return DEFAULT_CELL_COLOR
-
-	var hue := float(abs(String(terrain_id).hash()) % 360) / 360.0
-	return Color.from_hsv(hue, 0.32, 0.34)
 
 
 func _get_side_color(side_id: StringName) -> Color:

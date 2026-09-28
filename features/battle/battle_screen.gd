@@ -51,6 +51,9 @@ func _start_battle() -> bool:
 	if not _battle_controller.setup(_start_request):
 		return false
 
+	var battle := _start_request.content_snapshot.get_battle_definition(_start_request.battle_id)
+	var map := _start_request.content_snapshot.get_map_definition(battle.map_id)
+	($BattleMap as BattleMapView).set_map_presentation(map)
 	_has_started = true
 	return true
 

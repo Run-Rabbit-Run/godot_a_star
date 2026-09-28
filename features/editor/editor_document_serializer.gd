@@ -41,6 +41,7 @@ static func to_dictionary(document: EditorDocument) -> Dictionary:
 			"movement_cost": cell.movement_cost,
 			"terrain_id": String(cell.terrain_id),
 			"traversable": cell.traversable,
+			"hex_state_id": String(cell.hex_state_id),
 		})
 
 	for side: BattleSideDefinition in document.battle_definition.sides:
@@ -85,6 +86,8 @@ static func to_dictionary(document: EditorDocument) -> Dictionary:
 		"editor_metadata": document.editor_metadata,
 		"map": {
 			"id": String(document.map_definition.id),
+			"background_id": String(document.map_definition.background_id),
+			"presentation_frame": [document.map_definition.presentation_frame.x, document.map_definition.presentation_frame.y],
 			"cells": cells,
 		},
 		"battle": {
@@ -106,13 +109,18 @@ static func from_dictionary(data: Dictionary) -> EditorDocument:
 	var battle_data: Dictionary = data.get("battle", {})
 	var map := BattleMapDefinition.new()
 	map.id = StringName(map_data.get("id", ""))
+	map.background_id = StringName(map_data.get("background_id", "plateau"))
+	var frame: Array = map_data.get("presentation_frame", [0, 0])
+	if frame.size() == 2:
+		map.presentation_frame = Vector2i(int(frame[0]), int(frame[1]))
 
 	for cell_data: Dictionary in map_data.get("cells", []):
 		map.cells.append(BattleMapCellDefinition.new(
 			Vector2i(int(cell_data.get("q", 0)), int(cell_data.get("r", 0))),
 			int(cell_data.get("movement_cost", 1)),
 			StringName(cell_data.get("terrain_id", "core:default")),
-			bool(cell_data.get("traversable", true))
+			bool(cell_data.get("traversable", true)),
+			StringName(cell_data.get("hex_state_id", ""))
 		))
 
 	var battle := BattleDefinition.new()

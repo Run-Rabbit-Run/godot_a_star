@@ -44,6 +44,13 @@ var _hover_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
 var _cursor_mode := CursorMode.DEFAULT
 var _grid_rulers: Node2D
+var _presentation_frame := Vector2i.ZERO
+
+
+func set_map_presentation(definition: BattleMapDefinition) -> void:
+	_presentation_frame = definition.presentation_frame
+	_battle_backdrop.texture = BattleBackdrops.texture(definition.background_id)
+	_fit_battlefield_to_viewport()
 
 
 func _enter_tree() -> void:
@@ -217,6 +224,8 @@ func _rebuild_grid_rulers(screen_scale: float) -> void:
 		add_child(_grid_rulers)
 	_clear_hex_visuals(_grid_rulers)
 	var bounds := _terrain_layer.get_used_rect()
+	if _presentation_frame.x > 0 and _presentation_frame.y > 0:
+		bounds = Rect2i(Vector2i.ZERO, _presentation_frame)
 	var label_scale := Vector2.ONE * screen_scale / scale
 	for column in range(bounds.position.x, bounds.end.x):
 		var center := _terrain_layer.map_to_local(Vector2i(column, bounds.position.y))
@@ -243,6 +252,11 @@ func _add_grid_number(number: int, center: Vector2, label_scale: Vector2) -> voi
 
 func _calculate_grid_local_bounds() -> Rect2:
 	var used_cells := _terrain_layer.get_used_cells()
+	if _presentation_frame.x > 0 and _presentation_frame.y > 0:
+		used_cells.clear()
+		for row in range(_presentation_frame.y):
+			for column in range(_presentation_frame.x):
+				used_cells.append(Vector2i(column, row))
 
 	if used_cells.is_empty():
 		return Rect2()

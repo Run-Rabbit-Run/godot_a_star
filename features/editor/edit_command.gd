@@ -11,9 +11,11 @@ enum Kind {
 	ADD_HEX,
 	UPDATE_HEX,
 	REMOVE_HEX,
+	SET_BACKGROUND,
 }
 
 
+var background_id: StringName
 var kind: Kind
 var placement: UnitPlacementDefinition
 var placement_id: StringName
@@ -98,6 +100,12 @@ static func remove_hex(hex: Vector2i) -> EditCommand:
 	return command
 
 
+static func set_background(id: StringName) -> EditCommand:
+	var command := EditCommand.new(Kind.SET_BACKGROUND)
+	command.background_id = id
+	return command
+
+
 func apply(document: EditorDocument) -> bool:
 	if document == null or _before != null:
 		return false
@@ -105,6 +113,9 @@ func apply(document: EditorDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.SET_BACKGROUND:
+			document.map_definition.background_id = background_id
+
 		Kind.ADD_PLACEMENT:
 			document.battle_definition.unit_placements.append(
 				placement.duplicate(true) as UnitPlacementDefinition

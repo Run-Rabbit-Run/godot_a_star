@@ -1,294 +1,279 @@
 {
-  "version": 1,
-  "created": "2026-09-21",
-  "renderer": "normal alpha, linear filtering",
-  "note": "Static review assets; placement anchors and scales are proposed, not Godot integration.",
-  "base_hex_local": [
-    56,
-    64
-  ],
-  "reference_screen": [
-    1920,
-    1080
-  ],
-  "max_prototype_scale": 1.15,
-  "comparison_720p": "1080p reference scaled by 2/3; not the actual responsive Godot camera fit.",
+  "version": 2,
+  "pack": "rim",
   "assets": [
     {
+      "pack": "rim",
+      "index": 0,
       "id": "01-electricity",
       "title": "Электричество",
       "file": "01-electricity.png",
       "size": [
-        1254,
-        1254
+        362,
+        350
       ],
-      "visible_bounds": [
-        134,
-        441,
-        1032,
-        431
+      "bounds": [
+        22,
+        75,
+        331,
+        263
       ],
-      "anchor_px": [
-        649.5,
-        665.12
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0444961,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8482
+      "atlas_region": [
+        0,
+        0,
+        362,
+        350
+      ]
     },
     {
+      "pack": "rim",
+      "index": 1,
       "id": "02-water",
       "title": "Вода",
       "file": "02-water.png",
       "size": [
-        1254,
-        1254
+        362,
+        350
       ],
-      "visible_bounds": [
-        121,
-        477,
-        1049,
-        421
+      "bounds": [
+        17,
+        109,
+        329,
+        221
       ],
-      "anchor_px": [
-        645,
-        695.92
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.043775,
-      "alpha_verified": true,
-      "max_border_alpha": 1,
-      "transparent_fraction": 0.8221
+      "atlas_region": [
+        362,
+        0,
+        362,
+        350
+      ]
     },
     {
+      "pack": "rim",
+      "index": 2,
       "id": "03-fire",
       "title": "Огонь",
       "file": "03-fire.png",
       "size": [
-        1254,
-        1254
+        362,
+        350
       ],
-      "visible_bounds": [
-        123,
-        356,
-        1013,
-        542
+      "bounds": [
+        14,
+        69,
+        328,
+        264
       ],
-      "anchor_px": [
-        629,
-        778.76
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0453307,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8116
+      "atlas_region": [
+        724,
+        0,
+        362,
+        350
+      ]
     },
     {
+      "pack": "rim",
+      "index": 3,
       "id": "04-oil",
       "title": "Масло",
       "file": "04-oil.png",
       "size": [
-        1254,
-        1254
+        1566,
+        1004
       ],
-      "visible_bounds": [
-        125,
-        470,
-        1013,
-        370
+      "bounds": [
+        126,
+        191,
+        1343,
+        635
       ],
-      "anchor_px": [
-        631,
-        662.4
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0453307,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8704
+      "atlas_region": null,
+      "source": "overrides/rim-oil.png"
     },
     {
+      "pack": "rim",
+      "index": 4,
       "id": "05-acid",
       "title": "Кислота",
       "file": "05-acid.png",
       "size": [
-        1254,
-        1254
+        362,
+        318
       ],
-      "visible_bounds": [
-        74,
-        468,
-        1110,
-        441
+      "bounds": [
+        22,
+        54,
+        334,
+        229
       ],
-      "anchor_px": [
-        628.5,
-        697.32
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0413694,
-      "alpha_verified": true,
-      "max_border_alpha": 1,
-      "transparent_fraction": 0.7891
+      "atlas_region": [
+        0,
+        350,
+        362,
+        318
+      ]
     },
     {
+      "pack": "rim",
+      "index": 5,
       "id": "06-electrified-water",
       "title": "Наэлектризованная вода",
       "file": "06-electrified-water.png",
       "size": [
-        1254,
-        1254
+        362,
+        318
       ],
-      "visible_bounds": [
-        49,
-        514,
-        1155,
-        381
+      "bounds": [
+        16,
+        24,
+        336,
+        268
       ],
-      "anchor_px": [
-        626,
-        712.12
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0397576,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8039
+      "atlas_region": [
+        362,
+        350,
+        362,
+        318
+      ]
     },
     {
+      "pack": "rim",
+      "index": 6,
       "id": "07-plasma",
       "title": "Плазма",
       "file": "07-plasma.png",
       "size": [
-        1254,
-        1254
+        362,
+        318
       ],
-      "visible_bounds": [
-        124,
-        440,
-        1001,
-        427
+      "bounds": [
+        15,
+        28,
+        330,
+        261
       ],
-      "anchor_px": [
-        624,
-        721.82
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0458741,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8423
+      "atlas_region": [
+        724,
+        350,
+        362,
+        318
+      ]
     },
     {
+      "pack": "rim",
+      "index": 7,
       "id": "08-electrified-acid",
       "title": "Наэлектризованная кислота",
       "file": "08-electrified-acid.png",
       "size": [
-        1254,
-        1254
+        362,
+        318
       ],
-      "visible_bounds": [
-        84,
-        502,
-        1094,
-        436
+      "bounds": [
+        7,
+        40,
+        333,
+        258
       ],
-      "anchor_px": [
-        630.5,
-        728.72
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0419744,
-      "alpha_verified": true,
-      "max_border_alpha": 1,
-      "transparent_fraction": 0.793
+      "atlas_region": [
+        1086,
+        350,
+        362,
+        318
+      ]
     },
     {
+      "pack": "rim",
+      "index": 8,
       "id": "09-steam",
       "title": "Пар",
       "file": "09-steam.png",
       "size": [
-        1254,
-        1254
+        362,
+        418
       ],
-      "visible_bounds": [
-        120,
-        377,
-        1044,
-        544
+      "bounds": [
+        20,
+        42,
+        334,
+        292
       ],
-      "anchor_px": [
-        641.5,
-        812.2
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0439847,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.8267
+      "atlas_region": [
+        0,
+        668,
+        362,
+        418
+      ]
     },
     {
+      "pack": "rim",
+      "index": 9,
       "id": "10-boiling-acid",
       "title": "Кипящая кислота",
       "file": "10-boiling-acid.png",
       "size": [
-        1254,
-        1254
+        362,
+        418
       ],
-      "visible_bounds": [
-        58,
-        385,
-        1126,
-        503
+      "bounds": [
+        14,
+        42,
+        337,
+        293
       ],
-      "anchor_px": [
-        620.5,
-        722.01
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0407815,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.7964
+      "atlas_region": [
+        362,
+        668,
+        362,
+        418
+      ]
     },
     {
+      "pack": "rim",
+      "index": 10,
       "id": "11-burning-oil",
       "title": "Горящее масло",
       "file": "11-burning-oil.png",
       "size": [
-        1254,
-        1254
+        362,
+        418
       ],
-      "visible_bounds": [
-        69,
-        314,
-        1116,
-        589
+      "bounds": [
+        8,
+        30,
+        342,
+        303
       ],
-      "anchor_px": [
-        626.5,
-        749.86
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.041147,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.7834
+      "atlas_region": [
+        724,
+        668,
+        362,
+        418
+      ]
     },
     {
+      "pack": "rim",
+      "index": 11,
       "id": "12-acid-vapour",
       "title": "Кислотный пар",
       "file": "12-acid-vapour.png",
       "size": [
-        1254,
-        1254
+        362,
+        418
       ],
-      "visible_bounds": [
-        91,
-        381,
-        1131,
-        495
+      "bounds": [
+        15,
+        33,
+        325,
+        298
       ],
-      "anchor_px": [
-        656,
-        742.35
-      ],
-      "sprite_scale_for_local_hex_56x64": 0.0406012,
-      "alpha_verified": true,
-      "max_border_alpha": 0,
-      "transparent_fraction": 0.7625
+      "atlas_region": [
+        1086,
+        668,
+        362,
+        418
+      ]
     }
-  ]
+  ],
+  "note": "Rim assets. Visible bounds are shared by editor and battle through HexStateArt. Reference placement: 90x58 at center + (0,-1) within a 94x78 projected hex."
 }

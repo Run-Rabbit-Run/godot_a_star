@@ -1,11 +1,10 @@
-[gd_resource type="Resource" format=3]
+[gd_resource type="Resource" script_class="BattleMapDefinition" format=3 uid="uid://3dhaduwtvopn"]
 
-[ext_resource type="Script" path="res://features/battle/map/battle_map_definition.gd" id="map"]
-[ext_resource type="Script" path="res://features/battle/map/battle_map_cell_definition.gd" id="cell"]
+[ext_resource type="Script" uid="uid://1cvyf8p0q7rn" path="res://features/battle/map/battle_map_cell_definition.gd" id="cell"]
+[ext_resource type="Script" uid="uid://dta1mejjhoh73" path="res://features/battle/map/battle_map_definition.gd" id="map"]
 
 [sub_resource type="Resource" id="c0"]
 script = ExtResource("cell")
-hex = Vector2i(0, 0)
 
 [sub_resource type="Resource" id="c1"]
 script = ExtResource("cell")
