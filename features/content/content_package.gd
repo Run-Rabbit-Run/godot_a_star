@@ -10,5 +10,6 @@ extends Resource
 @export var ai_profiles: Array[AIProfileDefinition] = []
 @export var races: Array[RaceDefinition] = []
 @export var abilities: Array[AbilityDefinition] = []
+@export var ability_presentations: Array[AbilityPresentationDefinition] = []
 @export var scenarios: Array[ScenarioDefinition] = []
 @export var campaigns: Array[CampaignDefinition] = []

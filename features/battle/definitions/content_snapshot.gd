@@ -14,6 +14,7 @@ var _unit_presentation_definitions: Dictionary[StringName, UnitPresentationDefin
 var _ai_profile_definitions: Dictionary[StringName, AIProfileDefinition] = {}
 var _race_definitions: Dictionary[StringName, RaceDefinition] = {}
 var _ability_definitions: Dictionary[StringName, AbilityDefinition] = {}
+var _ability_presentation_definitions: Dictionary[StringName, AbilityPresentationDefinition] = {}
 var _scenario_definitions: Dictionary[StringName, ScenarioDefinition] = {}
 var _campaign_definitions: Dictionary[StringName, CampaignDefinition] = {}
 
@@ -29,7 +30,8 @@ func _init(
 	p_campaign_definitions: Array[CampaignDefinition] = [],
 	p_content_lock: ContentLock = null,
 	p_mod_api: ModAPI = null,
-	p_unit_presentation_definitions: Array[UnitPresentationDefinition] = []
+	p_unit_presentation_definitions: Array[UnitPresentationDefinition] = [],
+	p_ability_presentation_definitions: Array[AbilityPresentationDefinition] = []
 ) -> void:
 	content_lock = p_content_lock
 	mod_api = p_mod_api if p_mod_api != null else ModAPI.create_default()
@@ -44,6 +46,11 @@ func _init(
 	_register_resources(p_ai_profile_definitions, _ai_profile_definitions, "AIProfileDefinition")
 	_register_resources(p_race_definitions, _race_definitions, "RaceDefinition")
 	_register_resources(p_ability_definitions, _ability_definitions, "AbilityDefinition")
+	_register_resources(
+		p_ability_presentation_definitions,
+		_ability_presentation_definitions,
+		"AbilityPresentationDefinition"
+	)
 	_register_resources(p_scenario_definitions, _scenario_definitions, "ScenarioDefinition")
 	_register_resources(p_campaign_definitions, _campaign_definitions, "CampaignDefinition")
 
@@ -78,6 +85,12 @@ func get_ability_definition(definition_id: StringName) -> AbilityDefinition:
 	return _ability_definitions.get(definition_id) as AbilityDefinition
 
 
+func get_ability_presentation_definition(
+	definition_id: StringName
+) -> AbilityPresentationDefinition:
+	return _ability_presentation_definitions.get(definition_id) as AbilityPresentationDefinition
+
+
 func get_scenario_definition(definition_id: StringName) -> ScenarioDefinition:
 	return _scenario_definitions.get(definition_id) as ScenarioDefinition
 
@@ -104,6 +117,10 @@ func get_race_definition_ids() -> Dictionary[StringName, bool]:
 
 func get_ability_definition_ids() -> Dictionary[StringName, bool]:
 	return _collect_ids(_ability_definitions)
+
+
+func get_ability_presentation_definition_ids() -> Dictionary[StringName, bool]:
+	return _collect_ids(_ability_presentation_definitions)
 
 
 func get_scenario_definition_ids() -> Dictionary[StringName, bool]:
@@ -137,6 +154,7 @@ func with_battle_document(
 	var unit_presentations: Array[UnitPresentationDefinition] = []
 	var races: Array[RaceDefinition] = []
 	var abilities: Array[AbilityDefinition] = []
+	var ability_presentations: Array[AbilityPresentationDefinition] = []
 	var scenarios: Array[ScenarioDefinition] = []
 	var campaigns: Array[CampaignDefinition] = []
 
@@ -158,6 +176,8 @@ func with_battle_document(
 		races.append(definition)
 	for definition: AbilityDefinition in _ability_definitions.values():
 		abilities.append(definition)
+	for definition: AbilityPresentationDefinition in _ability_presentation_definitions.values():
+		ability_presentations.append(definition)
 	for definition: ScenarioDefinition in _scenario_definitions.values():
 		scenarios.append(definition)
 	for definition: CampaignDefinition in _campaign_definitions.values():
@@ -176,7 +196,8 @@ func with_battle_document(
 		campaigns,
 		content_lock,
 		mod_api,
-		unit_presentations
+		unit_presentations,
+		ability_presentations
 	)
 
 func _register_resources(

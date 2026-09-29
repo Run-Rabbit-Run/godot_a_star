@@ -51,7 +51,7 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _speed_label: Label = $HUDRoot/SpeedPanel/Content/SpeedLabel
 @onready var _movement_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/MovementButton
 @onready var _basic_attack_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/BasicAttackButton
-@onready var _grenade_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/GrenadeButton
+@onready var _ability_button_template: Button = $HUDRoot/ActionPanel/Content/SkillButtons/AbilityButtonTemplate
 @onready var _settings_button: Button = $HUDRoot/SystemPanel/Content/SettingsButton
 @onready var _end_turn_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/EndTurnButton
 @onready var _speed_half_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/SpeedHalfButton
@@ -66,8 +66,9 @@ var _health_text := ""
 var _interaction_enabled := true
 var _movement_available := false
 var _main_action_available := false
-var _grenade_action_available := false
+var _ability_action_available := false
 var _ability_buttons: Array[Button] = []
+var _ability_button_ids: Array[StringName] = []
 var _display_settings: BattleDisplaySettingsController
 
 
@@ -113,7 +114,6 @@ func _ready() -> void:
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
-	_grenade_button.hide()
 	_settings_button.pressed.connect(_on_settings_button_pressed)
 	_speed_half_button.pressed.connect(_on_speed_requested.bind(0.5))
 	_speed_1_button.pressed.connect(_on_speed_requested.bind(1.0))
@@ -143,23 +143,24 @@ func show_basic_attack_button(attack_range: int, available: bool) -> void:
 
 
 func show_abilities(abilities: Array[AbilityDefinition], available: bool) -> void:
-	for button: Button in _ability_buttons:
-		button.get_parent().remove_child(button)
-		button.queue_free()
-	_ability_buttons.clear()
+	var ability_ids: Array[StringName] = []
+
 	for ability: AbilityDefinition in abilities:
-		if ability == null:
-			continue
-		var button := _grenade_button.duplicate() as Button
-		button.text = ability.display_name
-		button.tooltip_text = ability.display_name
-		button.show()
-		_grenade_button.get_parent().add_child(button)
-		_grenade_button.get_parent().move_child(button, _end_turn_button.get_index())
-		button.pressed.connect(_on_ability_button_pressed.bind(ability.id))
-		_ability_buttons.append(button)
-	_grenade_action_available = available
+		if ability != null:
+			ability_ids.append(ability.id)
+
+	# Rebuild only when the set changes so hover and focus survive ordinary refreshes.
+	if ability_ids != _ability_button_ids:
+		_rebuild_ability_buttons(abilities)
+		_ability_button_ids = ability_ids
+
+	_ability_action_available = available
 	_refresh_action_button_states()
+
+
+## Ability IDs contain ':', which node names do not allow.
+static func get_ability_button_name(ability_id: StringName) -> String:
+	return "Ability_%s" % String(ability_id).validate_node_name()
 
 
 func show_active_portrait(texture: Texture2D) -> void:
@@ -362,7 +363,33 @@ func _refresh_action_button_states() -> void:
 		or not _main_action_available
 	)
 	for button: Button in _ability_buttons:
-		button.disabled = not _interaction_enabled or not _grenade_action_available
+		button.disabled = (
+			not _interaction_enabled
+			or not _ability_action_available
+		)
+
+
+func _rebuild_ability_buttons(abilities: Array[AbilityDefinition]) -> void:
+	for button: Button in _ability_buttons:
+		button.get_parent().remove_child(button)
+		button.queue_free()
+
+	_ability_buttons.clear()
+	var skill_buttons := _ability_button_template.get_parent()
+
+	for ability: AbilityDefinition in abilities:
+		if ability == null:
+			continue
+
+		var button := _ability_button_template.duplicate() as Button
+		button.name = get_ability_button_name(ability.id)
+		button.text = ability.display_name
+		button.tooltip_text = ability.display_name
+		button.show()
+		skill_buttons.add_child(button)
+		skill_buttons.move_child(button, _end_turn_button.get_index())
+		button.pressed.connect(_on_ability_button_pressed.bind(ability.id))
+		_ability_buttons.append(button)
 
 
 func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelContainer:
@@ -418,7 +445,7 @@ func _apply_styles() -> void:
 	for button: Button in [
 		_movement_button,
 		_basic_attack_button,
-		_grenade_button,
+		_ability_button_template,
 		_settings_button,
 		_end_turn_button,
 		_speed_half_button,
@@ -445,7 +472,7 @@ func _apply_styles() -> void:
 
 	for panel: PanelContainer in [_strategist_panel, _active_unit_panel, _turn_queue_panel, _action_panel, _system_panel]:
 		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	for button: Button in [_movement_button, _basic_attack_button, _grenade_button, _end_turn_button]:
+	for button: Button in [_movement_button, _basic_attack_button, _ability_button_template, _end_turn_button]:
 		button.icon = null
 		button.add_theme_font_size_override("font_size", 16)
 		for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:

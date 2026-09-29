@@ -44,6 +44,7 @@ var _next_placement_number := 1
 var _current_document_path := ""
 var _trial_return_layer: CanvasLayer
 var _trial_screen: BattleScreen
+var _trial_result: BattleResult
 
 
 func _ready() -> void:
@@ -796,10 +797,9 @@ func _start_trial() -> void:
 
 
 func _on_trial_finished(result: BattleResult) -> void:
-	# Leave the outcome visible until the author explicitly returns.
-	_set_status("Пробный бой: %s." % (
-		"победа" if result.outcome == BattleOutcome.Value.VICTORY else "поражение"
-	))
+	# The battle screen keeps showing the outcome until the author returns.
+	# The editor status is hidden meanwhile, so the outcome is reported on return.
+	_trial_result = result
 
 
 func _on_trial_failed(message: String) -> void:
@@ -810,13 +810,25 @@ func _on_trial_failed(message: String) -> void:
 func _return_from_trial() -> void:
 	if _trial_screen == null:
 		return
+
 	if is_instance_valid(_trial_return_layer):
 		_trial_return_layer.queue_free()
+
 	_trial_return_layer = null
 	_trial_screen.queue_free()
 	_trial_screen = null
 	_ui.visible = true
-	_set_status("Пробный бой завершён; EditorDocument не изменён.")
+	var outcome := ""
+
+	if _trial_result != null:
+		outcome = " (%s)" % (
+			"победа"
+			if _trial_result.outcome == BattleOutcome.Value.VICTORY
+			else "поражение"
+		)
+
+	_trial_result = null
+	_set_status("Пробный бой завершён%s; EditorDocument не изменён." % outcome)
 
 
 func _find_cell(hex: Vector2i) -> BattleMapCellDefinition:

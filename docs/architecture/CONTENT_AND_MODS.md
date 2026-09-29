@@ -22,6 +22,7 @@ ContentPackage[]
 - профили ИИ;
 - расы;
 - способности;
+- presentation-определения способностей;
 - сценарии и кампании.
 
 Базовые пакеты находятся в `content/packages/`. Этот `.tres`-формат удобен для разработки внутри Godot, но не считается готовым публичным форматом пользовательских модов.
@@ -70,6 +71,8 @@ author_pack:bridge_battle
 ## Логика и presentation
 
 `UnitDefinition` содержит только игровые данные и `presentation_id`. Сцена, текстура и визуальные параметры находятся в `UnitPresentationDefinition`.
+
+`AbilityDefinition` так же ссылается на `AbilityPresentationDefinition` через `presentation_id`. Пакет перечисляет такие определения в `ability_presentations`; их ID подчиняются тому же namespace пакета и входят в fingerprint `ContentLock`.
 
 Отсутствующее presentation-определение выдаёт предупреждение и допускает визуальный fallback. Отсутствующее логическое определение, карта, способность или обязательная ссылка являются ошибкой.
 

@@ -72,6 +72,28 @@ func create_units(
 	return true
 
 
+## Actors are created from the state after these events were applied. Showing the prior
+## health lets the presentation queue replay the damage from the real starting value.
+func show_health_before(events: Array[BattleEvent]) -> void:
+	# Walk backwards so a unit damaged several times ends at its earliest health.
+	for index in range(events.size() - 1, -1, -1):
+		var damage := events[index] as UnitDamagedEvent
+
+		if damage == null:
+			continue
+
+		var actor := actors.get(damage.target_id) as UnitActor
+		var definition := get_definition(damage.target_id)
+
+		if actor == null or definition == null or definition.base_stats == null:
+			continue
+
+		actor.show_health(
+			damage.target_health_remaining + damage.damage,
+			definition.base_stats.max_health
+		)
+
+
 func clear() -> void:
 	for actor: UnitActor in actors.values():
 		if is_instance_valid(actor):

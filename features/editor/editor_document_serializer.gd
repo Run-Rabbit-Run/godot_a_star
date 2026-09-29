@@ -29,13 +29,21 @@ static func load_result(path: String) -> LoadResult:
 	var file := FileAccess.open(path, FileAccess.READ)
 
 	if file == null:
-		result.error_message = "Could not open %s (error %s)." % [path, FileAccess.get_open_error()]
+		result.error_message = "Could not open %s (error %s)." % [
+			path,
+			FileAccess.get_open_error(),
+		]
 		return result
 
 	var parser := JSON.new()
+
 	if parser.parse(file.get_as_text()) != OK:
-		result.error_message = "JSON line %d: %s" % [parser.get_error_line(), parser.get_error_message()]
+		result.error_message = "JSON line %d: %s" % [
+			parser.get_error_line(),
+			parser.get_error_message(),
+		]
 		return result
+
 	var parsed: Variant = parser.data
 
 	if not (parsed is Dictionary):
@@ -43,8 +51,10 @@ static func load_result(path: String) -> LoadResult:
 		return result
 
 	result.error_message = _validate_structure(parsed)
+
 	if result.error_message.is_empty():
-		result.document = from_dictionary(parsed)
+		result.document = _create_document(parsed)
+
 	return result
 
 
@@ -124,6 +134,11 @@ static func from_dictionary(data: Dictionary) -> EditorDocument:
 	if not _validate_structure(data).is_empty():
 		return null
 
+	return _create_document(data)
+
+
+## Expects data that already passed _validate_structure().
+static func _create_document(data: Dictionary) -> EditorDocument:
 	var map_data: Dictionary = data.get("map", {})
 	var battle_data: Dictionary = data.get("battle", {})
 	var map := BattleMapDefinition.new()

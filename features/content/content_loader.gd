@@ -37,6 +37,7 @@ static func load_packages(
 	var ai_profiles: Array[AIProfileDefinition] = []
 	var races: Array[RaceDefinition] = []
 	var abilities: Array[AbilityDefinition] = []
+	var ability_presentations: Array[AbilityPresentationDefinition] = []
 	var scenarios: Array[ScenarioDefinition] = []
 	var campaigns: Array[CampaignDefinition] = []
 	var lock_entries: Array[ContentLockEntry] = []
@@ -52,6 +53,7 @@ static func load_packages(
 			ai_profiles,
 			races,
 			abilities,
+			ability_presentations,
 			scenarios,
 			campaigns,
 			ids_by_type,
@@ -73,7 +75,8 @@ static func load_packages(
 		campaigns,
 		ContentLock.new(ModAPI.VERSION, lock_entries),
 		api,
-		unit_presentations
+		unit_presentations,
+		ability_presentations
 	)
 
 	if not snapshot.is_valid:
@@ -218,6 +221,7 @@ static func _collect_package(
 	ai_profiles: Array[AIProfileDefinition],
 	races: Array[RaceDefinition],
 	abilities: Array[AbilityDefinition],
+	ability_presentations: Array[AbilityPresentationDefinition],
 	scenarios: Array[ScenarioDefinition],
 	campaigns: Array[CampaignDefinition],
 	ids_by_type: Dictionary[String, Dictionary],
@@ -237,6 +241,14 @@ static func _collect_package(
 	_collect_definitions(package, "ai_profile", package.ai_profiles, ai_profiles, ids_by_type, result)
 	_collect_definitions(package, "race", package.races, races, ids_by_type, result)
 	_collect_definitions(package, "ability", package.abilities, abilities, ids_by_type, result)
+	_collect_definitions(
+		package,
+		"ability_presentation",
+		package.ability_presentations,
+		ability_presentations,
+		ids_by_type,
+		result
+	)
 	_collect_definitions(package, "scenario", package.scenarios, scenarios, ids_by_type, result)
 	_collect_definitions(package, "campaign", package.campaigns, campaigns, ids_by_type, result)
 
@@ -324,6 +336,15 @@ static func _validate_references(
 		if ability.effects.is_empty():
 			result.add_error("AbilityDefinition %s has no effects." % ability.id)
 
+		if (
+			not ability.presentation_id.is_empty()
+			and snapshot.get_ability_presentation_definition(ability.presentation_id) == null
+		):
+			result.add_warning(
+				"AbilityDefinition %s references missing optional AbilityPresentationDefinition %s; graphical adapters will use a fallback."
+				% [ability.id, ability.presentation_id]
+			)
+
 		for effect: AbilityEffectDefinition in ability.effects:
 			if effect == null:
 				result.add_error("AbilityDefinition %s contains a null effect." % ability.id)
@@ -399,6 +420,7 @@ static func _create_lock_entry(package: ContentPackage) -> ContentLockEntry:
 		package.ai_profiles,
 		package.races,
 		package.abilities,
+		package.ability_presentations,
 		package.scenarios,
 		package.campaigns,
 	]:

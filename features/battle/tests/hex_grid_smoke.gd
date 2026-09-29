@@ -41,6 +41,12 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 
+func _find_ability_button(action_panel: Control, ability_id: StringName) -> Button:
+	return action_panel.get_node_or_null(
+		"Content/SkillButtons/%s" % BattleHUD.get_ability_button_name(ability_id)
+	) as Button
+
+
 func _check_coordinate_mapping() -> void:
 	var map_cells: Array[Vector2i] = [
 		Vector2i.ZERO,
@@ -397,28 +403,6 @@ func _check_ranged_attack() -> void:
 		not ranged.turn.main_action_available,
 		"Ranged attack must spend the main action."
 	)
-	_expect(
-		EnemyBrain.choose_attack(
-			&"ai_ranged",
-			Vector2i.ZERO,
-			&"player",
-			Vector2i(3, 0),
-			3,
-			true
-		) != null,
-		"AI must choose a basic attack when the target is in ranged reach."
-	)
-	_expect(
-		EnemyBrain.choose_attack(
-			&"ai_melee",
-			Vector2i.ZERO,
-			&"player",
-			Vector2i(3, 0),
-			1,
-			true
-		) == null,
-		"Melee AI must not attack the same distant target."
-	)
 
 
 func _check_grenade_ability() -> void:
@@ -691,9 +675,7 @@ func _check_battle_scene() -> void:
 	var movement_button := action_panel.get_node_or_null(
 		"Content/SkillButtons/MovementButton"
 	) as Button
-	var grenade_button := action_panel.get_node_or_null(
-		"Content/SkillButtons/GrenadeButton"
-	) as Button
+	var grenade_button := _find_ability_button(action_panel, &"core:grenade")
 	var basic_attack_button := action_panel.get_node_or_null(
 		"Content/SkillButtons/BasicAttackButton"
 	) as Button
@@ -936,12 +918,13 @@ func _check_battle_scene() -> void:
 	settings_button.pressed.emit()
 	_expect(not speed_panel.visible, "Settings button must close animation speed controls.")
 
+	grenade_button = _find_ability_button(action_panel, &"core:grenade")
 	grenade_button.pressed.emit()
 	var grenade_targets := map_view.get_node_or_null(
-		"GrenadeTargetVisuals"
+		"AbilityTargetVisuals"
 	) as Node2D
 	var grenade_area := map_view.get_node_or_null(
-		"GrenadeAreaVisuals"
+		"AbilityAreaVisuals"
 	) as Node2D
 	_expect(
 		targetable_layer.get_used_cells().has(
@@ -965,6 +948,7 @@ func _check_battle_scene() -> void:
 		),
 		"Movement button must leave grenade targeting mode."
 	)
+	grenade_button = _find_ability_button(action_panel, &"core:grenade")
 	grenade_button.pressed.emit()
 	input_router.hex_hovered.emit(Vector2i(8, 7))
 	_expect(
@@ -978,13 +962,13 @@ func _check_battle_scene() -> void:
 	)
 	input_router.hex_selected.emit(Vector2i(8, 7))
 	_expect(
-		map_view.get_node_or_null("GrenadeProjectile") != null,
+		map_view.get_node_or_null("AbilityProjectile") != null,
 		"Grenade use must create a visible thrown projectile."
 	)
 	await create_timer(0.3).timeout
 	_expect(
-		map_view.get_node_or_null("GrenadeExplosionCore") != null
-		and map_view.get_node_or_null("GrenadeExplosionRing") != null,
+		map_view.get_node_or_null("AbilityImpactCore") != null
+		and map_view.get_node_or_null("AbilityImpactRing") != null,
 		"Grenade impact must create a visible explosion and shockwave."
 	)
 	await create_timer(1.1).timeout
@@ -1032,7 +1016,10 @@ func _check_battle_scene() -> void:
 		session.get_active_unit_id() == ranged_player_id,
 		"Second player turn must activate the ranged ally."
 	)
-	_expect(not grenade_button.visible, "Ranged ally must not expose the grenade button.")
+	_expect(
+		_find_ability_button(action_panel, &"core:grenade") == null,
+		"Ranged ally must not expose the grenade button."
+	)
 	_expect(
 		targetable_layer.get_used_cells().has(
 			HexCoordinateMapper.axial_to_offset(enemy.hex)

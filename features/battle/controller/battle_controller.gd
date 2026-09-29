@@ -22,6 +22,7 @@ var _battle_session: BattleSession
 var _battle_setup: BattleSetup
 var _start_request: BattleStartRequest
 var _is_initialization_requested := false
+var _is_initialized := false
 var initialization_error := ""
 var _movement_search_result: MovementSearchResult
 var _attackable_target_hexes: Array[Vector2i] = []
@@ -37,7 +38,10 @@ var _unit_actors: Dictionary[StringName, UnitActor]:
 
 
 
-func setup(request: BattleStartRequest, prepared_session: BattleSession = null) -> bool:
+func setup(
+	request: BattleStartRequest,
+	prepared_session: BattleSession = null
+) -> bool:
 	var validation := BattleStartRequestValidator.validate(request)
 
 	if not validation.is_valid:
@@ -52,10 +56,21 @@ func setup(request: BattleStartRequest, prepared_session: BattleSession = null) 
 
 	if prepared_session == null:
 		var result := BattleSessionFactory.create(request)
+
 		if not result.is_successful:
 			initialization_error = result.error_message
 			return false
+
 		prepared_session = result.session
+	elif (
+		prepared_session.setup.battle_id != request.battle_id
+		or prepared_session.setup.deterministic_seed != request.deterministic_seed
+	):
+		# The view reads content from the request, so it must describe the same battle.
+		initialization_error = "Prepared battle session does not match the start request."
+		push_error(initialization_error)
+		return false
+
 	_battle_session = prepared_session
 	_start_request = request
 	_is_initialization_requested = true
@@ -70,9 +85,10 @@ func set_playback_speed(speed: float) -> bool:
 func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:
-	if _battle_session == null:
+	# The session exists right after setup(), but actors and the grid appear only later.
+	if not _is_initialized:
 		return BattleResolution.rejected(
-			"Battle session is not initialized.",
+			"Battle presentation is not initialized.",
 			0,
 			StringName()
 		)
@@ -126,17 +142,30 @@ func _initialize_battle() -> void:
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
 	_hud.clear_action()
 	_hud.show_objective(_battle_session.get_objective_description())
+	_presentation_queue.configure(_start_request.content_snapshot)
 	_set_presenting(true)
-	if not await _presentation_queue.present(
-		_battle_session.get_initial_resolution(),
-		_unit_views.actors, _unit_views.definitions, _map_view, _hud
-	):
+	var initial_resolution := _battle_session.get_initial_resolution()
+	# Actors were created after the start effects; replay their damage from the prior health.
+	_unit_views.show_health_before(initial_resolution.events)
+	var was_initial_presented := await _presentation_queue.present(
+		initial_resolution,
+		_unit_views.actors,
+		_unit_views.definitions,
+		_map_view,
+		_hud
+	)
+
+	if not was_initial_presented:
 		initialization_error = "Initial battle events could not be presented."
 		battle_failed.emit(initialization_error)
 		return
+
+	_is_initialized = true
 	battle_started.emit()
+
 	if _finish_battle_if_needed():
 		return
+
 	_set_presenting(false)
 
 	var active := _battle_session.get_unit(
@@ -176,12 +205,22 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 			return
 
 		if active.ability_area_radii.get(_selected_ability_id, 0) > 0:
-			command = UseAbilityCommand.at_hex(active_unit_id, axial_cell, _selected_ability_id)
+			command = UseAbilityCommand.at_hex(
+				active_unit_id,
+				axial_cell,
+				_selected_ability_id
+			)
 		else:
 			var ability_target := _battle_session.get_unit_at(axial_cell)
+
 			if ability_target == null:
 				return
-			command = UseAbilityCommand.new(active_unit_id, ability_target.unit_id, _selected_ability_id)
+
+			command = UseAbilityCommand.new(
+				active_unit_id,
+				ability_target.unit_id,
+				_selected_ability_id
+			)
 	else:
 		var target := _battle_session.get_unit_at(axial_cell)
 
@@ -239,10 +278,12 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 			_selected_ability_id,
 			0
 		)
+
 		if radius <= 0:
 			_map_view.clear_ability_area()
 			_show_hovered_target(axial_cell)
 			return
+
 		var area := _hex_grid.get_cells_in_range(axial_cell, radius)
 		_map_view.show_ability_area(area)
 		_hud.show_area_target(area.size())
@@ -354,13 +395,18 @@ func _on_ability_requested(ability_id: StringName) -> void:
 
 	_selected_ability_id = ability_id
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-	_ability_target_hexes = _battle_session.get_ability_target_hexes(active.unit_id, ability_id)
+	_ability_target_hexes = _battle_session.get_ability_target_hexes(
+		active.unit_id,
+		ability_id
+	)
 	var empty_cells: Array[Vector2i] = []
 	_map_view.show_reachable_cells(empty_cells)
 	_map_view.show_targetable_cells(_ability_target_hexes)
-	_map_view.show_grenade_targets(_ability_target_hexes)
+	_map_view.show_ability_targets(_ability_target_hexes)
 	_map_view.clear_ability_area()
-	var ability := _start_request.content_snapshot.get_ability_definition(ability_id)
+	var ability := _start_request.content_snapshot.get_ability_definition(
+		ability_id
+	)
 	_hud.show_ability_targeting(ability.display_name, ability.area_radius)
 
 
@@ -607,10 +653,17 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 	)
 	_hud.show_main_action(state.turn.main_action_available)
 	var abilities: Array[AbilityDefinition] = []
+
 	if not _battle_session.is_unit_ai_controlled(state.unit_id):
 		for ability_id: StringName in state.ability_ids:
-			abilities.append(_start_request.content_snapshot.get_ability_definition(ability_id))
-	_hud.show_abilities(abilities, state.turn.main_action_available and not state.health.is_defeated())
+			abilities.append(
+				_start_request.content_snapshot.get_ability_definition(ability_id)
+			)
+
+	_hud.show_abilities(
+		abilities,
+		state.turn.main_action_available and not state.health.is_defeated()
+	)
 
 	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition
 

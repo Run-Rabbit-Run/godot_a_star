@@ -24,6 +24,8 @@
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_presentation.tres" id="18_enemy_presentation"]
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_player_ranged_presentation.tres" id="19_player_ranged_presentation"]
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged_presentation.tres" id="20_enemy_ranged_presentation"]
+[ext_resource type="Script" uid="uid://bp2dt31ma2s27" path="res://features/battle/view/ability_presentation_definition.gd" id="21_ability_presentation_type"]
+[ext_resource type="Resource" path="res://content/packages/core/grenade_presentation.tres" id="22_grenade_presentation"]
 
 [sub_resource type="Resource" id="Manifest_core"]
 script = ExtResource("2_manifest")
@@ -39,3 +41,4 @@ units = Array[ExtResource("7_unit_type")]([ExtResource("8_player"), ExtResource(
 unit_presentations = Array[ExtResource("16_presentation_type")]([ExtResource("17_player_presentation"), ExtResource("18_enemy_presentation"), ExtResource("19_player_ranged_presentation"), ExtResource("20_enemy_ranged_presentation")])
 ai_profiles = Array[ExtResource("10_ai_type")]([ExtResource("11_ai")])
 abilities = Array[ExtResource("14_ability_type")]([ExtResource("15_grenade")])
+ability_presentations = Array[ExtResource("21_ability_presentation_type")]([ExtResource("22_grenade_presentation")])

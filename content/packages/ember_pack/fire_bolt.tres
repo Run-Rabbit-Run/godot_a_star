@@ -14,5 +14,6 @@ parameters = {
 script = ExtResource("1_ability")
 id = &"ember_pack:fire_bolt"
 display_name = "Огненная искра"
+presentation_id = &"ember_pack:fire_bolt_presentation"
 range = 2
 effects = Array[ExtResource("2_effect")]([SubResource("Effect_damage")])

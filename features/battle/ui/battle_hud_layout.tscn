@@ -1,9 +1,8 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Texture2D" path="res://features/battle/ui/art/phobos_strategist_v2.png" id="1_strategist"]
 [ext_resource type="Texture2D" path="res://features/battle/ui/icons/move.svg" id="2_move"]
 [ext_resource type="Texture2D" path="res://features/battle/ui/icons/attack.svg" id="3_attack"]
-[ext_resource type="Texture2D" path="res://features/battle/ui/icons/grenade.svg" id="4_grenade"]
 [ext_resource type="Texture2D" path="res://features/battle/ui/icons/end_turn.svg" id="5_end"]
 [ext_resource type="Texture2D" path="res://features/battle/ui/icons/settings.svg" id="6_settings"]
 
@@ -360,14 +359,14 @@ text = "Выстрел"
 expand_icon = true
 tooltip_text = "Выстрел"
 
-[node name="GrenadeButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+[node name="AbilityButtonTemplate" type="Button" parent="ActionPanel/Content/SkillButtons"]
+visible = false
 custom_minimum_size = Vector2(126, 38)
 layout_mode = 2
 size_flags_horizontal = 3
-icon = ExtResource("4_grenade")
-text = "Граната"
+text = "Способность"
 expand_icon = true
-tooltip_text = "Граната"
+tooltip_text = "Способность"
 
 [node name="EndTurnButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
 custom_minimum_size = Vector2(126, 38)

@@ -1,6 +1,13 @@
 class_name EnemyBrain
 extends RefCounted
 
+
+## How many movement points of detour the AI accepts to avoid losing all current health.
+## Damage is weighed as a share of current health: two points at 100 health barely change
+## the choice, while at five health they push the unit onto a safer route.
+const FULL_HEALTH_DETOUR_COST := 10
+
+
 static func choose_target(
 	origin: Vector2i,
 	candidates: Array[UnitSnapshot]
@@ -33,57 +40,85 @@ static func choose_target(
 	return best_target
 
 
+## Returns null when no reachable cell scores better than staying on the start cell.
 static func choose_move(
 	unit_id: StringName,
 	start: Vector2i,
 	target: Vector2i,
 	movement_search: MovementSearchResult,
 	grid: HexGrid = null,
-	current_health: int = 0
+	current_health: int = 0,
+	attack_range: int = 1
 ) -> MoveCommand:
 	if unit_id.is_empty() or movement_search == null:
 		return null
 
+	var health := maxi(current_health, 1)
+	var approach_costs := _get_approach_costs(grid, target, attack_range)
+	# Without a path to an attack position the unit still closes the straight distance.
+	var uses_paths := approach_costs.has(start)
+	var start_approach := HexGrid.get_distance(start, target)
+
+	if uses_paths:
+		start_approach = approach_costs[start]
+
+	var stay_score := _get_position_score(
+		start_approach,
+		_get_standing_damage(grid, start),
+		health
+	)
 	var has_best_cell := false
 	var best_cell := Vector2i.ZERO
-	var best_distance := 0
+	var best_score := 0
 	var best_cost := 0
-	var best_damage := 0
 
 	for cell: Vector2i in movement_search.get_reachable_cells():
 		if cell == start:
 			continue
 
-		var distance := HexGrid.get_distance(cell, target)
 		var cost := movement_search.get_cost(cell)
 
 		if cost < 0:
 			continue
-		var path_damage := 0
-		if grid != null:
-			var path := movement_search.build_path(cell)
-			for index in range(1, path.size()):
-				path_damage += HexStateCatalog.get_damage(grid.get_hex_state_id(path[index]))
-			if path_damage >= current_health:
+
+		var approach := HexGrid.get_distance(cell, target)
+
+		if uses_paths:
+			if not approach_costs.has(cell):
 				continue
-		if has_best_cell and path_damage > best_damage:
+
+			approach = approach_costs[cell]
+
+		var route_damage := _get_route_damage(grid, movement_search, cell)
+
+		# A unit that dies on the way never reaches the cell.
+		if grid != null and route_damage >= current_health:
 			continue
 
-		if has_best_cell and path_damage == best_damage and not _is_better_candidate(
+		var score := _get_position_score(
+			approach,
+			route_damage + _get_standing_damage(grid, cell),
+			health
+		)
+
+		# Moving without gain only burns movement and makes units shuffle in place.
+		if score >= stay_score:
+			continue
+
+		if has_best_cell and not _is_better_candidate(
 			cell,
-			distance,
+			score,
 			cost,
 			best_cell,
-			best_distance,
+			best_score,
 			best_cost
 		):
 			continue
 
 		has_best_cell = true
 		best_cell = cell
-		best_distance = distance
+		best_score = score
 		best_cost = cost
-		best_damage = path_damage
 
 	if not has_best_cell:
 		return null
@@ -91,41 +126,88 @@ static func choose_move(
 	return MoveCommand.new(unit_id, best_cell)
 
 
-static func choose_attack(
-	attacker_id: StringName,
-	attacker_hex: Vector2i,
-	target_id: StringName,
-	target_hex: Vector2i,
-	attack_range: int,
-	main_action_available: bool
-) -> AttackCommand:
-	if attacker_id.is_empty() or target_id.is_empty():
-		return null
+## Lower is better. Approach is scaled by health, so damage counts as a share of it.
+static func _get_position_score(approach: int, damage: int, health: int) -> int:
+	return approach * health + damage * FULL_HEALTH_DETOUR_COST
 
-	if attacker_id == target_id:
-		return null
 
-	if not main_action_available:
-		return null
+## Movement cost from every connected cell to the nearest cell that can attack the target.
+## Units are ignored: they move away, while walls and holes stay.
+static func _get_approach_costs(
+	grid: HexGrid,
+	target: Vector2i,
+	attack_range: int
+) -> Dictionary[Vector2i, int]:
+	var costs: Dictionary[Vector2i, int] = {}
 
-	if (
-		HexGrid.get_distance(attacker_hex, target_hex)
-		> maxi(attack_range, 1)
-	):
-		return null
+	if grid == null:
+		return costs
 
-	return AttackCommand.new(attacker_id, target_id)
+	var frontier: Array[Vector2i] = []
+
+	for cell: Vector2i in grid.get_cells_in_range(target, maxi(attack_range, 1)):
+		if cell != target and grid.is_traversable(cell):
+			costs[cell] = 0
+			frontier.append(cell)
+
+	while not frontier.is_empty():
+		var lowest_cost_index := 0
+
+		for index: int in range(1, frontier.size()):
+			if costs[frontier[index]] < costs[frontier[lowest_cost_index]]:
+				lowest_cost_index = index
+
+		var current := frontier[lowest_cost_index]
+		frontier.remove_at(lowest_cost_index)
+		# Stepping from a neighbor into the current cell pays the current cell's cost.
+		var neighbor_cost := costs[current] + grid.get_movement_cost(current)
+
+		for neighbor: Vector2i in grid.get_neighbors(current):
+			if costs.has(neighbor) and neighbor_cost >= costs[neighbor]:
+				continue
+
+			costs[neighbor] = neighbor_cost
+			frontier.append(neighbor)
+
+	return costs
+
+
+static func _get_route_damage(
+	grid: HexGrid,
+	movement_search: MovementSearchResult,
+	cell: Vector2i
+) -> int:
+	if grid == null:
+		return 0
+
+	var damage := 0
+	var path := movement_search.build_path(cell)
+
+	# The engine walks exactly this path and applies every crossed hazard once.
+	for index in range(1, path.size()):
+		damage += HexStateCatalog.get_damage(grid.get_hex_state_id(path[index]))
+
+	return damage
+
+
+## A unit ending its move on a hazard takes this damage again when its next turn starts.
+static func _get_standing_damage(grid: HexGrid, cell: Vector2i) -> int:
+	if grid == null:
+		return 0
+
+	return HexStateCatalog.get_damage(grid.get_hex_state_id(cell))
+
 
 static func _is_better_candidate(
 	cell: Vector2i,
-	distance: int,
+	score: int,
 	cost: int,
 	best_cell: Vector2i,
-	best_distance: int,
+	best_score: int,
 	best_cost: int
 ) -> bool:
-	if distance != best_distance:
-		return distance < best_distance
+	if score != best_score:
+		return score < best_score
 
 	if cost != best_cost:
 		return cost < best_cost

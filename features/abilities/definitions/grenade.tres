@@ -14,6 +14,7 @@ parameters = {
 script = ExtResource("1_ability")
 id = &"core:grenade"
 display_name = "Граната"
+presentation_id = &"core:grenade_presentation"
 range = 3
 area_radius = 1
 effects = Array[ExtResource("2_effect")]([SubResource("Effect_damage")])

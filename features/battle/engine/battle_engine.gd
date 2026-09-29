@@ -3,24 +3,34 @@ extends RefCounted
 
 
 var _state: BattleState
-var _initial_events: Array[BattleEvent] = []
+var _initial_resolution: BattleResolution
 
 
 func _init(p_state: BattleState) -> void:
 	_state = p_state
 	_state.turn_service.start()
+	var initial_events: Array[BattleEvent] = []
+
 	if get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		if _start_unit_turn(get_active_unit_id()):
-			_apply_hex_state_damage(get_active_unit_id(), _initial_events)
-		_advance_defeated_active(_initial_events)
-	if not _initial_events.is_empty():
+			_apply_hex_state_damage(get_active_unit_id(), initial_events)
+
+		_advance_defeated_active(initial_events)
+
+	if not initial_events.is_empty():
 		_state.state_revision += 1
+
+	# Captured once so a later request cannot mix start events with the current state.
+	_initial_resolution = BattleResolution.success(
+		initial_events,
+		get_state_revision(),
+		get_active_unit_id(),
+		get_result()
+	)
 
 
 func get_initial_resolution() -> BattleResolution:
-	return BattleResolution.success(
-		_initial_events, get_state_revision(), get_active_unit_id(), get_result()
-	)
+	return _initial_resolution
 
 
 func get_unit(unit_id: StringName) -> UnitState:
@@ -84,9 +94,14 @@ func get_battle_id() -> StringName:
 	return _state.battle_id
 
 
-func get_ability_target_hexes(unit_id: StringName, ability_id: StringName) -> Array[Vector2i]:
+func get_ability_target_hexes(
+	unit_id: StringName,
+	ability_id: StringName
+) -> Array[Vector2i]:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		return []
+		var no_targets: Array[Vector2i] = []
+		return no_targets
+
 	return AbilityExecutor.get_target_hexes(_state, unit_id, ability_id)
 
 
@@ -437,14 +452,21 @@ func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 
 func _advance_defeated_active(events: Array[BattleEvent]) -> void:
 	var active := get_unit(get_active_unit_id())
+
 	if active == null or not active.health.is_defeated():
 		return
+
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
-	var turn_events: Array[BattleEvent] = []
-	var next_id := _end_turn(turn_events)
-	events.append(TurnEndedEvent.new(active.unit_id, next_id, get_round_number()))
-	events.append_array(turn_events)
+
+	var turn_damage_events: Array[BattleEvent] = []
+	var next_unit_id := _end_turn(turn_damage_events)
+	events.append(TurnEndedEvent.new(
+		active.unit_id,
+		next_unit_id,
+		get_round_number()
+	))
+	events.append_array(turn_damage_events)
 
 
 func _rejected(reason: String) -> BattleResolution:

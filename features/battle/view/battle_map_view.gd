@@ -36,8 +36,8 @@ var _battle_backdrop: TextureRect
 var _grid_local_bounds := Rect2()
 var _path_shadow: Line2D
 var _path_stroke: Line2D
-var _grenade_target_visuals: Node2D
-var _grenade_area_visuals: Node2D
+var _ability_target_visuals: Node2D
+var _ability_area_visuals: Node2D
 var _reachable_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
@@ -68,7 +68,7 @@ func _ready() -> void:
 	_capture_terrain_tiles()
 	_mount_hex_state_visuals()
 	_mount_path_visuals()
-	_mount_grenade_visuals()
+	_mount_ability_visuals()
 	_mount_interaction_visuals()
 	set_cursor_mode(CursorMode.DEFAULT)
 	_fit_battlefield_to_viewport()
@@ -158,16 +158,16 @@ func _mount_path_visuals() -> void:
 	_path_layer.add_child(_path_stroke)
 
 
-func _mount_grenade_visuals() -> void:
-	_grenade_target_visuals = Node2D.new()
-	_grenade_target_visuals.name = "GrenadeTargetVisuals"
-	_grenade_target_visuals.z_index = 10
-	add_child(_grenade_target_visuals)
+func _mount_ability_visuals() -> void:
+	_ability_target_visuals = Node2D.new()
+	_ability_target_visuals.name = "AbilityTargetVisuals"
+	_ability_target_visuals.z_index = 10
+	add_child(_ability_target_visuals)
 
-	_grenade_area_visuals = Node2D.new()
-	_grenade_area_visuals.name = "GrenadeAreaVisuals"
-	_grenade_area_visuals.z_index = 14
-	add_child(_grenade_area_visuals)
+	_ability_area_visuals = Node2D.new()
+	_ability_area_visuals.name = "AbilityAreaVisuals"
+	_ability_area_visuals.z_index = 14
+	add_child(_ability_area_visuals)
 
 
 func _mount_interaction_visuals() -> void:
@@ -376,18 +376,18 @@ func show_path(cells: Array[Vector2i]) -> void:
 
 func show_targetable_cells(cells: Array[Vector2i]) -> void:
 	_targetable_layer.clear()
-	_clear_hex_visuals(_grenade_target_visuals)
+	_clear_hex_visuals(_ability_target_visuals)
 
 	for cell in cells:
 		_paint_cell_on_layer(cell, _targetable_layer)
 
 
-func show_grenade_targets(cells: Array[Vector2i]) -> void:
-	_clear_hex_visuals(_grenade_target_visuals)
+func show_ability_targets(cells: Array[Vector2i]) -> void:
+	_clear_hex_visuals(_ability_target_visuals)
 
 	for cell in cells:
 		_add_hex_visual(
-			_grenade_target_visuals,
+			_ability_target_visuals,
 			cell,
 			Color(0.92, 0.38, 0.12, 0.16),
 			Color(1.0, 0.62, 0.25, 0.72),
@@ -401,7 +401,7 @@ func show_ability_area(cells: Array[Vector2i]) -> void:
 	for cell in cells:
 		_paint_cell_on_layer(cell, _ability_area_layer)
 		_add_hex_visual(
-			_grenade_area_visuals,
+			_ability_area_visuals,
 			cell,
 			Color(0.96, 0.21, 0.10, 0.36),
 			Color(1.0, 0.75, 0.30, 0.98),
@@ -411,7 +411,7 @@ func show_ability_area(cells: Array[Vector2i]) -> void:
 
 func clear_ability_area() -> void:
 	_ability_area_layer.clear()
-	_clear_hex_visuals(_grenade_area_visuals)
+	_clear_hex_visuals(_ability_area_visuals)
 
 
 func clear_path() -> void:
@@ -429,7 +429,7 @@ func clear_overlays() -> void:
 	_clear_hex_visuals(_reachable_visuals)
 	clear_path()
 	_targetable_layer.clear()
-	_clear_hex_visuals(_grenade_target_visuals)
+	_clear_hex_visuals(_ability_target_visuals)
 	clear_ability_area()
 	_selection_layer.clear()
 	_clear_hex_visuals(_selection_visuals)
