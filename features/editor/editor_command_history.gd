@@ -4,6 +4,8 @@ extends RefCounted
 
 signal changed
 
+const MAX_UNDO_COMMANDS := 100
+
 var _undo_stack: Array[EditCommand] = []
 var _redo_stack: Array[EditCommand] = []
 
@@ -13,6 +15,8 @@ func execute(command: EditCommand, document: EditorDocument) -> bool:
 		return false
 
 	_undo_stack.append(command)
+	if _undo_stack.size() > MAX_UNDO_COMMANDS:
+		_undo_stack.pop_front()
 	_redo_stack.clear()
 	changed.emit()
 	return true

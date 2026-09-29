@@ -27,6 +27,10 @@ func get_hex_grid() -> HexGrid:
 	return _state.hex_grid.duplicate_grid()
 
 
+func get_initial_resolution() -> BattleResolution:
+	return _engine.get_initial_resolution()
+
+
 func get_unit(unit_id: StringName) -> UnitSnapshot:
 	return _to_snapshot(_engine.get_unit(unit_id))
 
@@ -58,6 +62,10 @@ func get_living_opponents(
 
 func get_attackable_targets(unit_id: StringName) -> Array[UnitSnapshot]:
 	return _to_snapshots(_engine.get_attackable_targets(unit_id))
+
+
+func get_ability_target_hexes(unit_id: StringName, ability_id: StringName) -> Array[Vector2i]:
+	return _engine.get_ability_target_hexes(unit_id, ability_id)
 
 
 func get_active_unit_id() -> StringName:

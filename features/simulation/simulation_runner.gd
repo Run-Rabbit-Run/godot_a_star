@@ -48,6 +48,11 @@ func run(request: SimulationRequest) -> SimulationRunResult:
 		)
 
 	var session := creation.session
+	if session.is_finished():
+		return _finish(
+			SimulationRunStatus.Value.COMPLETED, session,
+			"Battle completed during initial turn effects.", 0, seed
+		)
 	var configuration_error := _connect_ai_to_all_sides(
 		session,
 		request.fallback_ai_profile

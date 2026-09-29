@@ -153,7 +153,7 @@ static func _apply_to_candidate(
 
 static func _is_occupied(state: BattleState, hex: Vector2i) -> bool:
 	for unit: UnitState in state.unit_states.values():
-		if unit.hex == hex:
+		if not unit.health.is_defeated() and unit.hex == hex:
 			return true
 
 	return false

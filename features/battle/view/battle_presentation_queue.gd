@@ -130,7 +130,9 @@ func _present_damage(
 	) as UnitDefinition
 
 	if (
-		attacker_definition != null
+		event.source_ability_id.is_empty()
+		and event.source_hex_state_id.is_empty()
+		and attacker_definition != null
 		and attacker_definition.base_stats != null
 		and attacker_definition.base_stats.basic_attack_range > 1
 	):

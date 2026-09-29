@@ -3,6 +3,8 @@ extends Node
 
 
 signal battle_finished(result: BattleResult)
+signal battle_started
+signal battle_failed(message: String)
 
 
 @onready var _battle_controller: BattleController = (
@@ -11,6 +13,8 @@ signal battle_finished(result: BattleResult)
 
 var _start_request: BattleStartRequest
 var _has_started := false
+var _prepared_session: BattleSession
+var initialization_error := ""
 
 
 func _ready() -> void:
@@ -22,13 +26,18 @@ func setup(request: BattleStartRequest) -> bool:
 	var validation := BattleStartRequestValidator.validate(request)
 
 	if not validation.is_valid:
-		push_error("BattleScreen setup failed: %s" % validation.error_message)
+		_on_battle_failed(validation.error_message)
 		return false
 
 	if _start_request != null or _has_started:
 		push_error("BattleScreen setup can only be called once.")
 		return false
 
+	var result := BattleSessionFactory.create(request)
+	if not result.is_successful:
+		_on_battle_failed(result.error_message)
+		return false
+	_prepared_session = result.session
 	_start_request = request
 
 	if is_node_ready():
@@ -48,14 +57,35 @@ func _start_battle() -> bool:
 			_on_battle_finished
 		)
 
-	if not _battle_controller.setup(_start_request):
+	_battle_controller.battle_failed.connect(_on_battle_failed)
+	_battle_controller.battle_started.connect(_on_battle_started)
+	if not _battle_controller.setup(_start_request, _prepared_session):
+		_on_battle_failed(_battle_controller.initialization_error)
 		return false
 
 	var battle := _start_request.content_snapshot.get_battle_definition(_start_request.battle_id)
 	var map := _start_request.content_snapshot.get_map_definition(battle.map_id)
 	($BattleMap as BattleMapView).set_map_presentation(map)
-	_has_started = true
 	return true
+
+
+func _on_battle_started() -> void:
+	_has_started = true
+	battle_started.emit()
+
+
+func _on_battle_failed(message: String) -> void:
+	initialization_error = message
+	push_error("Battle startup failed: %s" % message)
+	if is_node_ready():
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		var label := Label.new()
+		label.position = Vector2(24, 60)
+		label.text = "Не удалось запустить бой:\n%s" % message
+		layer.add_child(label)
+	battle_failed.emit(message)
 
 
 func _on_battle_finished(result: BattleResult) -> void:

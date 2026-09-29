@@ -3,10 +3,12 @@ extends RefCounted
 
 
 var _state: BattleState
+var _ability_id: StringName
 
 
-func _init(state: BattleState) -> void:
+func _init(state: BattleState, ability_id: StringName = StringName()) -> void:
 	_state = state
+	_ability_id = ability_id
 
 
 func apply_damage(
@@ -20,7 +22,9 @@ func apply_damage(
 	if source == null or target == null or amount <= 0:
 		return null
 
-	if source.health.is_defeated() or target.health.is_defeated():
+	# The executor validates the source before the whole ability starts.
+	# Its death during an area effect must not cancel the remaining targets.
+	if target.health.is_defeated():
 		return null
 
 	var damage := target.health.apply_damage(amount)
@@ -29,5 +33,7 @@ func apply_damage(
 		target.unit_id,
 		damage,
 		target.health.current,
-		target.health.is_defeated()
+		target.health.is_defeated(),
+		StringName(),
+		_ability_id
 	)

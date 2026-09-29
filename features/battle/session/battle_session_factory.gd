@@ -71,7 +71,7 @@ static func create(request: BattleStartRequest) -> BattleSessionCreationResult:
 	)
 	var state := BattleState.new(
 		setup.battle_id,
-		setup.hex_grid,
+		setup.hex_grid.duplicate_grid(),
 		unit_states,
 		turn_order,
 		objective_system,

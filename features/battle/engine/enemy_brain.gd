@@ -37,7 +37,9 @@ static func choose_move(
 	unit_id: StringName,
 	start: Vector2i,
 	target: Vector2i,
-	movement_search: MovementSearchResult
+	movement_search: MovementSearchResult,
+	grid: HexGrid = null,
+	current_health: int = 0
 ) -> MoveCommand:
 	if unit_id.is_empty() or movement_search == null:
 		return null
@@ -46,6 +48,7 @@ static func choose_move(
 	var best_cell := Vector2i.ZERO
 	var best_distance := 0
 	var best_cost := 0
+	var best_damage := 0
 
 	for cell: Vector2i in movement_search.get_reachable_cells():
 		if cell == start:
@@ -56,8 +59,17 @@ static func choose_move(
 
 		if cost < 0:
 			continue
+		var path_damage := 0
+		if grid != null:
+			var path := movement_search.build_path(cell)
+			for index in range(1, path.size()):
+				path_damage += HexStateCatalog.get_damage(grid.get_hex_state_id(path[index]))
+			if path_damage >= current_health:
+				continue
+		if has_best_cell and path_damage > best_damage:
+			continue
 
-		if has_best_cell and not _is_better_candidate(
+		if has_best_cell and path_damage == best_damage and not _is_better_candidate(
 			cell,
 			distance,
 			cost,
@@ -71,6 +83,7 @@ static func choose_move(
 		best_cell = cell
 		best_distance = distance
 		best_cost = cost
+		best_damage = path_damage
 
 	if not has_best_cell:
 		return null

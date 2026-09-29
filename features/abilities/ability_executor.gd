@@ -2,6 +2,30 @@ class_name AbilityExecutor
 extends RefCounted
 
 
+static func get_target_hexes(
+	state: BattleState, unit_id: StringName, ability_id: StringName
+) -> Array[Vector2i]:
+	var targets: Array[Vector2i] = []
+	var user := state.unit_states.get(unit_id) as UnitState
+	if user == null or user.health.is_defeated():
+		return targets
+	if unit_id != state.turn_service.get_active_unit_id() or not user.turn.main_action_available:
+		return targets
+	var ability := user.get_ability(ability_id)
+	if ability == null:
+		return targets
+	if ability.area_radius > 0:
+		targets = state.hex_grid.get_cells_in_range(user.hex, ability.range)
+	else:
+		for target: UnitState in state.unit_states.values():
+			if target.health.is_defeated() or target.faction == user.faction:
+				continue
+			if HexGrid.get_distance(user.hex, target.hex) <= ability.range:
+				targets.append(target.hex)
+	targets.sort()
+	return targets
+
+
 static func execute(
 	state: BattleState,
 	command: UseAbilityCommand
@@ -40,46 +64,22 @@ static func execute(
 			"Unit does not have ability %s." % command.ability_id
 		)
 
-
 	var target: UnitState
-
 	if ability.area_radius > 0:
 		if not command.targets_hex:
-			return AbilityExecutionResult.rejected(
-				"Area ability requires a target hex."
-			)
-
-		if not state.hex_grid.has_cell(command.target_hex):
-			return AbilityExecutionResult.rejected(
-				"Ability target hex does not exist."
-			)
-
-		if HexGrid.get_distance(user.hex, command.target_hex) > ability.range:
-			return AbilityExecutionResult.rejected(
-				"Ability target hex is out of range."
-			)
+			return AbilityExecutionResult.rejected("Area ability requires a target hex.")
 	else:
+		if command.targets_hex:
+			return AbilityExecutionResult.rejected("Single-target ability requires a unit target.")
 		target = state.unit_states.get(command.target_id) as UnitState
-
 		if target == null:
-			return AbilityExecutionResult.rejected(
-				"Ability target does not exist."
-			)
+			return AbilityExecutionResult.rejected("Ability target does not exist.")
+		if target.health.is_defeated() or target.faction == user.faction:
+			return AbilityExecutionResult.rejected("Ability requires a living opposing target.")
 
-		if target.health.is_defeated():
-			return AbilityExecutionResult.rejected(
-				"Defeated units cannot receive this ability."
-			)
-
-		if user.faction == target.faction:
-			return AbilityExecutionResult.rejected(
-				"This offensive ability requires an opposing target."
-			)
-
-		if HexGrid.get_distance(user.hex, target.hex) > ability.range:
-			return AbilityExecutionResult.rejected(
-				"Ability target is out of range."
-			)
+	var target_hex := command.target_hex if command.targets_hex else target.hex
+	if not get_target_hexes(state, user.unit_id, ability.id).has(target_hex):
+		return AbilityExecutionResult.rejected("Ability target is not available.")
 
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
@@ -99,7 +99,7 @@ static func execute(
 			"The ability action cost could not be paid."
 		)
 
-	var context := BattleEffectContext.new(state)
+	var context := BattleEffectContext.new(state, ability.id)
 
 	if ability.area_radius > 0:
 		return AbilityExecutionResult.success(

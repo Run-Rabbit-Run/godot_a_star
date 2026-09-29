@@ -717,10 +717,11 @@ func _save_to_path(path: String) -> void:
 
 
 func _on_open_path_selected(path: String) -> void:
-	var loaded := EditorDocumentSerializer.load(path)
+	var load_result := EditorDocumentSerializer.load_result(path)
+	var loaded := load_result.document
 
 	if loaded == null:
-		_set_status("Не удалось открыть %s." % path)
+		_set_status("Не удалось открыть %s: %s" % [path, load_result.error_message])
 		return
 
 	_document = loaded
@@ -776,12 +777,14 @@ func _start_trial() -> void:
 	_trial_screen = BATTLE_SCREEN_SCENE.instantiate() as BattleScreen
 
 	if not _trial_screen.setup(request):
+		var error := _trial_screen.initialization_error
 		_trial_screen.free()
 		_trial_screen = null
-		_set_status("BattleScreen отклонил пробный запуск.")
+		_set_status("Пробный запуск отклонён: %s" % error)
 		return
 
 	_trial_screen.battle_finished.connect(_on_trial_finished)
+	_trial_screen.battle_failed.connect(_on_trial_failed)
 	_ui.visible = false
 	add_child(_trial_screen)
 	_trial_return_layer = CanvasLayer.new()
@@ -792,14 +795,23 @@ func _start_trial() -> void:
 	_trial_return_layer.add_child(back)
 
 
-func _on_trial_finished(_result: BattleResult) -> void:
+func _on_trial_finished(result: BattleResult) -> void:
+	# Leave the outcome visible until the author explicitly returns.
+	_set_status("Пробный бой: %s." % (
+		"победа" if result.outcome == BattleOutcome.Value.VICTORY else "поражение"
+	))
+
+
+func _on_trial_failed(message: String) -> void:
 	_return_from_trial()
+	_set_status("Пробный бой не запущен: %s" % message)
 
 
 func _return_from_trial() -> void:
 	if _trial_screen == null:
 		return
-	_trial_return_layer.queue_free()
+	if is_instance_valid(_trial_return_layer):
+		_trial_return_layer.queue_free()
 	_trial_return_layer = null
 	_trial_screen.queue_free()
 	_trial_screen = null

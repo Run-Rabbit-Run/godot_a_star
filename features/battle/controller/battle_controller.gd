@@ -3,10 +3,11 @@ extends Node
 
 
 signal battle_finished(result: BattleResult)
+signal battle_started
+signal battle_failed(message: String)
 
 
 const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
-const GRENADE_ABILITY_ID := &"core:grenade"
 
 
 @onready var _units: Node2D = %Units
@@ -21,6 +22,7 @@ var _battle_session: BattleSession
 var _battle_setup: BattleSetup
 var _start_request: BattleStartRequest
 var _is_initialization_requested := false
+var initialization_error := ""
 var _movement_search_result: MovementSearchResult
 var _attackable_target_hexes: Array[Vector2i] = []
 var _ability_target_hexes: Array[Vector2i] = []
@@ -35,17 +37,26 @@ var _unit_actors: Dictionary[StringName, UnitActor]:
 
 
 
-func setup(request: BattleStartRequest) -> bool:
+func setup(request: BattleStartRequest, prepared_session: BattleSession = null) -> bool:
 	var validation := BattleStartRequestValidator.validate(request)
 
 	if not validation.is_valid:
+		initialization_error = validation.error_message
 		push_error("Battle setup failed: %s" % validation.error_message)
 		return false
 
 	if _is_initialization_requested:
+		initialization_error = "BattleController setup can only be called once."
 		push_error("BattleController setup can only be called once.")
 		return false
 
+	if prepared_session == null:
+		var result := BattleSessionFactory.create(request)
+		if not result.is_successful:
+			initialization_error = result.error_message
+			return false
+		prepared_session = result.session
+	_battle_session = prepared_session
 	_start_request = request
 	_is_initialization_requested = true
 	call_deferred("_initialize_battle")
@@ -90,15 +101,6 @@ func _initialize_battle() -> void:
 		push_error("BattleController requires setup before initialization.")
 		return
 
-	var session_result := BattleSessionFactory.create(_start_request)
-
-	if not session_result.is_successful:
-		push_error(
-			"Battle initialization failed: %s" % session_result.error_message
-		)
-		return
-
-	_battle_session = session_result.session
 	_battle_setup = _battle_session.setup
 	_hex_grid = _battle_session.get_hex_grid()
 	_known_map_revision = _battle_session.get_map_revision()
@@ -110,6 +112,8 @@ func _initialize_battle() -> void:
 		_battle_setup.unit_spawns,
 		_battle_session
 	):
+		initialization_error = "Battle unit presentation could not be created."
+		battle_failed.emit(initialization_error)
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
@@ -122,6 +126,18 @@ func _initialize_battle() -> void:
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
 	_hud.clear_action()
 	_hud.show_objective(_battle_session.get_objective_description())
+	_set_presenting(true)
+	if not await _presentation_queue.present(
+		_battle_session.get_initial_resolution(),
+		_unit_views.actors, _unit_views.definitions, _map_view, _hud
+	):
+		initialization_error = "Initial battle events could not be presented."
+		battle_failed.emit(initialization_error)
+		return
+	battle_started.emit()
+	if _finish_battle_if_needed():
+		return
+	_set_presenting(false)
 
 	var active := _battle_session.get_unit(
 		_battle_session.get_active_unit_id()
@@ -136,7 +152,7 @@ func _initialize_battle() -> void:
 
 
 func _on_hex_selected(axial_cell: Vector2i) -> void:
-	if _is_presenting:
+	if _is_presenting or _battle_session == null:
 		return
 
 	var active_unit_id := _battle_session.get_active_unit_id()
@@ -159,11 +175,13 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		if not _ability_target_hexes.has(axial_cell):
 			return
 
-		command = UseAbilityCommand.at_hex(
-			active_unit_id,
-			axial_cell,
-			_selected_ability_id
-		)
+		if active.ability_area_radii.get(_selected_ability_id, 0) > 0:
+			command = UseAbilityCommand.at_hex(active_unit_id, axial_cell, _selected_ability_id)
+		else:
+			var ability_target := _battle_session.get_unit_at(axial_cell)
+			if ability_target == null:
+				return
+			command = UseAbilityCommand.new(active_unit_id, ability_target.unit_id, _selected_ability_id)
 	else:
 		var target := _battle_session.get_unit_at(axial_cell)
 
@@ -221,6 +239,10 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 			_selected_ability_id,
 			0
 		)
+		if radius <= 0:
+			_map_view.clear_ability_area()
+			_show_hovered_target(axial_cell)
+			return
 		var area := _hex_grid.get_cells_in_range(axial_cell, radius)
 		_map_view.show_ability_area(area)
 		_hud.show_area_target(area.size())
@@ -324,28 +346,22 @@ func _on_ability_requested(ability_id: StringName) -> void:
 	if (
 		active == null
 		or _battle_session.is_unit_ai_controlled(active.unit_id)
+		or active.health.is_defeated()
 		or not active.turn.main_action_available
 		or not active.ability_ids.has(ability_id)
-		or active.ability_area_radii.get(ability_id, 0) <= 0
 	):
 		return
 
 	_selected_ability_id = ability_id
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-	_ability_target_hexes = _hex_grid.get_cells_in_range(
-		active.hex,
-		active.ability_ranges.get(ability_id, 0)
-	)
+	_ability_target_hexes = _battle_session.get_ability_target_hexes(active.unit_id, ability_id)
 	var empty_cells: Array[Vector2i] = []
 	_map_view.show_reachable_cells(empty_cells)
 	_map_view.show_targetable_cells(_ability_target_hexes)
 	_map_view.show_grenade_targets(_ability_target_hexes)
 	_map_view.clear_ability_area()
-	_hud.show_ability_targeting(
-		"Граната",
-		1 + 3 * active.ability_area_radii[ability_id]
-			* (active.ability_area_radii[ability_id] + 1)
-	)
+	var ability := _start_request.content_snapshot.get_ability_definition(ability_id)
+	_hud.show_ability_targeting(ability.display_name, ability.area_radius)
 
 
 func _on_movement_requested() -> void:
@@ -389,7 +405,7 @@ func _on_playback_speed_requested(speed: float) -> void:
 
 
 func _on_end_turn_requested() -> void:
-	if _is_presenting or _battle_session.is_active_unit_ai_controlled():
+	if _is_presenting or _battle_session == null or _battle_session.is_active_unit_ai_controlled():
 		return
 
 	_set_presenting(true)
@@ -590,11 +606,11 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 		state.turn.movement_max
 	)
 	_hud.show_main_action(state.turn.main_action_available)
-	_hud.show_grenade_button(
-		state.ability_ids.has(GRENADE_ABILITY_ID)
-		and not _battle_session.is_unit_ai_controlled(state.unit_id),
-		state.turn.main_action_available
-	)
+	var abilities: Array[AbilityDefinition] = []
+	if not _battle_session.is_unit_ai_controlled(state.unit_id):
+		for ability_id: StringName in state.ability_ids:
+			abilities.append(_start_request.content_snapshot.get_ability_definition(ability_id))
+	_hud.show_abilities(abilities, state.turn.main_action_available and not state.health.is_defeated())
 
 	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition
 

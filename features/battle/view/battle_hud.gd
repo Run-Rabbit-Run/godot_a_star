@@ -10,7 +10,6 @@ signal ability_requested(ability_id: StringName)
 signal playback_speed_requested(speed: float)
 
 
-const GRENADE_ABILITY_ID := &"core:grenade"
 const HUD_LAYOUT := preload("res://features/battle/ui/battle_hud_layout.tscn")
 const COLOR_PANEL := Color(0.055, 0.060, 0.056, 0.88)
 const COLOR_PANEL_INNER := Color(0.088, 0.094, 0.086, 0.94)
@@ -68,6 +67,7 @@ var _interaction_enabled := true
 var _movement_available := false
 var _main_action_available := false
 var _grenade_action_available := false
+var _ability_buttons: Array[Button] = []
 var _display_settings: BattleDisplaySettingsController
 
 
@@ -113,7 +113,7 @@ func _ready() -> void:
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
-	_grenade_button.pressed.connect(_on_grenade_button_pressed)
+	_grenade_button.hide()
 	_settings_button.pressed.connect(_on_settings_button_pressed)
 	_speed_half_button.pressed.connect(_on_speed_requested.bind(0.5))
 	_speed_1_button.pressed.connect(_on_speed_requested.bind(1.0))
@@ -142,8 +142,22 @@ func show_basic_attack_button(attack_range: int, available: bool) -> void:
 	_refresh_action_button_states()
 
 
-func show_grenade_button(visible: bool, available: bool) -> void:
-	_grenade_button.visible = visible
+func show_abilities(abilities: Array[AbilityDefinition], available: bool) -> void:
+	for button: Button in _ability_buttons:
+		button.get_parent().remove_child(button)
+		button.queue_free()
+	_ability_buttons.clear()
+	for ability: AbilityDefinition in abilities:
+		if ability == null:
+			continue
+		var button := _grenade_button.duplicate() as Button
+		button.text = ability.display_name
+		button.tooltip_text = ability.display_name
+		button.show()
+		_grenade_button.get_parent().add_child(button)
+		_grenade_button.get_parent().move_child(button, _end_turn_button.get_index())
+		button.pressed.connect(_on_ability_button_pressed.bind(ability.id))
+		_ability_buttons.append(button)
 	_grenade_action_available = available
 	_refresh_action_button_states()
 
@@ -159,11 +173,11 @@ func show_combat_stats(damage: int, attack_range: int) -> void:
 	]
 
 
-func show_ability_targeting(display_name: String, area_size: int) -> void:
-	_action_label.text = "ВЫБЕРИТЕ ЦЕНТР: %s · ЗОНА %d ГЕКСОВ" % [
-		display_name.to_upper(),
-		area_size,
-	]
+func show_ability_targeting(display_name: String, area_radius: int) -> void:
+	_action_label.text = (
+		"ВЫБЕРИТЕ ЦЕНТР: %s · РАДИУС %d" % [display_name.to_upper(), area_radius]
+		if area_radius > 0 else "ВЫБЕРИТЕ ПРОТИВНИКА: %s" % display_name.to_upper()
+	)
 
 
 func show_area_target(area_size: int) -> void:
@@ -323,8 +337,8 @@ func _on_basic_attack_button_pressed() -> void:
 	basic_attack_requested.emit()
 
 
-func _on_grenade_button_pressed() -> void:
-	ability_requested.emit(GRENADE_ABILITY_ID)
+func _on_ability_button_pressed(ability_id: StringName) -> void:
+	ability_requested.emit(ability_id)
 
 
 func _on_settings_button_pressed() -> void:
@@ -347,10 +361,8 @@ func _refresh_action_button_states() -> void:
 		not _interaction_enabled
 		or not _main_action_available
 	)
-	_grenade_button.disabled = (
-		not _interaction_enabled
-		or not _grenade_action_available
-	)
+	for button: Button in _ability_buttons:
+		button.disabled = not _interaction_enabled or not _grenade_action_available
 
 
 func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelContainer:
