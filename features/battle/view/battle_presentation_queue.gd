@@ -110,16 +110,11 @@ func _present_move(
 	var empty_cells: Array[Vector2i] = []
 	map_view.show_reachable_cells(empty_cells)
 
+	var positions: Array[Vector2] = []
 	for path_index in range(1, event.path.size()):
-		var tween := actor.create_tween()
-		tween.set_trans(Tween.TRANS_SINE)
-		tween.set_ease(Tween.EASE_IN_OUT)
-		tween.tween_property(
-			actor,
-			"global_position",
-			map_view.hex_to_global_position(event.path[path_index]),
-			actor.movement_step_duration
-		)
+		positions.append(map_view.hex_to_global_position(event.path[path_index]))
+	var tween := actor.create_movement_tween(positions)
+	if tween != null:
 		_track_tween(tween)
 		await tween.finished
 

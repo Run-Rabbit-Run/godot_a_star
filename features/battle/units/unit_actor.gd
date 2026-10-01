@@ -6,7 +6,7 @@ const CUSTOM_TEXTURE_SIZE := 82.0
 
 
 @export_range(0.01, 1.0, 0.01)
-var movement_step_duration := 0.12
+var movement_step_duration := 0.28
 
 @export_range(0.01, 1.0, 0.01)
 var damage_flash_duration := 0.18
@@ -14,6 +14,8 @@ var damage_flash_duration := 0.18
 var unit_id: StringName
 var _faction_color := Color(0.51, 0.66, 0.75)
 var _show_base := true
+var _movement_profile: UnitMovementProfile
+var _movement_animator: UnitMovementAnimator
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -41,6 +43,10 @@ func setup(
 	maximum_health: int
 ) -> void:
 	unit_id = p_unit_id
+	_movement_profile = presentation.movement_profile if presentation != null else null
+	if _movement_profile == null:
+		_movement_profile = UnitMovementProfile.new()
+		_movement_profile.seconds_per_hex = movement_step_duration
 	_faction_color = (
 		Color(0.52, 0.69, 0.82)
 		if faction == BattleFaction.Value.PLAYER
@@ -134,14 +140,11 @@ func present_defeat() -> void:
 func move_along_global_positions(
 	positions: Array[Vector2]
 ) -> void:
-	for target_position: Vector2 in positions:
-		var tween := create_tween()
-		tween.set_trans(Tween.TRANS_SINE)
-		tween.set_ease(Tween.EASE_IN_OUT)
-		tween.tween_property(
-			self,
-			"global_position",
-			target_position,
-			movement_step_duration
-		)
+	var tween := create_movement_tween(positions)
+	if tween != null:
 		await tween.finished
+
+
+func create_movement_tween(positions: Array[Vector2]) -> Tween:
+	_movement_animator = UnitMovementAnimator.new()
+	return _movement_animator.create_motion(self, _sprite, positions, _movement_profile)

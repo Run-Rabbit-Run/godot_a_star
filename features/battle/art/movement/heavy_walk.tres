@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="UnitMovementProfile" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://features/battle/view/unit_movement_profile.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+seconds_per_hex = 0.34
+lift = 1.5
+sway_degrees = 1.8
+lean_degrees = 1.0
+stride = 0.009
+leg_start = 0.68
+leg_split = 0.5

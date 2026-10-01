@@ -9,3 +9,4 @@ extends Resource
 @export var actor_height := 82.0
 @export var actor_foot_anchor := Vector2(0.5, 1.0)
 @export var actor_color := Color.WHITE
+@export var movement_profile: UnitMovementProfile

@@ -1,9 +1,10 @@
-[gd_resource type="Resource" format=3]
+[gd_resource type="Resource" script_class="UnitPresentationDefinition" format=3 uid="uid://6n3bbb666pl8"]
 
-[ext_resource type="Script" path="res://features/battle/view/unit_presentation_definition.gd" id="presentation"]
 [ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="actor"]
-[ext_resource type="Texture2D" path="res://features/battle/art/plateau_units/5.png" id="texture"]
-[ext_resource type="Texture2D" path="res://features/battle/art/plateau_units/5-portrait.png" id="portrait"]
+[ext_resource type="Resource" path="res://features/battle/art/movement/creature_walk.tres" id="movement"]
+[ext_resource type="Texture2D" uid="uid://cg5yj6050gi32" path="res://features/battle/art/plateau_units/5-portrait.png" id="portrait"]
+[ext_resource type="Script" uid="uid://c250qmf0kdyo2" path="res://features/battle/view/unit_presentation_definition.gd" id="presentation"]
+[ext_resource type="Texture2D" uid="uid://cgdv00hx5i0sc" path="res://features/battle/art/plateau_units/5.png" id="texture"]
 
 [resource]
 script = ExtResource("presentation")
@@ -12,4 +13,5 @@ actor_scene = ExtResource("actor")
 actor_texture = ExtResource("texture")
 portrait_texture = ExtResource("portrait")
 actor_height = 119.0
-actor_foot_anchor = Vector2(0.50773994, 0.94129979)
+actor_foot_anchor = Vector2(0.50773996, 0.9412998)
+movement_profile = ExtResource("movement")
