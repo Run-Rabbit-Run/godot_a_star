@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://features/editor/ui_layout/battle_ui_editor.tscn" id="1"]
+
+[node name="BattleUIEditor" instance=ExtResource("1")]

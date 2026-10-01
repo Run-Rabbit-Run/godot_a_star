@@ -1,0 +1,10 @@
+{
+	"schema": 1,
+	"title": "Командная панель снизу",
+	"elements": {
+		"ActiveUnitPanel": {"rect": [28, 925, 300, 88], "background": "171f26e8", "border_color": "829281ff", "border_width": 1},
+		"TurnQueuePanel": {"rect": [28, 18, 700, 60]},
+		"ActionPanel": {"rect": [1040, 970, 830, 56], "background": "171f26e8"},
+		"ActionPanel/Content/SkillButtons/EndTurnButton": {"text": "Завершить ход", "font_color": "e4d09dff"}
+	}
+}

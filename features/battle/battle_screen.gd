@@ -7,6 +7,9 @@ signal battle_started
 signal battle_failed(message: String)
 
 
+@export_file("*.json") var ui_profile_path := ""
+
+
 @onready var _battle_controller: BattleController = (
 	$BattleMap/BattleController
 )
@@ -15,6 +18,11 @@ var _start_request: BattleStartRequest
 var _has_started := false
 var _prepared_session: BattleSession
 var initialization_error := ""
+
+
+func _enter_tree() -> void:
+	if not ui_profile_path.is_empty():
+		($BattleMap/BattleUI as BattleHUD).ui_profile_path = ui_profile_path
 
 
 func _ready() -> void:

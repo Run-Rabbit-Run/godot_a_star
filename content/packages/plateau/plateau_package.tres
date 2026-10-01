@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="ContentPackage" format=3 uid="uid://bu73kb1m04gx7"]
 
 [ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="1_2gkl2"]
+[ext_resource type="Script" uid="uid://bp2dt31ma2s27" path="res://features/battle/view/ability_presentation_definition.gd" id="2_bckvy"]
 [ext_resource type="Script" uid="uid://dj6krbh5mx0rb" path="res://features/battle/definitions/ai_profile_definition.gd" id="2_kj58g"]
 [ext_resource type="Script" uid="uid://bse3066paqbd5" path="res://features/campaign/campaign_definition.gd" id="5_bckvy"]
 [ext_resource type="Script" uid="uid://dddknbrg4bi5d" path="res://features/content/race_definition.gd" id="10_00x6v"]

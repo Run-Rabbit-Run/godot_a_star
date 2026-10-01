@@ -10,6 +10,11 @@ signal ability_requested(ability_id: StringName)
 signal playback_speed_requested(speed: float)
 
 
+@export_file("*.json") var ui_profile_path := ""
+var ui_document_override: UILayoutDocument
+var layout_presenter: UILayoutPresenter
+
+
 const HUD_LAYOUT := preload("res://features/battle/ui/battle_hud_layout.tscn")
 const COLOR_PANEL := Color(0.055, 0.060, 0.056, 0.88)
 const COLOR_PANEL_INNER := Color(0.088, 0.094, 0.086, 0.94)
@@ -98,19 +103,28 @@ func _fit_hud_to_viewport() -> void:
 
 	hud_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	hud_root.position = Vector2.ZERO
-	hud_root.size = get_viewport().get_visible_rect().size
+	var viewport_size := get_viewport().get_visible_rect().size
+	if layout_presenter != null:
+		hud_root.size = Vector2(1920, 1080)
+		hud_root.scale = viewport_size / hud_root.size
+	else:
+		hud_root.size = viewport_size
 
 
 func _ready() -> void:
 	_apply_styles()
-	_display_settings = BattleDisplaySettingsController.new()
-	_display_settings.name = "DisplaySettingsController"
-	add_child(_display_settings)
-	_display_settings.setup(
-		_resolution_option,
-		_fullscreen_check,
-		_display_status_label
-	)
+	if get_viewport() is SubViewport:
+		_resolution_option.add_item("1920 × 1080")
+		_display_status_label.text = "ХОЛСТ РЕДАКТОРА · 1920 × 1080"
+	else:
+		_display_settings = BattleDisplaySettingsController.new()
+		_display_settings.name = "DisplaySettingsController"
+		add_child(_display_settings)
+		_display_settings.setup(
+			_resolution_option,
+			_fullscreen_check,
+			_display_status_label
+		)
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
@@ -120,7 +134,27 @@ func _ready() -> void:
 	_speed_2_button.pressed.connect(_on_speed_requested.bind(2.0))
 	_speed_4_button.pressed.connect(_on_speed_requested.bind(4.0))
 	clear_target()
+	_mount_ui_profile()
 
+
+
+func _mount_ui_profile() -> void:
+	var document := ui_document_override
+	var path := ui_profile_path if not ui_profile_path.is_empty() else UILayoutStore.selected_path()
+	if document == null and not path.is_empty():
+		var result := UILayoutStore.load_document(path)
+		if not result.error.is_empty():
+			push_warning(result.error)
+		else:
+			document = result.document
+	if document == null:
+		return
+	layout_presenter = UILayoutPresenter.new()
+	add_child(layout_presenter)
+	_fit_hud_to_viewport()
+	layout_presenter.setup($HUDRoot, document)
+	for diagnostic: String in layout_presenter.diagnostics:
+		push_warning(diagnostic)
 
 
 func set_interaction_enabled(enabled: bool) -> void:
@@ -384,6 +418,15 @@ func _rebuild_ability_buttons(abilities: Array[AbilityDefinition]) -> void:
 		var button := _ability_button_template.duplicate() as Button
 		button.name = get_ability_button_name(ability.id)
 		button.text = ability.display_name
+		# The authored template supplies appearance/size; generated actions stay in the row.
+		if layout_presenter != null:
+			var template_id := String(layout_presenter.root.get_path_to(_ability_button_template))
+			var properties: Dictionary = layout_presenter.document.elements.get(template_id, {})
+			button.top_level = false
+			if properties.has("rect"):
+				button.custom_minimum_size = Vector2(properties.rect[2], properties.rect[3])
+			if properties.has("text"):
+				button.text = String(properties.text).replace("{value}", ability.display_name)
 		button.tooltip_text = ability.display_name
 		button.show()
 		skill_buttons.add_child(button)

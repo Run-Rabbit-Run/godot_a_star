@@ -309,6 +309,9 @@ static func _validate_references(
 				)
 
 	for unit: UnitDefinition in snapshot.get_all_unit_definitions():
+		var passive_error := PassiveAbilityCatalog.validate(unit.passive_ability_ids)
+		if not passive_error.is_empty():
+			result.add_error("%s: %s" % [unit.id, passive_error])
 		if not unit.race_id.is_empty() and snapshot.get_race_definition(unit.race_id) == null:
 			result.add_error(
 				"UnitDefinition %s references missing RaceDefinition %s."

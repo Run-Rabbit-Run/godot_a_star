@@ -8,4 +8,5 @@ extends Resource
 
 @export var race_id: StringName
 @export var ability_ids: Array[StringName] = []
+@export var passive_ability_ids: Array[StringName] = []
 @export var presentation_id: StringName

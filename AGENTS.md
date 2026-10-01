@@ -27,6 +27,7 @@
 - `debug_battle_launcher.tscn` — графический debug-бой из content packages.
 - `features/battle/battle_screen.tscn` — адаптер одного графического боя.
 - `features/editor/battle_editor.tscn` — пользовательский редактор карты и расстановки.
+- `battle_ui_editor.tscn` — пользовательский редактор сохранённых вариантов UI боя; руководство `docs/BATTLE_UI_EDITOR.md`.
 - `features/campaign/debug_campaign_simulation_launcher.tscn` — headless-прогон кампании.
 - `project.godot` — конфигурация; текущая main scene может быть отладочной.
 

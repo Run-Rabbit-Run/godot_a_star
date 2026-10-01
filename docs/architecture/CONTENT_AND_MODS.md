@@ -13,6 +13,8 @@ ContentPackage[]
 
 ## Текущий внутренний формат
 
+Дополнение 2026-10-01: `UnitLibrary` адаптирует локальные JSON-определения `user://unit_library/units` в Resource-пакет `custom_units` (зависимость `core`). Редактор боя объединяет его с базовыми пакетами перед `ContentLoader.load_packages`. Изображения берутся из соседней папки assets и принадлежат presentation. Это отдельный узкий формат юнитов, а не реализация общего внешнего loader для manifest/ZIP/PCK. Текущий каталог пассивных умений встроен в правила; подключение новых пассивов модами пока не реализовано.
+
 Сейчас пакет — `ContentPackage : Resource`. Он содержит:
 
 - `ContentPackageManifest`;

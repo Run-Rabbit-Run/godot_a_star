@@ -20,6 +20,11 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		return null
 
 	var base_stats := spawn.unit_definition.base_stats
+	var passive_ids := spawn.unit_definition.passive_ability_ids
+	var passive_error := PassiveAbilityCatalog.validate(passive_ids)
+	if not passive_error.is_empty():
+		push_error(passive_error)
+		return null
 	var turn := TurnState.new(base_stats.movement_points)
 	var health := HealthState.new(base_stats.max_health)
 
@@ -30,7 +35,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		spawn.hex,
 		turn,
 		health,
-		base_stats.basic_attack_damage,
+		base_stats.basic_attack_damage + PassiveAbilityCatalog.attack_bonus(passive_ids),
 		base_stats.basic_attack_range,
 		spawn.abilities
 	)

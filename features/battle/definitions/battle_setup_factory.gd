@@ -160,4 +160,4 @@ static func _validate_unit_definition(definition: UnitDefinition) -> String:
 	if definition.base_stats == null:
 		return "UnitDefinition base stats are not assigned: %s." % definition.id
 
-	return ""
+	return PassiveAbilityCatalog.validate(definition.passive_ability_ids)

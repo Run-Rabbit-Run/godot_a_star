@@ -50,7 +50,7 @@ var _trial_result: BattleResult
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
-	var load_result := ContentLoader.load_packages(content_packages)
+	var load_result := UnitLibrary.load_content(content_packages)
 
 	if not load_result.is_successful:
 		_show_load_errors(load_result.errors)
@@ -192,6 +192,8 @@ func _build_ui() -> void:
 	unit_title.text = "РАССТАНОВКА ЮНИТОВ"
 	unit_title.add_theme_font_size_override("font_size", 14)
 	root.add_child(unit_title)
+	root.add_child(_button("Редактор юнитов", _open_unit_editor))
+	root.add_child(_button("Обновить библиотеку юнитов", _reload_unit_library))
 
 	_palette_search = LineEdit.new()
 	_palette_search.placeholder_text = "Поиск юнита"
@@ -316,8 +318,44 @@ func _select_tool(tool: EditorBattleView.Tool) -> void:
 			return
 
 
+func _open_unit_editor() -> void:
+	var editor := preload("res://unit_editor.tscn").instantiate() as UnitEditor
+	editor.embedded = true
+	_ui.hide()
+	_view.set_process_input(false)
+	editor.closed.connect(func() -> void:
+		_ui.show()
+		_view.set_process_input(true)
+		_reload_unit_library()
+	)
+	add_child(editor)
+
+
+func _reload_unit_library() -> void:
+	var result := UnitLibrary.load_content(content_packages)
+	if not result.is_successful:
+		_show_load_errors(result.errors)
+		_set_status("Библиотека не обновлена: исправьте ошибки файлов. Предыдущий снимок сохранён.")
+		return
+	_snapshot = result.snapshot
+	if _document == null:
+		_document = EditorDocument.from_snapshot(_snapshot, initial_battle_id)
+		if _document == null:
+			_set_status("Не найден стартовый бой.")
+			return
+		_document.map_definition.presentation_frame = Vector2i(18, 12)
+		_populate_side_options()
+		_populate_ai_options()
+	_view.snapshot = _snapshot
+	_view.setup(_document)
+	_populate_palette(_palette_search.text)
+	_validate_document()
+
+
 func _populate_palette(filter_text: String = "") -> void:
 	_palette.clear()
+	if _snapshot == null:
+		return
 	var filter := filter_text.strip_edges().to_lower()
 
 	for definition: UnitDefinition in _snapshot.get_all_unit_definitions():
@@ -629,6 +667,9 @@ func _delete_selected() -> void:
 
 
 func _execute(command: EditCommand) -> void:
+	if _document == null:
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
+		return
 	if not _history.execute(command, _document):
 		_set_status("Команда не применена.")
 		return
@@ -706,6 +747,9 @@ func _on_save_path_selected(path: String) -> void:
 
 
 func _save_to_path(path: String) -> void:
+	if _document == null:
+		_set_status("Нет документа боя для сохранения.")
+		return
 	var error := EditorDocumentSerializer.save(_document, path)
 
 	if not error.is_empty():
@@ -718,6 +762,9 @@ func _save_to_path(path: String) -> void:
 
 
 func _on_open_path_selected(path: String) -> void:
+	if _snapshot == null:
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
+		return
 	var load_result := EditorDocumentSerializer.load_result(path)
 	var loaded := load_result.document
 
@@ -762,12 +809,18 @@ func _update_document_path_label() -> void:
 
 
 func _export() -> void:
+	if _document == null:
+		_set_status("Нет документа боя для экспорта.")
+		return
 	var path := "user://exported_battle_package"
 	var error := EditorPackageExporter.export(_document, path)
 	_set_status("Экспортировано: %s" % path if error.is_empty() else error)
 
 
 func _start_trial() -> void:
+	if _document == null or _snapshot == null:
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
+		return
 	var request := _document.create_trial_request(_snapshot, trial_seed)
 
 	if request == null:
