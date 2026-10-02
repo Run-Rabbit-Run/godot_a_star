@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-02",
+  "mode": "built-in image_gen, transparent_background=true",
+  "assets": [
+    {
+      "name": "sorokin",
+      "reference": "features/battle/art/plateau_units/0.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-e2d125d1-f3d4-49a7-9251-fc88cbaa76f8.png",
+      "output": "features/battle/art/corpses/sorokin.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for sorokin. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as sorokin_corpse.png if possible."
+    },
+    {
+      "name": "ranger",
+      "reference": "features/battle/art/plateau_units/1.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-7027d2ea-7eec-46eb-a3a7-3c197154a080.png",
+      "output": "features/battle/art/corpses/ranger.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for ranger. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as ranger_corpse.png if possible."
+    },
+    {
+      "name": "bastion",
+      "reference": "features/battle/art/plateau_units/2.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-82a708a3-077f-48cb-a8ae-b2d318bc33ea.png",
+      "output": "features/battle/art/corpses/bastion.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for bastion. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as bastion_corpse.png if possible."
+    },
+    {
+      "name": "guide",
+      "reference": "features/battle/art/plateau_units/3.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-95530151-fd0d-4a60-a902-0a702c6571b9.png",
+      "output": "features/battle/art/corpses/guide.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for guide. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as guide_corpse.png if possible."
+    },
+    {
+      "name": "carapace",
+      "reference": "features/battle/art/plateau_units/4.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-24dc14ed-7744-47c2-855d-a1d7027dbf89.png",
+      "output": "features/battle/art/corpses/carapace.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for carapace. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as carapace_corpse.png if possible."
+    },
+    {
+      "name": "reaper",
+      "reference": "features/battle/art/plateau_units/5.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-9c8665bf-9ab6-4ecd-9e59-7494671e3cff.png",
+      "output": "features/battle/art/corpses/reaper.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for reaper. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as reaper_corpse.png if possible."
+    },
+    {
+      "name": "spore",
+      "reference": "features/battle/art/plateau_units/6.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-8abc3283-6b1b-4a6a-b40b-ce93b889d2ca.png",
+      "output": "features/battle/art/corpses/spore.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for spore. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as spore_corpse.png if possible."
+    },
+    {
+      "name": "sentry",
+      "reference": "features/battle/art/plateau_units/7.png",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a0fb1b-8e36-7550-ac98-d81efe680f88\\exec-074993d8-6692-44ff-897c-5c2b233f5dc6.png",
+      "output": "features/battle/art/corpses/sentry.png",
+      "prompt": "Use case: precise-object-edit. Asset type: production transparent corpse sprite for A_star tactical game. Input image is the identity and painted-style reference for sentry. Redraw this SAME character as a completely dead, motionless body lying flat on its side on a horizontal ground plane, seen from the game's elevated three-quarter tactical camera. This is a NEW lying pose, NOT a rotated standing cutout. Keep recognizable clothing, armor, species, equipment and silhouette, with bent relaxed limbs and gear resting next to the body. Compact horizontal silhouette, full body and equipment inside the canvas, centered, generous transparent margin. No standing or kneeling. No gore, no wounds emphasis, no blood pool, no environment, no hex, no base, no UI, no lettering. Muted dusty desaturated earth colors and softened internal contrast, extinguish ALL glowing eyes, magic and lights; subtle short contact shadow only. Hand-painted graphic science-fantasy matching the reference's ink contours and worn material, readable at about 70 pixels wide. Genuine transparent alpha background. Save this final asset as sentry_corpse.png if possible."
+    }
+  ]
+}

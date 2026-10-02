@@ -166,7 +166,13 @@ func _present_damage(
 	_track_tween(tween)
 	await tween.finished
 	if event.target_defeated:
-		actor.present_defeat()
+		var fall_direction := 1.0
+		if attacker != null and attacker != actor:
+			fall_direction = -1.0 if attacker.global_position.x > actor.global_position.x else 1.0
+		var death := actor.create_defeat_tween(fall_direction)
+		if death != null:
+			_track_tween(death)
+			await death.finished
 	return true
 
 

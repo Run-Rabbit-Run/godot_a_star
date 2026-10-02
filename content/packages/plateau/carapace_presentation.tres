@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="UnitPresentationDefinition" format=3 uid="uid://ca7gi2rkkjcjv"]
 
 [ext_resource type="PackedScene" path="res://features/battle/units/unit_actor.tscn" id="actor"]
+[ext_resource type="Texture2D" uid="uid://bc4wl4hmq3ji7" path="res://features/battle/art/corpses/carapace.png" id="corpse"]
 [ext_resource type="Resource" path="res://features/battle/art/movement/heavy_walk.tres" id="movement"]
 [ext_resource type="Texture2D" uid="uid://bykh6mxh7jbt0" path="res://features/battle/art/plateau_units/4-portrait.png" id="portrait"]
 [ext_resource type="Script" uid="uid://c250qmf0kdyo2" path="res://features/battle/view/unit_presentation_definition.gd" id="presentation"]
@@ -15,3 +16,4 @@ portrait_texture = ExtResource("portrait")
 actor_height = 83.0
 actor_foot_anchor = Vector2(0.5364706, 0.90958905)
 movement_profile = ExtResource("movement")
+corpse_texture = ExtResource("corpse")

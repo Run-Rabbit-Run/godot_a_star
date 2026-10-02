@@ -1,0 +1,162 @@
+[
+  {
+    "file": "bastion.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 963280,
+    "solid_pixels": 550770,
+    "body_bounds": [
+      50,
+      175,
+      1474,
+      883
+    ]
+  },
+  {
+    "file": "carapace.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1092897,
+    "solid_pixels": 413583,
+    "body_bounds": [
+      103,
+      218,
+      1517,
+      812
+    ]
+  },
+  {
+    "file": "guide.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 996032,
+    "solid_pixels": 491185,
+    "body_bounds": [
+      99,
+      202,
+      1481,
+      854
+    ]
+  },
+  {
+    "file": "ranger.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1036006,
+    "solid_pixels": 461726,
+    "body_bounds": [
+      66,
+      210,
+      1495,
+      856
+    ]
+  },
+  {
+    "file": "reaper.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1089714,
+    "solid_pixels": 376813,
+    "body_bounds": [
+      94,
+      236,
+      1474,
+      866
+    ]
+  },
+  {
+    "file": "sentry.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1162853,
+    "solid_pixels": 347135,
+    "body_bounds": [
+      81,
+      165,
+      1453,
+      871
+    ]
+  },
+  {
+    "file": "sorokin.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1052427,
+    "solid_pixels": 470131,
+    "body_bounds": [
+      106,
+      243,
+      1446,
+      782
+    ]
+  },
+  {
+    "file": "spore.png",
+    "mode": "RGBA",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_range": [
+      0,
+      254
+    ],
+    "transparent_pixels": 1088747,
+    "solid_pixels": 382207,
+    "body_bounds": [
+      64,
+      242,
+      1501,
+      864
+    ]
+  }
+]

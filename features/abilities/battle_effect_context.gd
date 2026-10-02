@@ -11,6 +11,10 @@ func _init(state: BattleState, ability_id: StringName = StringName()) -> void:
 	_ability_id = ability_id
 
 
+func get_corpses_at(hex: Vector2i) -> Array[UnitSnapshot]:
+	return _state.get_corpses_at(hex)
+
+
 func apply_damage(
 	source_unit_id: StringName,
 	target_unit_id: StringName,

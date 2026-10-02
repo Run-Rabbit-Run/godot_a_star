@@ -19,6 +19,7 @@ var _hit_only := false
 var _time := 0.0
 var _contact := 0.22
 var _flight := 0.16
+var _restored := false
 
 
 static func attack(attacker: UnitActor, target: UnitActor, ranged: bool, contact: Callable) -> Tween:
@@ -107,6 +108,9 @@ func _sample(time: float) -> void:
 
 
 func _restore() -> void:
+	if _restored:
+		return
+	_restored = true
 	if is_instance_valid(_source):
 		_source.transform = _source_rest
 	if is_instance_valid(_target):

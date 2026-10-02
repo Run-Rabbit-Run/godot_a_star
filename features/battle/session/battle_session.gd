@@ -39,6 +39,10 @@ func get_unit_at(hex: Vector2i) -> UnitSnapshot:
 	return _to_snapshot(_engine.get_unit_at(hex))
 
 
+func get_corpses_at(hex: Vector2i) -> Array[UnitSnapshot]:
+	return _state.get_corpses_at(hex)
+
+
 func get_living_units_by_faction(
 	faction: BattleFaction.Value
 ) -> Array[UnitSnapshot]:

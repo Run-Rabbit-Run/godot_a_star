@@ -16,6 +16,10 @@ var _faction_color := Color(0.51, 0.66, 0.75)
 var _show_base := true
 var _movement_profile: UnitMovementProfile
 var _movement_animator: UnitMovementAnimator
+var _presentation: UnitPresentationDefinition
+var _corpse: Sprite2D
+var _defeat_tween: Tween
+var _defeated := false
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -43,6 +47,7 @@ func setup(
 	maximum_health: int
 ) -> void:
 	unit_id = p_unit_id
+	_presentation = presentation
 	_movement_profile = presentation.movement_profile if presentation != null else null
 	if _movement_profile == null:
 		_movement_profile = UnitMovementProfile.new()
@@ -127,14 +132,56 @@ func present_damage() -> void:
 
 
 func present_defeat() -> void:
+	var tween := create_defeat_tween()
+	if tween != null:
+		await tween.finished
+
+
+func create_defeat_tween(direction: float = 1.0) -> Tween:
+	if _defeated:
+		return _defeat_tween if _defeat_tween != null and _defeat_tween.is_running() else null
+	_defeated = true
 	_show_base = false
 	queue_redraw()
-	z_index = 8
-	rotation_degrees = -82.0
-	modulate = modulate.lerp(Color(0.22, 0.21, 0.19, 0.72), 0.78)
 	_combat_role_label.visible = false
 	_health_label.visible = false
 	_unit_id_label.visible = false
+	_create_corpse()
+	_defeat_tween = UnitDeathAnimator.create(self, _sprite, _corpse, direction)
+	return _defeat_tween
+
+
+func _create_corpse() -> void:
+	_corpse = Sprite2D.new()
+	_corpse.name = "Corpse"
+	_corpse.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var width := _presentation.corpse_width if _presentation != null else 76.0
+	if _presentation != null and _presentation.corpse_texture != null:
+		_corpse.texture = _presentation.corpse_texture
+		_corpse.scale = Vector2.ONE * width / maxf(_corpse.texture.get_width(), 1.0)
+	else:
+		# Optional presentation fallback for custom units without a painted corpse.
+		_corpse.texture = _sprite.texture
+		if _corpse.texture != null:
+			_corpse.rotation = -PI * 0.5
+			_corpse.scale = Vector2(0.52, 1.0) * width / maxf(_corpse.texture.get_height(), 1.0)
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://features/battle/art/corpse.gdshader")
+	_corpse.material = material
+	_corpse.position = Vector2(0, -3)
+	_corpse.modulate.a = 0.0
+	add_child(_corpse)
+
+
+func finish_defeat() -> void:
+	_sprite.hide()
+	_corpse.modulate.a = 1.0
+	# Below living units (20) and tactical overlays (8+), above terrain effects (5).
+	z_index = 6
+
+
+func is_presented_as_corpse() -> bool:
+	return _defeated
 
 
 func move_along_global_positions(
