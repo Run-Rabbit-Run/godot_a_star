@@ -5,6 +5,20 @@ const ROOT := "user://unit_library"
 const UNITS := ROOT + "/units"
 const ASSETS := ROOT + "/assets"
 const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты"}
+const GRAPHIC_TACTICS_ASSETS := {
+	"gt_officer.png": preload("res://features/battle/art/graphic_tactics_units/gt_officer.png"),
+	"gt_shield_guard.png": preload("res://features/battle/art/graphic_tactics_units/gt_shield_guard.png"),
+	"gt_sniper.png": preload("res://features/battle/art/graphic_tactics_units/gt_sniper.png"),
+	"gt_medic.png": preload("res://features/battle/art/graphic_tactics_units/gt_medic.png"),
+	"gt_heavy_gunner.png": preload("res://features/battle/art/graphic_tactics_units/gt_heavy_gunner.png"),
+	"gt_engineer.png": preload("res://features/battle/art/graphic_tactics_units/gt_engineer.png"),
+	"gt_mystic.png": preload("res://features/battle/art/graphic_tactics_units/gt_mystic.png"),
+	"gt_small_stalker.png": preload("res://features/battle/art/graphic_tactics_units/gt_small_stalker.png"),
+	"gt_large_mantis.png": preload("res://features/battle/art/graphic_tactics_units/gt_large_mantis.png"),
+	"gt_spore_walker.png": preload("res://features/battle/art/graphic_tactics_units/gt_spore_walker.png"),
+	"gt_alien_rifleman.png": preload("res://features/battle/art/graphic_tactics_units/gt_alien_rifleman.png"),
+	"gt_gun_walker.png": preload("res://features/battle/art/graphic_tactics_units/gt_gun_walker.png"),
+}
 
 static func ensure_folders() -> String:
 	for path: String in [UNITS, ASSETS]:
@@ -12,13 +26,16 @@ static func ensure_folders() -> String:
 		if error != OK:
 			return "Не удалось создать %s: %s" % [path, error_string(error)]
 	# Seed the writable asset folder once, including in exported builds.
+	var bundled_assets := GRAPHIC_TACTICS_ASSETS.duplicate()
 	for index: int in range(8):
-		var target := ASSETS.path_join("%s.png" % index)
+		bundled_assets["%s.png" % index] = load("res://features/battle/art/plateau_units/%s.png" % index)
+	for filename: String in bundled_assets:
+		var target := ASSETS.path_join(filename)
 		if FileAccess.file_exists(target):
 			continue
-		var texture := load("res://features/battle/art/plateau_units/%s.png" % index) as Texture2D
+		var texture := bundled_assets[filename] as Texture2D
 		if texture == null:
-			return "Не найдено стартовое изображение %s." % index
+			return "Не найдено стартовое изображение %s." % filename
 		var error := texture.get_image().save_png(target)
 		if error != OK:
 			return "Не удалось сохранить %s: %s" % [target, error_string(error)]
