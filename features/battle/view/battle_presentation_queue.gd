@@ -5,8 +5,6 @@ extends Node
 var settings := BattlePlaybackSettings.new()
 var _active_tweens: Array[Tween] = []
 var _content_snapshot: ContentSnapshot
-# A basic ranged attack reuses the default projectile look of an ability.
-var _basic_attack_delivery := AbilityPresentationDefinition.new()
 
 
 func _ready() -> void:
@@ -139,25 +137,6 @@ func _present_damage(
 		event.attacker_id
 	) as UnitDefinition
 
-	if (
-		event.source_ability_id.is_empty()
-		and event.source_hex_state_id.is_empty()
-		and attacker_definition != null
-		and attacker_definition.base_stats != null
-		and attacker_definition.base_stats.basic_attack_range > 1
-	):
-		if attacker == null:
-			push_error("UnitActor is not registered for the ranged attacker.")
-			return false
-
-		await _present_delivery(
-			_basic_attack_delivery,
-			map_view.to_local(attacker.global_position),
-			map_view.to_local(actor.global_position),
-			map_view,
-			"RangedAttack"
-		)
-
 	var source_name := _get_display_name(event.attacker_id, unit_definitions)
 
 	if not event.source_hex_state_id.is_empty():
@@ -170,25 +149,31 @@ func _present_damage(
 		event.target_health_remaining
 	)
 
-	if actor.visible:
-		var base_color := actor.modulate
-		var hit_color := base_color.lerp(Color.RED, 0.7)
-		var tween := actor.create_tween()
-		tween.tween_property(
-			actor,
-			"modulate",
-			hit_color,
-			actor.damage_flash_duration * 0.5
+	var contact := _show_damage_health.bind(event, actor, unit_definitions)
+	var tween: Tween
+	if (
+		event.source_ability_id.is_empty()
+		and event.source_hex_state_id.is_empty()
+		and attacker != null
+		and attacker_definition != null
+		and attacker_definition.base_stats != null
+	):
+		tween = UnitCombatAnimator.attack(
+			attacker, actor, attacker_definition.base_stats.basic_attack_range > 1, contact
 		)
-		tween.tween_property(
-			actor,
-			"modulate",
-			base_color,
-			actor.damage_flash_duration * 0.5
-		)
-		_track_tween(tween)
-		await tween.finished
+	else:
+		tween = UnitCombatAnimator.hit(actor, contact)
+	_track_tween(tween)
+	await tween.finished
+	if event.target_defeated:
+		actor.present_defeat()
+	return true
 
+
+func _show_damage_health(
+	event: UnitDamagedEvent, actor: UnitActor,
+	unit_definitions: Dictionary[StringName, UnitDefinition]
+) -> void:
 	var target_definition := unit_definitions.get(
 		event.target_id
 	) as UnitDefinition
@@ -198,11 +183,6 @@ func _present_damage(
 		maximum_health = target_definition.base_stats.max_health
 
 	actor.show_health(event.target_health_remaining, maximum_health)
-
-	if event.target_defeated:
-		actor.present_defeat()
-
-	return true
 
 
 func _present_ability(
@@ -220,8 +200,8 @@ func _present_ability(
 	# The following UnitDamagedEvent flashes the target; here the effect only travels.
 	await _present_delivery(
 		_get_ability_presentation(event.ability_id, false),
-		map_view.to_local(user.global_position),
-		map_view.to_local(target.global_position),
+		map_view.to_local(user.get_combat_anchor(0.68)),
+		map_view.to_local(target.get_combat_anchor()),
 		map_view,
 		"Ability"
 	)
@@ -327,7 +307,7 @@ func _present_projectile(
 	tracer.default_color = presentation.trail_color
 	tracer.antialiased = true
 	tracer.z_index = 50
-	tracer.points = PackedVector2Array([start, finish])
+	tracer.points = PackedVector2Array([start, start])
 	map_view.add_child(tracer)
 
 	var projectile := Polygon2D.new()
@@ -345,20 +325,11 @@ func _present_projectile(
 
 	var tween := projectile.create_tween()
 	tween.set_parallel(true)
-	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_ease(Tween.EASE_IN)
-	tween.tween_property(
-		projectile,
-		"position",
-		finish,
-		0.22
-	)
-	tween.tween_property(
-		tracer,
-		"modulate:a",
-		0.0,
-		0.22
-	)
+	tween.tween_method(func(progress: float) -> void:
+		projectile.position = start.lerp(finish, progress)
+		var tail := start.lerp(finish, maxf(0.0, progress - 0.16))
+		tracer.points = PackedVector2Array([tail, projectile.position])
+	, 0.0, 1.0, 0.22)
 	_track_tween(tween)
 	await tween.finished
 	projectile.queue_free()

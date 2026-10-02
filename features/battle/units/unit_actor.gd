@@ -148,3 +148,12 @@ func move_along_global_positions(
 func create_movement_tween(positions: Array[Vector2]) -> Tween:
 	_movement_animator = UnitMovementAnimator.new()
 	return _movement_animator.create_motion(self, _sprite, positions, _movement_profile)
+
+
+func get_combat_sprite() -> Sprite2D:
+	return _sprite
+
+
+func get_combat_anchor(height_ratio: float = 0.52) -> Vector2:
+	var height := _sprite.texture.get_height() * _sprite.scale.y if _sprite.texture != null else CUSTOM_TEXTURE_SIZE
+	return to_global(Vector2(0, -height * height_ratio))
