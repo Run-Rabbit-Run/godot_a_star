@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-03",
+  "mode": "built-in image_gen, transparent_background=true",
+  "assets": [
+    {
+      "name": "gt_officer",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-b0557fa9-43d8-4b72-8b22-184dd2966b4c.png",
+      "prompt": "Use case: precise-object-edit. Production transparent corpse sprite for A_star. Input image: identity and painted-style reference for the same red-caped officer. Create a NEW anatomically natural lying dead pose, flat on his side across horizontal ground, elevated three-quarter tactical camera as in reference. Match precisely the same face, cream worn long coat, dark armor, red cape, pistol and muted hand-painted ink-contour style. Full body and pistol relaxed on ground, compact horizontal silhouette, feet and head fully inside frame, body centered. No standing, kneeling or simply rotated standing sprite. No gore, no blood, no wounds emphasis, no scene, no platform, no hex, no lettering. Extinguish all lights and magic. No painted cast shadow or colored haze outside body; actual clear transparent alpha outside silhouette. Wide landscape canvas, silhouette occupies about 80% width; readable at 82 pixels visible width on game hex. One character only.",
+      "reference": "content/authored/assets/units/gt_officer.png",
+      "output": "content/authored/assets/corpses/gt_officer.png"
+    },
+    {
+      "name": "gt_shield_guard",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-3c4cb3a1-60fd-4c02-a2e4-e816d23d0d23.png",
+      "prompt": "Use case: precise-object-edit. Production transparent corpse sprite for A_star tactical battlefield. Input image is the exact identity, equipment and painted-style reference for armored shield guard: sealed steel helmet, weathered heavy armor, long rectangular shield lying beside his collapsed body, rifle on ground. Redraw the SAME character in a NEW naturally collapsed dead pose lying flat on his side on a horizontal ground plane, seen from elevated three-quarter tactical camera. Preserve recognizable colors, proportions, clothing, equipment, ink contours and worn science-fantasy materials. Relaxed limbs, all equipment grounded; compact horizontal full-body silhouette centered, head and feet and equipment fully inside frame. No standing or kneeling, not a rotated upright cutout. No blood, gore, wounds emphasis, background, platform, hex, lettering or UI. Extinguish all glowing elements. No cast shadow or haze outside the body. Genuine clear transparent alpha background. Landscape frame with silhouette occupying about80%width; readable at82–90pixels visible width on one game hex. One character only.",
+      "reference": "content/authored/assets/units/gt_shield_guard.png",
+      "output": "content/authored/assets/corpses/gt_shield_guard.png"
+    },
+    {
+      "name": "gt_sniper",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-e201ec4e-f21d-4ee3-a4e1-347ff6dd9ffa.png",
+      "prompt": "Use case: precise-object-edit. Production transparent corpse sprite for A_star tactical battlefield. Input image is the exact identity, equipment and painted-style reference for hooded sniper in worn olive cloak with long scoped rifle resting flat beside his body. Redraw the SAME character in a NEW naturally collapsed dead pose lying flat on his side on a horizontal ground plane, seen from elevated three-quarter tactical camera. Preserve recognizable colors, proportions, clothing, equipment, ink contours and worn science-fantasy materials. Relaxed limbs, all equipment grounded; compact horizontal full-body silhouette centered, head and feet and equipment fully inside frame. No standing or kneeling, not a rotated upright cutout. No blood, gore, wounds emphasis, background, platform, hex, lettering or UI. Extinguish all glowing elements. No cast shadow or haze outside the body. Genuine clear transparent alpha background. Landscape frame with silhouette occupying about80%width; readable at82–90pixels visible width on one game hex. One character only.",
+      "reference": "content/authored/assets/units/gt_sniper.png",
+      "output": "content/authored/assets/corpses/gt_sniper.png"
+    },
+    {
+      "name": "gt_medic",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-f6356077-037b-4d77-9788-ea804fe69738.png",
+      "prompt": "Use case: precise-object-edit. Production transparent corpse sprite for A_star tactical battlefield. Input image is the exact identity, equipment and painted-style reference for hooded medic in stained cream long coat, red cross emblems, bulky medical backpack and compact gun resting on the ground. Redraw the SAME character in a NEW naturally collapsed dead pose lying flat on his side on a horizontal ground plane, seen from elevated three-quarter tactical camera. Preserve recognizable colors, proportions, clothing, equipment, ink contours and worn science-fantasy materials. Relaxed limbs, all equipment grounded; compact horizontal full-body silhouette centered, head and feet and equipment fully inside frame. No standing or kneeling, not a rotated upright cutout. No blood, gore, wounds emphasis, background, platform, hex, lettering or UI. Extinguish all glowing elements. No cast shadow or haze outside the body. Genuine clear transparent alpha background. Landscape frame with silhouette occupying about80%width; readable at82–90pixels visible width on one game hex. One character only.",
+      "reference": "content/authored/assets/units/gt_medic.png",
+      "output": "content/authored/assets/corpses/gt_medic.png"
+    },
+    {
+      "name": "gt_heavy_gunner",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-5e8817de-05e1-496a-8c39-78b39855c751.png",
+      "prompt": "Use case: precise-object-edit. Production transparent corpse sprite for A_star tactical battlefield. Input image is the exact identity, equipment and painted-style reference for very bulky heavy gunner in weathered steel armor, respirator helmet and heavy rotary minigun resting inert next to the body. Redraw the SAME character in a NEW naturally collapsed dead pose lying flat on his side on a horizontal ground plane, seen from elevated three-quarter tactical camera. Preserve recognizable colors, proportions, clothing, equipment, ink contours and worn science-fantasy materials. Relaxed limbs, all equipment grounded; compact horizontal full-body silhouette centered, head and feet and equipment fully inside frame. No standing or kneeling, not a rotated upright cutout. No blood, gore, wounds emphasis, background, platform, hex, lettering or UI. Extinguish all glowing elements. No cast shadow or haze outside the body. Genuine clear transparent alpha background. Landscape frame with silhouette occupying about80%width; readable at82–90pixels visible width on one game hex. One character only.",
+      "reference": "content/authored/assets/units/gt_heavy_gunner.png",
+      "output": "content/authored/assets/corpses/gt_heavy_gunner.png"
+    },
+    {
+      "name": "gt_engineer",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-a39726fe-14d5-4ade-bfc2-30b6b2f98122.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for human engineer in cream worn coat with goggles, backpack and cyan-coil tesla gun; coils and backpack lights completely unlit in death. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_engineer.png",
+      "output": "content/authored/assets/corpses/gt_engineer.png"
+    },
+    {
+      "name": "gt_mystic",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-1d9ec544-b6cf-4249-910a-39ae165322bb.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for hooded mystic in black robe with gold trim and ornate sun-disc staff lying beside him; staff gem completely unlit. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_mystic.png",
+      "output": "content/authored/assets/corpses/gt_mystic.png"
+    },
+    {
+      "name": "gt_small_stalker",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-f421e6b5-b1d1-4a24-82c0-43d9e2c3e244.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for small orange armored six-legged insectoid stalker with jointed mechanical-organic limbs folded loosely, collapsed on its side. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_small_stalker.png",
+      "output": "content/authored/assets/corpses/gt_small_stalker.png"
+    },
+    {
+      "name": "gt_large_mantis",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-a5f7f65e-451d-410f-a877-e6b5241d7ef6.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for large orange armored mantis creature with long scythe forelegs and jointed rear legs, dead flat on its side with all legs folded or splayed naturally. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_large_mantis.png",
+      "output": "content/authored/assets/corpses/gt_large_mantis.png"
+    },
+    {
+      "name": "gt_spore_walker",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-08f4a4b7-fd83-4568-88db-0598b00552d5.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for round orange-spotted fungal walker with many slender dangling root legs; limp collapsed fungal body lying on its side with tendrils spread flat. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_spore_walker.png",
+      "output": "content/authored/assets/corpses/gt_spore_walker.png"
+    },
+    {
+      "name": "gt_alien_rifleman",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-374dc439-ecad-4847-87ee-4dbd33e35d57.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for orange chitin-armored alien rifleman with angular insect head, jointed arms and long rifle; body on its side, rifle grounded. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_alien_rifleman.png",
+      "output": "content/authored/assets/corpses/gt_alien_rifleman.png"
+    },
+    {
+      "name": "gt_gun_walker",
+      "source": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a10145-86b8-76f0-b640-f6c03c7469c4\\exec-52f5b239-5ae0-44df-828e-9aed6f867234.png",
+      "prompt": "Use case: precise-object-edit. Production transparent defeated sprite for A_star tactical battlefield. Input image is exact identity and painted-style reference for rusty orange two-legged autonomous artillery machine; no person, collapsed on its side with folded mechanical legs and barrel grounded. Redraw the SAME individual as a NEW natural dead or destroyed pose lying flat across a horizontal ground plane, elevated three-quarter tactical camera. Preserve the exact reference identity, colors, equipment, species, ink contours, weathered hand-painted science fantasy. Every body part rests inert on ground; recognizable compact horizontal silhouette, full body and gear centered and fully inside frame. No upright stance, kneeling or merely rotated upright cutout. No blood, gore, excessive wreckage, background, base, hex, lettering or UI. All glowing eyes, magic, gun and machinery lights extinguished. No painted cast shadow or haze outside silhouette. Genuine clear transparent alpha background. Landscape canvas; body about80%canvas width, readable at76–96pixels visible width on game hex. One individual only.",
+      "reference": "content/authored/assets/units/gt_gun_walker.png",
+      "output": "content/authored/assets/corpses/gt_gun_walker.png"
+    }
+  ],
+  "reused_assets": [
+    {
+      "output": "content/authored/assets/corpses/0.png",
+      "source": "features/battle/art/corpses/sorokin.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/1.png",
+      "source": "features/battle/art/corpses/ranger.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/2.png",
+      "source": "features/battle/art/corpses/bastion.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/3.png",
+      "source": "features/battle/art/corpses/sentry.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/4.png",
+      "source": "features/battle/art/corpses/carapace.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/5.png",
+      "source": "features/battle/art/corpses/guide.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/6.png",
+      "source": "features/battle/art/corpses/spore.png"
+    },
+    {
+      "output": "content/authored/assets/corpses/7.png",
+      "source": "features/battle/art/corpses/reaper.png"
+    }
+  ]
+}

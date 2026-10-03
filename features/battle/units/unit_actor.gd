@@ -158,13 +158,17 @@ func _create_corpse() -> void:
 	var width := _presentation.corpse_width if _presentation != null else 76.0
 	if _presentation != null and _presentation.corpse_texture != null:
 		_corpse.texture = _presentation.corpse_texture
-		_corpse.scale = Vector2.ONE * width / maxf(_corpse.texture.get_width(), 1.0)
+		var bounds := _presentation.corpse_visible_rect()
+		_corpse.scale = Vector2.ONE * width / maxf(bounds.size.x, 1.0)
+		_corpse.offset = _corpse.texture.get_size() * 0.5 - bounds.get_center()
 	else:
 		# Optional presentation fallback for custom units without a painted corpse.
 		_corpse.texture = _sprite.texture
 		if _corpse.texture != null:
 			_corpse.rotation = -PI * 0.5
-			_corpse.scale = Vector2(0.52, 1.0) * width / maxf(_corpse.texture.get_height(), 1.0)
+			var bounds := _presentation.visible_rect() if _presentation != null else Rect2(Vector2.ZERO, _corpse.texture.get_size())
+			_corpse.scale = Vector2(0.52, 1.0) * width / maxf(bounds.size.y, 1.0)
+			_corpse.offset = _corpse.texture.get_size() * 0.5 - bounds.get_center()
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://features/battle/art/corpse.gdshader")
 	_corpse.material = material

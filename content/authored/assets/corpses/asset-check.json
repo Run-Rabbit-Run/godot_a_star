@@ -1,0 +1,362 @@
+[
+  {
+    "file": "0.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      106,
+      242,
+      1340,
+      543
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "1.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      60,
+      210,
+      1435,
+      652
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "2.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      50,
+      175,
+      1425,
+      709
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "3.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      80,
+      164,
+      1374,
+      707
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "4.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      102,
+      218,
+      1416,
+      594
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "5.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      98,
+      201,
+      1384,
+      654
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "6.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      63,
+      241,
+      1438,
+      624
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "7.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      90,
+      236,
+      1384,
+      631
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_alien_rifleman.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      37,
+      262,
+      1452,
+      574
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_engineer.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      67,
+      218,
+      1453,
+      657
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_gun_walker.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      18,
+      171,
+      1500,
+      692
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_heavy_gunner.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      36,
+      173,
+      1484,
+      694
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_large_mantis.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      12,
+      197,
+      1519,
+      749
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_medic.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      77,
+      173,
+      1446,
+      703
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_mystic.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      16,
+      120,
+      1503,
+      837
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_officer.png",
+    "size": [
+      1672,
+      941
+    ],
+    "alpha": [
+      0,
+      255
+    ],
+    "visible_region": [
+      49,
+      272,
+      1594,
+      512
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_shield_guard.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      36,
+      171,
+      1462,
+      756
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_small_stalker.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      22,
+      258,
+      1492,
+      595
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_sniper.png",
+    "size": [
+      1619,
+      971
+    ],
+    "alpha": [
+      0,
+      255
+    ],
+    "visible_region": [
+      61,
+      251,
+      1500,
+      552
+    ],
+    "bounds_threshold": 32
+  },
+  {
+    "file": "gt_spore_walker.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha": [
+      0,
+      254
+    ],
+    "visible_region": [
+      23,
+      223,
+      1500,
+      679
+    ],
+    "bounds_threshold": 32
+  }
+]

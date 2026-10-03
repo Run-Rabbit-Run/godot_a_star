@@ -3,11 +3,12 @@ extends RefCounted
 
 const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
+const CORPSES := "res://content/authored/assets/corpses"
 const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты"}
 
 
 static func ensure_folders() -> String:
-	for path: String in [UNITS, ASSETS]:
+	for path: String in [UNITS, ASSETS, CORPSES]:
 		var error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(path))
 		if error != OK:
 			return "Не удалось создать %s: %s" % [path, error_string(error)]
@@ -25,7 +26,16 @@ static func asset_names() -> PackedStringArray:
 static func texture_for(asset: String) -> Texture2D:
 	if asset != asset.get_file() or asset.is_empty():
 		return null
-	var path := ASSETS.path_join(asset)
+	return _texture_at(ASSETS.path_join(asset))
+
+static func corpse_for(asset: String) -> Texture2D:
+	if asset != asset.get_file() or asset.is_empty():
+		return null
+	return _texture_at(CORPSES.path_join(asset.get_basename() + ".png"))
+
+static func _texture_at(path: String) -> Texture2D:
+	if not ResourceLoader.exists(path, "Texture2D") and not FileAccess.file_exists(path):
+		return null
 	if ResourceLoader.exists(path, "Texture2D"):
 		return load(path) as Texture2D
 	var image := Image.load_from_file(ProjectSettings.globalize_path(path))
@@ -138,12 +148,6 @@ static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
 	if not DirAccess.dir_exists_absolute(UNITS):
 		result.add_error("Не найдена библиотека юнитов проекта: %s" % UNITS)
 		return result
-	var visual_profiles: Dictionary = {}
-	var profiles_path := "res://content/authored/unit_visual_profiles.json"
-	if FileAccess.file_exists(profiles_path):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(profiles_path))
-		if parsed is Dictionary:
-			visual_profiles = parsed
 	var package := ContentPackage.new()
 	package.manifest = ContentPackageManifest.new()
 	package.manifest.package_id = &"custom_units"
@@ -169,19 +173,10 @@ static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
 		unit.base_stats.movement_points = int(data.movement)
 		unit.ability_ids.assign(data.abilities)
 		unit.passive_ability_ids.assign(data.passives)
-		var presentation := UnitPresentationDefinition.new()
+		var presentation := presentation_for(String(data.image))
 		presentation.id = unit.presentation_id
-		presentation.actor_scene = load("res://features/battle/units/unit_actor.tscn") as PackedScene
-		presentation.actor_texture = texture_for(data.image)
 		if presentation.actor_texture == null:
 			result.add_error("%s: изображение повреждено: %s" % [filename, data.image])
-		presentation.portrait_texture = presentation.actor_texture
-		presentation.align_to_visible_feet()
-		var profile: Dictionary = visual_profiles.get(String(data.image), {})
-		presentation.actor_height = float(profile.get("height", 82.0))
-		var anchor: Array = profile.get("foot_anchor", [])
-		if anchor.size() == 2:
-			presentation.actor_foot_anchor = Vector2(float(anchor[0]), float(anchor[1]))
 		package.units.append(unit)
 		package.unit_presentations.append(presentation)
 	if not result.errors.is_empty():
@@ -189,3 +184,28 @@ static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
 	var combined: Array[ContentPackage] = packages.duplicate()
 	combined.append(package)
 	return ContentLoader.load_packages(combined)
+
+
+## Shared visual pairing: both new and existing units get the corpse for their image.
+static func presentation_for(asset: String) -> UnitPresentationDefinition:
+	var presentation := UnitPresentationDefinition.new()
+	presentation.actor_scene = load("res://features/battle/units/unit_actor.tscn") as PackedScene
+	presentation.actor_texture = texture_for(asset)
+	presentation.portrait_texture = presentation.actor_texture
+	presentation.corpse_texture = corpse_for(asset)
+	presentation.align_to_visible_feet()
+	var profiles_path := "res://content/authored/unit_visual_profiles.json"
+	var profile: Dictionary = {}
+	if FileAccess.file_exists(profiles_path):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(profiles_path))
+		if parsed is Dictionary and parsed.get(asset) is Dictionary:
+			profile = parsed[asset]
+	presentation.actor_height = float(profile.get("height", 82.0))
+	presentation.corpse_width = float(profile.get("corpse_width", presentation.actor_height))
+	var region: Array = profile.get("corpse_visible_region", [])
+	if region.size() == 4:
+		presentation.corpse_visible_region = Rect2(float(region[0]), float(region[1]), float(region[2]), float(region[3]))
+	var anchor: Array = profile.get("foot_anchor", [])
+	if anchor.size() == 2:
+		presentation.actor_foot_anchor = Vector2(float(anchor[0]), float(anchor[1]))
+	return presentation

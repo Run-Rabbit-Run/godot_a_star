@@ -13,6 +13,8 @@ extends Resource
 @export var actor_color := Color.WHITE
 @export var movement_profile: UnitMovementProfile
 @export var corpse_texture: Texture2D
+## Optional measured body bounds, excluding nearly transparent generator residue.
+@export var corpse_visible_region := Rect2()
 @export_range(24.0, 120.0, 1.0) var corpse_width := 76.0
 
 
@@ -51,3 +53,22 @@ func align_to_visible_feet() -> void:
 		return
 	var bounds := visible_rect()
 	actor_foot_anchor = Vector2(bounds.get_center().x, bounds.end.y) / actor_texture.get_size()
+
+
+var _measured_corpse: Texture2D
+var _corpse_rect := Rect2()
+
+
+func corpse_visible_rect() -> Rect2:
+	if corpse_visible_region.has_area():
+		return corpse_visible_region
+	if corpse_texture != _measured_corpse:
+		_measured_corpse = corpse_texture
+		_corpse_rect = Rect2()
+		if corpse_texture != null:
+			var image := corpse_texture.get_image()
+			if image != null and not image.is_empty():
+				_corpse_rect = Rect2(image.get_used_rect())
+			if not _corpse_rect.has_area():
+				_corpse_rect = Rect2(Vector2.ZERO, corpse_texture.get_size())
+	return _corpse_rect

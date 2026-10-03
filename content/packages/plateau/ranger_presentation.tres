@@ -17,3 +17,4 @@ actor_height = 82.0
 actor_foot_anchor = Vector2(0.38845143, 0.95862067)
 movement_profile = ExtResource("movement")
 corpse_texture = ExtResource("corpse")
+corpse_visible_region = Rect2(60, 210, 1435, 652)

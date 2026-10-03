@@ -17,6 +17,7 @@ var _attack: OptionButton
 var _numbers: Dictionary[String, SpinBox] = {}
 var _ability_checks: Dictionary[String, CheckBox] = {}
 var _passive_checks: Dictionary[String, CheckBox] = {}
+var _corpse_status: Label
 var _preview: TextureRect
 var _status: Label
 var _identity: Label
@@ -101,6 +102,9 @@ func _build_ui() -> void:
 	_assets = OptionButton.new()
 	_assets.item_selected.connect(func(index: int) -> void: _change("image", _assets.get_item_text(index)))
 	_field(form, "Изображение из папки assets", _assets)
+	_corpse_status = Label.new()
+	_corpse_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	form.add_child(_corpse_status)
 	_number(form, "ОЗ", "hp", 1, 9999)
 	_number(form, "Базовый урон", "damage", 0, 9999)
 	_attack = OptionButton.new()
@@ -223,6 +227,7 @@ func _update_preview() -> void:
 	if _preview_asset != _document.image:
 		_preview_asset = _document.image
 		_preview.texture = UnitLibrary.texture_for(_document.image)
+		_corpse_status.text = ("Погибший ассет: " + String(_document.image).get_basename() + ".png") if UnitLibrary.corpse_for(_document.image) != null else "Погибший ассет не добавлен: используется базовое изображение тела."
 	var ids: Array[StringName] = []
 	ids.assign(_document.passives)
 	var bonus := PassiveAbilityCatalog.attack_bonus(ids)

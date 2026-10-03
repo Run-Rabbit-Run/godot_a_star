@@ -4,6 +4,13 @@
     "foot_anchor": [
       0.386,
       0.959
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      106,
+      242,
+      1340,
+      543
     ]
   },
   "1.png": {
@@ -11,6 +18,13 @@
     "foot_anchor": [
       0.388,
       0.959
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      60,
+      210,
+      1435,
+      652
     ]
   },
   "2.png": {
@@ -18,6 +32,13 @@
     "foot_anchor": [
       0.395,
       0.958
+    ],
+    "corpse_width": 90,
+    "corpse_visible_region": [
+      50,
+      175,
+      1425,
+      709
     ]
   },
   "3.png": {
@@ -25,6 +46,13 @@
     "foot_anchor": [
       0.575,
       0.932
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      80,
+      164,
+      1374,
+      707
     ]
   },
   "4.png": {
@@ -32,6 +60,13 @@
     "foot_anchor": [
       0.536,
       0.91
+    ],
+    "corpse_width": 76,
+    "corpse_visible_region": [
+      102,
+      218,
+      1416,
+      594
     ]
   },
   "5.png": {
@@ -39,6 +74,13 @@
     "foot_anchor": [
       0.514,
       0.961
+    ],
+    "corpse_width": 96,
+    "corpse_visible_region": [
+      98,
+      201,
+      1384,
+      654
     ]
   },
   "6.png": {
@@ -46,6 +88,13 @@
     "foot_anchor": [
       0.389,
       0.95
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      63,
+      241,
+      1438,
+      624
     ]
   },
   "7.png": {
@@ -53,6 +102,13 @@
     "foot_anchor": [
       0.508,
       0.941
+    ],
+    "corpse_width": 90,
+    "corpse_visible_region": [
+      90,
+      236,
+      1384,
+      631
     ]
   },
   "gt_officer.png": {
@@ -60,6 +116,13 @@
     "foot_anchor": [
       0.4,
       0.985
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      49,
+      272,
+      1594,
+      512
     ]
   },
   "gt_shield_guard.png": {
@@ -67,6 +130,13 @@
     "foot_anchor": [
       0.47,
       0.985
+    ],
+    "corpse_width": 90,
+    "corpse_visible_region": [
+      36,
+      171,
+      1462,
+      756
     ]
   },
   "gt_sniper.png": {
@@ -74,6 +144,13 @@
     "foot_anchor": [
       0.43,
       0.986
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      61,
+      251,
+      1500,
+      552
     ]
   },
   "gt_medic.png": {
@@ -81,6 +158,13 @@
     "foot_anchor": [
       0.48,
       0.987
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      77,
+      173,
+      1446,
+      703
     ]
   },
   "gt_heavy_gunner.png": {
@@ -88,6 +172,13 @@
     "foot_anchor": [
       0.4,
       0.984
+    ],
+    "corpse_width": 90,
+    "corpse_visible_region": [
+      36,
+      173,
+      1484,
+      694
     ]
   },
   "gt_engineer.png": {
@@ -95,6 +186,13 @@
     "foot_anchor": [
       0.47,
       0.987
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      67,
+      218,
+      1453,
+      657
     ]
   },
   "gt_mystic.png": {
@@ -102,6 +200,13 @@
     "foot_anchor": [
       0.46,
       0.987
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      16,
+      120,
+      1503,
+      837
     ]
   },
   "gt_small_stalker.png": {
@@ -109,6 +214,13 @@
     "foot_anchor": [
       0.54,
       0.987
+    ],
+    "corpse_width": 76,
+    "corpse_visible_region": [
+      22,
+      258,
+      1492,
+      595
     ]
   },
   "gt_large_mantis.png": {
@@ -116,6 +228,13 @@
     "foot_anchor": [
       0.54,
       0.987
+    ],
+    "corpse_width": 96,
+    "corpse_visible_region": [
+      12,
+      197,
+      1519,
+      749
     ]
   },
   "gt_spore_walker.png": {
@@ -123,6 +242,13 @@
     "foot_anchor": [
       0.5,
       0.987
+    ],
+    "corpse_width": 76,
+    "corpse_visible_region": [
+      23,
+      223,
+      1500,
+      679
     ]
   },
   "gt_alien_rifleman.png": {
@@ -130,6 +256,13 @@
     "foot_anchor": [
       0.64,
       0.987
+    ],
+    "corpse_width": 82,
+    "corpse_visible_region": [
+      37,
+      262,
+      1452,
+      574
     ]
   },
   "gt_gun_walker.png": {
@@ -137,6 +270,13 @@
     "foot_anchor": [
       0.68,
       0.984
+    ],
+    "corpse_width": 86,
+    "corpse_visible_region": [
+      18,
+      171,
+      1500,
+      692
     ]
   }
 }
