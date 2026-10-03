@@ -1,0 +1,17 @@
+{
+	"abilities": [
+		"core:grenade"
+	],
+	"attack_range": 6,
+	"attack_type": "ranged",
+	"damage": 2,
+	"hp": 10,
+	"id": "custom_units:u_7764a17875745a2ec2f6fa1e405b2771",
+	"image": "gt_gun_walker.png",
+	"movement": 3,
+	"name": "Ржавая пушка",
+	"passives": [
+		"core:attack_training"
+	],
+	"schema_version": 1
+}

@@ -1,0 +1,52 @@
+class_name EditorCommandHistory
+extends RefCounted
+
+
+signal changed
+
+const MAX_UNDO_COMMANDS := 100
+
+var _undo_stack: Array[EditCommand] = []
+var _redo_stack: Array[EditCommand] = []
+
+
+func execute(command: EditCommand, document: BattleDocument) -> bool:
+	if command == null or not command.apply(document):
+		return false
+
+	_undo_stack.append(command)
+	if _undo_stack.size() > MAX_UNDO_COMMANDS:
+		_undo_stack.pop_front()
+	_redo_stack.clear()
+	changed.emit()
+	return true
+
+
+func undo(document: BattleDocument) -> bool:
+	if _undo_stack.is_empty():
+		return false
+
+	var command: EditCommand = _undo_stack.pop_back()
+
+	if not command.revert(document):
+		_undo_stack.append(command)
+		return false
+
+	_redo_stack.append(command)
+	changed.emit()
+	return true
+
+
+func redo(document: BattleDocument) -> bool:
+	if _redo_stack.is_empty():
+		return false
+
+	var command: EditCommand = _redo_stack.pop_back()
+
+	if not command.apply(document):
+		_redo_stack.append(command)
+		return false
+
+	_undo_stack.append(command)
+	changed.emit()
+	return true

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="GameContentSettings" format=3]
+
+[ext_resource type="Script" path="res://features/content/game_content_settings.gd" id="1"]
+[ext_resource type="Script" path="res://features/content/content_package.gd" id="2"]
+[ext_resource type="Resource" path="res://content/packages/core/core_package.tres" id="3"]
+[ext_resource type="Resource" path="res://content/packages/ember_pack/ember_pack.tres" id="4"]
+[ext_resource type="Resource" path="res://content/packages/plateau/plateau_package.tres" id="5"]
+
+[resource]
+script = ExtResource("1")
+content_packages = Array[ExtResource("2")]([ExtResource("3"), ExtResource("4"), ExtResource("5")])
+battle_document_path = "res://content/authored/battles/first_custom_battle.json"

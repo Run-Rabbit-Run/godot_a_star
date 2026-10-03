@@ -2,7 +2,7 @@
 
 ## Назначение
 
-Это Godot 4.7-проект с архитектурой модульного монолита. Ядро боя не зависит от сцены; графическая игра, пользовательский редактор, кампания и headless-симуляция используют общие правила и `ContentSnapshot`.
+Это Godot 4.7-проект с архитектурой модульного монолита. Ядро боя не зависит от сцены; графическая игра, инструменты разработки, кампания и headless-симуляция используют общие правила и `ContentSnapshot`.
 
 Внешняя Obsidian-папка `Архитектура/` не является источником истины. Каноническая архитектура хранится в этом репозитории.
 
@@ -15,7 +15,7 @@
 | Общая граница или новая подсистема | `docs/architecture/README.md` |
 | Бой, карта, юниты, способности, HUD/VFX | `docs/architecture/BATTLE.md` |
 | Контент, packages, IDs, зависимости, моды | `docs/architecture/CONTENT_AND_MODS.md` |
-| Пользовательский редактор | `docs/architecture/EDITOR.md` |
+| Инструменты разработки | `docs/architecture/EDITOR.md` |
 | Автобой, headless, отчёты, скорость/skip | `docs/architecture/SIMULATION_AND_PLAYBACK.md` |
 | Проверка «есть ли это уже» и технический долг | `docs/architecture/STATUS.md` |
 | Краткая памятка для владельца проекта | `ARCHITECTURE.md` |
@@ -24,12 +24,17 @@
 
 ## Точки входа
 
-- `debug_battle_launcher.tscn` — графический debug-бой из content packages.
+- `features/game/game.tscn` — основной запуск сохранённого боя из `content/game_content.tres`.
+- `debug_battle_launcher.tscn` — отдельный legacy debug-бой из штатных packages.
 - `features/battle/battle_screen.tscn` — адаптер одного графического боя.
-- `features/editor/battle_editor.tscn` — пользовательский редактор карты и расстановки.
-- `battle_ui_editor.tscn` — пользовательский редактор сохранённых вариантов UI боя; руководство `docs/BATTLE_UI_EDITOR.md`.
+- `tools/battles/battle_editor.tscn` — редактор карты и расстановки.
+- `tools/units/unit_editor.tscn` — редактор юнитов проекта.
+- `tools/battle_ui/battle_ui_editor.tscn` — редактор UI боя.
+- Руководства всех инструментов: `docs/tools/README.md`.
 - `features/campaign/debug_campaign_simulation_launcher.tscn` — headless-прогон кампании.
-- `project.godot` — конфигурация; текущая main scene может быть отладочной.
+- `project.godot` — конфигурация; main scene — `features/game/game.tscn`.
+- `features/content/battles/`, `features/content/units/` — общие форматы и загрузка авторского контента; игра не зависит от `tools/`.
+- `export_presets.cfg` — игровая сборка без инструментов и тестовых сценариев.
 
 ## Направление зависимостей
 
@@ -56,7 +61,7 @@ ContentPackage → ContentLoader → ContentSnapshot
 - `BackgroundLayer` — только визуальная подложка. Существование клетки задают `BattleMapDefinition` и `HexGrid`.
 - Отсутствующий гекс не равен существующему непроходимому гексу.
 - Скорость воспроизведения никогда не меняет правила, RNG, число действий и `BattleResult`.
-- Редактор меняет `EditorDocument` через `EditCommand`; UI-ноды не являются источником истины.
+- Редактор меняет `BattleDocument` через `EditCommand`; UI-ноды не являются источником истины.
 - Пробный бой использует snapshot документа и не записывает runtime-состояние обратно.
 - Автоматические циклы имеют лимит, отмену и отдельный статус ошибки/ограничения.
 
@@ -74,7 +79,7 @@ ContentPackage → ContentLoader → ContentSnapshot
 | Эффект способности | `features/abilities/`, без presentation |
 | Загрузка и валидация пакетов | `features/content/` |
 | Данные базового контента | `content/` |
-| Редактор | `features/editor/` |
+| Инструменты разработки | `tools/` |
 | Headless-прогон | `features/simulation/` |
 | Переходы кампании | `features/campaign/` |
 
@@ -125,3 +130,8 @@ git diff -- .
 ```
 
 Не добавлять и не запускать автоматические тесты без отдельного разрешения пользователя. Статические проверки не подтверждают runtime, интерактивный ввод, анимацию и визуальную читаемость; границы проверки указывать в отчёте.
+
+
+## Обязательный размер ассетов существ
+
+При генерации, замене и интеграции любого существа соблюдать `docs/art/UNIT_ASSETS.md`: масштаб по видимой фигуре относительно гекса, размерный класс, опора у ног, ограничение ширины и обязательный показ в настоящем поле рядом с эталонным гуманоидом. Размер PNG не является критерием правильного размера юнита. Проверить профиль и рендер до объявления ассета готовым; правило относится также к изображениям с длинным оружием и большим прозрачным полем.

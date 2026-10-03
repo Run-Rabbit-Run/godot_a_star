@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="a_star"
-run/main_scene="res://debug_battle_launcher.tscn"
+run/main_scene="res://features/game/game.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://features/battle/tiles/hex_mire.svg"
 

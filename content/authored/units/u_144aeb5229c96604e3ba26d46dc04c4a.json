@@ -1,0 +1,15 @@
+{
+	"abilities": [],
+	"attack_range": 6,
+	"attack_type": "ranged",
+	"damage": 3,
+	"hp": 6,
+	"id": "custom_units:u_144aeb5229c96604e3ba26d46dc04c4a",
+	"image": "1.png",
+	"movement": 1,
+	"name": "Снайпер",
+	"passives": [
+		"core:attack_training"
+	],
+	"schema_version": 1
+}

@@ -1,0 +1,13 @@
+{
+	"abilities": [],
+	"attack_range": 6,
+	"attack_type": "melee",
+	"damage": 4,
+	"hp": 14,
+	"id": "custom_units:u_407a3c694d3db1b95aafc5b91bf723b6",
+	"image": "gt_large_mantis.png",
+	"movement": 3,
+	"name": "Чудищерог",
+	"passives": [],
+	"schema_version": 1
+}

@@ -1,0 +1,13 @@
+{
+	"abilities": [],
+	"attack_range": 3,
+	"attack_type": "ranged",
+	"damage": 4,
+	"hp": 10,
+	"id": "custom_units:u_c89e4864caad2ba094383ca09f5a2b7c",
+	"image": "gt_mystic.png",
+	"movement": 3,
+	"name": "Адептус",
+	"passives": [],
+	"schema_version": 1
+}

@@ -71,7 +71,7 @@ func setup(
 
 		if longest_side > 0.0:
 			_sprite.scale = Vector2.ONE * (
-				presentation.actor_height / texture_size.y
+				presentation.texture_scale()
 			)
 			# The actor origin is the hex center; align the painted feet to it.
 			_sprite.offset = (
@@ -79,7 +79,7 @@ func setup(
 			) * texture_size
 
 	_combat_role_label.visible = false
-	var figure_height := presentation.actor_height if presentation != null else CUSTOM_TEXTURE_SIZE
+	var figure_height := presentation.height_above_feet() if presentation != null else CUSTOM_TEXTURE_SIZE
 	_health_label.position = Vector2(-36, -figure_height - 29)
 	_health_label.size = Vector2(72, 23)
 	_combat_role_label.text = "◎"
@@ -202,5 +202,5 @@ func get_combat_sprite() -> Sprite2D:
 
 
 func get_combat_anchor(height_ratio: float = 0.52) -> Vector2:
-	var height := _sprite.texture.get_height() * _sprite.scale.y if _sprite.texture != null else CUSTOM_TEXTURE_SIZE
+	var height := _presentation.height_above_feet() if _presentation != null else CUSTOM_TEXTURE_SIZE
 	return to_global(Vector2(0, -height * height_ratio))

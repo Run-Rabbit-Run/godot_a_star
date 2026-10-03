@@ -17,7 +17,7 @@ content/ → ContentSnapshot → BattleStartRequest
 - [Общая архитектура](docs/architecture/README.md) — общая схема и обязательные принципы.
 - [Бой](docs/architecture/BATTLE.md) — бой, карта, юниты, способности и визуал.
 - [Контент и моды](docs/architecture/CONTENT_AND_MODS.md) — контент и моды.
-- [Редактор](docs/architecture/EDITOR.md) — пользовательский редактор.
+- [Редактор](docs/architecture/EDITOR.md) — инструменты разработки.
 - [Симуляция и скорость](docs/architecture/SIMULATION_AND_PLAYBACK.md) — автобой и скорость.
 - [Текущее состояние](docs/architecture/STATUS.md) — что уже сделано и чего пока нет.
 
@@ -25,7 +25,9 @@ content/ → ContentSnapshot → BattleStartRequest
 
 ### Корень проекта
 
-- `content/` — игровые данные в `.tres`: юниты, карты, способности, сценарии и пакеты контента.
+- `content/` — игровые данные: штатные `.tres` пакеты, авторские JSON/изображения в `authored/` и конфигурация старта `game_content.tres`.
+- `tools/` — самостоятельные инструменты разработки, исключённые из сборки. Руководства: [docs/tools/README.md](docs/tools/README.md).
+- `features/game/game.tscn` — F5: загрузка выбранного документа боя и запуск общего BattleScreen.
 - `features/` — код игровых систем.
 - `addons/` — сторонние плагины Godot. Игровую логику сюда не класть.
 - `debug_battle_launcher.tscn` — быстрый запуск тестового боя.
@@ -51,7 +53,7 @@ content/ → ContentSnapshot → BattleStartRequest
 - `features/abilities/` — применение эффектов способностей через правила боя.
 - `features/content/` — загрузка, сортировка и проверка содержимого `content/`.
 - `features/campaign/` — прогресс кампании и переходы между сценариями.
-- `features/editor/` — редактор карты и расстановки, сохранение и undo/redo.
+- `tools/` — редакторы юнитов, поля и HUD; исключены из игровой сборки.
 - `features/simulation/` — запуск боя без графики для автобоя и массовых прогонов.
 
 ## Куда класть новую функцию
@@ -66,7 +68,7 @@ content/ → ContentSnapshot → BattleStartRequest
 | Новые характеристики юнита | `UnitDefinition`; текущее здоровье и позиция — только runtime-состояние |
 | Новая способность | `features/abilities/` и её данные в `content/` |
 | Загрузка или проверка игровых данных | `features/content/` |
-| Функция редактора | `features/editor/` |
+| Функция редактора | `tools/battles/` |
 | Правило кампании | `features/campaign/` |
 
 ## Пять правил, которые нельзя нарушать

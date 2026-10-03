@@ -1,0 +1,13 @@
+{
+	"abilities": [],
+	"attack_range": 3,
+	"attack_type": "melee",
+	"damage": 3,
+	"hp": 10,
+	"id": "custom_units:u_3b8546509eb65fc43c9e459eb56095ad",
+	"image": "gt_spore_walker.png",
+	"movement": 5,
+	"name": "Слизень",
+	"passives": [],
+	"schema_version": 1
+}

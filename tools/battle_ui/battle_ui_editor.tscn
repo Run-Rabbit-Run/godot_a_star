@@ -1,0 +1,5 @@
+[gd_scene format=3 uid="uid://clfqfsowauxs1"]
+
+[ext_resource type="PackedScene" uid="uid://bi0d1t4f72p45" path="res://tools/battle_ui/workbench.tscn" id="1"]
+
+[node name="BattleUIEditor" unique_id=6150133 instance=ExtResource("1")]

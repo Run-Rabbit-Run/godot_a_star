@@ -1,0 +1,13 @@
+{
+	"abilities": [],
+	"attack_range": 4,
+	"attack_type": "ranged",
+	"damage": 2,
+	"hp": 10,
+	"id": "custom_units:u_a122d84b0e6a6b4f10693069111c96e9",
+	"image": "gt_engineer.png",
+	"movement": 4,
+	"name": "Тесла",
+	"passives": [],
+	"schema_version": 1
+}

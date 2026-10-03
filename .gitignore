@@ -4,3 +4,8 @@
 
 # Godot GDExtension hot-reload copies
 addons/godot-git-plugin/windows/~*
+
+# Local build artifacts and interrupted content writes
+build/
+content/authored/**/*.tmp
+content/authored/**/*.bak

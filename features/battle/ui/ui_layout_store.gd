@@ -2,8 +2,7 @@ class_name UILayoutStore
 extends RefCounted
 ## Data-only JSON storage and local presentation preference.
 
-const DIRECTORY := "user://battle_ui"
-const PREFERENCE := "user://battle_ui/selected.cfg"
+const DIRECTORY := "res://content/authored/ui"
 const NUMBER_FIELDS := ["font_size", "border_width"]
 const COLOR_FIELDS := ["font_color", "background", "border_color", "tint"]
 const TEXT_FIELDS := ["text", "asset"]
@@ -107,24 +106,19 @@ static func save_document(path: String, document: UILayoutDocument) -> String:
 
 
 static func selected_path() -> String:
-	var config := ConfigFile.new()
-	if config.load(PREFERENCE) != OK:
-		return ""
-	return str(config.get_value("ui", "path", ""))
+	var settings := GameContentSettings.read()
+	return settings.ui_profile_path if settings != null else ""
 
 
 static func select_profile(path: String) -> Error:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(DIRECTORY))
-	var config := ConfigFile.new()
-	config.set_value("ui", "path", path)
-	return config.save(PREFERENCE)
+	return GameContentSettings.select_ui(path)
 
 
 static func texture(path: String) -> Texture2D:
 	if path.is_empty():
 		return null
-	if path.begins_with("res://"):
-		return load(path) as Texture2D if ResourceLoader.exists(path, "Texture2D") else null
+	if path.begins_with("res://") and ResourceLoader.exists(path, "Texture2D"):
+		return load(path) as Texture2D
 	var image := Image.load_from_file(ProjectSettings.globalize_path(path))
 	return null if image == null or image.is_empty() else ImageTexture.create_from_image(image)
 

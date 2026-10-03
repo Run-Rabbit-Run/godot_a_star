@@ -1,0 +1,142 @@
+{
+  "0.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.386,
+      0.959
+    ]
+  },
+  "1.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.388,
+      0.959
+    ]
+  },
+  "2.png": {
+    "height": 90,
+    "foot_anchor": [
+      0.395,
+      0.958
+    ]
+  },
+  "3.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.575,
+      0.932
+    ]
+  },
+  "4.png": {
+    "height": 76,
+    "foot_anchor": [
+      0.536,
+      0.91
+    ]
+  },
+  "5.png": {
+    "height": 96,
+    "foot_anchor": [
+      0.514,
+      0.961
+    ]
+  },
+  "6.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.389,
+      0.95
+    ]
+  },
+  "7.png": {
+    "height": 90,
+    "foot_anchor": [
+      0.508,
+      0.941
+    ]
+  },
+  "gt_officer.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.4,
+      0.985
+    ]
+  },
+  "gt_shield_guard.png": {
+    "height": 90,
+    "foot_anchor": [
+      0.47,
+      0.985
+    ]
+  },
+  "gt_sniper.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.43,
+      0.986
+    ]
+  },
+  "gt_medic.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.48,
+      0.987
+    ]
+  },
+  "gt_heavy_gunner.png": {
+    "height": 90,
+    "foot_anchor": [
+      0.4,
+      0.984
+    ]
+  },
+  "gt_engineer.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.47,
+      0.987
+    ]
+  },
+  "gt_mystic.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.46,
+      0.987
+    ]
+  },
+  "gt_small_stalker.png": {
+    "height": 76,
+    "foot_anchor": [
+      0.54,
+      0.987
+    ]
+  },
+  "gt_large_mantis.png": {
+    "height": 96,
+    "foot_anchor": [
+      0.54,
+      0.987
+    ]
+  },
+  "gt_spore_walker.png": {
+    "height": 76,
+    "foot_anchor": [
+      0.5,
+      0.987
+    ]
+  },
+  "gt_alien_rifleman.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.64,
+      0.987
+    ]
+  },
+  "gt_gun_walker.png": {
+    "height": 86,
+    "foot_anchor": [
+      0.68,
+      0.984
+    ]
+  }
+}

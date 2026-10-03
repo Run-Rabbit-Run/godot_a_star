@@ -1,0 +1,15 @@
+{
+	"abilities": [
+		"core:grenade"
+	],
+	"attack_range": 3,
+	"attack_type": "melee",
+	"damage": 4,
+	"hp": 15,
+	"id": "custom_units:u_8d955938e2be2bda9e4e5ea50d42741a",
+	"image": "gt_heavy_gunner.png",
+	"movement": 4,
+	"name": "Ближник с пулемётом",
+	"passives": [],
+	"schema_version": 1
+}
