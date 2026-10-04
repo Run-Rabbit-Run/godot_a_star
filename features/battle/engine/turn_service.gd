@@ -39,6 +39,12 @@ func get_participant_count() -> int:
 	return _turn_order.size()
 
 
+## New participants enter at the end; existing turn indices stay stable.
+func add_participant(unit_id: StringName) -> void:
+	if not _turn_order.has(unit_id):
+		_turn_order.append(unit_id)
+
+
 func get_turn_order() -> Array[StringName]:
 	var result: Array[StringName] = []
 	result.assign(_turn_order)

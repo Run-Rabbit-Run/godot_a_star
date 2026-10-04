@@ -57,9 +57,11 @@ const EFFECTS := {
 }
 
 static func get_damage_type(id: StringName) -> StringName:
+	if id == &"core:plasma":
+		return &"plasma"
 	if id in [&"core:electricity", &"core:electrified_water"]:
 		return &"electric"
-	if id in [&"core:fire", &"core:plasma", &"core:burning_oil"]:
+	if id in [&"core:fire", &"core:burning_oil"]:
 		return &"fire"
 	return &"acid"
 

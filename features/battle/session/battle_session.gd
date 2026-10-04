@@ -156,6 +156,12 @@ func step(command: BattleCommand) -> BattleResolution:
 		)
 
 	var resolution := _engine.execute(command)
+	for event: BattleEvent in resolution.events:
+		if event is UnitSummonedEvent:
+			_unit_side_ids[event.unit.unit_id] = _unit_side_ids.get(event.summoner_id, StringName())
+			var source := _get_command_source(event.summoner_id)
+			if source != null:
+				_unit_command_sources[event.unit.unit_id] = source
 
 	if resolution.battle_result != null:
 		_battle_result = resolution.battle_result

@@ -102,6 +102,9 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 					% [unit_definition.id, ability_id]
 				)
 
+			var ability_error := ability.validate()
+			if not ability_error.is_empty():
+				return BattleSetupCreationResult.failure("%s: %s" % [ability.id, ability_error])
 			abilities.append(ability)
 
 		var side := sides_by_id[placement.side_id]
@@ -160,6 +163,7 @@ static func _validate_unit_definition(definition: UnitDefinition) -> String:
 	if definition.base_stats == null:
 		return "UnitDefinition base stats are not assigned: %s." % definition.id
 
-	if definition.base_stats.armor_levels < 0 or definition.base_stats.armor_levels > 9999:
-		return "Armor levels must be between 0 and 9999: %s." % definition.id
+	var stats_error := definition.base_stats.validate()
+	if not stats_error.is_empty():
+		return "%s: %s" % [definition.id, stats_error]
 	return PassiveAbilityCatalog.validate(definition.passive_ability_ids)

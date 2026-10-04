@@ -12,6 +12,7 @@ static func create_default() -> ModAPI:
 	api.register_effect_handler(&"core:damage", DamageEffectHandler.new())
 	api.register_effect_handler(&"core:hex_state", HexStateEffectHandler.new())
 	api.register_effect_handler(&"core:unit_status", UnitStatusEffectHandler.new())
+	api.register_effect_handler(&"core:summon", SummonEffectHandler.new())
 	return api
 
 

@@ -88,6 +88,31 @@ func _choose_ability_command(
 			ability_id
 		)
 		var radius: int = active.ability_area_radii.get(ability_id, 0)
+		var mode: int = active.ability_target_modes.get(ability_id, AbilityDefinition.TargetMode.AUTO)
+		if mode == AbilityDefinition.TargetMode.EMPTY_HEX:
+			if not target_hexes.is_empty():
+				return UseAbilityCommand.at_hex(active.unit_id, target_hexes[0], ability_id)
+			continue
+		if mode == AbilityDefinition.TargetMode.LINE:
+			var ability := AbilityDefinition.new()
+			ability.target_mode = AbilityDefinition.TargetMode.LINE
+			for center: Vector2i in target_hexes:
+				var cells := AbilityExecutor.get_affected_hexes(session.get_hex_grid(), active.hex, ability, center)
+				var hits := 0
+				var friendly := false
+				for ally: UnitSnapshot in allies:
+					friendly = friendly or cells.has(ally.hex)
+				for enemy: UnitSnapshot in opponents:
+					if cells.has(enemy.hex):
+						hits += 1
+				if hits > 0 and not friendly:
+					return UseAbilityCommand.at_hex(active.unit_id, center, ability_id)
+			continue
+		if not active.ability_hex_targets.get(ability_id, false):
+			for opponent: UnitSnapshot in opponents:
+				if target_hexes.has(opponent.hex) and (radius == 0 or _count_units_in_radius(opponent.hex, radius, allies) == 0):
+					return UseAbilityCommand.new(active.unit_id, opponent.unit_id, ability_id)
+			continue
 
 		if radius <= 0:
 			for opponent: UnitSnapshot in opponents:

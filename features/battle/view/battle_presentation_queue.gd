@@ -5,6 +5,7 @@ extends Node
 var settings := BattlePlaybackSettings.new()
 var _active_tweens: Array[Tween] = []
 var _content_snapshot: ContentSnapshot
+var _unit_views: BattleUnitViewRegistry
 
 
 func _ready() -> void:
@@ -12,8 +13,9 @@ func _ready() -> void:
 
 
 ## Without a snapshot every ability uses the fallback visuals.
-func configure(content_snapshot: ContentSnapshot) -> void:
+func configure(content_snapshot: ContentSnapshot, unit_views: BattleUnitViewRegistry = null) -> void:
 	_content_snapshot = content_snapshot
+	_unit_views = unit_views
 
 
 func set_speed(value: float) -> bool:
@@ -54,6 +56,8 @@ func _present_event(
 	map_view: BattleMapView,
 	hud: BattleHUD
 ) -> bool:
+	if event is UnitSummonedEvent:
+		return _unit_views != null and _unit_views.create_summoned(event as UnitSummonedEvent)
 	if event is UnitStatusChangedEvent:
 		var status_event := event as UnitStatusChangedEvent
 		var actor := unit_actors.get(status_event.unit_id) as UnitActor
@@ -198,6 +202,47 @@ func _show_damage_health(
 		maximum_health = target_definition.base_stats.max_health
 
 	actor.show_health(event.target_health_remaining, maximum_health)
+	_show_damage_number(event, actor)
+
+
+func _show_damage_number(event: UnitDamagedEvent, actor: UnitActor) -> void:
+	var badge := PanelContainer.new()
+	badge.name = "DamageNumber"
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.z_index = 100
+	var background := DamageTypeColors.get_color(event.damage_type)
+	background.a = 0.92
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.set_corner_radius_all(5)
+	style.set_border_width_all(1)
+	style.border_color = Color(0.04, 0.05, 0.07, 0.65)
+	style.content_margin_left = 4.0
+	style.content_margin_right = 4.0
+	style.content_margin_top = 3.0
+	style.content_margin_bottom = 3.0
+	badge.add_theme_stylebox_override("panel", style)
+	var number := Label.new()
+	number.name = "Number"
+	number.text = str(event.damage)
+	number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number.add_theme_font_size_override("font_size", 12)
+	number.add_theme_color_override("font_color", Color("10141c"))
+	badge.add_child(number)
+	actor.get_parent().add_child(badge)
+	# Keep the badge square even for larger damage values.
+	var minimum := badge.get_combined_minimum_size()
+	var side := maxf(22.0, maxf(minimum.x, minimum.y))
+	badge.custom_minimum_size = Vector2.ONE * side
+	badge.size = Vector2.ONE * side
+	badge.global_position = actor.get_combat_anchor() - Vector2(side * 0.5, 42.0)
+	var tween := badge.create_tween().set_parallel(true)
+	tween.tween_property(badge, "position:y", badge.position.y - 55.0, 0.85)
+	tween.tween_property(badge, "modulate:a", 0.0, 0.45).set_delay(0.4)
+	_track_tween(tween)
+	tween.finished.connect(badge.queue_free)
 
 
 func _present_ability(
@@ -235,6 +280,9 @@ func _present_area_ability(
 		return false
 
 	var presentation := _get_ability_presentation(event.ability_id, true)
+	var ability := _content_snapshot.get_ability_definition(event.ability_id) if _content_snapshot != null else null
+	if ability != null and ability.target_mode == AbilityDefinition.TargetMode.LINE:
+		return await _present_beam(user, event.affected_hexes, map_view, presentation.impact_color)
 	var finish := map_view.to_local(
 		map_view.hex_to_global_position(event.target_hex)
 	)
@@ -280,6 +328,29 @@ func _present_area_ability(
 	await impact_tween.finished
 	core.queue_free()
 	shockwave.queue_free()
+	map_view.clear_ability_area()
+	return true
+
+
+func _present_beam(user: UnitActor, cells: Array[Vector2i], map_view: BattleMapView, color: Color) -> bool:
+	if cells.is_empty():
+		return true
+	var beam := Line2D.new()
+	beam.name = "PiercingBeam"
+	beam.width = 9.0
+	beam.default_color = color
+	beam.antialiased = true
+	beam.z_index = 60
+	beam.add_point(map_view.to_local(user.get_combat_anchor()))
+	beam.add_point(map_view.to_local(map_view.hex_to_global_position(cells.back())) - Vector2(0, 25))
+	map_view.add_child(beam)
+	map_view.show_ability_area(cells)
+	var tween := beam.create_tween()
+	tween.tween_property(beam, "width", 2.0, 0.35)
+	tween.parallel().tween_property(beam, "modulate:a", 0.0, 0.35)
+	_track_tween(tween)
+	await tween.finished
+	beam.queue_free()
 	map_view.clear_ability_area()
 	return true
 

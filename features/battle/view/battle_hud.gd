@@ -177,19 +177,28 @@ func show_basic_attack_button(attack_range: int, available: bool) -> void:
 	_refresh_action_button_states()
 
 
-func show_abilities(abilities: Array[AbilityDefinition], available: bool) -> void:
+func show_abilities(abilities: Array[AbilityDefinition], available: bool, cooldowns: Dictionary = {}) -> void:
 	var ability_ids: Array[StringName] = []
+	var valid_abilities: Array[AbilityDefinition] = []
 
 	for ability: AbilityDefinition in abilities:
 		if ability != null:
 			ability_ids.append(ability.id)
+			valid_abilities.append(ability)
 
 	# Rebuild only when the set changes so hover and focus survive ordinary refreshes.
 	if ability_ids != _ability_button_ids:
-		_rebuild_ability_buttons(abilities)
+		_rebuild_ability_buttons(valid_abilities)
 		_ability_button_ids = ability_ids
 
 	_ability_action_available = available
+	for index in range(_ability_buttons.size()):
+		var id := ability_ids[index]
+		var remaining := int(cooldowns.get(id, 0))
+		var button := _ability_buttons[index]
+		button.set_meta("cooldown", remaining)
+		button.text = valid_abilities[index].display_name + (" · КД %d" % remaining if remaining > 0 else "")
+		button.tooltip_text = "%s\nКД: %d собственных ходов. Начальный КД: %d.\nЗавершает ход." % [valid_abilities[index].display_name, valid_abilities[index].cooldown_turns, valid_abilities[index].initial_cooldown_turns]
 	_refresh_action_button_states()
 
 
@@ -209,7 +218,16 @@ func show_combat_stats(damage: int, attack_range: int) -> void:
 	]
 
 
-func show_ability_targeting(display_name: String, area_radius: int) -> void:
+func show_ability_targeting(display_name: String, area_radius: int, mode: int = AbilityDefinition.TargetMode.AUTO) -> void:
+	if mode == AbilityDefinition.TargetMode.LINE:
+		_action_label.text = "ВЫБЕРИТЕ НАПРАВЛЕНИЕ ЛУЧА: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.EMPTY_HEX:
+		_action_label.text = "ВЫБЕРИТЕ СВОБОДНЫЙ ГЕКС: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.ENEMY:
+		_action_label.text = "ВЫБЕРИТЕ ПРОТИВНИКА: %s" % display_name.to_upper()
+		return
 	_action_label.text = (
 		"ВЫБЕРИТЕ ЦЕНТР: %s · РАДИУС %d" % [display_name.to_upper(), area_radius]
 		if area_radius > 0 else "ВЫБЕРИТЕ ПРОТИВНИКА: %s" % display_name.to_upper()
@@ -405,6 +423,7 @@ func _refresh_action_button_states() -> void:
 		button.disabled = (
 			not _interaction_enabled
 			or not _ability_action_available
+			or int(button.get_meta("cooldown", 0)) > 0
 		)
 
 

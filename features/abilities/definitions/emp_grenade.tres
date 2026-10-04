@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="effect_0"]
+script = ExtResource("effect")
+effect_type_id = &"core:damage"
+parameters = {
+"amount": 3,
+"damage_type": "electric",
+}
+
+[sub_resource type="Resource" id="effect_1"]
+script = ExtResource("effect")
+effect_type_id = &"core:unit_status"
+parameters = {
+"status_id": "core:electrified",
+"levels": 2,
+}
+
+[sub_resource type="Resource" id="effect_2"]
+script = ExtResource("effect")
+effect_type_id = &"core:hex_state"
+parameters = {
+"state_id": "core:electricity",
+"center_only": true,
+}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:emp_grenade"
+display_name = "ЭМИ граната"
+presentation_id = &"core:electric_ability_actor"
+range = 3
+area_radius = 1
+target_mode = 2
+uses_attack_range = false
+cooldown_turns = 1
+effects = Array[ExtResource("effect")]([SubResource("effect_2"), SubResource("effect_0"), SubResource("effect_1")])

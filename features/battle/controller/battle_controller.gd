@@ -148,7 +148,7 @@ func _initialize_battle() -> void:
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
 	_hud.clear_action()
 	_hud.show_objective(_battle_session.get_objective_description())
-	_presentation_queue.configure(_start_request.content_snapshot)
+	_presentation_queue.configure(_start_request.content_snapshot, _unit_views)
 	_set_presenting(true)
 	var initial_resolution := _battle_session.get_initial_resolution()
 	# Actors were created after the start effects; replay their damage from the prior health.
@@ -210,7 +210,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		if not _ability_target_hexes.has(axial_cell):
 			return
 
-		if active.ability_area_radii.get(_selected_ability_id, 0) > 0:
+		if active.ability_hex_targets.get(_selected_ability_id, false):
 			command = UseAbilityCommand.at_hex(
 				active_unit_id,
 				axial_cell,
@@ -286,12 +286,13 @@ func _on_hex_hovered(axial_cell: Vector2i) -> void:
 			0
 		)
 
-		if radius <= 0:
+		var ability := _start_request.content_snapshot.get_ability_definition(_selected_ability_id)
+		if radius <= 0 and not ability.targets_hex():
 			_map_view.clear_ability_area()
 			_show_hovered_target(axial_cell)
 			return
 
-		var area := _hex_grid.get_cells_in_range(axial_cell, radius)
+		var area := AbilityExecutor.get_affected_hexes(_hex_grid, active.hex, ability, axial_cell)
 		_map_view.show_ability_area(area)
 		_hud.show_area_target(area.size())
 		return
@@ -397,6 +398,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		or active.health.is_defeated()
 		or not active.turn.main_action_available
 		or not active.ability_ids.has(ability_id)
+		or active.ability_cooldowns.get(ability_id, 0) > 0
 	):
 		return
 
@@ -415,7 +417,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 	var ability := _start_request.content_snapshot.get_ability_definition(
 		ability_id
 	)
-	_hud.show_ability_targeting(ability.display_name, ability.area_radius)
+	_hud.show_ability_targeting(ability.display_name, ability.area_radius, ability.target_mode)
 
 
 func _on_movement_requested() -> void:
@@ -686,7 +688,8 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 
 	_hud.show_abilities(
 		abilities,
-		state.turn.main_action_available and not state.health.is_defeated()
+		state.turn.main_action_available and not state.health.is_defeated(),
+		state.ability_cooldowns
 	)
 
 	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition

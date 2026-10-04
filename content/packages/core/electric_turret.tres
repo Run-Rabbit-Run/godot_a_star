@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitDefinition" format=3]
+[ext_resource type="Script" path="res://features/battle/units/unit_definition.gd" id="unit"]
+[ext_resource type="Script" path="res://features/battle/units/unit_stats_definition.gd" id="stats"]
+[sub_resource type="Resource" id="stats"]
+script = ExtResource("stats")
+movement_points = 0
+max_health = 3
+basic_attack_damage = 2
+basic_attack_range = 3
+[resource]
+script = ExtResource("unit")
+id = &"core:electric_turret_unit"
+display_name = "Электро турель"
+base_stats = SubResource("stats")
+passive_ability_ids = Array[StringName]([&"core:electric_attack"])
+presentation_id = &"core:electric_turret_actor"

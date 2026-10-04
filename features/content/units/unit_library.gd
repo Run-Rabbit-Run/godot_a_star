@@ -4,7 +4,7 @@ extends RefCounted
 const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
-const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту"}
+const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту", "core:electromagnetic_shot": "Электромагнитный выстрел", "core:emp_grenade": "ЭМИ граната", "core:laser": "Лазер", "core:electric_turret": "Электро турель"}
 
 
 static func ensure_folders() -> String:
@@ -94,7 +94,10 @@ static func validate(data: Dictionary) -> String:
 				return "Неизвестное активное умение: %s" % value
 			if key == "passives" and not PassiveAbilityCatalog.DEFINITIONS.has(StringName(value)):
 				return "Неизвестное пассивное умение: %s" % value
-	return ""
+	var passives: Array[StringName] = []
+	for passive_id: String in data.passives:
+		passives.append(StringName(passive_id))
+	return PassiveAbilityCatalog.validate(passives)
 
 static func read_document(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)

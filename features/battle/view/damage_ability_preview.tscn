@@ -1,0 +1,4 @@
+[gd_scene load_steps=2 format=3]
+[ext_resource type="Script" path="res://features/battle/view/damage_ability_preview.gd" id="1"]
+[node name="DamageAbilityPreview" type="Node"]
+script = ExtResource("1")

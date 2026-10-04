@@ -1,196 +1,111 @@
 class_name AbilityExecutor
 extends RefCounted
 
-
-## UI, AI and execute() share this list, so a highlighted target is always a legal one.
-static func get_target_hexes(
-	state: BattleState,
-	unit_id: StringName,
-	ability_id: StringName
-) -> Array[Vector2i]:
+static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id: StringName) -> Array[Vector2i]:
 	var targets: Array[Vector2i] = []
 	var user := state.unit_states.get(unit_id) as UnitState
-
-	if user == null or user.health.is_defeated():
+	if user == null or user.health.is_defeated() or unit_id != state.turn_service.get_active_unit_id() or not user.turn.main_action_available:
 		return targets
-
-	if (
-		unit_id != state.turn_service.get_active_unit_id()
-		or not user.turn.main_action_available
-	):
-		return targets
-
 	var ability := user.get_ability(ability_id)
-
-	if ability == null:
+	if ability == null or user.ability_cooldowns.get(ability_id, 0) > 0:
 		return targets
-
-	if ability.area_radius > 0:
-		targets = state.hex_grid.get_cells_in_range(user.hex, ability.range)
-	else:
+	if not ability.targets_hex():
 		for target: UnitState in state.unit_states.values():
-			if target.health.is_defeated() or target.faction == user.faction:
-				continue
-
-			if HexGrid.get_distance(user.hex, target.hex) <= ability.range:
+			if not target.health.is_defeated() and target.faction != user.faction and HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user):
 				targets.append(target.hex)
-
+	else:
+		for hex: Vector2i in state.hex_grid.get_cells_in_range(user.hex, ability.get_range(user)):
+			if ability.target_mode == AbilityDefinition.TargetMode.EMPTY_HEX:
+				if not state.hex_grid.is_traversable(hex) or _occupied(state, hex):
+					continue
+			if ability.target_mode == AbilityDefinition.TargetMode.LINE and get_line_direction(user.hex, hex) == Vector2i.ZERO:
+				continue
+			targets.append(hex)
 	targets.sort()
 	return targets
 
+static func get_line_direction(origin: Vector2i, target: Vector2i) -> Vector2i:
+	var delta := target - origin
+	for direction: Vector2i in HexGrid.DIRECTIONS:
+		var distance := HexGrid.get_distance(origin, target)
+		if distance > 0 and direction * distance == delta:
+			return direction
+	return Vector2i.ZERO
 
-static func execute(
-	state: BattleState,
-	command: UseAbilityCommand
-) -> AbilityExecutionResult:
+static func get_affected_hexes(grid: HexGrid, origin: Vector2i, ability: AbilityDefinition, center: Vector2i) -> Array[Vector2i]:
+	if ability.target_mode != AbilityDefinition.TargetMode.LINE:
+		return grid.get_cells_in_range(center, ability.area_radius)
+	var cells: Array[Vector2i] = []
+	var direction := get_line_direction(origin, center)
+	if direction == Vector2i.ZERO:
+		return cells
+	# Holes and impassable cells do not stop a piercing beam.
+	for hex: Vector2i in grid.get_cells():
+		if get_line_direction(origin, hex) == direction:
+			cells.append(hex)
+	cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(origin, a) < HexGrid.get_distance(origin, b))
+	return cells
+
+static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityExecutionResult:
 	if state == null or command == null:
-		return AbilityExecutionResult.rejected(
-			"Ability command and BattleState are required."
-		)
-
+		return AbilityExecutionResult.rejected("Ability command and state are required.")
 	var user := state.unit_states.get(command.user_id) as UnitState
-
 	if user == null:
-		return AbilityExecutionResult.rejected(
-			"Ability user does not exist."
-		)
-
-	if user.unit_id != state.turn_service.get_active_unit_id():
-		return AbilityExecutionResult.rejected(
-			"Only the active unit can use an ability."
-		)
-
-	if user.health.is_defeated():
-		return AbilityExecutionResult.rejected(
-			"Defeated units cannot use abilities."
-		)
-
-	if not user.turn.main_action_available:
-		return AbilityExecutionResult.rejected(
-			"The unit has no main action available."
-		)
-
+		return AbilityExecutionResult.rejected("Ability user does not exist.")
 	var ability := user.get_ability(command.ability_id)
-
 	if ability == null:
-		return AbilityExecutionResult.rejected(
-			"Unit does not have ability %s." % command.ability_id
-		)
-
-	var target: UnitState
-
-	if ability.area_radius > 0:
-		if not command.targets_hex:
-			return AbilityExecutionResult.rejected(
-				"Area ability requires a target hex."
-			)
-	else:
-		if command.targets_hex:
-			return AbilityExecutionResult.rejected(
-				"Single-target ability requires a unit target."
-			)
-
-		target = state.unit_states.get(command.target_id) as UnitState
-
-		if target == null:
-			return AbilityExecutionResult.rejected(
-				"Ability target does not exist."
-			)
-
-		if target.health.is_defeated() or target.faction == user.faction:
-			return AbilityExecutionResult.rejected(
-				"Ability requires a living opposing target."
-			)
-
-	var target_hex := command.target_hex if command.targets_hex else target.hex
-
-	if not get_target_hexes(state, user.unit_id, ability.id).has(target_hex):
-		return AbilityExecutionResult.rejected(
-			"Ability target is not available."
-		)
-
+		return AbilityExecutionResult.rejected("Unit does not have this ability.")
+	var error := ability.validate()
+	if not error.is_empty():
+		return AbilityExecutionResult.rejected(error)
+	if command.targets_hex != ability.targets_hex():
+		return AbilityExecutionResult.rejected("Incorrect ability target kind.")
+	var center := command.target_hex
+	if not command.targets_hex:
+		var target := state.unit_states.get(command.target_id) as UnitState
+		if target == null or target.health.is_defeated() or target.faction == user.faction:
+			return AbilityExecutionResult.rejected("Ability requires a living opposing target.")
+		center = target.hex
+	if not get_target_hexes(state, user.unit_id, ability.id).has(center):
+		return AbilityExecutionResult.rejected("Ability target unavailable or ability on cooldown.")
 	for effect: AbilityEffectDefinition in ability.effects:
+		if effect == null:
+			return AbilityExecutionResult.rejected("Null ability effect.")
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
-
 		if handler == null:
-			return AbilityExecutionResult.rejected(
-				"No effect handler is registered for %s." % effect.effect_type_id
-			)
-
-		var error := handler.validate(effect)
-
+			return AbilityExecutionResult.rejected("Missing ability effect handler.")
+		error = handler.validate(effect)
 		if not error.is_empty():
 			return AbilityExecutionResult.rejected(error)
-
-	if ability.ends_main_action and not user.turn.spend_main_action():
-		return AbilityExecutionResult.rejected(
-			"The ability action cost could not be paid."
-		)
-
-	var context := BattleEffectContext.new(state, ability.id)
-
-	if ability.area_radius > 0:
-		return AbilityExecutionResult.success(
-			_execute_area_ability(
-				state,
-				context,
-				user,
-				ability,
-				command.target_hex
-			)
-		)
-
-	var events: Array[BattleEvent] = [
-		AbilityUsedEvent.new(user.unit_id, target.unit_id, ability.id),
-	]
-
-	for effect: AbilityEffectDefinition in ability.effects:
-		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
-		events.append_array(
-			handler.execute(effect, context, user.unit_id, target.unit_id)
-		)
-
-	return AbilityExecutionResult.success(events)
-
-
-static func _execute_area_ability(
-	state: BattleState,
-	context: BattleEffectContext,
-	user: UnitState,
-	ability: AbilityDefinition,
-	target_hex: Vector2i
-) -> Array[BattleEvent]:
-	var affected_hexes := state.hex_grid.get_cells_in_range(
-		target_hex,
-		ability.area_radius
-	)
-	affected_hexes.sort()
+	if not user.turn.spend_main_action():
+		return AbilityExecutionResult.rejected("Main action unavailable.")
+	user.ability_cooldowns[ability.id] = ability.cooldown_turns + 1
+	var cells := get_affected_hexes(state.hex_grid, user.hex, ability, center)
 	var target_ids: Array[StringName] = []
-
-	for candidate: UnitState in state.unit_states.values():
-		if candidate.health.is_defeated():
-			continue
-
-		if affected_hexes.has(candidate.hex):
-			target_ids.append(candidate.unit_id)
-
+	for target: UnitState in state.unit_states.values():
+		if not target.health.is_defeated() and cells.has(target.hex):
+			target_ids.append(target.unit_id)
 	target_ids.sort()
-	var events: Array[BattleEvent] = [
-		AreaAbilityUsedEvent.new(
-			user.unit_id,
-			ability.id,
-			target_hex,
-			affected_hexes
-		),
-	]
-
-	# Terrain effects run on every cell, including empty cells, once per effect.
+	var events: Array[BattleEvent] = []
+	if ability.targets_hex() or ability.area_radius > 0:
+		events.append(AreaAbilityUsedEvent.new(user.unit_id, ability.id, center, cells))
+	else:
+		events.append(AbilityUsedEvent.new(user.unit_id, command.target_id, ability.id))
+	var context := BattleEffectContext.new(state, ability.id)
+	context.target_hex = center
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
 		if handler.affects_hexes():
-			for hex: Vector2i in affected_hexes:
+			var effect_cells: Array[Vector2i] = [center] if effect.parameters.get("center_only", false) else cells
+			for hex: Vector2i in effect_cells:
 				events.append_array(handler.execute_hex(effect, context, user.unit_id, hex))
 		else:
 			for target_id: StringName in target_ids:
 				events.append_array(handler.execute(effect, context, user.unit_id, target_id))
-	return events
+	return AbilityExecutionResult.success(events)
+
+static func _occupied(state: BattleState, hex: Vector2i) -> bool:
+	for unit: UnitState in state.unit_states.values():
+		if unit.hex == hex and not unit.health.is_defeated():
+			return true
+	return false

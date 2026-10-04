@@ -14,6 +14,10 @@ var ability_ids: Array[StringName] = []
 var ability_ranges: Dictionary[StringName, int] = {}
 var ability_area_radii: Dictionary[StringName, int] = {}
 var statuses: Dictionary[StringName, int] = {}
+var basic_attack_damage_type: StringName
+var ability_cooldowns: Dictionary[StringName, int] = {}
+var ability_hex_targets: Dictionary[StringName, bool] = {}
+var ability_target_modes: Dictionary[StringName, int] = {}
 
 
 func _init(state: UnitState) -> void:
@@ -22,6 +26,8 @@ func _init(state: UnitState) -> void:
 	faction = state.faction
 	hex = state.hex
 	statuses.assign(state.statuses)
+	basic_attack_damage_type = state.basic_attack_damage_type
+	ability_cooldowns.assign(state.ability_cooldowns)
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,
@@ -38,5 +44,7 @@ func _init(state: UnitState) -> void:
 
 	for ability_id: StringName in ability_ids:
 		var ability := state.get_ability(ability_id)
-		ability_ranges[ability_id] = ability.range
+		ability_ranges[ability_id] = ability.get_range(state)
+		ability_hex_targets[ability_id] = ability.targets_hex()
+		ability_target_modes[ability_id] = ability.target_mode
 		ability_area_radii[ability_id] = ability.area_radius

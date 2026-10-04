@@ -12,6 +12,12 @@ var basic_attack_damage: int
 var basic_attack_range: int
 var abilities: Dictionary[StringName, AbilityDefinition] = {}
 var statuses: Dictionary[StringName, int] = {}
+var passive_ability_ids: Array[StringName] = []
+var basic_attack_damage_type: StringName = &"physical"
+var basic_attack_statuses: Dictionary[StringName, int] = {}
+var status_immunities: Array[StringName] = []
+var ability_cooldowns: Dictionary[StringName, int] = {}
+var turns_started := 0
 
 
 func _init(
@@ -37,6 +43,14 @@ func _init(
 	for ability: AbilityDefinition in p_abilities:
 		if ability != null:
 			abilities[ability.id] = ability
+			ability_cooldowns[ability.id] = ability.initial_cooldown_turns
+
+
+func start_cooldown_turn() -> void:
+	if turns_started > 0:
+		for id: StringName in ability_cooldowns:
+			ability_cooldowns[id] = maxi(0, ability_cooldowns[id] - 1)
+	turns_started += 1
 
 
 func get_ability(ability_id: StringName) -> AbilityDefinition:

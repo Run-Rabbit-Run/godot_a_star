@@ -113,6 +113,21 @@ func get_definition(unit_id: StringName) -> UnitDefinition:
 	return definitions.get(unit_id) as UnitDefinition
 
 
+func create_summoned(event: UnitSummonedEvent) -> bool:
+	var presentation := _content_snapshot.get_unit_presentation_definition(event.definition.presentation_id)
+	var actor := UnitActorFactory.create(event.unit, event.definition, presentation, _units_parent)
+	if actor == null:
+		return false
+	var viewport_size := _map_view.get_viewport_rect().size
+	actor.scale = Vector2.ONE * minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0) / _map_view.scale
+	actor.global_position = _map_view.hex_to_global_position(event.unit.hex)
+	actors[event.unit.unit_id] = actor
+	definitions[event.unit.unit_id] = event.definition
+	if presentation != null:
+		presentations[event.unit.unit_id] = presentation
+	return true
+
+
 func get_presentation(unit_id: StringName) -> UnitPresentationDefinition:
 	return presentations.get(unit_id) as UnitPresentationDefinition
 

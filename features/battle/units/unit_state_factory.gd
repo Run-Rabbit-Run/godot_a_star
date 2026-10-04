@@ -20,8 +20,9 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		return null
 
 	var base_stats := spawn.unit_definition.base_stats
-	if base_stats.armor_levels < 0 or base_stats.armor_levels > 9999:
-		push_error("Armor levels must be between 0 and 9999.")
+	var stats_error := base_stats.validate()
+	if not stats_error.is_empty():
+		push_error(stats_error)
 		return null
 	var passive_ids := spawn.unit_definition.passive_ability_ids
 	var passive_error := PassiveAbilityCatalog.validate(passive_ids)
@@ -44,4 +45,13 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 	)
 	if base_stats.armor_levels > 0:
 		state.statuses[&"core:armor"] = base_stats.armor_levels
+	state.passive_ability_ids.assign(passive_ids)
+	for id: StringName in passive_ids:
+		var passive: Dictionary = PassiveAbilityCatalog.DEFINITIONS[id]
+		if passive.has("damage_type"):
+			state.basic_attack_damage_type = passive.damage_type
+		if passive.has("status"):
+			state.basic_attack_statuses[passive.status] = 2
+		if passive.has("immunity"):
+			state.status_immunities.append(passive.immunity)
 	return state

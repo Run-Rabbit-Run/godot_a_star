@@ -1,10 +1,12 @@
 class_name UnitStatusService
 extends RefCounted
 
-const DAMAGE_TYPES := [&"physical", &"fire", &"water", &"electric", &"acid"]
+const DAMAGE_TYPES := DamageType.ALL
 
 static func apply(unit: UnitState, id: StringName, levels: int, events: Array[BattleEvent]) -> void:
 	if unit == null or unit.health.is_defeated() or levels <= 0 or not UnitStatusCatalog.has_status(id):
+		return
+	if unit.status_immunities.has(id):
 		return
 	var before := unit.statuses.duplicate()
 	var old_penalty := UnitStatusCatalog.movement_penalty(before)
@@ -67,7 +69,7 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var plasma := int(unit.statuses.get(&"core:plasma", 0))
 	var electricity := int(unit.statuses.get(&"core:electrified", 0))
 	damage(unit, burning, &"fire", events, &"", &"core:fire")
-	damage(unit, plasma * 2, &"fire", events, &"", &"core:plasma")
+	damage(unit, plasma * 2, &"plasma", events, &"", &"core:plasma")
 	damage(unit, electricity, &"electric", events, &"", &"core:electricity")
 	var before := unit.statuses.duplicate()
 	if unit.statuses.get(&"core:acid", 0) > 0:

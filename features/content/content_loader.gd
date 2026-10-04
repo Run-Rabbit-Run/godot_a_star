@@ -309,6 +309,12 @@ static func _validate_references(
 				)
 
 	for unit: UnitDefinition in snapshot.get_all_unit_definitions():
+		if unit.base_stats == null:
+			result.add_error("%s: missing base stats." % unit.id)
+		else:
+			var stats_error := unit.base_stats.validate()
+			if not stats_error.is_empty():
+				result.add_error("%s: %s" % [unit.id, stats_error])
 		var passive_error := PassiveAbilityCatalog.validate(unit.passive_ability_ids)
 		if not passive_error.is_empty():
 			result.add_error("%s: %s" % [unit.id, passive_error])
@@ -335,6 +341,9 @@ static func _validate_references(
 				)
 	for ability_id: StringName in snapshot.get_ability_definition_ids():
 		var ability := snapshot.get_ability_definition(ability_id)
+		var ability_error := ability.validate()
+		if not ability_error.is_empty():
+			result.add_error("AbilityDefinition %s: %s" % [ability.id, ability_error])
 
 		if ability.effects.is_empty():
 			result.add_error("AbilityDefinition %s has no effects." % ability.id)

@@ -6,6 +6,7 @@ const CONFIG_PATH := "user://battle_ui_settings.cfg"
 var _actors: Dictionary[StringName, UnitActor] = {}
 var _alt_only := true
 var _details_visible := false
+var _actor_count := 0
 
 
 func setup(actors: Dictionary[StringName, UnitActor], alt_check: CheckButton) -> void:
@@ -28,8 +29,9 @@ func _refresh_display_mode(force := false) -> void:
 	var show_details := not _alt_only or (
 		get_window().has_focus() and Input.is_key_pressed(KEY_ALT)
 	)
-	if not force and show_details == _details_visible:
+	if not force and show_details == _details_visible and _actor_count == _actors.size():
 		return
+	_actor_count = _actors.size()
 	_details_visible = show_details
 	for actor: UnitActor in _actors.values():
 		if is_instance_valid(actor):

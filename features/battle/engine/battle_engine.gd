@@ -281,6 +281,7 @@ func _resolve_attack(command: AttackCommand) -> BattleResolution:
 	var result := _execute_attack(command, events)
 	if not result.is_successful:
 		return _rejected("Attack command was rejected.")
+	_finish_action_turn(command.attacker_id, events)
 	return _accepted(events)
 
 
@@ -290,7 +291,17 @@ func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
 	if not result.accepted:
 		return _rejected(result.rejection_reason)
 
+	_finish_action_turn(command.user_id, result.events)
 	return _accepted(result.events)
+
+
+func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> void:
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return
+	var turn_events: Array[BattleEvent] = []
+	var next_id := _end_turn(turn_events)
+	events.append(TurnEndedEvent.new(unit_id, next_id, get_round_number()))
+	events.append_array(turn_events)
 
 
 func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
@@ -322,6 +333,7 @@ func _start_unit_turn(unit_id: StringName) -> bool:
 		return false
 
 	state.turn.start_turn()
+	state.start_cooldown_turn()
 	state.turn.movement_remaining = maxi(0, state.turn.movement_remaining - UnitStatusCatalog.movement_penalty(state.statuses))
 	return true
 
@@ -426,7 +438,10 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 
 	var health_before := target.health.current
 	var reduction := HexStateCatalog.ranged_reduction(_state.hex_grid.get_hex_state_id(target.hex)) if attacker.basic_attack_range > 1 else 0
-	UnitStatusService.damage(target, attacker.basic_attack_damage, &"physical", events, attacker.unit_id, &"", &"", reduction)
+	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction)
+	for status: StringName in attacker.basic_attack_statuses:
+		UnitStatusService.apply(target, status, attacker.basic_attack_statuses[status], events)
+	events.append_array(DamageType.react(_state, target.hex, attacker.basic_attack_damage_type))
 	var damage := health_before - target.health.current
 	return AttackResult.success(
 		attacker.unit_id,
