@@ -39,6 +39,7 @@ var _path_stroke: Line2D
 var _ability_target_visuals: Node2D
 var _ability_area_visuals: Node2D
 var _reachable_visuals: Node2D
+var _ranged_attack_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
@@ -175,6 +176,11 @@ func _mount_interaction_visuals() -> void:
 	_reachable_visuals.name = "ReachableVisuals"
 	_reachable_visuals.z_index = 8
 	add_child(_reachable_visuals)
+
+	_ranged_attack_visuals = Node2D.new()
+	_ranged_attack_visuals.name = "RangedAttackVisuals"
+	_ranged_attack_visuals.z_index = 9
+	add_child(_ranged_attack_visuals)
 
 	_selection_visuals = Node2D.new()
 	_selection_visuals.name = "SelectionVisuals"
@@ -382,6 +388,62 @@ func show_targetable_cells(cells: Array[Vector2i]) -> void:
 		_paint_cell_on_layer(cell, _targetable_layer)
 
 
+func show_ranged_attack_cells(
+	cells: Array[Vector2i],
+	enemy_cells: Array[Vector2i]
+) -> void:
+	clear_ranged_attack_cells()
+	var region: Dictionary[Vector2i, bool] = {}
+	for cell: Vector2i in cells:
+		region[cell] = true
+	var corners := PackedVector2Array([
+		Vector2(0, -32), Vector2(28, -16), Vector2(28, 16),
+		Vector2(0, 32), Vector2(-28, 16), Vector2(-28, -16),
+	])
+	# Neighbour across each edge, clockwise from the upper-right edge.
+	var neighbours: Array[Vector2i] = [
+		Vector2i(1, -1), Vector2i(1, 0), Vector2i(0, 1),
+		Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(0, -1),
+	]
+
+	for cell: Vector2i in cells:
+		var map_cell := HexCoordinateMapper.axial_to_offset(cell)
+		if _terrain_layer.get_cell_source_id(map_cell) == -1:
+			continue
+		var center := to_local(hex_to_global_position(cell))
+		if enemy_cells.has(cell):
+			var fill := Polygon2D.new()
+			fill.position = center
+			fill.polygon = corners
+			fill.color = Color(0.92, 0.20, 0.16, 0.20)
+			_ranged_attack_visuals.add_child(fill)
+		for edge in range(6):
+			if region.has(cell + neighbours[edge]):
+				continue
+			_add_attack_boundary_edge(center + corners[edge], center + corners[(edge + 1) % 6])
+
+
+func _add_attack_boundary_edge(start: Vector2, end: Vector2) -> void:
+	var length := start.distance_to(end)
+	var direction := (end - start).normalized()
+	var offset := 0.0
+	while offset < length:
+		var dash := Line2D.new()
+		dash.points = PackedVector2Array([
+			start + direction * offset,
+			start + direction * minf(offset + 7.0, length),
+		])
+		dash.width = 1.8
+		dash.default_color = Color(1.0, 0.56, 0.16, 0.90)
+		dash.antialiased = true
+		_ranged_attack_visuals.add_child(dash)
+		offset += 11.0
+
+
+func clear_ranged_attack_cells() -> void:
+	_clear_hex_visuals(_ranged_attack_visuals)
+
+
 func show_ability_targets(cells: Array[Vector2i]) -> void:
 	_clear_hex_visuals(_ability_target_visuals)
 
@@ -425,6 +487,7 @@ func clear_path() -> void:
 
 
 func clear_overlays() -> void:
+	clear_ranged_attack_cells()
 	_reachable_layer.clear()
 	_clear_hex_visuals(_reachable_visuals)
 	clear_path()

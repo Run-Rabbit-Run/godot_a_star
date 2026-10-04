@@ -30,6 +30,8 @@ func present(
 	if resolution == null or not resolution.accepted:
 		return false
 
+	map_view.clear_ranged_attack_cells()
+
 	for event: BattleEvent in resolution.events:
 		var was_presented := await _present_event(
 			event,

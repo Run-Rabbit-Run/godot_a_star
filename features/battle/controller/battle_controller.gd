@@ -400,6 +400,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		ability_id
 	)
 	var empty_cells: Array[Vector2i] = []
+	_map_view.clear_ranged_attack_cells()
 	_map_view.show_reachable_cells(empty_cells)
 	_map_view.show_targetable_cells(_ability_target_hexes)
 	_map_view.show_ability_targets(_ability_target_hexes)
@@ -583,6 +584,7 @@ func _set_presenting(is_presenting: bool) -> void:
 	_hud.set_interaction_enabled(not is_presenting)
 
 	if is_presenting:
+		_map_view.clear_ranged_attack_cells()
 		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 		_selected_ability_id = StringName()
 		_ability_target_hexes.clear()
@@ -616,9 +618,21 @@ func _finish_battle_if_needed(
 
 func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	_attackable_target_hexes.clear()
+	_map_view.show_targetable_cells(_attackable_target_hexes)
+	_map_view.clear_ranged_attack_cells()
 
-	if state == null or _battle_session.is_unit_ai_controlled(state.unit_id):
-		_map_view.show_targetable_cells(_attackable_target_hexes)
+	if state == null or state.health.is_defeated():
+		return
+
+	if state.basic_attack_range > 1:
+		var range_cells := _hex_grid.get_cells_in_range(state.hex, state.basic_attack_range)
+		var enemy_cells: Array[Vector2i] = []
+		for opponent: UnitSnapshot in _battle_session.get_living_opponents(state.faction):
+			if range_cells.has(opponent.hex):
+				enemy_cells.append(opponent.hex)
+		_map_view.show_ranged_attack_cells(range_cells, enemy_cells)
+
+	if _battle_session.is_unit_ai_controlled(state.unit_id):
 		return
 
 	var targets := _battle_session.get_attackable_targets(state.unit_id)
@@ -626,7 +640,8 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	for target: UnitSnapshot in targets:
 		_attackable_target_hexes.append(target.hex)
 
-	_map_view.show_targetable_cells(_attackable_target_hexes)
+	if state.basic_attack_range <= 1:
+		_map_view.show_targetable_cells(_attackable_target_hexes)
 
 
 func _show_unit_movement(state: UnitSnapshot) -> void:
