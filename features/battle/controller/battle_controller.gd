@@ -8,6 +8,7 @@ signal battle_failed(message: String)
 
 
 const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
+const HEALTH_DISPLAY_CONTROLLER := preload("res://features/battle/view/battle_health_display_controller.gd")
 
 
 @onready var _units: Node2D = %Units
@@ -133,6 +134,10 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
+	var health_display := HEALTH_DISPLAY_CONTROLLER.new()
+	health_display.name = "HealthDisplayController"
+	add_child(health_display)
+	health_display.setup(_unit_views.actors, _hud.get_health_alt_check())
 	_hud.movement_requested.connect(_on_movement_requested)
 	_hud.basic_attack_requested.connect(_on_basic_attack_requested)
 	_hud.ability_requested.connect(_on_ability_requested)

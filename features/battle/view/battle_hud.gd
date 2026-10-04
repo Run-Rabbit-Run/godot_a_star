@@ -65,6 +65,7 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _speed_4_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed4Button
 @onready var _resolution_option: OptionButton = $HUDRoot/SpeedPanel/Content/ResolutionRow/ResolutionOption
 @onready var _fullscreen_check: CheckButton = $HUDRoot/SpeedPanel/Content/FullscreenCheck
+@onready var _health_alt_check: CheckButton = $HUDRoot/SpeedPanel/Content/HealthAltCheck
 @onready var _display_status_label: Label = $HUDRoot/SpeedPanel/Content/DisplayStatusLabel
 var _objective_description := ""
 var _health_text := ""
@@ -376,6 +377,10 @@ func _on_ability_button_pressed(ability_id: StringName) -> void:
 	ability_requested.emit(ability_id)
 
 
+func get_health_alt_check() -> CheckButton:
+	return _health_alt_check
+
+
 func _on_settings_button_pressed() -> void:
 	_speed_panel.visible = not _speed_panel.visible
 
@@ -497,6 +502,7 @@ func _apply_styles() -> void:
 		_speed_4_button,
 		_resolution_option,
 		_fullscreen_check,
+		_health_alt_check,
 	]:
 		button.add_theme_color_override("font_color", COLOR_IVORY)
 		button.add_theme_color_override("font_hover_color", Color(0.90, 0.86, 0.75))

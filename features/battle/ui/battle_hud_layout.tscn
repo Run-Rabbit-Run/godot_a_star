@@ -428,6 +428,29 @@ autowrap_mode = 2
 [node name="SettingsSeparator" type="HSeparator" parent="SpeedPanel/Content"]
 layout_mode = 2
 
+[node name="HealthSectionTitle" type="Label" parent="SpeedPanel/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "ЗДОРОВЬЕ ПЕРСОНАЖЕЙ"
+horizontal_alignment = 1
+
+[node name="HealthAltCheck" type="CheckButton" parent="SpeedPanel/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+button_pressed = true
+text = "КОМПАКТНАЯ ПОЛОСКА HP"
+tooltip_text = "Без Alt — тонкая полоска без цифр. Удерживайте левый или правый Alt для обычной плашки с числами. Отключите для постоянного показа обычных плашек."
+
+[node name="HealthSectionHint" type="Label" parent="SpeedPanel/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.59, 0.47, 1)
+theme_override_font_sizes/font_size = 10
+text = "Alt — HP с цифрами · выключено — всегда"
+horizontal_alignment = 1
+
+[node name="HealthSeparator" type="HSeparator" parent="SpeedPanel/Content"]
+layout_mode = 2
+
 [node name="SpeedLabel" type="Label" parent="SpeedPanel/Content"]
 layout_mode = 2
 text = "СКОРОСТЬ АНИМАЦИИ: 1x"

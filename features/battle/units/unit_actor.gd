@@ -20,6 +20,7 @@ var _presentation: UnitPresentationDefinition
 var _corpse: Sprite2D
 var _defeat_tween: Tween
 var _defeated := false
+var _health_display_expanded := true
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -89,13 +90,9 @@ func setup(
 
 func show_health(current: int, maximum: int) -> void:
 	_health_label.text = "%d/%d" % [maxi(current, 0), maximum]
-	_health_bar.visible = current > 0 and not _defeated
 	_health_bar.max_value = maxi(maximum, 1)
 	_health_bar.value = clampi(current, 0, maxi(maximum, 1))
-	# Fit large custom HP values without making every unit's badge wide.
-	var badge_width := maxf(52.0, _health_label.get_minimum_size().x + 10.0)
-	_health_bar.position = Vector2(-badge_width * 0.5, 13.0)
-	_health_bar.size = Vector2(badge_width, 17.0)
+	_apply_health_display()
 	var ratio := 0.0 if maximum <= 0 else float(current) / float(maximum)
 	var bar_color := Color(0.23, 0.48, 0.29)
 
@@ -108,6 +105,20 @@ func show_health(current: int, maximum: int) -> void:
 	style.bg_color = bar_color
 	style.set_corner_radius_all(2)
 	_health_bar.add_theme_stylebox_override("fill", style)
+
+
+func set_health_display_expanded(expanded: bool) -> void:
+	_health_display_expanded = expanded
+	_apply_health_display()
+
+
+func _apply_health_display() -> void:
+	_health_bar.visible = not _defeated and _health_bar.value > 0
+	_health_label.visible = _health_display_expanded and not _defeated
+	# Only the expanded badge needs enough width for its numbers.
+	var badge_width := maxf(52.0, _health_label.get_minimum_size().x + 10.0) if _health_display_expanded else 40.0
+	_health_bar.position = Vector2(-badge_width * 0.5, 13.0)
+	_health_bar.size = Vector2(badge_width, 17.0 if _health_display_expanded else 4.0)
 
 func present_damage() -> void:
 	if not visible:
