@@ -25,6 +25,7 @@ var _defeated := false
 @onready var _unit_id_label: Label = %UnitIdLabel
 @onready var _combat_role_label: Label = %CombatRoleLabel
 @onready var _health_label: Label = %HealthLabel
+@onready var _health_bar: ProgressBar = %HealthBar
 
 
 func _draw() -> void:
@@ -79,9 +80,6 @@ func setup(
 			) * texture_size
 
 	_combat_role_label.visible = false
-	var figure_height := presentation.height_above_feet() if presentation != null else CUSTOM_TEXTURE_SIZE
-	_health_label.position = Vector2(-36, -figure_height - 29)
-	_health_label.size = Vector2(72, 23)
 	_combat_role_label.text = "◎"
 	show_health(current_health, maximum_health)
 	modulate = (
@@ -90,24 +88,26 @@ func setup(
 
 
 func show_health(current: int, maximum: int) -> void:
-	_health_label.text = "%d / %d" % [maxi(current, 0), maximum]
-	_health_label.visible = current > 0
+	_health_label.text = "%d/%d" % [maxi(current, 0), maximum]
+	_health_bar.visible = current > 0 and not _defeated
+	_health_bar.max_value = maxi(maximum, 1)
+	_health_bar.value = clampi(current, 0, maxi(maximum, 1))
+	# Fit large custom HP values without making every unit's badge wide.
+	var badge_width := maxf(52.0, _health_label.get_minimum_size().x + 10.0)
+	_health_bar.position = Vector2(-badge_width * 0.5, 13.0)
+	_health_bar.size = Vector2(badge_width, 17.0)
 	var ratio := 0.0 if maximum <= 0 else float(current) / float(maximum)
-	var badge_color := Color(0.07, 0.10, 0.09, 0.94)
+	var bar_color := Color(0.23, 0.48, 0.29)
 
 	if ratio <= 0.33:
-		badge_color = Color(0.20, 0.08, 0.07, 0.94)
+		bar_color = Color(0.65, 0.22, 0.17)
 	elif ratio <= 0.66:
-		badge_color = Color(0.12, 0.11, 0.08, 0.94)
+		bar_color = Color(0.58, 0.43, 0.18)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = badge_color
-	style.border_color = badge_color.lightened(0.12)
-	style.set_border_width_all(1)
+	style.bg_color = bar_color
 	style.set_corner_radius_all(2)
-	style.content_margin_left = 4.0
-	style.content_margin_right = 4.0
-	_health_label.add_theme_stylebox_override("normal", style)
+	_health_bar.add_theme_stylebox_override("fill", style)
 
 func present_damage() -> void:
 	if not visible:
@@ -144,6 +144,7 @@ func create_defeat_tween(direction: float = 1.0) -> Tween:
 	_show_base = false
 	queue_redraw()
 	_combat_role_label.visible = false
+	_health_bar.visible = false
 	_health_label.visible = false
 	_unit_id_label.visible = false
 	_create_corpse()

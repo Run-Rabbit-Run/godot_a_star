@@ -1,7 +1,26 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://features/battle/units/unit_actor.gd" id="1_script"]
 [ext_resource type="Texture2D" path="res://features/battle/units/unit_debug.svg" id="2_texture"]
+
+[sub_resource type="StyleBoxFlat" id="Style_health_background"]
+bg_color = Color(0.055, 0.065, 0.06, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.38, 0.39, 0.33, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_left = 2
+corner_radius_bottom_right = 2
+
+[sub_resource type="StyleBoxFlat" id="Style_health_fill"]
+bg_color = Color(0.23, 0.48, 0.29, 1)
+corner_radius_top_left = 2
+corner_radius_top_right = 2
+corner_radius_bottom_left = 2
+corner_radius_bottom_right = 2
 
 [node name="UnitActor" type="Node2D"]
 z_index = 20
@@ -29,18 +48,34 @@ theme_override_font_sizes/font_size = 14
 text = "◎"
 horizontal_alignment = 1
 
-[node name="HealthLabel" type="Label" parent="VisualRoot"]
+[node name="HealthBar" type="ProgressBar" parent="."]
 unique_name_in_owner = true
-offset_left = -17.0
-offset_top = -72.0
-offset_right = 17.0
-offset_bottom = -52.0
+z_index = 100
+z_as_relative = false
+offset_left = -26.0
+offset_top = 13.0
+offset_right = 26.0
+offset_bottom = 30.0
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.91, 0.90, 0.83, 1)
+theme_override_styles/background = SubResource("Style_health_background")
+theme_override_styles/fill = SubResource("Style_health_fill")
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="HealthBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.97, 0.96, 0.91, 1)
 theme_override_colors/font_outline_color = Color(0.08, 0.085, 0.075, 1)
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 11
-text = "10"
+theme_override_constants/outline_size = 1
+theme_override_font_sizes/font_size = 10
+text = "10/10"
 horizontal_alignment = 1
 vertical_alignment = 1
 [node name="UnitIdLabel" type="Label" parent="VisualRoot"]
