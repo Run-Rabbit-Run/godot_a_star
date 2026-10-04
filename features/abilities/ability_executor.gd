@@ -96,7 +96,11 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
 		if handler.affects_hexes():
-			var effect_cells: Array[Vector2i] = [center] if effect.parameters.get("center_only", false) else cells
+			var effect_cells: Array[Vector2i] = []
+			if effect.parameters.get("center_only", false):
+				effect_cells.append(center)
+			else:
+				effect_cells.assign(cells)
 			for hex: Vector2i in effect_cells:
 				events.append_array(handler.execute_hex(effect, context, user.unit_id, hex))
 		else:

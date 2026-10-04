@@ -1,13 +1,24 @@
 {
-	"abilities": [],
-	"attack_range": 4,
+	"abilities": [
+		"core:create_electricity",
+		"core:laser",
+		"core:emp_grenade",
+		"core:electromagnetic_shot",
+		"core:electric_turret"
+	],
+	"armor": 0,
+	"attack_range": 5,
 	"attack_type": "ranged",
-	"damage": 2,
-	"hp": 10,
+	"damage": 2.0,
+	"hp": 10.0,
 	"id": "custom_units:u_a122d84b0e6a6b4f10693069111c96e9",
 	"image": "gt_engineer.png",
-	"movement": 4,
+	"movement": 5,
 	"name": "Тесла",
-	"passives": [],
-	"schema_version": 1
+	"passives": [
+		"core:attack_electrified",
+		"core:electric_attack",
+		"core:immune_electrified"
+	],
+	"schema_version": 1.0
 }
