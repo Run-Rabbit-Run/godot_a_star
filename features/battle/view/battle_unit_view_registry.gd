@@ -77,6 +77,11 @@ func create_units(
 func show_health_before(events: Array[BattleEvent]) -> void:
 	# Walk backwards so a unit damaged several times ends at its earliest health.
 	for index in range(events.size() - 1, -1, -1):
+		if events[index] is UnitStatusChangedEvent:
+			var status_event := events[index] as UnitStatusChangedEvent
+			var status_actor := actors.get(status_event.unit_id) as UnitActor
+			if status_actor != null:
+				status_actor.show_statuses(status_event.previous_statuses)
 		var damage := events[index] as UnitDamagedEvent
 
 		if damage == null:

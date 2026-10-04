@@ -11,6 +11,7 @@ var health: HealthState
 var basic_attack_damage: int
 var basic_attack_range: int
 var abilities: Dictionary[StringName, AbilityDefinition] = {}
+var statuses: Dictionary[StringName, int] = {}
 
 
 func _init(

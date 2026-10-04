@@ -7,7 +7,8 @@
 script = ExtResource("2_effect")
 effect_type_id = &"core:damage"
 parameters = {
-"amount": 4
+"amount": 4,
+"damage_type": "fire"
 }
 
 [resource]

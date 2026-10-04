@@ -43,6 +43,12 @@ func remove_hex(hex: Vector2i) -> void:
 			visual.queue_free()
 
 
+func set_hex_state(hex: Vector2i, id: StringName) -> void:
+	remove_hex(hex)
+	if not id.is_empty():
+		_render_state(hex, id)
+
+
 func clear() -> void:
 	for child: Node in get_children():
 		remove_child(child)

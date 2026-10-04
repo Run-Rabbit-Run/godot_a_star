@@ -10,6 +10,8 @@ var _effect_handlers: Dictionary[StringName, AbilityEffectHandler] = {}
 static func create_default() -> ModAPI:
 	var api := ModAPI.new()
 	api.register_effect_handler(&"core:damage", DamageEffectHandler.new())
+	api.register_effect_handler(&"core:hex_state", HexStateEffectHandler.new())
+	api.register_effect_handler(&"core:unit_status", UnitStatusEffectHandler.new())
 	return api
 
 

@@ -193,6 +193,14 @@ func set_traversal(
 	return true
 
 
+func set_hex_state(cell: Vector2i, id: StringName) -> bool:
+	if not has_cell(cell) or (not id.is_empty() and not HexStateCatalog.has_state(id)):
+		return false
+	_hex_state_ids[cell] = id
+	_movement_costs[cell] = HexStateCatalog.get_movement_cost(id)
+	return true
+
+
 static func get_distance(from_cell: Vector2i, to_cell: Vector2i) -> int:
 	var delta_q := from_cell.x - to_cell.x
 	var delta_r := from_cell.y - to_cell.y

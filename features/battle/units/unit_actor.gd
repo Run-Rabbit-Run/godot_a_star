@@ -21,6 +21,8 @@ var _corpse: Sprite2D
 var _defeat_tween: Tween
 var _defeated := false
 var _health_display_expanded := true
+var _status_row: GridContainer
+var _shown_statuses: Dictionary = {}
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -119,6 +121,52 @@ func _apply_health_display() -> void:
 	var badge_width := maxf(52.0, _health_label.get_minimum_size().x + 10.0) if _health_display_expanded else 40.0
 	_health_bar.position = Vector2(-badge_width * 0.5, 13.0)
 	_health_bar.size = Vector2(badge_width, 17.0 if _health_display_expanded else 4.0)
+	if _status_row != null:
+		_status_row.position.y = 32.0 if _health_display_expanded else 19.0
+
+
+func show_statuses(statuses: Dictionary) -> void:
+	if _status_row != null and _shown_statuses == statuses:
+		return
+	_shown_statuses = statuses.duplicate()
+	if _status_row == null:
+		_status_row = GridContainer.new()
+		_status_row.name = "StatusIcons"
+		_status_row.columns = 4
+		_status_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_status_row.z_index = 101
+		_status_row.z_as_relative = false
+		_status_row.add_theme_constant_override("h_separation", 2)
+		_status_row.add_theme_constant_override("v_separation", 2)
+		add_child(_status_row)
+	for child: Node in _status_row.get_children():
+		_status_row.remove_child(child)
+		child.queue_free()
+	var ids := statuses.keys()
+	ids.sort()
+	for id: StringName in ids:
+		var icon := UnitStatusIcon.new()
+		icon.name = String(id).replace(":", "_")
+		icon.texture = load("res://features/battle/ui/icons/status/%s.svg" % String(id).trim_prefix("core:"))
+		icon.custom_minimum_size = Vector2(18, 18)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		icon.tooltip_text = "%s · уровней: %d\n\n%s" % [UnitStatusCatalog.display_name(id), int(statuses[id]), UnitStatusCatalog.description(id)]
+		_status_row.add_child(icon)
+		var count := Label.new()
+		count.text = str(statuses[id])
+		count.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		count.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		count.add_theme_font_size_override("font_size", 10)
+		count.add_theme_color_override("font_outline_color", Color.BLACK)
+		count.add_theme_constant_override("outline_size", 3)
+		icon.add_child(count)
+	_status_row.position = Vector2(-float(mini(ids.size(), 4) * 20 - 2) * 0.5, 32.0 if _health_display_expanded else 19.0)
+	_status_row.size = Vector2.ZERO
+	_status_row.visible = not _defeated and not statuses.is_empty()
 
 func present_damage() -> void:
 	if not visible:
@@ -152,6 +200,8 @@ func create_defeat_tween(direction: float = 1.0) -> Tween:
 	if _defeated:
 		return _defeat_tween if _defeat_tween != null and _defeat_tween.is_running() else null
 	_defeated = true
+	if _status_row != null:
+		_status_row.hide()
 	_show_base = false
 	queue_redraw()
 	_combat_role_label.visible = false

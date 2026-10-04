@@ -64,4 +64,5 @@ static func create(
 	state.health.maximum
 )
 
+	actor.show_statuses(state.statuses)
 	return actor

@@ -13,3 +13,6 @@ var basic_attack_damage := 0
 
 @export_range(1, 20, 1)
 var basic_attack_range := 1
+
+@export_range(0, 9999, 1)
+var armor_levels := 0

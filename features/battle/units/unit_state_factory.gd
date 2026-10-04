@@ -20,6 +20,9 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		return null
 
 	var base_stats := spawn.unit_definition.base_stats
+	if base_stats.armor_levels < 0 or base_stats.armor_levels > 9999:
+		push_error("Armor levels must be between 0 and 9999.")
+		return null
 	var passive_ids := spawn.unit_definition.passive_ability_ids
 	var passive_error := PassiveAbilityCatalog.validate(passive_ids)
 	if not passive_error.is_empty():
@@ -28,7 +31,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 	var turn := TurnState.new(base_stats.movement_points)
 	var health := HealthState.new(base_stats.max_health)
 
-	return UnitState.new(
+	var state := UnitState.new(
 		spawn.unit_id,
 		spawn.definition_id,
 		spawn.faction,
@@ -39,3 +42,6 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		base_stats.basic_attack_range,
 		spawn.abilities
 	)
+	if base_stats.armor_levels > 0:
+		state.statuses[&"core:armor"] = base_stats.armor_levels
+	return state

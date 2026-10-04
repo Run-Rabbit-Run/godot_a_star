@@ -18,6 +18,7 @@ static func apply(
 
 	var candidate := state.hex_grid.duplicate_grid()
 	var events: Array[BattleEvent] = []
+	var explosions: Array[Dictionary] = []
 
 	for mutation: MapMutation in mutations:
 		if mutation == null:
@@ -29,6 +30,10 @@ static func apply(
 
 		if not error.is_empty():
 			return MapMutationApplicationResult.rejected(error)
+
+		if mutation.kind == MapMutationKind.Value.APPLY_HEX_STATE:
+			HexStateService.apply_to_grid(candidate, mutation.hex, mutation.hex_state_id, events, explosions)
+			continue
 
 		var event := _apply_to_candidate(candidate, mutation)
 
@@ -46,6 +51,17 @@ static func apply(
 
 	state.map_revision += 1
 	state.state_revision += 1
+	for explosion: Dictionary in explosions:
+		for unit: UnitState in state.unit_states.values():
+			if unit.hex == explosion.hex:
+				UnitStatusService.damage(unit, 3, &"physical", events, &"", explosion.state_id)
+	var changed: Dictionary[Vector2i, bool] = {}
+	for event: BattleEvent in events.duplicate():
+		if event is MapMutationEvent and event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
+			changed[event.hex] = true
+	for unit: UnitState in state.unit_states.values():
+		if changed.has(unit.hex):
+			HexStateService.expose(unit, state.hex_grid, events)
 	return MapMutationApplicationResult.success(events)
 
 
@@ -55,6 +71,11 @@ static func _validate_mutation(
 	mutation: MapMutation
 ) -> String:
 	match mutation.kind:
+		MapMutationKind.Value.APPLY_HEX_STATE:
+			if not candidate.has_cell(mutation.hex):
+				return "Hex state target does not exist: %s." % mutation.hex
+			if not mutation.hex_state_id.is_empty() and not HexStateCatalog.has_state(mutation.hex_state_id):
+				return "Unknown hex state: %s." % mutation.hex_state_id
 		MapMutationKind.Value.ADD_HEX:
 			if candidate.has_cell(mutation.hex):
 				return "AddHex target already exists: %s." % mutation.hex

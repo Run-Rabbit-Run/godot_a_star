@@ -504,6 +504,9 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		return
 
 	clear_overlays()
+	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
+		_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
+		return
 	var map_cell := HexCoordinateMapper.axial_to_offset(event.hex)
 
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:

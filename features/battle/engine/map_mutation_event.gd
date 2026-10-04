@@ -7,6 +7,7 @@ var hex: Vector2i
 var terrain_id: StringName
 var traversable: bool
 var movement_cost: int
+var hex_state_id: StringName
 
 
 func _init(

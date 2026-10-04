@@ -109,7 +109,8 @@ func apply_map_mutations(
 		_hud
 	)
 	_refresh_map_revision()
-	_set_presenting(false)
+	if not _finish_battle_if_needed(resolution):
+		await _continue_turn_cycle()
 	return resolution
 
 
@@ -247,6 +248,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		_map_view,
 		_hud
 	)
+	_refresh_map_revision()
 
 	if _finish_battle_if_needed(resolution):
 		return
@@ -485,6 +487,7 @@ func _on_end_turn_requested() -> void:
 
 
 func _continue_turn_cycle() -> void:
+	_refresh_map_revision()
 	var active_unit_id := _battle_session.get_active_unit_id()
 	var active := _battle_session.get_unit(active_unit_id)
 
@@ -548,6 +551,7 @@ func _run_ai_turns() -> void:
 			_set_presenting(false)
 			return
 
+		_refresh_map_revision()
 		automatic_steps += 1
 
 		if _finish_battle_if_needed(resolution):

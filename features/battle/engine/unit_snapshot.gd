@@ -13,6 +13,7 @@ var basic_attack_range: int
 var ability_ids: Array[StringName] = []
 var ability_ranges: Dictionary[StringName, int] = {}
 var ability_area_radii: Dictionary[StringName, int] = {}
+var statuses: Dictionary[StringName, int] = {}
 
 
 func _init(state: UnitState) -> void:
@@ -20,6 +21,7 @@ func _init(state: UnitState) -> void:
 	definition_id = state.definition_id
 	faction = state.faction
 	hex = state.hex
+	statuses.assign(state.statuses)
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

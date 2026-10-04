@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="1"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="2"]
+
+[sub_resource type="Resource" id="Effect"]
+script = ExtResource("2")
+effect_type_id = &"core:hex_state"
+parameters = {"state_id": "core:oil"}
+
+[resource]
+script = ExtResource("1")
+id = &"core:create_oil"
+display_name = "Разлить масло"
+range = 3
+area_radius = 1
+effects = Array[ExtResource("2")]([SubResource("Effect")])

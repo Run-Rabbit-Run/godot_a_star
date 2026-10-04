@@ -7,6 +7,7 @@ var hex: Vector2i
 var terrain_id: StringName
 var traversable: bool
 var movement_cost: int
+var hex_state_id: StringName
 
 
 func _init(
@@ -40,6 +41,12 @@ static func add_hex(
 
 static func remove_hex(hex: Vector2i) -> MapMutation:
 	return MapMutation.new(MapMutationKind.Value.REMOVE_HEX, hex)
+
+
+static func apply_hex_state(hex: Vector2i, id: StringName) -> MapMutation:
+	var mutation := MapMutation.new(MapMutationKind.Value.APPLY_HEX_STATE, hex)
+	mutation.hex_state_id = id
+	return mutation
 
 
 static func change_terrain(

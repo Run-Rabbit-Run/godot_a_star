@@ -54,6 +54,13 @@ func _present_event(
 	map_view: BattleMapView,
 	hud: BattleHUD
 ) -> bool:
+	if event is UnitStatusChangedEvent:
+		var status_event := event as UnitStatusChangedEvent
+		var actor := unit_actors.get(status_event.unit_id) as UnitActor
+		if actor != null:
+			actor.show_statuses(status_event.statuses)
+		return true
+
 	if event is UnitMovedEvent:
 		return await _present_move(
 			event as UnitMovedEvent,

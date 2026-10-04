@@ -220,7 +220,7 @@ func show_area_target(area_size: int) -> void:
 	_target_panel.visible = true
 	_target_placeholder.visible = true
 	_target_content.visible = false
-	_target_placeholder.text = "ЗОНА ПОРАЖЕНИЯ\n%d ГЕКСОВ\n\nУрон получат все юниты в области" % area_size
+	_target_placeholder.text = "ОБЛАСТЬ СПОСОБНОСТИ\n%d ГЕКСОВ\n\nЭффекты применяются к гексам или юнитам области" % area_size
 
 
 func show_round(round_number: int) -> void:

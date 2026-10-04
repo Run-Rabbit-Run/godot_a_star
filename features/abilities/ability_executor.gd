@@ -184,18 +184,13 @@ static func _execute_area_ability(
 		),
 	]
 
-	for target_id: StringName in target_ids:
-		for effect: AbilityEffectDefinition in ability.effects:
-			var handler := state.mod_api.get_effect_handler(
-				effect.effect_type_id
-			)
-			events.append_array(
-				handler.execute(
-					effect,
-					context,
-					user.unit_id,
-					target_id
-				)
-			)
-
+	# Terrain effects run on every cell, including empty cells, once per effect.
+	for effect: AbilityEffectDefinition in ability.effects:
+		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
+		if handler.affects_hexes():
+			for hex: Vector2i in affected_hexes:
+				events.append_array(handler.execute_hex(effect, context, user.unit_id, hex))
+		else:
+			for target_id: StringName in target_ids:
+				events.append_array(handler.execute(effect, context, user.unit_id, target_id))
 	return events

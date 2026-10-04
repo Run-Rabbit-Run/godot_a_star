@@ -10,10 +10,17 @@ func _init(p_state: BattleState) -> void:
 	_state = p_state
 	_state.turn_service.start()
 	var initial_events: Array[BattleEvent] = []
+	HexStateService.propagate(_state.hex_grid, _state.hex_grid.get_cells(), initial_events)
+	if not initial_events.is_empty():
+		_state.map_revision += 1
 
 	if get_outcome() == BattleOutcome.Value.IN_PROGRESS:
-		if _start_unit_turn(get_active_unit_id()):
-			_apply_hex_state_damage(get_active_unit_id(), initial_events)
+		# Every starting occupant is already touching its terrain; expose each once.
+		var initial_ids := _state.unit_states.keys()
+		initial_ids.sort()
+		for unit_id: StringName in initial_ids:
+			_apply_hex_state_damage(unit_id, initial_events)
+		_start_unit_turn(get_active_unit_id())
 
 		_advance_defeated_active(initial_events)
 
@@ -198,6 +205,7 @@ func apply_map_mutations(
 	if not application.accepted:
 		return _rejected(application.rejection_reason)
 
+	_advance_defeated_active(application.events)
 	return BattleResolution.success(
 		application.events,
 		_state.state_revision,
@@ -242,15 +250,16 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 	for path_index in range(1, result.path.size()):
 		var next_hex := result.path[path_index]
 		var step_cost := _state.hex_grid.get_movement_cost(next_hex)
-		# The entire route was validated before entering it, so every step can be paid.
-		moved_unit.turn.spend_movement(step_cost)
+		# A newly acquired slowing effect can shorten a previously reachable route.
+		if not moved_unit.turn.spend_movement(step_cost):
+			break
 		moved_unit.hex = next_hex
 		segment_path.append(next_hex)
 		segment_cost += step_cost
 
 		var state_id := _state.hex_grid.get_hex_state_id(next_hex)
 
-		if HexStateCatalog.get_damage(state_id) <= 0:
+		if state_id.is_empty():
 			continue
 
 		events.append(UnitMovedEvent.new(result.unit_id, segment_path, segment_cost))
@@ -258,7 +267,7 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		segment_cost = 0
 		_apply_hex_state_damage(result.unit_id, events)
 
-		if moved_unit.health.is_defeated():
+		if moved_unit.health.is_defeated() or moved_unit.statuses.get(&"core:paralysis", 0) > 0:
 			break
 
 	if segment_cost > 0:
@@ -268,20 +277,10 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 
 
 func _resolve_attack(command: AttackCommand) -> BattleResolution:
-	var result := _execute_attack(command)
-
+	var events: Array[BattleEvent] = []
+	var result := _execute_attack(command, events)
 	if not result.is_successful:
 		return _rejected("Attack command was rejected.")
-
-	var events: Array[BattleEvent] = [
-		UnitDamagedEvent.new(
-			result.attacker_id,
-			result.target_id,
-			result.damage,
-			result.target_health_remaining,
-			result.is_target_defeated()
-		),
-	]
 	return _accepted(events)
 
 
@@ -323,6 +322,7 @@ func _start_unit_turn(unit_id: StringName) -> bool:
 		return false
 
 	state.turn.start_turn()
+	state.turn.movement_remaining = maxi(0, state.turn.movement_remaining - UnitStatusCatalog.movement_penalty(state.statuses))
 	return true
 
 
@@ -330,7 +330,15 @@ func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return StringName()
 
-	for _attempt in range(_state.turn_service.get_participant_count()):
+	UnitStatusService.end_turn(get_unit(get_active_unit_id()), damage_events)
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return StringName()
+	# Each skipped turn consumes paralysis or health; this bound covers chained skips.
+	var attempts := _state.turn_service.get_participant_count()
+	for unit: UnitState in _state.unit_states.values():
+		attempts += unit.health.current + int(unit.statuses.get(&"core:paralysis", 0))
+	attempts *= _state.turn_service.get_participant_count()
+	for _attempt in range(attempts):
 		var next_unit_id := _state.turn_service.advance_turn()
 
 		if not _start_unit_turn(next_unit_id):
@@ -341,8 +349,15 @@ func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
 		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 			return StringName()
 
-		if not get_unit(next_unit_id).health.is_defeated():
-			return next_unit_id
+		var next := get_unit(next_unit_id)
+		if next.health.is_defeated():
+			continue
+		if next.statuses.get(&"core:paralysis", 0) > 0:
+			UnitStatusService.end_turn(next, damage_events)
+			if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+				return StringName()
+			continue
+		return next_unit_id
 
 	return StringName()
 
@@ -351,26 +366,7 @@ func _apply_hex_state_damage(
 	unit_id: StringName,
 	events: Array[BattleEvent]
 ) -> void:
-	var unit := get_unit(unit_id)
-
-	if unit == null or unit.health.is_defeated():
-		return
-
-	var state_id := _state.hex_grid.get_hex_state_id(unit.hex)
-	var damage := HexStateCatalog.get_damage(state_id)
-
-	if damage <= 0:
-		return
-
-	var applied_damage := unit.health.apply_damage(damage)
-	events.append(UnitDamagedEvent.new(
-		StringName(),
-		unit_id,
-		applied_damage,
-		unit.health.current,
-		unit.health.is_defeated(),
-		state_id
-	))
+	HexStateService.expose(get_unit(unit_id), _state.hex_grid, events)
 
 
 func _execute_move(command: MoveCommand) -> MoveResult:
@@ -397,7 +393,7 @@ func _execute_move(command: MoveCommand) -> MoveResult:
 	)
 
 
-func _execute_attack(command: AttackCommand) -> AttackResult:
+func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> AttackResult:
 	var attacker := get_unit(command.attacker_id)
 	var target := get_unit(command.target_id)
 
@@ -428,9 +424,10 @@ func _execute_attack(command: AttackCommand) -> AttackResult:
 	if not attacker.turn.spend_main_action():
 		return AttackResult.failure()
 
-	var damage := target.health.apply_damage(
-		attacker.basic_attack_damage
-	)
+	var health_before := target.health.current
+	var reduction := HexStateCatalog.ranged_reduction(_state.hex_grid.get_hex_state_id(target.hex)) if attacker.basic_attack_range > 1 else 0
+	UnitStatusService.damage(target, attacker.basic_attack_damage, &"physical", events, attacker.unit_id, &"", &"", reduction)
+	var damage := health_before - target.health.current
 	return AttackResult.success(
 		attacker.unit_id,
 		target.unit_id,
@@ -453,7 +450,7 @@ func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 func _advance_defeated_active(events: Array[BattleEvent]) -> void:
 	var active := get_unit(get_active_unit_id())
 
-	if active == null or not active.health.is_defeated():
+	if active == null or (not active.health.is_defeated() and active.statuses.get(&"core:paralysis", 0) <= 0):
 		return
 
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:

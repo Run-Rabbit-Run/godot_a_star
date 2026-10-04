@@ -10,6 +10,9 @@ func validate(effect: AbilityEffectDefinition) -> String:
 
 	if not (amount is int) or amount <= 0:
 		return "Damage effect requires a positive integer amount."
+	var type: Variant = effect.parameters.get("damage_type", "physical")
+	if not (type is String or type is StringName) or not UnitStatusService.DAMAGE_TYPES.has(StringName(type)):
+		return "Damage effect has an unknown damage_type."
 
 	return ""
 
@@ -20,14 +23,9 @@ func execute(
 	source_unit_id: StringName,
 	target_unit_id: StringName
 ) -> Array[BattleEvent]:
-	var events: Array[BattleEvent] = []
-	var event := context.apply_damage(
+	return context.apply_damage_events(
 		source_unit_id,
 		target_unit_id,
-		int(effect.parameters["amount"])
+		int(effect.parameters["amount"]),
+		StringName(effect.parameters.get("damage_type", "physical"))
 	)
-
-	if event != null:
-		events.append(event)
-
-	return events

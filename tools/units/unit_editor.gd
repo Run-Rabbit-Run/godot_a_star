@@ -106,6 +106,7 @@ func _build_ui() -> void:
 	_corpse_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	form.add_child(_corpse_status)
 	_number(form, "ОЗ", "hp", 1, 9999)
+	_number(form, "Уровни брони", "armor", 0, 9999)
 	_number(form, "Базовый урон", "damage", 0, 9999)
 	_attack = OptionButton.new()
 	_attack.add_item("Ближняя атака")
@@ -212,7 +213,7 @@ func _render() -> void:
 		if _assets.get_item_text(index) == _document.image:
 			_assets.select(index)
 	for key: String in _numbers:
-		_numbers[key].value = _document[key]
+		_numbers[key].value = _document.get(key, 0)
 	for id: String in _ability_checks:
 		_ability_checks[id].button_pressed = id in _document.abilities
 	for id: String in _passive_checks:

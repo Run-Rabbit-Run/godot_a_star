@@ -4,7 +4,7 @@ extends RefCounted
 const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
-const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты"}
+const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту"}
 
 
 static func ensure_folders() -> String:
@@ -47,10 +47,13 @@ static func new_document() -> Dictionary:
 		"id": "custom_units:u_" + Crypto.new().generate_random_bytes(16).hex_encode(),
 		"name": "Новый юнит", "image": "0.png", "hp": 10, "damage": 2,
 		"attack_type": "melee", "attack_range": 3, "movement": 4,
-		"abilities": [], "passives": [],
+		"abilities": [], "passives": [], "armor": 0,
 	}
 
 static func validate(data: Dictionary) -> String:
+	var armor: Variant = data.get("armor", 0)
+	if not (armor is int or armor is float) or not is_finite(float(armor)) or float(armor) != floor(float(armor)) or armor < 0 or armor > 9999:
+		return "Броня: целое число 0–9999."
 	for key: String in ["id", "name", "image", "attack_type"]:
 		if not data.get(key) is String or String(data[key]).strip_edges().is_empty():
 			return "Поле %s должно содержать текст." % key
@@ -105,6 +108,8 @@ static func read_document(path: String) -> Dictionary:
 	if not json.data is Dictionary:
 		return {"error": "%s: ожидается объект JSON." % path}
 	var data: Dictionary = json.data
+	if not data.has("armor"):
+		data["armor"] = 0
 	var error := validate(data)
 	if not error.is_empty():
 		return {"error": "%s: %s" % [path, error]}
@@ -171,6 +176,7 @@ static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
 		unit.base_stats.basic_attack_damage = int(data.damage)
 		unit.base_stats.basic_attack_range = int(data.attack_range) if data.attack_type == "ranged" else 1
 		unit.base_stats.movement_points = int(data.movement)
+		unit.base_stats.armor_levels = int(data.get("armor", 0))
 		unit.ability_ids.assign(data.abilities)
 		unit.passive_ability_ids.assign(data.passives)
 		var presentation := presentation_for(String(data.image))
