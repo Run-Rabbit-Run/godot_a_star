@@ -11,7 +11,9 @@ func _ready() -> void:
 		return
 	var snapshot := loaded.request.content_snapshot
 	# Demonstrate a first-turn lock without changing the authored laser resource.
-	snapshot.get_ability_definition(&"core:laser").initial_cooldown_turns = 1
+	var laser := snapshot.get_ability_definition(&"core:laser")
+	laser.initial_cooldown_turns = 1
+	var unit_overrides: Array[UnitDefinition] = []
 	var battle := snapshot.get_battle_definition(loaded.request.battle_id)
 	var positions: Array[Vector2i] = [Vector2i(1, 6), Vector2i(1, 4), Vector2i(1, 8), Vector2i(3, 6), Vector2i(4, 6), Vector2i(3, 5)]
 	var passives: Array[StringName] = [&"core:electric_attack", &"core:fire_attack", &"core:water_attack", &"core:acid_attack", &"core:plasma_attack", &"core:electric_attack"]
@@ -28,6 +30,7 @@ func _ready() -> void:
 		definition.base_stats.basic_attack_damage = 3
 		definition.base_stats.basic_attack_range = 6
 		definition.passive_ability_ids.assign([passives[index % passives.size()]])
+		unit_overrides.append(definition)
 		definition.ability_ids.assign([&"core:electromagnetic_shot", &"core:electric_turret", &"core:emp_grenade", &"core:laser"])
 	var turret := UnitPlacementDefinition.new()
 	turret.placement_id = &"preview:turret"
@@ -35,6 +38,7 @@ func _ready() -> void:
 	turret.side_id = battle.unit_placements[0].side_id
 	turret.start_hex = Vector2i(2, 7)
 	battle.unit_placements.append(turret)
+	loaded.request.content_snapshot = snapshot.with_battle_document(snapshot.get_map_definition(battle.map_id), battle, unit_overrides, [laser])
 	var screen := preload("res://features/battle/battle_screen.tscn").instantiate() as BattleScreen
 	if not screen.setup(loaded.request):
 		push_error(screen.initialization_error)

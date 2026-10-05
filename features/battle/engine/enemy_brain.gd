@@ -48,7 +48,8 @@ static func choose_move(
 	movement_search: MovementSearchResult,
 	grid: HexGrid = null,
 	current_health: int = 0,
-	attack_range: int = 1
+	attack_range: int = 1,
+	forecast_unit: UnitSnapshot = null
 ) -> MoveCommand:
 	if unit_id.is_empty() or movement_search == null:
 		return null
@@ -64,7 +65,7 @@ static func choose_move(
 
 	var stay_score := _get_position_score(
 		start_approach,
-		_get_standing_damage(grid, start),
+		int(MovementImpactForecast.evaluate(forecast_unit, grid, [start]).damage) if forecast_unit != null and grid != null else _get_standing_damage(grid, start),
 		health
 	)
 	var has_best_cell := false
@@ -90,14 +91,20 @@ static func choose_move(
 			approach = approach_costs[cell]
 
 		var route_damage := _get_route_damage(grid, movement_search, cell)
+		var total_damage := route_damage + _get_standing_damage(grid, cell)
+		if forecast_unit != null and grid != null:
+			var forecast := MovementImpactForecast.evaluate(forecast_unit, grid, movement_search.build_path(cell))
+			if not forecast.reached or forecast.lethal:
+				continue
+			total_damage = forecast.damage
 
 		# A unit that dies on the way never reaches the cell.
-		if grid != null and route_damage >= current_health:
+		if forecast_unit == null and grid != null and route_damage >= current_health:
 			continue
 
 		var score := _get_position_score(
 			approach,
-			route_damage + _get_standing_damage(grid, cell),
+			total_damage,
 			health
 		)
 

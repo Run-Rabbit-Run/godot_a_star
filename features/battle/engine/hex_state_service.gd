@@ -20,7 +20,6 @@ static func apply_to_grid(grid: HexGrid, hex: Vector2i, incoming: StringName, ev
 		# Only the base-state matrix reactions explode.
 		if previous in [&"core:fire", &"core:oil", &"core:acid"] and incoming in [&"core:fire", &"core:oil", &"core:acid"]:
 			explosions.append({"hex": hex, "state_id": result})
-	propagate(grid, [hex], events)
 
 static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[BattleEvent]) -> void:
 	var pending: Array[Vector2i] = []

@@ -147,3 +147,32 @@ func get_texture(unit_id: StringName) -> Texture2D:
 	if presentation == null:
 		return null
 	return presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture
+
+
+func synchronize(session: BattleSession) -> void:
+	for id: StringName in session.get_turn_order():
+		var state := session.get_unit(id)
+		if state == null:
+			continue
+		var actor := actors.get(id) as UnitActor
+		if not is_instance_valid(actor):
+			var definition := definitions.get(id) as UnitDefinition
+			if definition == null:
+				definition = _content_snapshot.get_unit_definition(state.definition_id)
+			if definition == null:
+				continue
+			var presentation := _content_snapshot.get_unit_presentation_definition(definition.presentation_id)
+			actor = UnitActorFactory.create(state, definition, presentation, _units_parent)
+			if actor == null:
+				continue
+			actors[id] = actor
+			definitions[id] = definition
+			if presentation != null:
+				presentations[id] = presentation
+		var viewport := _map_view.get_viewport_rect().size
+		actor.scale = Vector2.ONE * minf(viewport.x / 1920.0, viewport.y / 1080.0) / _map_view.scale
+		actor.global_position = _map_view.hex_to_global_position(state.hex)
+		actor.show_health(state.health.current, state.health.maximum)
+		actor.show_statuses(state.statuses)
+		if state.health.is_defeated():
+			actor.synchronize_defeat()

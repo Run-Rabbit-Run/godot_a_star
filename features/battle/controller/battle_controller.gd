@@ -30,6 +30,9 @@ var _attackable_target_hexes: Array[Vector2i] = []
 var _ability_target_hexes: Array[Vector2i] = []
 var _selected_ability_id := StringName()
 var _is_presenting := false
+var _runtime_failed := false
+var _completion_emitted := false
+var _automatic_run_active := false
 var _unit_views := BattleUnitViewRegistry.new()
 
 # Read-only compatibility bridge for diagnostics that inspect the old field name.
@@ -64,7 +67,8 @@ func setup(
 
 		prepared_session = result.session
 	elif (
-		prepared_session.setup.battle_id != request.battle_id
+		prepared_session.content_snapshot != request.content_snapshot
+		or prepared_session.setup.battle_id != request.battle_id
 		or prepared_session.setup.deterministic_seed != request.deterministic_seed
 	):
 		# The view reads content from the request, so it must describe the same battle.
@@ -87,9 +91,9 @@ func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:
 	# The session exists right after setup(), but actors and the grid appear only later.
-	if not _is_initialized:
+	if not _is_initialized or _is_presenting or _runtime_failed:
 		return BattleResolution.rejected(
-			"Battle presentation is not initialized.",
+			"Battle is not ready for a new operation.",
 			0,
 			StringName()
 		)
@@ -101,13 +105,15 @@ func apply_map_mutations(
 		_set_presenting(false)
 		return resolution
 
-	await _presentation_queue.present(
+	var presented := await _present_resolution(
 		resolution,
 		_unit_views.actors,
 		_unit_views.definitions,
 		_map_view,
 		_hud
 	)
+	if not presented:
+		return resolution
 	_refresh_map_revision()
 	if not _finish_battle_if_needed(resolution):
 		await _continue_turn_cycle()
@@ -153,7 +159,7 @@ func _initialize_battle() -> void:
 	var initial_resolution := _battle_session.get_initial_resolution()
 	# Actors were created after the start effects; replay their damage from the prior health.
 	_unit_views.show_health_before(initial_resolution.events)
-	var was_initial_presented := await _presentation_queue.present(
+	var was_initial_presented := await _present_resolution(
 		initial_resolution,
 		_unit_views.actors,
 		_unit_views.definitions,
@@ -162,8 +168,6 @@ func _initialize_battle() -> void:
 	)
 
 	if not was_initial_presented:
-		initialization_error = "Initial battle events could not be presented."
-		battle_failed.emit(initialization_error)
 		return
 
 	_is_initialized = true
@@ -241,7 +245,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		return
 
 	_set_presenting(true)
-	var was_presented := await _presentation_queue.present(
+	var was_presented := await _present_resolution(
 		resolution,
 		_unit_views.actors,
 		_unit_views.definitions,
@@ -373,7 +377,8 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 		target.basic_attack_range,
 		target.turn.movement_remaining,
 		target.turn.movement_max,
-		target.turn.main_action_available
+		target.turn.main_action_available,
+		target.statuses
 	)
 
 
@@ -476,19 +481,21 @@ func _on_end_turn_requested() -> void:
 			_set_presenting(false)
 		return
 
-	await _presentation_queue.present(
+	var presented := await _present_resolution(
 		resolution,
 		_unit_views.actors,
 		_unit_views.definitions,
 		_map_view,
 		_hud
 	)
-	if _finish_battle_if_needed(resolution):
+	if not presented or _finish_battle_if_needed(resolution):
 		return
 	await _continue_turn_cycle()
 
 
 func _continue_turn_cycle() -> void:
+	if _runtime_failed:
+		return
 	_refresh_map_revision()
 	var active_unit_id := _battle_session.get_active_unit_id()
 	var active := _battle_session.get_unit(active_unit_id)
@@ -508,6 +515,14 @@ func _continue_turn_cycle() -> void:
 
 
 func _run_ai_turns() -> void:
+	if _automatic_run_active or _runtime_failed:
+		return
+	_automatic_run_active = true
+	await _execute_ai_turns()
+	_automatic_run_active = false
+
+
+func _execute_ai_turns() -> void:
 	var automatic_steps := 0
 
 	while (
@@ -515,8 +530,7 @@ func _run_ai_turns() -> void:
 		and _battle_session.is_active_unit_ai_controlled()
 	):
 		if automatic_steps >= MAX_AUTOMATIC_STEPS_PER_HANDOFF:
-			push_error("Automatic turn step limit was reached.")
-			_set_presenting(false)
+			_fail_runtime("Automatic turn step limit was reached.")
 			return
 
 		var active := _battle_session.get_unit(
@@ -524,26 +538,23 @@ func _run_ai_turns() -> void:
 		)
 
 		if active == null:
-			push_error("AI-controlled active unit is not registered.")
-			_set_presenting(false)
+			_fail_runtime("AI-controlled active unit is not registered.")
 			return
 
 		_show_unit_movement(active)
 		var command := _battle_session.get_next_ai_command()
 
 		if command == null:
-			push_error("AI command source did not provide a command.")
-			_set_presenting(false)
+			_fail_runtime("AI command source did not provide a command.")
 			return
 
 		var resolution := _battle_session.step(command)
 
 		if not resolution.accepted:
-			push_error("AI command was rejected: %s" % resolution.rejection_reason)
-			_set_presenting(false)
+			_fail_runtime("AI command was rejected: %s" % resolution.rejection_reason)
 			return
 
-		if not await _presentation_queue.present(
+		if not await _present_resolution(
 			resolution,
 			_unit_views.actors,
 			_unit_views.definitions,
@@ -590,6 +601,7 @@ func _refresh_map_revision() -> void:
 
 
 func _set_presenting(is_presenting: bool) -> void:
+	is_presenting = is_presenting or _runtime_failed
 	_is_presenting = is_presenting
 	_input_router.set_interaction_enabled(not is_presenting)
 	_hud.set_interaction_enabled(not is_presenting)
@@ -608,6 +620,8 @@ func _set_presenting(is_presenting: bool) -> void:
 func _finish_battle_if_needed(
 	resolution: BattleResolution = null
 ) -> bool:
+	if _runtime_failed or _completion_emitted:
+		return true
 	var result: BattleResult
 
 	if resolution != null:
@@ -623,6 +637,7 @@ func _finish_battle_if_needed(
 	_map_view.clear_overlays()
 	_hud.show_outcome(result.outcome)
 	_set_presenting(true)
+	_completion_emitted = true
 	battle_finished.emit(result)
 	return true
 
@@ -752,3 +767,34 @@ func _refresh_turn_order() -> void:
 		entries,
 		_battle_session.get_active_unit_id()
 	)
+
+
+func _present_resolution(resolution: BattleResolution, actors: Dictionary[StringName, UnitActor], definitions: Dictionary[StringName, UnitDefinition], map_view: BattleMapView, hud: BattleHUD) -> bool:
+	# Retain spawn definitions even if an earlier event prevents their presentation.
+	for event: BattleEvent in resolution.events:
+		if event is UnitSummonedEvent:
+			_unit_views.definitions[event.unit.unit_id] = event.definition
+	var presented := await _presentation_queue.present(resolution, actors, definitions, map_view, hud)
+	if not presented or not resolution.terminal_error.is_empty():
+		_hex_grid = _battle_session.get_hex_grid()
+		_known_map_revision = _battle_session.get_map_revision()
+		_map_view.render_grid(_hex_grid)
+		_unit_views.synchronize(_battle_session)
+		_fail_runtime(resolution.terminal_error if not resolution.terminal_error.is_empty() else "Battle presentation failed; state was synchronized and playback stopped.")
+		return false
+	return true
+
+
+func _fail_runtime(message: String) -> void:
+	if _runtime_failed:
+		return
+	_runtime_failed = true
+	initialization_error = message
+	_set_presenting(true)
+	battle_failed.emit(message)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel") and not _is_presenting:
+		_on_movement_requested()
+		get_viewport().set_input_as_handled()

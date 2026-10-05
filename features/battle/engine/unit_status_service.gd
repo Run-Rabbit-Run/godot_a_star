@@ -31,7 +31,7 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 	if id == &"core:burning" or (id == &"core:sticky_oil" and unit.statuses.get(&"core:burning", 0) > 0):
 		_explode_oil(unit, events)
 
-static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0) -> void:
+static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"") -> void:
 	if unit == null or unit.health.is_defeated() or amount <= 0:
 		return
 	var before := unit.statuses.duplicate()
@@ -57,6 +57,7 @@ static func damage(unit: UnitState, amount: int, type: StringName, events: Array
 	var applied := unit.health.apply_damage(adjusted)
 	var event := UnitDamagedEvent.new(source, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), hex_state, ability)
 	event.damage_type = type
+	event.source_status_id = status
 	events.append(event)
 	if type == &"fire":
 		_explode_oil(unit, events)
@@ -68,9 +69,9 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var burning := int(unit.statuses.get(&"core:burning", 0))
 	var plasma := int(unit.statuses.get(&"core:plasma", 0))
 	var electricity := int(unit.statuses.get(&"core:electrified", 0))
-	damage(unit, burning, &"fire", events, &"", &"core:fire")
-	damage(unit, plasma * 2, &"plasma", events, &"", &"core:plasma")
-	damage(unit, electricity, &"electric", events, &"", &"core:electricity")
+	damage(unit, burning, &"fire", events, &"", &"", &"", 0, &"core:burning")
+	damage(unit, plasma * 2, &"plasma", events, &"", &"", &"", 0, &"core:plasma")
+	damage(unit, electricity, &"electric", events, &"", &"", &"", 0, &"core:electrified")
 	var before := unit.statuses.duplicate()
 	if unit.statuses.get(&"core:acid", 0) > 0:
 		_set_levels(unit, &"core:armor", int(unit.statuses.get(&"core:armor", 0)) - 1)
@@ -87,7 +88,7 @@ static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var before := unit.statuses.duplicate()
 	unit.statuses.erase(&"core:sticky_oil")
 	_emit(unit, before, events)
-	damage(unit, amount, &"physical", events, &"", &"core:burning_oil")
+	damage(unit, amount, &"physical", events, &"", &"", &"", 0, &"core:sticky_oil")
 
 static func _set_levels(unit: UnitState, id: StringName, levels: int) -> void:
 	if levels <= 0:

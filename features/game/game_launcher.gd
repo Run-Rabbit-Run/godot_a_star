@@ -16,6 +16,7 @@ func _ready() -> void:
 		_show_error(result.error_message)
 		return
 	var screen := preload("res://features/battle/battle_screen.tscn").instantiate() as BattleScreen
+	screen.show_failure_message = false
 	screen.ui_profile_path = settings.ui_profile_path
 	if not screen.setup(result.request):
 		_show_error(screen.initialization_error)

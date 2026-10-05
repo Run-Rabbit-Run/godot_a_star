@@ -111,11 +111,11 @@ func run(request: SimulationRequest) -> SimulationRunResult:
 
 		var resolution := session.step(command)
 
-		if not resolution.accepted:
+		if not resolution.accepted or not resolution.terminal_error.is_empty():
 			return _finish(
 				SimulationRunStatus.Value.AI_ERROR,
 				session,
-				"AI command was rejected: %s" % resolution.rejection_reason,
+				"AI command was rejected: %s" % (resolution.terminal_error if not resolution.terminal_error.is_empty() else resolution.rejection_reason),
 				command_count,
 				seed
 			)

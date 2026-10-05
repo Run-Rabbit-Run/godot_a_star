@@ -6,6 +6,7 @@
 addons/godot-git-plugin/windows/~*
 
 # Local build artifacts and interrupted content writes
-build/
+build/*
+!build/.gdignore
 content/authored/**/*.tmp
 content/authored/**/*.bak

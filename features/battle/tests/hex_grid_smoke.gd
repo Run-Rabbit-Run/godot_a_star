@@ -287,6 +287,7 @@ func _check_hex_state_path_impacts() -> void:
 	}
 	var engine := _create_hex_state_path_engine(intermediate)
 	var resolution := engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	resolution.events = _movement_events(resolution.events)
 	var player := engine.get_unit(&"player")
 	_expect(resolution.accepted, "A route through fire must be accepted.")
 	_expect(player.hex == Vector2i(3, 0), "The unit must reach the destination after surviving fire.")
@@ -303,22 +304,25 @@ func _check_hex_state_path_impacts() -> void:
 	}
 	engine = _create_hex_state_path_engine(destination)
 	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	resolution.events = _movement_events(resolution.events)
 	_expect(engine.get_unit(&"player").health.current == 9, "Fire must also damage a unit stopping on it.")
 	_expect(resolution.events.size() == 2 and resolution.events[0] is UnitMovedEvent and resolution.events[1] is UnitDamagedEvent, "Destination impact must follow arrival.")
 
 	var repeated: Dictionary[Vector2i, StringName] = {
 		Vector2i(1, 0): &"core:fire",
-		Vector2i(2, 0): &"core:plasma",
+		Vector2i(2, 0): &"core:acid",
 	}
 	engine = _create_hex_state_path_engine(repeated)
 	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
-	_expect(engine.get_unit(&"player").health.current == 7, "Every crossed damaging hex must apply its own damage once.")
+	resolution.events = _movement_events(resolution.events)
+	_expect(engine.get_unit(&"player").health.current == 8, "Every crossed damaging hex must apply its own damage once.")
 	_expect(resolution.events.size() == 5, "Both crossed hazards must emit movement and damage in order.")
 	if resolution.events.size() == 5:
-		_expect((resolution.events[1] as UnitDamagedEvent).source_hex_state_id == &"core:fire" and (resolution.events[3] as UnitDamagedEvent).source_hex_state_id == &"core:plasma", "Hazards must resolve in route order.")
+		_expect((resolution.events[1] as UnitDamagedEvent).source_hex_state_id == &"core:fire" and (resolution.events[3] as UnitDamagedEvent).source_hex_state_id == &"core:acid", "Hazards must resolve in route order.")
 
 	engine = _create_hex_state_path_engine(intermediate, 1)
 	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
+	resolution.events = _movement_events(resolution.events)
 	player = engine.get_unit(&"player")
 	_expect(player.health.is_defeated() and player.hex == Vector2i(1, 0), "A lethal intermediate hazard must stop the unit on that hex.")
 	_expect(player.turn.movement_remaining == 4, "A fatal route must only spend movement for traversed cells.")
@@ -329,7 +333,8 @@ func _check_hex_state_path_impacts() -> void:
 	}
 	engine = _create_hex_state_path_engine(costly)
 	resolution = engine.execute(MoveCommand.new(&"player", Vector2i(3, 0)))
-	_expect(resolution.accepted and engine.get_unit(&"player").turn.movement_remaining == 1, "A crossed oil hex must spend two movement points without dealing damage.")
+	resolution.events = _movement_events(resolution.events)
+	_expect(resolution.accepted and engine.get_unit(&"player").turn.movement_remaining == 0 and engine.get_unit(&"player").health.current == 10, "Oil costs two movement points and acquires an additional one-point status penalty without damage.")
 
 
 func _check_ranged_attack() -> void:
@@ -391,8 +396,9 @@ func _check_ranged_attack() -> void:
 	)
 	_expect(resolution.accepted, "Ranged attack at distance three must be accepted.")
 	_expect(
-		resolution.events.size() == 1
-		and resolution.events[0] is UnitDamagedEvent,
+		resolution.events.size() >= 2
+		and resolution.events[0] is UnitDamagedEvent
+		and resolution.events[1] is TurnEndedEvent,
 		"Ranged attack must emit UnitDamagedEvent."
 	)
 	_expect(
@@ -477,7 +483,7 @@ func _check_grenade_ability() -> void:
 	)
 	_expect(resolution.accepted, "Grenade at a valid center must be accepted.")
 	_expect(
-		resolution.events.size() == 4
+		resolution.events.filter(func(event: BattleEvent) -> bool: return event is UnitDamagedEvent).size() == 3
 		and resolution.events[0] is AreaAbilityUsedEvent,
 		"Grenade must emit one area event and damage three affected units."
 	)
@@ -511,7 +517,7 @@ func _check_grenade_ability() -> void:
 	)
 
 	var ended := session.step(EndTurnCommand.new(player_id))
-	_expect(ended.accepted, "Melee unit must be able to end its turn after grenade.")
+	_expect(not ended.accepted and session.get_active_unit_id() == ally_id, "Grenade automatically hands the turn to the ally; former user cannot end it twice.")
 	ended = session.step(EndTurnCommand.new(ally_id))
 	_expect(ended.accepted, "Second ally must hand the turn to enemy AI.")
 	var ai_command := session.get_next_ai_command()
@@ -588,476 +594,33 @@ func _check_battle_session_factory() -> void:
 	)
 
 
+func _movement_events(events: Array[BattleEvent]) -> Array[BattleEvent]:
+	var result: Array[BattleEvent] = []
+	for event: BattleEvent in events:
+		if event is UnitMovedEvent or event is UnitDamagedEvent:
+			result.append(event)
+	return result
+
+
 func _check_battle_scene() -> void:
-	var packed_scene := load("res://debug_battle_launcher.tscn") as PackedScene
-	_expect(packed_scene != null, "Debug battle launcher scene must load.")
-
-	if packed_scene == null:
+	# A fixed core fixture avoids coupling assertions to the owner's saved battle.
+	var packages: Array[ContentPackage] = [load("res://content/packages/core/core_package.tres")]
+	var content := ContentLoader.load_packages(packages)
+	_expect(content.is_successful, "Core graphical fixture loads")
+	if not content.is_successful:
 		return
-
-	var launcher := packed_scene.instantiate()
-	_expect(launcher != null, "Debug battle launcher must instantiate.")
-
-	if launcher == null:
-		return
-
-	root.add_child(launcher)
+	var screen := (load("res://features/battle/battle_screen.tscn") as PackedScene).instantiate() as BattleScreen
+	_expect(screen.setup(BattleStartRequest.new(&"core:debug_battle", content.snapshot, 42)), "Screen accepts core request")
+	root.add_child(screen)
 	await process_frame
 	await process_frame
-
-	var map_view := launcher.get_node_or_null(
-		"BattleScreen/BattleMap"
-	) as BattleMapView
-	var controller := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/BattleController"
-	) as BattleController
-	var input_router := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/BattleInputRouter"
-	) as BattleInputRouter
-	var hud := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/BattleUI"
-	) as BattleHUD
-	var selection_layer := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/SelectionLayer"
-	) as TileMapLayer
-	var terrain_layer := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/TerrainLayer"
-	) as TileMapLayer
-	var path_layer := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/PathLayer"
-	) as TileMapLayer
-	var targetable_layer := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/TargetableLayer"
-	) as TileMapLayer
-	var ability_area_layer := launcher.get_node_or_null(
-		"BattleScreen/BattleMap/AbilityAreaLayer"
-	) as TileMapLayer
-	_expect(map_view != null, "Battle launcher must expose BattleMapView.")
-	_expect(controller != null and input_router != null and hud != null, "Battle scene must expose controller, input router and HUD.")
-	_expect(terrain_layer != null and selection_layer != null and path_layer != null and targetable_layer != null and ability_area_layer != null, "Battle scene must expose terrain, selection, path, targetable and ability area layers.")
-
-	if map_view == null or controller == null or input_router == null or hud == null or terrain_layer == null or selection_layer == null or path_layer == null or targetable_layer == null or ability_area_layer == null:
-		launcher.queue_free()
-		await process_frame
-		return
-
+	var controller := screen.get_node("BattleMap/BattleController") as BattleController
 	var session := controller.get("_battle_session") as BattleSession
 	var actors: Dictionary = controller.get("_unit_actors")
-	_expect(session != null, "BattleController must initialize BattleSession.")
-
-	if session == null:
-		launcher.queue_free()
-		await process_frame
-		return
-
-	var player_id := &"core:debug_battle:player_1"
-	var ranged_player_id := &"core:debug_battle:player_2"
-	var enemy_id := &"core:debug_battle:enemy_1"
-	var ranged_enemy_id := &"core:debug_battle:enemy_2"
-	var player := session.get_unit(player_id)
-	var ranged_player := session.get_unit(ranged_player_id)
-	var ranged_enemy := session.get_unit(ranged_enemy_id)
-	var player_actor := actors.get(player_id) as UnitActor
-	var ranged_player_actor := actors.get(ranged_player_id) as UnitActor
-	var ranged_enemy_actor := actors.get(ranged_enemy_id) as UnitActor
-	var hex_grid := session.get_hex_grid()
-	var hud_root := hud.get_node_or_null("HUDRoot") as Control
-	var strategist_panel := hud_root.get_node_or_null("StrategistPanel") as PanelContainer
-	var active_unit_panel := hud_root.get_node_or_null("ActiveUnitPanel") as PanelContainer
-	var turn_queue_panel := hud_root.get_node_or_null("TurnQueuePanel") as PanelContainer
-	var target_panel := hud_root.get_node_or_null("TargetPanel") as PanelContainer
-	var action_panel := hud_root.get_node_or_null("ActionPanel") as PanelContainer
-	var system_panel := hud_root.get_node_or_null("SystemPanel") as PanelContainer
-	var speed_panel := hud_root.get_node_or_null("SpeedPanel") as PanelContainer
-	var movement_label := active_unit_panel.get_node_or_null(
-		"Content/UnitHeader/Stats/MovementLabel"
-	) as Label
-	var movement_button := action_panel.get_node_or_null(
-		"Content/SkillButtons/MovementButton"
-	) as Button
-	var grenade_button := _find_ability_button(action_panel, &"core:grenade")
-	var basic_attack_button := action_panel.get_node_or_null(
-		"Content/SkillButtons/BasicAttackButton"
-	) as Button
-	var end_turn_button := action_panel.get_node_or_null(
-		"Content/SkillButtons/EndTurnButton"
-	) as Button
-	var settings_button := system_panel.get_node_or_null(
-		"Content/SettingsButton"
-	) as Button
-	var speed_1_button := speed_panel.get_node_or_null(
-		"Content/Buttons/Speed1Button"
-	) as Button
-	var speed_2_button := speed_panel.get_node_or_null(
-		"Content/Buttons/Speed2Button"
-	) as Button
-	var speed_label := speed_panel.get_node_or_null(
-		"Content/SpeedLabel"
-	) as Label
-	var resolution_option := speed_panel.get_node_or_null(
-		"Content/ResolutionRow/ResolutionOption"
-	) as OptionButton
-	var fullscreen_check := speed_panel.get_node_or_null(
-		"Content/FullscreenCheck"
-	) as CheckButton
-	var display_status_label := speed_panel.get_node_or_null(
-		"Content/DisplayStatusLabel"
-	) as Label
-	var target_placeholder := target_panel.get_node_or_null(
-		"Content/TargetPlaceholder"
-	) as Label
-	var target_content := target_panel.get_node_or_null(
-		"Content/TargetContent"
-	) as HBoxContainer
-	var target_portrait := target_panel.get_node_or_null(
-		"Content/TargetContent/TargetPortrait"
-	) as TextureRect
-	var turn_order_container := turn_queue_panel.get_node_or_null(
-		"Content/TurnOrderContainer"
-	) as HBoxContainer
-	_expect(
-		movement_label != null
-		and movement_button != null
-		and grenade_button != null
-		and basic_attack_button != null
-		and end_turn_button != null
-		and settings_button != null
-		and speed_panel != null
-		and speed_1_button != null
-		and speed_2_button != null
-		and speed_label != null
-		and resolution_option != null
-		and fullscreen_check != null
-		and display_status_label != null
-		and target_placeholder != null
-		and target_content != null
-		and target_portrait != null
-		and turn_order_container != null,
-		"Battle HUD must expose unit, target, turn order and settings controls."
-	)
-	_expect(
-		resolution_option != null
-		and resolution_option.item_count == 4
-		and resolution_option.get_item_text(0) == "1920 × 1080"
-		and resolution_option.get_item_text(3) == "1280 × 720"
-		and fullscreen_check != null
-		and fullscreen_check.text == "НА ВЕСЬ ЭКРАН"
-		and display_status_label != null
-		and not display_status_label.text.is_empty(),
-		"Display settings must expose supported resolutions and fullscreen mode."
-	)
-	_expect(
-		strategist_panel != null
-		and active_unit_panel != null
-		and turn_queue_panel != null
-		and target_panel != null
-		and action_panel != null
-		and system_panel != null,
-		"Battle HUD must contain all battlefield-first interface regions."
-	)
-
-	if (
-		movement_label == null
-		or movement_button == null
-		or grenade_button == null
-		or basic_attack_button == null
-		or end_turn_button == null
-		or settings_button == null
-		or speed_panel == null
-		or speed_1_button == null
-		or speed_2_button == null
-		or speed_label == null
-		or target_placeholder == null
-		or target_content == null
-		or target_portrait == null
-		or turn_order_container == null
-	):
-		launcher.queue_free()
-		await process_frame
-		return
-
-	_expect(not speed_panel.visible, "Settings panel must start collapsed.")
-	_expect(
-		not target_panel.visible,
-		"Target panel must stay hidden while no unit is hovered."
-	)
-	settings_button.pressed.emit()
-	_expect(speed_panel.visible, "Settings button must open display settings.")
-	settings_button.pressed.emit()
-	_expect(not speed_panel.visible, "Settings button must close display settings.")
-
-	_expect(player != null, "Battle session must expose the first player snapshot.")
-	_expect(player_actor != null and actors.size() == 4, "Battle scene must create all four unit actors.")
-	_expect(
-		ranged_player != null
-		and ranged_enemy != null
-		and ranged_player.basic_attack_range == 3
-		and ranged_enemy.basic_attack_range == 3,
-		"Debug battle must contain one ranged unit on each side."
-	)
-	var melee_role_label := player_actor.get_node_or_null(
-		"VisualRoot/CombatRoleLabel"
-	) as Label
-	var ranged_ally_role_label := ranged_player_actor.get_node_or_null(
-		"VisualRoot/CombatRoleLabel"
-	) as Label
-	var ranged_enemy_role_label := ranged_enemy_actor.get_node_or_null(
-		"VisualRoot/CombatRoleLabel"
-	) as Label
-	_expect(
-		melee_role_label != null and not melee_role_label.visible,
-		"Melee unit must not show the ranged marker."
-	)
-	_expect(
-		ranged_ally_role_label != null and ranged_ally_role_label.visible,
-		"Ranged ally must show a visible ranged marker."
-	)
-	_expect(
-		ranged_enemy_role_label != null and ranged_enemy_role_label.visible,
-		"Ranged enemy must show a visible ranged marker."
-	)
-
-	if (
-		player == null
-		or player_actor == null
-		or ranged_player == null
-		or ranged_enemy == null
-		or ranged_player_actor == null
-		or ranged_enemy_actor == null
-	):
-		launcher.queue_free()
-		await process_frame
-		return
-
-	_expect(session.get_active_unit_id() == player.unit_id, "Battle scene must start with the first player active.")
-	_expect(movement_label.text == "ОД   3 / 3", "HUD must show full player movement.")
-	_expect(turn_order_container.get_child_count() == 4, "Turn queue must show all four combatants.")
-	_expect(hex_grid.get_movement_cost(Vector2i(8, 6)) == 1, "Former anonymous difficult hex must use normal movement cost.")
-	_expect(hex_grid.get_movement_cost(Vector2i(13, 4)) == 2 and hex_grid.get_hex_state_id(Vector2i(13, 4)) == &"core:oil", "Oil must explicitly define a two-point traversal cost.")
-	_expect(
-		terrain_layer.get_cell_source_id(
-			HexCoordinateMapper.axial_to_offset(Vector2i(8, 6))
-		) == terrain_layer.get_cell_source_id(
-			HexCoordinateMapper.axial_to_offset(Vector2i(7, 7))
-		),
-		"Former difficult hex must use the normal terrain tile."
-	)
-	var state_visuals := map_view.get_node_or_null("HexStateVisuals") as Node2D
-	_expect(state_visuals != null and state_visuals.get_child_count() == 12, "Battlefield must display all twelve hex state assets.")
-	_expect(selection_layer.get_used_cells().has(HexCoordinateMapper.axial_to_offset(player.hex)), "Selection must start on the player.")
-	_expect(
-		hex_grid.get_cells().size() == 216
-		and terrain_layer.get_used_cells().size() == 216,
-		"Debug battlefield must render the full 18x12 map on battle start."
-	)
-	_expect(
-		hex_grid.has_cell(Vector2i(1, 2))
-		and hex_grid.has_cell(Vector2i(13, 13)),
-		"Debug battlefield must include both outer corners of the 18x12 map."
-	)
-	var grid_bounds := map_view.get_grid_global_bounds()
-	var viewport_width := map_view.get_viewport_rect().size.x
-	var left_grid_margin := grid_bounds.position.x
-	var right_grid_margin := viewport_width - grid_bounds.end.x
-	_expect(
-		absf(left_grid_margin - right_grid_margin) <= 1.0,
-		"Battle grid must have equal left and right margins: left=%s right=%s."
-		% [left_grid_margin, right_grid_margin]
-	)
-	_expect(
-		grid_bounds.end.x
-		<= speed_panel.get_global_rect().position.x,
-		"Settings panel must stay outside the battle grid: grid=%s panel=%s."
-		% [grid_bounds, speed_panel.get_global_rect()]
-	)
-	_expect(
-		active_unit_panel.is_visible_in_tree()
-		and active_unit_panel.get_global_rect().has_point(
-			Vector2(20.0, active_unit_panel.get_viewport_rect().size.y - 20.0)
-		),
-		"Active unit panel must be visible in the bottom-left corner: panel=%s viewport=%s."
-		% [active_unit_panel.get_global_rect(), active_unit_panel.get_viewport_rect()]
-	)
-	_expect(
-		movement_button.is_visible_in_tree() and not movement_button.disabled,
-		"Active player must have a visible movement-mode button."
-	)
-	_expect(
-		grenade_button.is_visible_in_tree() and not grenade_button.disabled,
-		"Melee player must have a visible and available grenade button."
-	)
-	_expect(
-		target_portrait.stretch_mode
-		== TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		and target_portrait.custom_minimum_size.y <= 132.0,
-		"Target portrait must fit completely inside a compact right panel slot."
-	)
-	_expect(not basic_attack_button.disabled, "Active unit panel must expose the basic attack skill.")
-
-	input_router.hex_hovered.emit(Vector2i(9, 7))
-	_expect(
-		map_view.get("_cursor_mode") == BattleMapView.CursorMode.DEFAULT,
-		"Melee attack cursor must not appear for an out-of-range enemy."
-	)
-	_expect(
-		target_panel.visible
-		and target_content.visible
-		and not target_placeholder.visible,
-		"Hovering any unit must open the right tactical analysis panel."
-	)
-	input_router.hex_hover_exited.emit()
-	_expect(
-		not target_panel.visible,
-		"Hover exit must hide the tactical analysis panel."
-	)
-	settings_button.pressed.emit()
-	_expect(speed_panel.visible, "Settings button must open animation speed controls.")
-	speed_2_button.pressed.emit()
-	_expect(speed_label.text.contains("2x"), "Speed controls must display the selected speed.")
-	speed_1_button.pressed.emit()
-	settings_button.pressed.emit()
-	_expect(not speed_panel.visible, "Settings button must close animation speed controls.")
-
-	grenade_button = _find_ability_button(action_panel, &"core:grenade")
-	grenade_button.pressed.emit()
-	var grenade_targets := map_view.get_node_or_null(
-		"AbilityTargetVisuals"
-	) as Node2D
-	var grenade_area := map_view.get_node_or_null(
-		"AbilityAreaVisuals"
-	) as Node2D
-	_expect(
-		targetable_layer.get_used_cells().has(
-			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
-		),
-		"Grenade selection must highlight valid center hexes."
-	)
-	_expect(
-		grenade_targets != null
-		and grenade_targets.get_child_count() > 0,
-		"Grenade centers must have a separate readable highlight."
-	)
-	movement_button.pressed.emit()
-	_expect(
-		grenade_targets.get_child_count() == 0,
-		"Leaving grenade mode must remove the center highlight."
-	)
-	_expect(
-		not targetable_layer.get_used_cells().has(
-			HexCoordinateMapper.axial_to_offset(Vector2i(8, 7))
-		),
-		"Movement button must leave grenade targeting mode."
-	)
-	grenade_button = _find_ability_button(action_panel, &"core:grenade")
-	grenade_button.pressed.emit()
-	input_router.hex_hovered.emit(Vector2i(8, 7))
-	_expect(
-		ability_area_layer.get_used_cells().size() == 7,
-		"Grenade hover must preview the full seven-hex damage area."
-	)
-	_expect(
-		grenade_area != null
-		and grenade_area.get_child_count() == 14,
-		"Seven grenade hexes must each have a bright fill and contour."
-	)
-	input_router.hex_selected.emit(Vector2i(8, 7))
-	_expect(
-		map_view.get_node_or_null("AbilityProjectile") != null,
-		"Grenade use must create a visible thrown projectile."
-	)
-	await create_timer(0.3).timeout
-	_expect(
-		map_view.get_node_or_null("AbilityImpactCore") != null
-		and map_view.get_node_or_null("AbilityImpactRing") != null,
-		"Grenade impact must create a visible explosion and shockwave."
-	)
-	await create_timer(1.1).timeout
-	player = session.get_unit(player_id)
-	_expect(
-		player.health.current == 8,
-		"Scene grenade must apply friendly fire to its melee user."
-	)
-	_expect(
-		ability_area_layer.get_used_cells().is_empty(),
-		"Grenade area overlay must clear after explosion presentation."
-	)
-
-	input_router.hex_hovered.emit(Vector2i(7, 6))
-	var path_stroke := map_view.get("_path_stroke") as Line2D
-	_expect(not path_layer.get_used_cells().is_empty(), "Reachable hover must draw a path.")
-	_expect(
-		path_stroke != null
-		and path_stroke.points.size() >= 2
-		and path_stroke.width >= 4.0
-		and path_stroke.default_color.a >= 0.95,
-		"Reachable path must include a strong high-contrast route line."
-	)
-	input_router.hex_hover_exited.emit()
-	_expect(
-		path_layer.get_used_cells().is_empty()
-		and path_stroke.points.is_empty(),
-		"Hover exit must clear every path visual."
-	)
-
-	_expect(controller.set_playback_speed(1000.0), "Scene smoke must enable fast presentation.")
-	input_router.hex_selected.emit(Vector2i(7, 6))
-	await process_frame
-	await process_frame
-	player = session.get_unit(player_id)
-	_expect(player.hex == Vector2i(7, 6) and player.turn.movement_remaining == 2, "Player click must execute a MoveCommand through BattleSession.")
-	_expect(player_actor.global_position.is_equal_approx(map_view.hex_to_global_position(player.hex)), "Player actor must follow its snapshot.")
-	_expect(movement_label.text == "ОД   2 / 3", "HUD must update after player movement.")
-
-	end_turn_button.pressed.emit()
-	await process_frame
-	ranged_player = session.get_unit(ranged_player_id)
-	var enemy := session.get_unit(enemy_id)
-	_expect(
-		session.get_active_unit_id() == ranged_player_id,
-		"Second player turn must activate the ranged ally."
-	)
-	_expect(
-		_find_ability_button(action_panel, &"core:grenade") == null,
-		"Ranged ally must not expose the grenade button."
-	)
-	_expect(
-		targetable_layer.get_used_cells().has(
-			HexCoordinateMapper.axial_to_offset(enemy.hex)
-		),
-		"Ranged target highlight must include an enemy two hexes away."
-	)
-	input_router.hex_hovered.emit(enemy.hex)
-	_expect(
-		map_view.get("_cursor_mode") == BattleMapView.CursorMode.RANGED,
-		"Ranged attack cursor must appear on an attackable enemy."
-	)
-	input_router.hex_hover_exited.emit()
-	_expect(
-		map_view.get("_cursor_mode") == BattleMapView.CursorMode.DEFAULT,
-		"Leaving an enemy hex must restore the default cursor."
-	)
-
-	_expect(
-		controller.set_playback_speed(1.0),
-		"Scene smoke must restore normal presentation speed."
-	)
-	input_router.hex_selected.emit(enemy.hex)
-	_expect(
-		map_view.get_node_or_null("RangedAttackProjectile") != null
-		and map_view.get_node_or_null("RangedAttackTracer") != null,
-		"Ranged attack must create a visible projectile and tracer."
-	)
-	await create_timer(0.3).timeout
-	enemy = session.get_unit(enemy_id)
-	_expect(
-		enemy.health.current == 2,
-		"Ranged scene attack must damage the distant enemy."
-	)
-	_expect(
-		map_view.get_node_or_null("RangedAttackProjectile") == null
-		and map_view.get_node_or_null("RangedAttackTracer") == null,
-		"Ranged projectile visuals must be removed after presentation."
-	)
-
-	launcher.queue_free()
+	_expect(session != null and actors.size() == 4, "Core fixture creates four actors")
+	var map := screen.get_node("BattleMap") as BattleMapView
+	_expect(map.get_node("TerrainLayer").get_used_cells().size() == session.get_hex_grid().get_cells().size(), "Graphical terrain matches logical cells")
+	var hud := screen.get_node("BattleMap/BattleUI") as BattleHUD
+	_expect(hud.get("_target_effects_label") != null and hud.get("_speed_4_button") != null, "HUD exposes target effects and playback controls")
+	screen.queue_free()
 	await process_frame

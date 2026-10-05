@@ -66,7 +66,8 @@ func next_command(session: BattleSession) -> BattleCommand:
 		movement_search,
 		session.get_hex_grid(),
 		active.health.current,
-		active.basic_attack_range
+		active.basic_attack_range,
+		active
 	)
 
 	if move != null:
@@ -117,9 +118,9 @@ func _choose_ability_command(
 		if radius <= 0:
 			for opponent: UnitSnapshot in opponents:
 				if target_hexes.has(opponent.hex):
-					return UseAbilityCommand.new(
+					return UseAbilityCommand.at_hex(
 						active.unit_id,
-						opponent.unit_id,
+						opponent.hex,
 						ability_id
 					)
 

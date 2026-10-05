@@ -42,7 +42,7 @@ func _init(
 
 	for ability: AbilityDefinition in p_abilities:
 		if ability != null:
-			abilities[ability.id] = ability
+			abilities[ability.id] = ability.duplicate(true) as AbilityDefinition
 			ability_cooldowns[ability.id] = ability.initial_cooldown_turns
 
 

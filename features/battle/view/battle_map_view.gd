@@ -45,6 +45,10 @@ var _hover_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
 var _cursor_mode := CursorMode.DEFAULT
 var _grid_rulers: Node2D
+var _terrain_property_visuals: Node2D
+var _terrain_property_nodes: Dictionary[Vector2i, Node2D] = {}
+var _displayed_properties: Dictionary[Vector2i, Dictionary] = {}
+
 var _presentation_frame := Vector2i.ZERO
 
 
@@ -71,6 +75,10 @@ func _ready() -> void:
 	_mount_path_visuals()
 	_mount_ability_visuals()
 	_mount_interaction_visuals()
+	_terrain_property_visuals = Node2D.new()
+	_terrain_property_visuals.name = "TerrainProperties"
+	_terrain_property_visuals.z_index = 4
+	add_child(_terrain_property_visuals)
 	set_cursor_mode(CursorMode.DEFAULT)
 	_fit_battlefield_to_viewport()
 
@@ -304,6 +312,8 @@ func render_grid(grid: HexGrid) -> void:
 		_capture_terrain_tiles()
 
 	_terrain_layer.clear()
+	_displayed_properties.clear()
+	_clear_hex_visuals(_terrain_property_visuals)
 	clear_overlays()
 
 	if _default_source_id == -1:
@@ -321,6 +331,9 @@ func render_grid(grid: HexGrid) -> void:
 			tile["alternative_tile"]
 		)
 
+	for hex: Vector2i in grid.get_cells():
+		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex)}
+	_refresh_terrain_properties()
 	_hex_state_visuals.render(grid)
 	_fit_battlefield_to_viewport()
 
@@ -504,6 +517,11 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		return
 
 	clear_overlays()
+	if event.kind == MapMutationKind.Value.REMOVE_HEX:
+		_displayed_properties.erase(event.hex)
+	else:
+		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost}
+	_update_terrain_properties(event.hex)
 	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 		_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
 		return
@@ -526,6 +544,8 @@ func apply_map_event(event: MapMutationEvent) -> void:
 			tile["atlas_coords"],
 			tile["alternative_tile"]
 		)
+
+	_update_terrain_properties(event.hex)
 
 
 func _capture_terrain_tiles() -> void:
@@ -679,3 +699,46 @@ func _show_path_polyline(cells: Array[Vector2i]) -> void:
 func _clear_hover() -> void:
 	_highlight_layer.clear()
 	_clear_hex_visuals(_hover_visuals)
+
+
+func _refresh_terrain_properties() -> void:
+	if _terrain_property_visuals == null:
+		return
+	_clear_hex_visuals(_terrain_property_visuals)
+	_terrain_property_nodes.clear()
+	for hex: Vector2i in _displayed_properties:
+		_update_terrain_properties(hex)
+
+
+func _update_terrain_properties(hex: Vector2i) -> void:
+	if _terrain_property_visuals == null:
+		return
+	var previous := _terrain_property_nodes.get(hex) as Node2D
+	if is_instance_valid(previous):
+		_terrain_property_visuals.remove_child(previous)
+		previous.queue_free()
+	_terrain_property_nodes.erase(hex)
+	if not _displayed_properties.has(hex):
+		return
+	var container := Node2D.new()
+	_terrain_property_visuals.add_child(container)
+	_terrain_property_nodes[hex] = container
+	var properties: Dictionary = _displayed_properties[hex]
+	if not properties.traversable:
+		_add_hex_visual(container, hex, Color(0.12, 0.13, 0.16, 0.72), Color(0.85, 0.4, 0.35, 0.8), 2.0)
+		var cross := Label.new()
+		cross.text = "×"
+		cross.add_theme_font_size_override("font_size", 22)
+		cross.position = to_local(hex_to_global_position(hex)) - Vector2(7, 15)
+		cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(cross)
+	elif properties.terrain != &"core:default":
+		var hue := float(absi(String(properties.terrain).hash()) % 360) / 360.0
+		_add_hex_visual(container, hex, Color.from_hsv(hue, 0.35, 0.55, 0.17), Color.from_hsv(hue, 0.25, 0.75, 0.3), 1.0)
+	if int(properties.cost) > 1:
+		var cost := Label.new()
+		cost.text = str(properties.cost)
+		cost.position = to_local(hex_to_global_position(hex)) + Vector2(12, 10)
+		cost.add_theme_font_size_override("font_size", 11)
+		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		container.add_child(cost)

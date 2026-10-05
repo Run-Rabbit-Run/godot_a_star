@@ -154,6 +154,8 @@ func _present_damage(
 
 	if not event.source_hex_state_id.is_empty():
 		source_name = HexStateCatalog.get_display_name(event.source_hex_state_id)
+	if not event.source_status_id.is_empty():
+		source_name = UnitStatusCatalog.display_name(event.source_status_id)
 
 	hud.show_attack(
 		source_name,
@@ -167,6 +169,7 @@ func _present_damage(
 	if (
 		event.source_ability_id.is_empty()
 		and event.source_hex_state_id.is_empty()
+		and event.source_status_id.is_empty()
 		and attacker != null
 		and attacker_definition != null
 		and attacker_definition.base_stats != null

@@ -45,12 +45,20 @@ var _current_document_path := ""
 var _activate_after_save := false
 var _trial_return_layer: CanvasLayer
 var _trial_screen: BattleScreen
+var _discard_dialog: ConfirmationDialog
+var _pending_discard_action: Callable
+var _saved_document: Dictionary = {}
 var _trial_result: BattleResult
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
+	get_tree().auto_accept_quit = false
+	_discard_dialog = ConfirmationDialog.new()
+	_discard_dialog.dialog_text = "Есть несохранённые изменения. Отбросить их?"
+	_discard_dialog.confirmed.connect(_confirm_discard)
+	add_child(_discard_dialog)
 	var settings := GameContentSettings.read()
 	if settings == null:
 		_set_status("Не удалось прочитать content/game_content.tres.")
@@ -77,6 +85,7 @@ func _ready() -> void:
 		_set_status("Не удалось открыть стартовый бой.")
 		return
 
+	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_view.snapshot = _snapshot
 	_view.setup(_document)
@@ -358,12 +367,23 @@ func _reload_unit_library() -> void:
 		return
 	_snapshot = result.snapshot
 	if _document == null:
-		_document = BattleDocument.from_snapshot(_snapshot, initial_battle_id)
+		var settings := GameContentSettings.read()
+		if settings != null and not settings.battle_document_path.is_empty():
+			var loaded := BattleDocumentSerializer.load_result(settings.battle_document_path)
+			_document = loaded.document
+			if _document == null:
+				_set_status(loaded.error_message)
+				return
+			_current_document_path = settings.battle_document_path
+		else:
+			_document = BattleDocument.from_snapshot(_snapshot, initial_battle_id)
 		if _document == null:
 			_set_status("Не найден стартовый бой.")
 			return
-			_populate_side_options()
+		_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
+		_populate_side_options()
 		_populate_ai_options()
+		_update_document_path_label()
 	_view.snapshot = _snapshot
 	_view.setup(_document)
 	_populate_palette(_palette_search.text)
@@ -557,6 +577,9 @@ func _update_hex(
 		if not updated.hex_state_id.is_empty():
 			updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
 	if make_obstacle:
+		if _hex_is_occupied(hex):
+			_set_status("Нельзя сделать занятый гекс непроходимым.")
+			return
 		updated.traversable = false
 
 	_execute(EditCommand.update_hex(updated))
@@ -578,6 +601,9 @@ func _apply_selected_hex() -> void:
 	updated.movement_cost = int(_movement_cost_spin.value)
 	if not updated.hex_state_id.is_empty():
 		updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
+	if not _traversable_check.button_pressed and _hex_is_occupied(_selected_hex):
+		_set_status("Нельзя сделать занятый гекс непроходимым.")
+		return
 	updated.traversable = _traversable_check.button_pressed
 	_execute(EditCommand.update_hex(updated))
 	_set_status("Свойства гекса q=%d, r=%d обновлены." % [_selected_hex.x, _selected_hex.y])
@@ -779,12 +805,17 @@ func _save_to_path(path: String) -> bool:
 		return false
 
 	_current_document_path = path
+	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
 	_update_document_path_label()
 	_set_status("Сохранено: %s" % ProjectSettings.globalize_path(path))
 	return true
 
 
 func _on_open_path_selected(path: String) -> void:
+	_guard_discard(_load_document_path.bind(path))
+
+
+func _load_document_path(path: String) -> void:
 	if _snapshot == null:
 		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
 		return
@@ -796,6 +827,7 @@ func _on_open_path_selected(path: String) -> void:
 		return
 
 	_document = loaded
+	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
 	_history = EditorCommandHistory.new()
 	_selected_placement_id = StringName()
 	_selected_definition_id = StringName()
@@ -881,6 +913,7 @@ func _start_trial() -> void:
 
 	_trial_screen = BATTLE_SCREEN_SCENE.instantiate() as BattleScreen
 
+	_trial_screen.show_failure_message = false
 	if not _trial_screen.setup(request):
 		var error := _trial_screen.initialization_error
 		_trial_screen.free()
@@ -1067,3 +1100,34 @@ func _free_hex_near(origin: Vector2i) -> Vector2i:
 			best_distance = distance
 			best = cell.hex
 	return best
+
+
+func has_unsaved_changes() -> bool:
+	return _document != null and BattleDocumentSerializer.to_dictionary(_document) != _saved_document
+
+func _guard_discard(action: Callable) -> void:
+	if not has_unsaved_changes():
+		action.call()
+		return
+	_pending_discard_action = action
+	_discard_dialog.popup_centered()
+
+func _confirm_discard() -> void:
+	var action := _pending_discard_action
+	_pending_discard_action = Callable()
+	if action.is_valid():
+		action.call()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
+		_guard_discard(func() -> void: get_tree().quit())
+
+func _exit_tree() -> void:
+	if get_tree() != null:
+		get_tree().auto_accept_quit = true
+
+func _hex_is_occupied(hex: Vector2i) -> bool:
+	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+		if placement.start_hex == hex:
+			return true
+	return false

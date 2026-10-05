@@ -30,7 +30,7 @@ func _run() -> void:
 	var open_dialog: FileDialog = editor.get("_open_dialog")
 	_expect(document != null, "Editor must create an BattleDocument.")
 	_expect(view != null and workspace != null, "Editor must create a clipped map workspace.")
-	_expect(tool_option != null and tool_option.item_count == 7, "Editor must expose all map and unit tools.")
+	_expect(tool_option != null and tool_option.item_count == EditorBattleView.Tool.size(), "Editor must expose all map and unit tools.")
 	_expect(save_dialog != null and open_dialog != null, "Editor must expose save-as and open dialogs.")
 
 	if document == null or view == null or workspace == null:
@@ -69,7 +69,10 @@ func _run() -> void:
 	updated = _find_cell(document, original.hex)
 	_expect(updated != null and updated.movement_cost == 4, "Redo must reapply the cell edit.")
 
-	var new_hex := Vector2i(80, 80)
+	var new_hex := original.hex
+	editor.call("_undo") # Undo the re-applied property change.
+	editor.call("_remove_hex", new_hex)
+	_expect(_find_cell(document, new_hex) == null, "Remove fixture cell before testing add brush")
 	view.set_tool(EditorBattleView.Tool.ADD_HEX)
 	(editor.get("_terrain_id_edit") as LineEdit).text = "test:ash"
 	(editor.get("_movement_cost_spin") as SpinBox).value = 2
@@ -85,6 +88,7 @@ func _run() -> void:
 	)
 	editor.call("_undo")
 	_expect(_find_cell(document, new_hex) == null, "Add-hex brush must participate in undo.")
+	editor.call("_undo") # Restore removed fixture cell.
 
 	view.frame_document(workspace.size)
 	var sample_hex := document.map_definition.cells[0].hex
@@ -95,8 +99,8 @@ func _run() -> void:
 		"Cursor conversion must return the same axial hex at its center."
 	)
 
-	var first_path := "user://editor_smoke_first.json"
-	var second_path := "user://editor_smoke_second.json"
+	var first_path := "user://editor_smoke_first_%d.json" % OS.get_process_id()
+	var second_path := "user://editor_smoke_second_%d.json" % OS.get_process_id()
 	editor.call("_save_to_path", first_path)
 	editor.call("_save_to_path", second_path)
 	_expect(FileAccess.file_exists(first_path), "Editor must save to the first selected path.")

@@ -78,10 +78,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	if not mouse_event.pressed or not _has_hovered_hex:
+	if not mouse_event.pressed:
 		return
 
-	hex_selected.emit(_hovered_hex)
+	var map_cell := _terrain_layer.local_to_map(_terrain_layer.to_local(_terrain_layer.get_canvas_transform().affine_inverse() * mouse_event.position))
+	var hex := HexCoordinateMapper.offset_to_axial(map_cell)
+	if _hex_grid == null or not _hex_grid.has_cell(hex):
+		return
+	hex_selected.emit(hex)
 	get_viewport().set_input_as_handled()
 
 

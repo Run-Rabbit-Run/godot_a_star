@@ -17,6 +17,8 @@ static func validate(
 		return BattleDefinitionValidationResult.failure(
 			"BattleDefinition id must not be empty."
 		)
+	if definition.protected_faction not in [BattleFaction.Value.PLAYER, BattleFaction.Value.ENEMY]:
+		return BattleDefinitionValidationResult.failure("Unsupported protected faction.")
 
 	if definition.map_id.is_empty():
 		return BattleDefinitionValidationResult.failure(
@@ -32,6 +34,8 @@ static func validate(
 		return BattleDefinitionValidationResult.failure(
 			"Battle objective description must not be empty."
 		)
+	if definition.primary_objective.target_faction not in [BattleFaction.Value.PLAYER, BattleFaction.Value.ENEMY]:
+		return BattleDefinitionValidationResult.failure("Unsupported objective faction.")
 
 	if definition.primary_objective.type != BattleObjectiveType.Value.ELIMINATE_FACTION:
 		return BattleDefinitionValidationResult.failure(

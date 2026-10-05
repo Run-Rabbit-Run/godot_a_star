@@ -7,6 +7,9 @@ signal battle_started
 signal battle_failed(message: String)
 
 
+@export var show_failure_message := true
+var _failure_emitted := false
+
 @export_file("*.json") var ui_profile_path := ""
 
 
@@ -83,9 +86,12 @@ func _on_battle_started() -> void:
 
 
 func _on_battle_failed(message: String) -> void:
+	if _failure_emitted:
+		return
+	_failure_emitted = true
 	initialization_error = message
 	push_error("Battle startup failed: %s" % message)
-	if is_node_ready():
+	if is_node_ready() and show_failure_message:
 		var layer := CanvasLayer.new()
 		layer.layer = 100
 		add_child(layer)

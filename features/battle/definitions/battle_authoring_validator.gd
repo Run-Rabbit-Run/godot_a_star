@@ -55,6 +55,8 @@ static func _validate_sides(
 		if side.side_id.is_empty():
 			result.add_error("Battle side id must not be empty.")
 			continue
+		if side.faction not in [BattleFaction.Value.PLAYER, BattleFaction.Value.ENEMY]:
+			result.add_error("Unsupported faction for side %s." % side.side_id)
 
 		if sides_by_id.has(side.side_id):
 			result.add_error("Duplicate battle side id: %s." % side.side_id)
@@ -183,6 +185,8 @@ static func _validate_placements(
 				"Unit placement hex does not exist for %s: %s."
 				% [placement.placement_id, placement.start_hex]
 			)
+		elif not hex_grid.is_traversable(placement.start_hex):
+			result.add_error("Unit placement hex is not traversable: %s." % placement.placement_id)
 		elif occupied_hexes.has(placement.start_hex):
 			result.add_error(
 				"Unit placements %s and %s occupy the same hex: %s."

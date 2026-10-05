@@ -162,10 +162,10 @@ func set_interaction_enabled(enabled: bool) -> void:
 	_interaction_enabled = enabled
 	_end_turn_button.disabled = not enabled
 	# Display settings remain accessible during AI turns and after battle.
-	_speed_half_button.disabled = not enabled
-	_speed_1_button.disabled = not enabled
-	_speed_2_button.disabled = not enabled
-	_speed_4_button.disabled = not enabled
+	_speed_half_button.disabled = false
+	_speed_1_button.disabled = false
+	_speed_2_button.disabled = false
+	_speed_4_button.disabled = false
 	_refresh_action_button_states()
 
 
@@ -287,7 +287,8 @@ func show_target(
 	attack_range: int,
 	movement_remaining: int,
 	movement_maximum: int,
-	main_action_available: bool
+	main_action_available: bool,
+	statuses: Dictionary = {}
 ) -> void:
 	_target_panel.visible = true
 	_target_placeholder.visible = false
@@ -313,7 +314,12 @@ func show_target(
 			"ГОТОВО" if main_action_available else "НЕТ",
 		]
 	)
-	_target_effects_label.text = "ПАССИВНЫЕ ЭФФЕКТЫ\nНет активных эффектов"
+	var descriptions: Array[String] = []
+	var ids := statuses.keys()
+	ids.sort()
+	for id: StringName in ids:
+		descriptions.append("%s ×%d" % [UnitStatusCatalog.display_name(id), int(statuses[id])])
+	_target_effects_label.text = "СОСТОЯНИЯ\n" + ("Нет активных эффектов" if descriptions.is_empty() else " · ".join(descriptions))
 
 
 func clear_target() -> void:

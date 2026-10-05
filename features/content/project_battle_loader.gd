@@ -8,10 +8,10 @@ class LoadResult extends RefCounted:
 
 
 static func load_battle(
-	packages: Array[ContentPackage], path: String, seed: int
+	packages: Array[ContentPackage], path: String, seed: int, include_presentation := true
 ) -> LoadResult:
 	var result := LoadResult.new()
-	var content := UnitLibrary.load_content(packages)
+	var content := UnitLibrary.load_content(packages, include_presentation)
 	if not content.is_successful:
 		result.error_message = "\n".join(content.errors)
 		return result

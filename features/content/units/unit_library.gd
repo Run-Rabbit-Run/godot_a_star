@@ -76,9 +76,9 @@ static func validate(data: Dictionary) -> String:
 		return "Передвижение: 0–100; дальность: 1–20."
 	if data.attack_type not in ["melee", "ranged"]:
 		return "Неизвестный тип атаки."
-	if data.attack_range < 2:
+	if data.attack_type == "ranged" and data.attack_range < 2:
 		return "Дальность дальней атаки: 2–20 гексов; ближняя атака всегда на 1 гекс."
-	if String(data.image) != String(data.image).get_file() or not (ResourceLoader.exists(ASSETS.path_join(data.image), "Texture2D") or FileAccess.file_exists(ASSETS.path_join(data.image))):
+	if String(data.image) != String(data.image).get_file():
 		return "Выберите изображение из папки assets."
 	for key: String in ["abilities", "passives"]:
 		if not data.get(key) is Array:
@@ -151,7 +151,7 @@ static func save_document(data: Dictionary) -> String:
 		DirAccess.remove_absolute(backup)
 	return ""
 
-static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
+static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
 	var result := ContentLoadResult.new()
 	if not DirAccess.dir_exists_absolute(UNITS):
 		result.add_error("Не найдена библиотека юнитов проекта: %s" % UNITS)
@@ -182,17 +182,19 @@ static func load_content(packages: Array[ContentPackage]) -> ContentLoadResult:
 		unit.base_stats.armor_levels = int(data.get("armor", 0))
 		unit.ability_ids.assign(data.abilities)
 		unit.passive_ability_ids.assign(data.passives)
-		var presentation := presentation_for(String(data.image))
+		var presentation := presentation_for(String(data.image)) if include_presentation else UnitPresentationDefinition.new()
 		presentation.id = unit.presentation_id
-		if presentation.actor_texture == null:
-			result.add_error("%s: изображение повреждено: %s" % [filename, data.image])
+		if include_presentation and presentation.actor_texture == null:
+			result.add_warning("%s: изображение повреждено: %s" % [filename, data.image])
 		package.units.append(unit)
 		package.unit_presentations.append(presentation)
 	if not result.errors.is_empty():
 		return result
 	var combined: Array[ContentPackage] = packages.duplicate()
 	combined.append(package)
-	return ContentLoader.load_packages(combined)
+	var loaded := ContentLoader.load_packages(combined)
+	loaded.warnings.append_array(result.warnings)
+	return loaded
 
 
 ## Shared visual pairing: both new and existing units get the corpse for their image.

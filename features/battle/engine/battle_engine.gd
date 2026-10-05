@@ -4,6 +4,7 @@ extends RefCounted
 
 var _state: BattleState
 var _initial_resolution: BattleResolution
+var _terminal_error := ""
 
 
 func _init(p_state: BattleState) -> void:
@@ -197,6 +198,8 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:
+	if not _terminal_error.is_empty():
+		return _rejected(_terminal_error)
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return _rejected("Battle is already finished.")
 
@@ -206,15 +209,19 @@ func apply_map_mutations(
 		return _rejected(application.rejection_reason)
 
 	_advance_defeated_active(application.events)
-	return BattleResolution.success(
+	var resolution := BattleResolution.success(
 		application.events,
 		_state.state_revision,
 		get_active_unit_id(),
 		get_result()
 	)
+	resolution.terminal_error = _terminal_error
+	return resolution
 
 
 func execute(command: BattleCommand) -> BattleResolution:
+	if not _terminal_error.is_empty():
+		return _rejected(_terminal_error)
 	if command == null:
 		return _rejected("Command must not be null.")
 
@@ -300,6 +307,8 @@ func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> voi
 		return
 	var turn_events: Array[BattleEvent] = []
 	var next_id := _end_turn(turn_events)
+	if next_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+		_terminal_error = "The next unit turn could not be started."
 	events.append(TurnEndedEvent.new(unit_id, next_id, get_round_number()))
 	events.append_array(turn_events)
 
@@ -313,7 +322,7 @@ func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 	var next_unit_id := _end_turn(turn_damage_events)
 
 	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
-		return _rejected("The next unit turn could not be started.")
+		_terminal_error = "The next unit turn could not be started."
 
 	var events: Array[BattleEvent] = [
 		TurnEndedEvent.new(
@@ -454,13 +463,15 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 	_advance_defeated_active(events)
 	_state.state_revision += 1
-	return BattleResolution.success(
+	var resolution := BattleResolution.success(
 		events,
 		_state.state_revision,
 		get_active_unit_id(),
 		get_result()
 	)
 
+	resolution.terminal_error = _terminal_error
+	return resolution
 
 func _advance_defeated_active(events: Array[BattleEvent]) -> void:
 	var active := get_unit(get_active_unit_id())
@@ -473,6 +484,8 @@ func _advance_defeated_active(events: Array[BattleEvent]) -> void:
 
 	var turn_damage_events: Array[BattleEvent] = []
 	var next_unit_id := _end_turn(turn_damage_events)
+	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+		_terminal_error = "The next unit turn could not be started."
 	events.append(TurnEndedEvent.new(
 		active.unit_id,
 		next_unit_id,

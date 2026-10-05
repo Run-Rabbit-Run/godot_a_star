@@ -2,6 +2,8 @@ class_name BattleResolution
 extends RefCounted
 
 
+var terminal_error := ""
+
 var accepted: bool
 var rejection_reason: String
 var events: Array[BattleEvent] = []

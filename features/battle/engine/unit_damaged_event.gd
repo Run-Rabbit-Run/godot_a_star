@@ -9,6 +9,7 @@ var target_health_remaining: int
 var target_defeated: bool
 var source_hex_state_id: StringName
 var source_ability_id: StringName
+var source_status_id: StringName
 var damage_type: StringName = &"physical"
 
 

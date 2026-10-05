@@ -47,10 +47,10 @@ func get_current_battle_id() -> StringName:
 
 
 func complete_battle(result: BattleResult) -> CampaignAdvanceResult:
-	if is_completed or result == null:
+	if is_completed or result == null or result.outcome not in [BattleOutcome.Value.VICTORY, BattleOutcome.Value.DEFEAT]:
 		return CampaignAdvanceResult.new(
 			false,
-			"Campaign is completed or BattleResult is missing.",
+			"Campaign is completed or a terminal BattleResult is missing.",
 			current_scenario_id,
 			StringName(),
 			is_completed

@@ -19,6 +19,7 @@ static func apply(
 	var candidate := state.hex_grid.duplicate_grid()
 	var events: Array[BattleEvent] = []
 	var explosions: Array[Dictionary] = []
+	var propagation_seeds: Array[Vector2i] = []
 
 	for mutation: MapMutation in mutations:
 		if mutation == null:
@@ -33,6 +34,7 @@ static func apply(
 
 		if mutation.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 			HexStateService.apply_to_grid(candidate, mutation.hex, mutation.hex_state_id, events, explosions)
+			propagation_seeds.append(mutation.hex)
 			continue
 
 		var event := _apply_to_candidate(candidate, mutation)
@@ -43,6 +45,18 @@ static func apply(
 			)
 
 		events.append(event)
+		if mutation.kind == MapMutationKind.Value.ADD_HEX:
+			propagation_seeds.append(mutation.hex)
+	# Apply the entire area before propagation; existing neighbors can transform new bases.
+	var seeds: Array[Vector2i] = []
+	for hex: Vector2i in propagation_seeds:
+		if not seeds.has(hex):
+			seeds.append(hex)
+		for direction: Vector2i in HexGrid.DIRECTIONS:
+			var neighbor := hex + direction
+			if candidate.has_cell(neighbor) and not seeds.has(neighbor):
+				seeds.append(neighbor)
+	HexStateService.propagate(candidate, seeds, events)
 
 	if not state.hex_grid.replace_with(candidate):
 		return MapMutationApplicationResult.rejected(

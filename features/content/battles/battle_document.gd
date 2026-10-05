@@ -74,6 +74,14 @@ func copy_from(other: BattleDocument) -> void:
 
 
 func validate(snapshot: ContentSnapshot) -> BattleAuthoringValidationResult:
+	var invalid := BattleAuthoringValidationResult.new()
+	if snapshot == null or not snapshot.is_valid or map_definition == null or battle_definition == null:
+		invalid.add_error("Document requires valid content, map and battle definitions.")
+		return invalid
+	if schema_version != SCHEMA_VERSION or document_id.is_empty() or map_definition.id.is_empty():
+		invalid.add_error("Document requires supported schema and nonempty IDs.")
+	if battle_definition.map_id != map_definition.id:
+		invalid.add_error("Battle map_id must match the document map ID.")
 	var grid := BattleMapFactory.create_hex_grid(map_definition)
 	var result := BattleAuthoringValidator.validate(
 		battle_definition,
@@ -81,6 +89,11 @@ func validate(snapshot: ContentSnapshot) -> BattleAuthoringValidationResult:
 		snapshot.get_unit_definition_ids(),
 		snapshot.get_ai_profile_definition_ids()
 	)
+	var full := BattleDefinitionValidator.validate(battle_definition, grid, snapshot.get_unit_definition_ids(), snapshot.get_ai_profile_definition_ids())
+	if not full.is_valid and not result.errors.has(full.error_message):
+		result.add_error(full.error_message)
+	for error: String in invalid.errors:
+		result.add_error(error)
 	var versions: Dictionary[StringName, String] = {}
 	if snapshot.content_lock != null:
 		for entry: ContentLockEntry in snapshot.content_lock.packages:

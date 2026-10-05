@@ -4,7 +4,10 @@ extends RefCounted
 
 var is_valid := true
 var error_message := ""
-var content_lock: ContentLock
+var _content_lock: ContentLock
+var content_lock: ContentLock:
+	get:
+		return _content_lock.duplicate_lock() if _content_lock != null else null
 var mod_api: ModAPI
 
 var _battle_definitions: Dictionary[StringName, BattleDefinition] = {}
@@ -33,8 +36,8 @@ func _init(
 	p_unit_presentation_definitions: Array[UnitPresentationDefinition] = [],
 	p_ability_presentation_definitions: Array[AbilityPresentationDefinition] = []
 ) -> void:
-	content_lock = p_content_lock
-	mod_api = p_mod_api if p_mod_api != null else ModAPI.create_default()
+	_content_lock = p_content_lock.duplicate_lock() if p_content_lock != null else null
+	mod_api = (p_mod_api if p_mod_api != null else ModAPI.create_default()).frozen_copy()
 	_register_resources(p_battle_definitions, _battle_definitions, "BattleDefinition")
 	_register_resources(p_map_definitions, _map_definitions, "BattleMapDefinition")
 	_register_resources(p_unit_definitions, _unit_definitions, "UnitDefinition")
@@ -56,47 +59,47 @@ func _init(
 
 
 func get_battle_definition(definition_id: StringName) -> BattleDefinition:
-	return _battle_definitions.get(definition_id) as BattleDefinition
+	return _read_definition(_battle_definitions, definition_id) as BattleDefinition
 
 
 func get_map_definition(definition_id: StringName) -> BattleMapDefinition:
-	return _map_definitions.get(definition_id) as BattleMapDefinition
+	return _read_definition(_map_definitions, definition_id) as BattleMapDefinition
 
 
 func get_unit_definition(definition_id: StringName) -> UnitDefinition:
-	return _unit_definitions.get(definition_id) as UnitDefinition
+	return _read_definition(_unit_definitions, definition_id) as UnitDefinition
 
 
 func get_unit_presentation_definition(
 	definition_id: StringName
 ) -> UnitPresentationDefinition:
-	return _unit_presentation_definitions.get(definition_id) as UnitPresentationDefinition
+	return _read_definition(_unit_presentation_definitions, definition_id) as UnitPresentationDefinition
 
 
 func get_ai_profile_definition(definition_id: StringName) -> AIProfileDefinition:
-	return _ai_profile_definitions.get(definition_id) as AIProfileDefinition
+	return _read_definition(_ai_profile_definitions, definition_id) as AIProfileDefinition
 
 
 func get_race_definition(definition_id: StringName) -> RaceDefinition:
-	return _race_definitions.get(definition_id) as RaceDefinition
+	return _read_definition(_race_definitions, definition_id) as RaceDefinition
 
 
 func get_ability_definition(definition_id: StringName) -> AbilityDefinition:
-	return _ability_definitions.get(definition_id) as AbilityDefinition
+	return _read_definition(_ability_definitions, definition_id) as AbilityDefinition
 
 
 func get_ability_presentation_definition(
 	definition_id: StringName
 ) -> AbilityPresentationDefinition:
-	return _ability_presentation_definitions.get(definition_id) as AbilityPresentationDefinition
+	return _read_definition(_ability_presentation_definitions, definition_id) as AbilityPresentationDefinition
 
 
 func get_scenario_definition(definition_id: StringName) -> ScenarioDefinition:
-	return _scenario_definitions.get(definition_id) as ScenarioDefinition
+	return _read_definition(_scenario_definitions, definition_id) as ScenarioDefinition
 
 
 func get_campaign_definition(definition_id: StringName) -> CampaignDefinition:
-	return _campaign_definitions.get(definition_id) as CampaignDefinition
+	return _read_definition(_campaign_definitions, definition_id) as CampaignDefinition
 
 
 func get_unit_definition_ids() -> Dictionary[StringName, bool]:
@@ -135,7 +138,7 @@ func get_all_unit_definitions() -> Array[UnitDefinition]:
 	var result: Array[UnitDefinition] = []
 
 	for definition: UnitDefinition in _unit_definitions.values():
-		result.append(definition)
+		result.append(definition.duplicate(true) as UnitDefinition)
 
 	result.sort_custom(func(left: UnitDefinition, right: UnitDefinition) -> bool:
 		return String(left.id) < String(right.id)
@@ -145,7 +148,9 @@ func get_all_unit_definitions() -> Array[UnitDefinition]:
 
 func with_battle_document(
 	map_definition: BattleMapDefinition,
-	battle_definition: BattleDefinition
+	battle_definition: BattleDefinition,
+	unit_overrides: Array[UnitDefinition] = [],
+	ability_overrides: Array[AbilityDefinition] = []
 ) -> ContentSnapshot:
 	var battles: Array[BattleDefinition] = []
 	var maps: Array[BattleMapDefinition] = []
@@ -183,6 +188,14 @@ func with_battle_document(
 	for definition: CampaignDefinition in _campaign_definitions.values():
 		campaigns.append(definition)
 
+	for override: UnitDefinition in unit_overrides:
+		for index in range(units.size()):
+			if units[index].id == override.id:
+				units[index] = override
+	for override: AbilityDefinition in ability_overrides:
+		for index in range(abilities.size()):
+			if abilities[index].id == override.id:
+				abilities[index] = override
 	battles.append(battle_definition)
 	maps.append(map_definition)
 	return ContentSnapshot.new(
@@ -232,7 +245,7 @@ func _register_definition(
 		_invalidate("Duplicate %s id: %s." % [type_name, definition_id])
 		return
 
-	registry[definition_id] = definition
+	registry[definition_id] = definition.duplicate(true)
 
 
 func _collect_ids(registry: Dictionary) -> Dictionary[StringName, bool]:
@@ -249,3 +262,8 @@ func _invalidate(message: String) -> void:
 		error_message = message
 
 	is_valid = false
+
+# Return detached definitions; callers author new content instead of mutating this registry.
+func _read_definition(registry: Dictionary, id: StringName) -> Resource:
+	var definition := registry.get(id) as Resource
+	return definition.duplicate(true) if definition != null else null

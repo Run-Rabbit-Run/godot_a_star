@@ -213,6 +213,27 @@ func create_defeat_tween(direction: float = 1.0) -> Tween:
 	return _defeat_tween
 
 
+## Final state restore without creating a tween that nobody will await.
+func synchronize_defeat() -> void:
+	if not _defeated:
+		_defeated = true
+		_show_base = false
+		_create_corpse()
+		_combat_role_label.hide()
+		_health_bar.hide()
+		_health_label.hide()
+		_unit_id_label.hide()
+		if _status_row != null:
+			_status_row.hide()
+	if _defeat_tween != null and _defeat_tween.is_running():
+		_defeat_tween.kill()
+	for child: Node in get_children():
+		if child is UnitDeathAnimator:
+			child.queue_free()
+	finish_defeat()
+	queue_redraw()
+
+
 func _create_corpse() -> void:
 	_corpse = Sprite2D.new()
 	_corpse.name = "Corpse"

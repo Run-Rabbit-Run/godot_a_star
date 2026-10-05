@@ -29,6 +29,9 @@ static func load_packages(
 
 	if not result.errors.is_empty():
 		return result
+	ContentReferenceValidator.validate(ordered, result)
+	if not result.errors.is_empty():
+		return result
 
 	var battles: Array[BattleDefinition] = []
 	var maps: Array[BattleMapDefinition] = []
@@ -84,6 +87,18 @@ static func load_packages(
 		return result
 
 	_validate_references(snapshot, api, result)
+	for definition: BattleDefinition in battles:
+		var grid := BattleMapFactory.create_hex_grid(snapshot.get_map_definition(definition.map_id))
+		var validation := BattleDefinitionValidator.validate(definition, grid, snapshot.get_unit_definition_ids(), snapshot.get_ai_profile_definition_ids())
+		if not validation.is_valid:
+			result.add_error("%s: %s" % [definition.id, validation.error_message])
+	for package: ContentPackage in ordered:
+		for id: StringName in package.manifest.entry_battle_ids:
+			if snapshot.get_battle_definition(id) == null:
+				result.add_error("Missing entry battle %s." % id)
+		for id: StringName in package.manifest.entry_campaign_ids:
+			if snapshot.get_campaign_definition(id) == null:
+				result.add_error("Missing entry campaign %s." % id)
 
 	if result.errors.is_empty():
 		result.snapshot = snapshot
@@ -422,32 +437,40 @@ static func _validate_scenarios(
 
 
 static func _create_lock_entry(package: ContentPackage) -> ContentLockEntry:
-	var ids: Array[String] = []
-
-	for definitions: Array in [
-		package.battles,
-		package.maps,
-		package.units,
-		package.unit_presentations,
-		package.ai_profiles,
-		package.races,
-		package.abilities,
-		package.ability_presentations,
-		package.scenarios,
-		package.campaigns,
-	]:
-		for definition: Resource in definitions:
-			if definition != null:
-				ids.append(String(definition.get("id")))
-
-	ids.sort()
-	var fingerprint := "%s|%s|%s" % [
-		package.manifest.package_id,
-		package.manifest.package_version,
-		",".join(ids),
-	]
+	var fingerprint := JSON.stringify(_fingerprint_value(package, {}), "", true)
 	return ContentLockEntry.new(
 		package.manifest.package_id,
 		package.manifest.package_version,
 		fingerprint.sha256_text()
 	)
+
+
+## Canonical stored values, including stats and effect parameters, rather than only IDs.
+## Presentation assets contribute their paths; this is not a hash of external file bytes.
+static func _fingerprint_value(value: Variant, ancestors: Dictionary) -> Variant:
+	if value is Texture2D or value is PackedScene or value is Script:
+		return value.resource_path
+	if value is Resource:
+		var id: int = value.get_instance_id()
+		if ancestors.has(id):
+			return {"cycle": value.resource_path}
+		var nested := ancestors.duplicate()
+		nested[id] = true
+		var fields: Dictionary = {}
+		for property: Dictionary in value.get_property_list():
+			if property.usage & PROPERTY_USAGE_STORAGE and property.name not in ["script", "resource_path", "resource_name", "resource_local_to_scene"]:
+				fields[property.name] = _fingerprint_value(value.get(property.name), nested)
+		return fields
+	if value is Dictionary:
+		var fields: Dictionary = {}
+		for key: Variant in value:
+			fields[str(key)] = _fingerprint_value(value[key], ancestors)
+		return fields
+	if value is Array:
+		var values: Array = []
+		for item: Variant in value:
+			values.append(_fingerprint_value(item, ancestors))
+		return values
+	if value is Vector2i or value is Vector2 or value is Rect2 or value is Color:
+		return str(value)
+	return value

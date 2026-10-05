@@ -2,7 +2,14 @@ class_name BattleSession
 extends RefCounted
 
 
-var setup: BattleSetup
+var _setup: BattleSetup
+var setup: BattleSetup:
+	get:
+		return _setup.duplicate_setup()
+var _content_snapshot: ContentSnapshot
+var content_snapshot: ContentSnapshot:
+	get:
+		return _content_snapshot
 var _state: BattleState
 var _engine: BattleEngine
 var _battle_result: BattleResult
@@ -14,9 +21,11 @@ var _unit_side_ids: Dictionary[StringName, StringName] = {}
 func _init(
 	p_setup: BattleSetup,
 	p_state: BattleState,
-	p_engine: BattleEngine
+	p_engine: BattleEngine,
+	p_content_snapshot: ContentSnapshot
 ) -> void:
-	setup = p_setup
+	_content_snapshot = p_content_snapshot
+	_setup = p_setup.duplicate_setup()
 	_state = p_state
 	_engine = p_engine
 	_build_command_sources()
@@ -159,7 +168,7 @@ func step(command: BattleCommand) -> BattleResolution:
 	for event: BattleEvent in resolution.events:
 		if event is UnitSummonedEvent:
 			_unit_side_ids[event.unit.unit_id] = _unit_side_ids.get(event.summoner_id, StringName())
-			var source := _get_command_source(event.summoner_id)
+			var source := _unit_command_sources.get(event.summoner_id) as CommandSource
 			if source != null:
 				_unit_command_sources[event.unit.unit_id] = source
 
@@ -193,7 +202,7 @@ func apply_map_mutations(
 
 
 func _build_command_sources() -> void:
-	for side: BattleSideData in setup.sides:
+	for side: BattleSideData in _setup.sides:
 		if side.control_source == BattleControlSource.Value.AI:
 			_side_command_sources[side.side_id] = AICommandSource.new(
 				side.ai_profile_definition
@@ -201,7 +210,7 @@ func _build_command_sources() -> void:
 		else:
 			_side_command_sources[side.side_id] = PlayerCommandSource.new()
 
-	for spawn: UnitSpawnData in setup.unit_spawns:
+	for spawn: UnitSpawnData in _setup.unit_spawns:
 		_unit_side_ids[spawn.unit_id] = spawn.side_id
 
 		if spawn.control_source != BattleControlSource.Value.AI:
@@ -233,7 +242,7 @@ func _get_command_source(unit_id: StringName) -> CommandSource:
 
 
 func _get_side(side_id: StringName) -> BattleSideData:
-	for side: BattleSideData in setup.sides:
+	for side: BattleSideData in _setup.sides:
 		if side.side_id == side_id:
 			return side
 

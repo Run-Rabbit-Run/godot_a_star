@@ -34,7 +34,9 @@ static func get_line_direction(origin: Vector2i, target: Vector2i) -> Vector2i:
 
 static func get_affected_hexes(grid: HexGrid, origin: Vector2i, ability: AbilityDefinition, center: Vector2i) -> Array[Vector2i]:
 	if ability.target_mode != AbilityDefinition.TargetMode.LINE:
-		return grid.get_cells_in_range(center, ability.area_radius)
+		var area := grid.get_cells_in_range(center, ability.area_radius)
+		area.sort()
+		return area
 	var cells: Array[Vector2i] = []
 	var direction := get_line_direction(origin, center)
 	if direction == Vector2i.ZERO:
@@ -101,6 +103,12 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 				effect_cells.append(center)
 			else:
 				effect_cells.assign(cells)
+			if effect.effect_type_id == &"core:hex_state":
+				var mutations: Array[MapMutation] = []
+				for hex: Vector2i in effect_cells:
+					mutations.append(MapMutation.apply_hex_state(hex, StringName(effect.parameters["state_id"])))
+				events.append_array(MapMutationService.apply(state, mutations).events)
+				continue
 			for hex: Vector2i in effect_cells:
 				events.append_array(handler.execute_hex(effect, context, user.unit_id, hex))
 		else:

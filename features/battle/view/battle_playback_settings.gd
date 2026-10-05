@@ -9,7 +9,7 @@ var speed := 1.0
 
 
 func set_speed(value: float) -> bool:
-	if value <= 0.0:
+	if not is_finite(value) or value <= 0.0:
 		return false
 
 	if is_equal_approx(speed, value):

@@ -4,6 +4,8 @@ extends RefCounted
 
 const VERSION := 1
 
+var _frozen := false
+
 var _effect_handlers: Dictionary[StringName, AbilityEffectHandler] = {}
 
 
@@ -20,7 +22,7 @@ func register_effect_handler(
 	effect_type_id: StringName,
 	handler: AbilityEffectHandler
 ) -> bool:
-	if effect_type_id.is_empty() or handler == null:
+	if _frozen or effect_type_id.is_empty() or handler == null:
 		return false
 
 	if _effect_handlers.has(effect_type_id):
@@ -38,3 +40,10 @@ func get_effect_handler(
 
 func has_effect_handler(effect_type_id: StringName) -> bool:
 	return _effect_handlers.has(effect_type_id)
+
+
+func frozen_copy() -> ModAPI:
+	var copy := ModAPI.new()
+	copy._effect_handlers.assign(_effect_handlers)
+	copy._frozen = true
+	return copy

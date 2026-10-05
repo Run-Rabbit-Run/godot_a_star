@@ -23,8 +23,11 @@ func create_motion(
 	_actor = actor
 	_sprite = sprite
 	_profile = profile
-	_points = [actor.global_position]
-	for destination: Vector2 in destinations:
+	_points = [actor.position]
+	_distances = [0.0]
+	_length = 0.0
+	for global_destination: Vector2 in destinations:
+		var destination := (actor.get_parent() as Node2D).to_local(global_destination)
 		var distance: float = _points.back().distance_to(destination)
 		if distance > 0.001:
 			_length += distance
@@ -69,7 +72,7 @@ func _sample(progress: float) -> void:
 	var fraction := (distance - _distances[segment]) / (
 		_distances[segment + 1] - _distances[segment]
 	)
-	_actor.global_position = _points[segment].lerp(_points[segment + 1], fraction)
+	_actor.position = _points[segment].lerp(_points[segment + 1], fraction)
 	var phase := travel * (_points.size() - 1) * TAU
 	var strength := smoothstep(0.0, 0.1, progress) * smoothstep(0.0, 0.1, 1.0 - progress)
 	var direction := (_points[segment + 1] - _points[segment]).normalized()
@@ -82,7 +85,7 @@ func _sample(progress: float) -> void:
 
 
 func _finish() -> void:
-	_actor.global_position = _points.back()
+	_actor.position = _points.back()
 	_sprite.position = _rest_position
 	_sprite.rotation = _rest_rotation
 	_sprite.material = _rest_material

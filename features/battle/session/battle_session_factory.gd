@@ -79,6 +79,6 @@ static func create(request: BattleStartRequest) -> BattleSessionCreationResult:
 		request.content_snapshot.mod_api
 	)
 	var engine := BattleEngine.new(state)
-	var session := BattleSession.new(setup, state, engine)
+	var session := BattleSession.new(setup, state, engine, request.content_snapshot)
 
 	return BattleSessionCreationResult.success(session)

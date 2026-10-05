@@ -28,3 +28,9 @@ func to_dictionary() -> Dictionary:
 		"rules_api_version": rules_api_version,
 		"packages": package_data,
 	}
+
+func duplicate_lock() -> ContentLock:
+	var entries: Array[ContentLockEntry] = []
+	for entry: ContentLockEntry in packages:
+		entries.append(ContentLockEntry.new(entry.package_id, entry.package_version, entry.content_hash))
+	return ContentLock.new(rules_api_version, entries)
