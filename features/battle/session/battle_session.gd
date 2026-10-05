@@ -32,6 +32,15 @@ func _init(
 	_capture_result()
 
 
+## Scalar identity without the deep copy made by the `setup` property.
+func get_battle_id() -> StringName:
+	return _engine.get_battle_id()
+
+
+func get_deterministic_seed() -> int:
+	return _engine.get_deterministic_seed()
+
+
 func get_hex_grid() -> HexGrid:
 	return _state.hex_grid.duplicate_grid()
 

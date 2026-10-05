@@ -90,17 +90,18 @@ static func choose_move(
 
 			approach = approach_costs[cell]
 
-		var route_damage := _get_route_damage(grid, movement_search, cell)
-		var total_damage := route_damage + _get_standing_damage(grid, cell)
+		var total_damage := 0
 		if forecast_unit != null and grid != null:
 			var forecast := MovementImpactForecast.evaluate(forecast_unit, grid, movement_search.build_path(cell))
 			if not forecast.reached or forecast.lethal:
 				continue
 			total_damage = forecast.damage
-
-		# A unit that dies on the way never reaches the cell.
-		if forecast_unit == null and grid != null and route_damage >= current_health:
-			continue
+		else:
+			var route_damage := _get_route_damage(grid, movement_search, cell)
+			# A unit that dies on the way never reaches the cell.
+			if grid != null and route_damage >= current_health:
+				continue
+			total_damage = route_damage + _get_standing_damage(grid, cell)
 
 		var score := _get_position_score(
 			approach,

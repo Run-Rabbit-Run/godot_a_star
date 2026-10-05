@@ -22,17 +22,24 @@ func _ready() -> void:
 		_show_error(screen.initialization_error)
 		screen.free()
 		return
-	screen.battle_failed.connect(_show_error)
+	screen.battle_failed.connect(func(message: String) -> void:
+		# BattleScreen has already logged the failure; only the player-facing text remains.
+		_show_message(("Бой остановлен из-за ошибки:\n" if screen.has_started() else "Не удалось запустить бой:\n") + message)
+	)
 	add_child(screen)
 
 
 func _show_error(message: String) -> void:
 	push_error("Game startup failed: %s" % message)
+	_show_message("Не удалось запустить бой:\n" + message)
+
+
+func _show_message(text: String) -> void:
 	var layer := CanvasLayer.new()
 	layer.layer = 200
 	add_child(layer)
 	var label := Label.new()
-	label.text = "Не удалось запустить бой:\n" + message
+	label.text = text
 	label.position = Vector2(24, 24)
 	label.custom_minimum_size.x = 850
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

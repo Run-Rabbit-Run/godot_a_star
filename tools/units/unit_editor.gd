@@ -42,8 +42,14 @@ func _exit_tree() -> void:
 	get_tree().auto_accept_quit = _previous_auto_accept
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+	# An embedding host owns window closing and asks this editor first via request_close().
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and not embedded:
 		_request(func() -> void: get_tree().quit())
+
+
+## Runs the action at once when the unit is saved, otherwise after the discard confirmation.
+func request_close(action: Callable) -> void:
+	_request(action)
 
 func _build_ui() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

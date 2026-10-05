@@ -122,6 +122,17 @@ static func _validate_placements(
 			result.add_error("BattleDefinition contains a null unit placement.")
 			continue
 
+		# Reserved authoring fields: the battle starts, but the author must know they do nothing yet.
+		if (
+			placement.facing != 0
+			or not placement.modifiers.is_empty()
+			or not placement.character_binding.is_empty()
+		):
+			result.add_warning(
+				"Unit placement %s sets facing, modifiers or character_binding; battles ignore these reserved fields."
+				% placement.placement_id
+			)
+
 		if placement.placement_id.is_empty():
 			result.add_error("Unit placement id must not be empty.")
 		elif placement_ids.has(placement.placement_id):

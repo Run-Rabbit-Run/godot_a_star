@@ -24,9 +24,12 @@ func ability(id: StringName, mode: AbilityDefinition.TargetMode, radius := 0) ->
 	value.effects.append(effect)
 	return value
 
+## Fixed copy of the authored battle: assigning another starting battle in the editor
+## must not change what the regressions exercise.
+const BATTLE_PATH := "res://features/battle/tests/fixtures/regression_battle.json"
+
 func content() -> ContentLoadResult:
 	return UnitLibrary.load_content(GameContentSettings.read().content_packages, false)
 
 func request(include_presentation := false) -> BattleStartRequest:
-	var settings := GameContentSettings.read()
-	return ProjectBattleLoader.load_battle(settings.content_packages, settings.battle_document_path, 7, include_presentation).request
+	return ProjectBattleLoader.load_battle(GameContentSettings.read().content_packages, BATTLE_PATH, 7, include_presentation).request

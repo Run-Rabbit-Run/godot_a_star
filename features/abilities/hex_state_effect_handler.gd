@@ -14,5 +14,8 @@ func validate(effect: AbilityEffectDefinition) -> String:
 func execute_hex(effect: AbilityEffectDefinition, context: BattleEffectContext, _source: StringName, hex: Vector2i) -> Array[BattleEvent]:
 	return context.apply_hex_state(hex, StringName(effect.parameters["state_id"]))
 
+func execute_hexes(effect: AbilityEffectDefinition, context: BattleEffectContext, _source: StringName, hexes: Array[Vector2i]) -> Array[BattleEvent]:
+	return context.apply_hex_states(hexes, StringName(effect.parameters["state_id"]))
+
 func execute(effect: AbilityEffectDefinition, context: BattleEffectContext, source: StringName, target: StringName) -> Array[BattleEvent]:
 	return execute_hex(effect, context, source, context.get_unit_hex(target))

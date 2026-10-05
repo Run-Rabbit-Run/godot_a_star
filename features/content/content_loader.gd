@@ -414,6 +414,8 @@ static func _validate_scenarios(
 					% [campaign.id, scenario_id]
 				)
 
+		_validate_campaign_graph(snapshot, campaign, result)
+
 	for scenario_id: StringName in snapshot.get_scenario_definition_ids():
 		var scenario := snapshot.get_scenario_definition(scenario_id)
 
@@ -433,6 +435,49 @@ static func _validate_scenarios(
 				result.add_error(
 					"ScenarioDefinition %s transition references missing scenario %s."
 					% [scenario.id, transition.target_scenario_id]
+				)
+
+
+## The campaign is a closed graph: progress never leaves the declared scenarios, and each
+## outcome has one transition, so authored array order cannot silently decide the route.
+static func _validate_campaign_graph(
+	snapshot: ContentSnapshot,
+	campaign: CampaignDefinition,
+	result: ContentLoadResult
+) -> void:
+	var members: Dictionary[StringName, bool] = {}
+	for scenario_id: StringName in campaign.scenario_ids:
+		if members.has(scenario_id):
+			result.add_error("CampaignDefinition %s lists scenario %s twice." % [campaign.id, scenario_id])
+		members[scenario_id] = true
+
+	if not members.has(campaign.entry_scenario_id):
+		result.add_error(
+			"CampaignDefinition %s entry scenario %s is not listed in scenario_ids."
+			% [campaign.id, campaign.entry_scenario_id]
+		)
+
+	for scenario_id: StringName in members:
+		var scenario := snapshot.get_scenario_definition(scenario_id)
+		if scenario == null:
+			continue
+		var outcomes: Dictionary[int, bool] = {}
+		for transition: ScenarioTransitionDefinition in scenario.transitions:
+			if transition == null:
+				continue
+			if transition.outcome not in ScenarioTransitionDefinition.Outcome.values():
+				result.add_error("ScenarioDefinition %s has an unsupported transition outcome." % scenario.id)
+				continue
+			if outcomes.has(transition.outcome):
+				result.add_error(
+					"ScenarioDefinition %s has several transitions for outcome %s."
+					% [scenario.id, ScenarioTransitionDefinition.Outcome.keys()[transition.outcome]]
+				)
+			outcomes[transition.outcome] = true
+			if not transition.ends_campaign and not members.has(transition.target_scenario_id):
+				result.add_error(
+					"ScenarioDefinition %s leads to %s outside campaign %s."
+					% [scenario.id, transition.target_scenario_id, campaign.id]
 				)
 
 

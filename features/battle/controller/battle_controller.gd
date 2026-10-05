@@ -68,8 +68,8 @@ func setup(
 		prepared_session = result.session
 	elif (
 		prepared_session.content_snapshot != request.content_snapshot
-		or prepared_session.setup.battle_id != request.battle_id
-		or prepared_session.setup.deterministic_seed != request.deterministic_seed
+		or prepared_session.get_battle_id() != request.battle_id
+		or prepared_session.get_deterministic_seed() != request.deterministic_seed
 	):
 		# The view reads content from the request, so it must describe the same battle.
 		initialization_error = "Prepared battle session does not match the start request."

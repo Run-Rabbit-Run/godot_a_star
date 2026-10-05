@@ -85,19 +85,24 @@ func _on_battle_started() -> void:
 	battle_started.emit()
 
 
+## True after `battle_started`; a later `battle_failed` then means a stopped battle, not a failed start.
+func has_started() -> bool:
+	return _has_started
+
+
 func _on_battle_failed(message: String) -> void:
 	if _failure_emitted:
 		return
 	_failure_emitted = true
 	initialization_error = message
-	push_error("Battle startup failed: %s" % message)
+	push_error("%s: %s" % ["Battle stopped" if _has_started else "Battle startup failed", message])
 	if is_node_ready() and show_failure_message:
 		var layer := CanvasLayer.new()
 		layer.layer = 100
 		add_child(layer)
 		var label := Label.new()
 		label.position = Vector2(24, 60)
-		label.text = "Не удалось запустить бой:\n%s" % message
+		label.text = ("Бой остановлен из-за ошибки:\n%s" if _has_started else "Не удалось запустить бой:\n%s") % message
 		layer.add_child(label)
 	battle_failed.emit(message)
 

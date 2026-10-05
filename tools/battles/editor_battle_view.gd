@@ -27,7 +27,11 @@ const SELECTED_COLOR := Color(0.96, 0.78, 0.23, 1.0)
 const HOVER_COLOR := Color(0.2, 0.82, 0.9, 0.85)
 
 
-var snapshot: ContentSnapshot
+var snapshot: ContentSnapshot:
+	set(value):
+		snapshot = value
+		_presentations_by_definition.clear()
+		queue_redraw()
 var show_grid := true
 var show_units := true
 var document: BattleDocument
@@ -41,6 +45,8 @@ var _is_panning := false
 var _is_painting := false
 var _last_painted_hex := Vector2i(999999, 999999)
 var _zoom := 1.0
+# Snapshot getters return detached copies; drawing runs on every hover and pan.
+var _presentations_by_definition: Dictionary[StringName, UnitPresentationDefinition] = {}
 
 
 func setup(p_document: BattleDocument) -> void:
@@ -128,11 +134,7 @@ func _draw() -> void:
 func _draw_unit(placement: UnitPlacementDefinition, invalid: bool) -> void:
 	var center := _hex_center(placement.start_hex)
 	var color := Color.RED if invalid else _get_side_color(placement.side_id)
-	var presentation: UnitPresentationDefinition
-	if snapshot != null:
-		var definition := snapshot.get_unit_definition(placement.definition_id)
-		if definition != null:
-			presentation = snapshot.get_unit_presentation_definition(definition.presentation_id)
+	var presentation := _presentation_for(placement.definition_id)
 	draw_circle(center, 17, Color(0, 0, 0, 0.25))
 	if presentation != null and presentation.actor_texture != null:
 		var texture := presentation.actor_texture
@@ -144,6 +146,18 @@ func _draw_unit(placement: UnitPlacementDefinition, invalid: bool) -> void:
 	draw_line(center + Vector2(-13, 10), center + Vector2(13, 10), color, 3)
 	if placement.placement_id == selected_placement_id:
 		draw_polyline(_closed_hex_polygon(center), SELECTED_COLOR, 3, true)
+
+
+func _presentation_for(definition_id: StringName) -> UnitPresentationDefinition:
+	if snapshot == null:
+		return null
+	if not _presentations_by_definition.has(definition_id):
+		var definition := snapshot.get_unit_definition(definition_id)
+		_presentations_by_definition[definition_id] = (
+			snapshot.get_unit_presentation_definition(definition.presentation_id)
+			if definition != null else null
+		)
+	return _presentations_by_definition[definition_id]
 
 
 static func is_in_frame(hex: Vector2i) -> bool:

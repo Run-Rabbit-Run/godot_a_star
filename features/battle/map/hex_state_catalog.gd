@@ -63,7 +63,10 @@ static func get_damage_type(id: StringName) -> StringName:
 		return &"electric"
 	if id in [&"core:fire", &"core:burning_oil"]:
 		return &"fire"
-	return &"acid"
+	if id in [&"core:acid", &"core:electrified_acid", &"core:boiling_acid", &"core:acid_vapour"]:
+		return &"acid"
+	# Harmless states never deal damage; a new damaging state must be listed explicitly above.
+	return &"physical"
 
 static func ranged_reduction(id: StringName) -> int:
 	return 6 if id == &"core:acid_vapour" else (3 if id == &"core:steam" else 0)

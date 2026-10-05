@@ -18,21 +18,29 @@ extends Resource
 @export_range(24.0, 120.0, 1.0) var corpse_width := 76.0
 
 
-var _measured_texture: Texture2D
-var _visible_rect := Rect2()
+## Alpha bounds per texture instance. Content snapshots hand out copies of this
+## resource, so a per-copy cache would re-read the texture from the GPU on every lookup.
+static var _alpha_bounds_by_texture: Dictionary[int, Rect2] = {}
+
+
+static func _alpha_bounds(texture: Texture2D) -> Rect2:
+	if texture == null:
+		return Rect2()
+	var key := texture.get_instance_id()
+	if _alpha_bounds_by_texture.has(key):
+		return _alpha_bounds_by_texture[key]
+	var bounds := Rect2()
+	var image := texture.get_image()
+	if image != null and not image.is_empty():
+		bounds = Rect2(image.get_used_rect())
+	if not bounds.has_area():
+		bounds = Rect2(Vector2.ZERO, texture.get_size())
+	_alpha_bounds_by_texture[key] = bounds
+	return bounds
 
 
 func visible_rect() -> Rect2:
-	if actor_texture != _measured_texture:
-		_measured_texture = actor_texture
-		_visible_rect = Rect2()
-		if actor_texture != null:
-			var image := actor_texture.get_image()
-			if image != null and not image.is_empty():
-				_visible_rect = Rect2(image.get_used_rect())
-			if not _visible_rect.has_area():
-				_visible_rect = Rect2(Vector2.ZERO, actor_texture.get_size())
-	return _visible_rect
+	return _alpha_bounds(actor_texture)
 
 
 func texture_scale() -> float:
@@ -55,20 +63,7 @@ func align_to_visible_feet() -> void:
 	actor_foot_anchor = Vector2(bounds.get_center().x, bounds.end.y) / actor_texture.get_size()
 
 
-var _measured_corpse: Texture2D
-var _corpse_rect := Rect2()
-
-
 func corpse_visible_rect() -> Rect2:
 	if corpse_visible_region.has_area():
 		return corpse_visible_region
-	if corpse_texture != _measured_corpse:
-		_measured_corpse = corpse_texture
-		_corpse_rect = Rect2()
-		if corpse_texture != null:
-			var image := corpse_texture.get_image()
-			if image != null and not image.is_empty():
-				_corpse_rect = Rect2(image.get_used_rect())
-			if not _corpse_rect.has_area():
-				_corpse_rect = Rect2(Vector2.ZERO, corpse_texture.get_size())
-	return _corpse_rect
+	return _alpha_bounds(corpse_texture)

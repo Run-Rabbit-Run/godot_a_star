@@ -1,0 +1,953 @@
+{
+  "battle": {
+    "id": "plateau:battle",
+    "map_id": "plateau:map",
+    "objective": {
+      "description": "АЭР / ПАРЯЩЕЕ ПЛАТО",
+      "target_faction": 1,
+      "type": 0
+    },
+    "placements": [
+      {
+        "ai_profile_override_id": "",
+        "character_binding": "",
+        "definition_id": "custom_units:u_c89e4864caad2ba094383ca09f5a2b7c",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_4",
+        "q": 1,
+        "r": 8,
+        "side_id": "player"
+      },
+      {
+        "ai_profile_override_id": "",
+        "character_binding": "",
+        "definition_id": "custom_units:u_a122d84b0e6a6b4f10693069111c96e9",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_5",
+        "q": 2,
+        "r": 6,
+        "side_id": "player"
+      },
+      {
+        "ai_profile_override_id": "",
+        "character_binding": "",
+        "definition_id": "custom_units:u_8d955938e2be2bda9e4e5ea50d42741a",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_6",
+        "q": 3,
+        "r": 4,
+        "side_id": "player"
+      },
+      {
+        "ai_profile_override_id": "core:basic_enemy_ai",
+        "character_binding": "",
+        "definition_id": "custom_units:u_7764a17875745a2ec2f6fa1e405b2771",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_7",
+        "q": 8,
+        "r": 6,
+        "side_id": "enemy"
+      },
+      {
+        "ai_profile_override_id": "core:basic_enemy_ai",
+        "character_binding": "",
+        "definition_id": "custom_units:u_3b8546509eb65fc43c9e459eb56095ad",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_8",
+        "q": 9,
+        "r": 4,
+        "side_id": "enemy"
+      },
+      {
+        "ai_profile_override_id": "core:basic_enemy_ai",
+        "character_binding": "",
+        "definition_id": "custom_units:u_407a3c694d3db1b95aafc5b91bf723b6",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_9",
+        "q": 7,
+        "r": 8,
+        "side_id": "enemy"
+      }
+    ],
+    "protected_faction": 0,
+    "sides": [
+      {
+        "ai_profile_id": "",
+        "control_source": 0,
+        "faction": 0,
+        "side_id": "player"
+      },
+      {
+        "ai_profile_id": "core:basic_enemy_ai",
+        "control_source": 1,
+        "faction": 1,
+        "side_id": "enemy"
+      }
+    ]
+  },
+  "document_id": "document:plateau:battle",
+  "editor_metadata": {},
+  "map": {
+    "background_id": "plateau",
+    "cells": [
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -1,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 12,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 12,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 13,
+        "r": 3,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "core:fire",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 12,
+        "r": 4,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "core:electricity",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 12,
+        "r": 5,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 0,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 12,
+        "r": 6,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -1,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 0,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 11,
+        "r": 7,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -1,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 0,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "core:acid",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 10,
+        "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -2,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -1,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 0,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 5,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 6,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 7,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 8,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 9,
+        "r": 9,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -3,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -2,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": -1,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 0,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 1,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 2,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 3,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 4,
+        "r": 10,
+        "terrain_id": "core:default",
+        "traversable": true
+      }
+    ],
+    "id": "plateau:map",
+    "presentation_frame": [
+      18,
+      12
+    ]
+  },
+  "package_versions": {
+    "core": "1.0.0",
+    "custom_units": "1.0.0",
+    "ember_pack": "1.0.0",
+    "plateau": "1.0.0"
+  },
+  "schema_version": 1
+}

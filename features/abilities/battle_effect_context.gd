@@ -52,7 +52,15 @@ func apply_unit_status(target_id: StringName, status_id: StringName, levels: int
 
 
 func apply_hex_state(hex: Vector2i, id: StringName) -> Array[BattleEvent]:
-	var mutations: Array[MapMutation] = [MapMutation.apply_hex_state(hex, id)]
+	var hexes: Array[Vector2i] = [hex]
+	return apply_hex_states(hexes, id)
+
+
+## One atomic batch: every cell changes before reactions spread, so cell order does not matter.
+func apply_hex_states(hexes: Array[Vector2i], id: StringName) -> Array[BattleEvent]:
+	var mutations: Array[MapMutation] = []
+	for hex: Vector2i in hexes:
+		mutations.append(MapMutation.apply_hex_state(hex, id))
 	var result := MapMutationService.apply(_state, mutations)
 	return result.events
 

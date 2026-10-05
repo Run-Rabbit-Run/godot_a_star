@@ -25,6 +25,8 @@ static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[Battl
 	var pending: Array[Vector2i] = []
 	pending.assign(seeds)
 	pending.sort()
+	# Without cycles in the catalog a cell changes at most once per state; a cycle is a rules bug.
+	var conversions_left := grid.get_cells().size() * HexStateCatalog.RULES.size()
 	var index := 0
 	while index < pending.size():
 		var hex := pending[index]
@@ -36,6 +38,10 @@ static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[Battl
 				continue
 			var previous := grid.get_hex_state_id(neighbor)
 			if rules.has(previous):
+				if conversions_left <= 0:
+					push_error("Hex state propagation exceeded its limit; the propagation rules contain a cycle.")
+					return
+				conversions_left -= 1
 				_set_state(grid, neighbor, rules[previous], events)
 				pending.append(neighbor)
 

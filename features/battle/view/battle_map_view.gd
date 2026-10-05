@@ -77,7 +77,9 @@ func _ready() -> void:
 	_mount_interaction_visuals()
 	_terrain_property_visuals = Node2D.new()
 	_terrain_property_visuals.name = "TerrainProperties"
-	_terrain_property_visuals.z_index = 4
+	# Same layer as hex-state art but added later, so blocked/cost markers stay visible
+	# above it while corpses (6) and tactical overlays (8+) still cover them.
+	_terrain_property_visuals.z_index = 5
 	add_child(_terrain_property_visuals)
 	set_cursor_mode(CursorMode.DEFAULT)
 	_fit_battlefield_to_viewport()
@@ -229,6 +231,8 @@ func _fit_battlefield_to_viewport() -> void:
 		for actor: Node2D in units.get_children():
 			actor.scale = Vector2.ONE * screen_scale / scale
 	_rebuild_grid_rulers(screen_scale)
+	# Marker text depends on the board scale, which has just changed.
+	_refresh_terrain_properties()
 
 
 func _rebuild_grid_rulers(screen_scale: float) -> void:
@@ -521,15 +525,16 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		_displayed_properties.erase(event.hex)
 	else:
 		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost}
-	_update_terrain_properties(event.hex)
 	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 		_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
+		_update_terrain_properties(event.hex)
 		return
 	var map_cell := HexCoordinateMapper.axial_to_offset(event.hex)
 
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:
 		_terrain_layer.erase_cell(map_cell)
 		_hex_state_visuals.remove_hex(event.hex)
+		_update_terrain_properties(event.hex)
 		return
 
 	if event.kind == MapMutationKind.Value.ADD_HEX:
@@ -720,25 +725,37 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 	_terrain_property_nodes.erase(hex)
 	if not _displayed_properties.has(hex):
 		return
+	var properties: Dictionary = _displayed_properties[hex]
+	var blocked: bool = not properties.traversable
+	var custom_terrain: bool = properties.terrain != &"core:default"
+	var costly := int(properties.cost) > 1
+	if not blocked and not custom_terrain and not costly:
+		return
 	var container := Node2D.new()
 	_terrain_property_visuals.add_child(container)
 	_terrain_property_nodes[hex] = container
-	var properties: Dictionary = _displayed_properties[hex]
-	if not properties.traversable:
+	var center := to_local(hex_to_global_position(hex))
+	if blocked:
 		_add_hex_visual(container, hex, Color(0.12, 0.13, 0.16, 0.72), Color(0.85, 0.4, 0.35, 0.8), 2.0)
-		var cross := Label.new()
-		cross.text = "×"
-		cross.add_theme_font_size_override("font_size", 22)
-		cross.position = to_local(hex_to_global_position(hex)) - Vector2(7, 15)
-		cross.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		container.add_child(cross)
-	elif properties.terrain != &"core:default":
+		container.add_child(_create_marker_label("×", 22, center))
+	elif custom_terrain:
 		var hue := float(absi(String(properties.terrain).hash()) % 360) / 360.0
 		_add_hex_visual(container, hex, Color.from_hsv(hue, 0.35, 0.55, 0.17), Color.from_hsv(hue, 0.25, 0.75, 0.3), 1.0)
-	if int(properties.cost) > 1:
-		var cost := Label.new()
-		cost.text = str(properties.cost)
-		cost.position = to_local(hex_to_global_position(hex)) + Vector2(12, 10)
-		cost.add_theme_font_size_override("font_size", 11)
-		cost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		container.add_child(cost)
+	if costly:
+		container.add_child(_create_marker_label(str(properties.cost), 11, center + Vector2(15, 17)))
+
+
+## The board is scaled unevenly for perspective; marker text keeps upright screen proportions.
+func _create_marker_label(text: String, font_size: int, center: Vector2) -> Label:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", font_size)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.size = Vector2.ONE * font_size * 1.6
+	label.scale = Vector2.ONE * screen_scale / scale
+	label.position = center - label.size * label.scale * 0.5
+	return label

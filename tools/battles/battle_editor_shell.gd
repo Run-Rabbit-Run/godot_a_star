@@ -45,10 +45,12 @@ var _current_document_path := ""
 var _activate_after_save := false
 var _trial_return_layer: CanvasLayer
 var _trial_screen: BattleScreen
+var _unit_editor: UnitEditor
 var _discard_dialog: ConfirmationDialog
 var _pending_discard_action: Callable
 var _saved_document: Dictionary = {}
 var _trial_result: BattleResult
+var _trial_error := ""
 
 
 func _ready() -> void:
@@ -349,9 +351,11 @@ func _select_tool(tool: EditorBattleView.Tool) -> void:
 func _open_unit_editor() -> void:
 	var editor := preload("res://tools/units/unit_editor.tscn").instantiate() as UnitEditor
 	editor.embedded = true
+	_unit_editor = editor
 	_ui.hide()
 	_view.set_process_input(false)
 	editor.closed.connect(func() -> void:
+		_unit_editor = null
 		_ui.show()
 		_view.set_process_input(true)
 		_reload_unit_library()
@@ -940,8 +944,19 @@ func _on_trial_finished(result: BattleResult) -> void:
 
 
 func _on_trial_failed(message: String) -> void:
-	_return_from_trial()
-	_set_status("Пробный бой не запущен: %s" % message)
+	if _trial_screen == null or not _trial_screen.has_started():
+		_return_from_trial()
+		_set_status("Пробный бой не запущен: %s" % message)
+		return
+	# A battle that stopped mid-play stays visible for diagnosis until the author returns.
+	_trial_error = message
+	var label := Label.new()
+	label.name = "TrialError"
+	label.text = "Бой остановлен из-за ошибки:\n%s" % message
+	label.position = Vector2(20, 52)
+	label.custom_minimum_size.x = 850
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_trial_return_layer.add_child(label)
 
 
 func _return_from_trial() -> void:
@@ -965,6 +980,10 @@ func _return_from_trial() -> void:
 		)
 
 	_trial_result = null
+	if not _trial_error.is_empty():
+		_set_status("Пробный бой остановлен ошибкой: %s; BattleDocument не изменён." % _trial_error)
+		_trial_error = ""
+		return
 	_set_status("Пробный бой завершён%s; BattleDocument не изменён." % outcome)
 
 
@@ -1120,7 +1139,16 @@ func _confirm_discard() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and is_node_ready():
-		_guard_discard(func() -> void: get_tree().quit())
+		request_quit()
+
+
+## The embedded unit editor confirms its own draft first; quitting then guards the battle draft.
+func request_quit() -> void:
+	var quit_guarded := func() -> void: _guard_discard(func() -> void: get_tree().quit())
+	if is_instance_valid(_unit_editor):
+		_unit_editor.request_close(quit_guarded)
+	else:
+		quit_guarded.call()
 
 func _exit_tree() -> void:
 	if get_tree() != null:

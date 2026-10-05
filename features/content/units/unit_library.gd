@@ -4,7 +4,12 @@ extends RefCounted
 const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
+const VISUAL_PROFILES := "res://content/authored/unit_visual_profiles.json"
 const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту", "core:electromagnetic_shot": "Электромагнитный выстрел", "core:emp_grenade": "ЭМИ граната", "core:laser": "Лазер", "core:electric_turret": "Электро турель"}
+
+
+static var _visual_profiles: Dictionary = {}
+static var _visual_profiles_time := -1
 
 
 static func ensure_folders() -> String:
@@ -205,12 +210,7 @@ static func presentation_for(asset: String) -> UnitPresentationDefinition:
 	presentation.portrait_texture = presentation.actor_texture
 	presentation.corpse_texture = corpse_for(asset)
 	presentation.align_to_visible_feet()
-	var profiles_path := "res://content/authored/unit_visual_profiles.json"
-	var profile: Dictionary = {}
-	if FileAccess.file_exists(profiles_path):
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(profiles_path))
-		if parsed is Dictionary and parsed.get(asset) is Dictionary:
-			profile = parsed[asset]
+	var profile := _visual_profile(asset)
 	presentation.actor_height = float(profile.get("height", 82.0))
 	presentation.corpse_width = float(profile.get("corpse_width", presentation.actor_height))
 	var region: Array = profile.get("corpse_visible_region", [])
@@ -220,3 +220,16 @@ static func presentation_for(asset: String) -> UnitPresentationDefinition:
 	if anchor.size() == 2:
 		presentation.actor_foot_anchor = Vector2(float(anchor[0]), float(anchor[1]))
 	return presentation
+
+
+## Parsed once per file version; a library load builds one presentation per unit.
+static func _visual_profile(asset: String) -> Dictionary:
+	if not FileAccess.file_exists(VISUAL_PROFILES):
+		return {}
+	var modified := FileAccess.get_modified_time(VISUAL_PROFILES)
+	if modified != _visual_profiles_time:
+		_visual_profiles_time = modified
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(VISUAL_PROFILES))
+		_visual_profiles = parsed if parsed is Dictionary else {}
+	var profile: Variant = _visual_profiles.get(asset)
+	return profile if profile is Dictionary else {}

@@ -58,6 +58,10 @@ static func apply(
 				seeds.append(neighbor)
 	HexStateService.propagate(candidate, seeds, events)
 
+	# Reapplying an existing state changes nothing; stable revisions keep views' queries valid.
+	if events.is_empty():
+		return MapMutationApplicationResult.success(events)
+
 	if not state.hex_grid.replace_with(candidate):
 		return MapMutationApplicationResult.rejected(
 			"Validated map candidate could not be committed."

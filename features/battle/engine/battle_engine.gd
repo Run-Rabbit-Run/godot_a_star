@@ -35,6 +35,8 @@ func _init(p_state: BattleState) -> void:
 		get_active_unit_id(),
 		get_result()
 	)
+	# A turn order that cannot start must stop the graphical adapter before the first input.
+	_initial_resolution.terminal_error = _terminal_error
 
 
 func get_initial_resolution() -> BattleResolution:

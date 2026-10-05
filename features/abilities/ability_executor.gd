@@ -103,14 +103,7 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 				effect_cells.append(center)
 			else:
 				effect_cells.assign(cells)
-			if effect.effect_type_id == &"core:hex_state":
-				var mutations: Array[MapMutation] = []
-				for hex: Vector2i in effect_cells:
-					mutations.append(MapMutation.apply_hex_state(hex, StringName(effect.parameters["state_id"])))
-				events.append_array(MapMutationService.apply(state, mutations).events)
-				continue
-			for hex: Vector2i in effect_cells:
-				events.append_array(handler.execute_hex(effect, context, user.unit_id, hex))
+			events.append_array(handler.execute_hexes(effect, context, user.unit_id, effect_cells))
 		else:
 			for target_id: StringName in target_ids:
 				events.append_array(handler.execute(effect, context, user.unit_id, target_id))

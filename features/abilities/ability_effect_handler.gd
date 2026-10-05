@@ -11,6 +11,15 @@ func execute_hex(_effect: AbilityEffectDefinition, _context: BattleEffectContext
 	return events
 
 
+## Applies the effect to the whole affected area. The default handles cells one by one;
+## handlers whose cells interact (terrain reactions) override it to resolve the area at once.
+func execute_hexes(effect: AbilityEffectDefinition, context: BattleEffectContext, source_unit_id: StringName, hexes: Array[Vector2i]) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	for hex: Vector2i in hexes:
+		events.append_array(execute_hex(effect, context, source_unit_id, hex))
+	return events
+
+
 func validate(_effect: AbilityEffectDefinition) -> String:
 	return "Ability effect handler does not implement validation."
 
