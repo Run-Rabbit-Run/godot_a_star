@@ -1,6 +1,9 @@
 class_name BattleSession
 extends RefCounted
 
+## Synchronous observer boundary; the session owns no file or logging settings.
+signal diagnostic_record(kind: String, data: Dictionary)
+
 
 var _setup: BattleSetup
 var setup: BattleSetup:
@@ -43,6 +46,11 @@ func get_deterministic_seed() -> int:
 
 func get_hex_grid() -> HexGrid:
 	return _state.hex_grid.duplicate_grid()
+
+
+## Commands on the returned engine change only its detached prediction state.
+func create_prediction_engine() -> BattleEngine:
+	return _engine.fork_for_prediction()
 
 
 func get_initial_resolution() -> BattleResolution:
@@ -148,6 +156,8 @@ func set_side_command_source(
 		return false
 
 	_side_command_sources[side_id] = source
+	if has_diagnostic_observer():
+		diagnostic_record.emit("control_source_changed", {"side_id": side_id, "source_type": source.get_script().get_global_name(), "automatic": source.is_automatic(), "profile": source.profile if source is AICommandSource else null})
 	return true
 
 
@@ -160,18 +170,30 @@ func get_next_ai_command() -> BattleCommand:
 	if source == null or not source.is_automatic():
 		return null
 
-	return source.next_command(self)
+	var trace := {}
+	if has_diagnostic_observer() and source is AICommandSource:
+		source.decision_trace = trace
+	var command := source.next_command(self)
+	if has_diagnostic_observer():
+		diagnostic_record.emit("ai_decision", {"source_type": source.get_script().get_global_name(), "profile": source.profile if source is AICommandSource else null, "command": command, "trace": trace, "state": get_diagnostic_state()})
+	if source is AICommandSource:
+		source.decision_trace = null
+	return command
 
 
 
 func step(command: BattleCommand) -> BattleResolution:
+	if has_diagnostic_observer():
+		diagnostic_record.emit("command_requested", {"command": command, "active_control": "ai" if is_active_unit_ai_controlled() else "player", "state": get_diagnostic_state()})
 	if is_finished():
-		return BattleResolution.rejected(
+		var rejected := BattleResolution.rejected(
 			"Battle is already finished.",
 			get_state_revision(),
 			get_active_unit_id(),
 			get_result()
 		)
+		_record_resolution(rejected)
+		return rejected
 
 	var resolution := _engine.execute(command)
 	for event: BattleEvent in resolution.events:
@@ -184,6 +206,7 @@ func step(command: BattleCommand) -> BattleResolution:
 	if resolution.battle_result != null:
 		_battle_result = resolution.battle_result
 
+	_record_resolution(resolution)
 	return resolution
 
 
@@ -194,20 +217,43 @@ func execute_command(command: BattleCommand) -> BattleResolution:
 func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:
+	if has_diagnostic_observer():
+		diagnostic_record.emit("map_mutations_requested", {"mutations": mutations, "state": get_diagnostic_state()})
 	if is_finished():
-		return BattleResolution.rejected(
+		var rejected := BattleResolution.rejected(
 			"Battle is already finished.",
 			get_state_revision(),
 			get_active_unit_id(),
 			get_result()
 		)
+		_record_resolution(rejected)
+		return rejected
 
 	var resolution := _engine.apply_map_mutations(mutations)
 
 	if resolution.battle_result != null:
 		_battle_result = resolution.battle_result
 
+	_record_resolution(resolution)
 	return resolution
+
+
+func has_diagnostic_observer() -> bool:
+	return diagnostic_record.get_connections().size() > 0
+
+
+func get_diagnostic_state() -> Dictionary:
+	var units: Array[UnitSnapshot] = []
+	var ids: Array = _state.unit_states.keys()
+	ids.sort()
+	for id: StringName in ids:
+		units.append(get_unit(id))
+	return {"units": units, "grid": get_hex_grid(), "turn_order": get_turn_order(), "active_unit_id": get_active_unit_id(), "round": get_round_number(), "state_revision": get_state_revision(), "map_revision": get_map_revision(), "rng_state": str(_state.random.state), "outcome": get_outcome(), "objective": get_objective_description()}
+
+
+func _record_resolution(resolution: BattleResolution) -> void:
+	if has_diagnostic_observer():
+		diagnostic_record.emit("resolution", {"resolution": resolution, "state": get_diagnostic_state()})
 
 
 func _build_command_sources() -> void:

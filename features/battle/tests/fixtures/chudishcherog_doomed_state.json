@@ -1,0 +1,1770 @@
+{
+  "active_unit_id": "plateau:battle:author:placement_4",
+  "grid": {
+    "cells": [
+      {
+        "hex": {
+          "x": 3,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "core:steam",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "core:steam",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 2
+        },
+        "movement_cost": 2,
+        "state_id": "core:boiling_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 2
+        },
+        "movement_cost": 2,
+        "state_id": "core:boiling_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 2
+        },
+        "movement_cost": 2,
+        "state_id": "core:burning_oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "core:fire",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:plasma",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:electricity",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:fire",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:fire",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "core:water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "core:plasma",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "core:electricity",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "core:electricity",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "core:water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid_vapour",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid_vapour",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid_vapour",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 7
+        },
+        "movement_cost": 2,
+        "state_id": "core:oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 7
+        },
+        "movement_cost": 2,
+        "state_id": "core:oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "core:acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 8
+        },
+        "movement_cost": 2,
+        "state_id": "core:oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -2,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -3,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -2,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 3,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 4,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "core:steam",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 1
+        },
+        "movement_cost": 2,
+        "state_id": "core:boiling_acid",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 1
+        },
+        "movement_cost": 2,
+        "state_id": "core:burning_oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 14,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 15,
+          "y": 1
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 2
+        },
+        "movement_cost": 2,
+        "state_id": "core:burning_oil",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 14,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 14,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 15,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 13,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 12,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 11,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 10,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 9,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 8,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "core:electrified_water",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 7,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 6,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 5,
+          "y": 10
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -3,
+          "y": 9
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -2,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -2,
+          "y": 7
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 1,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 2,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 2
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": 0,
+          "y": 3
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 4
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -1,
+          "y": 5
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -2,
+          "y": 6
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex": {
+          "x": -3,
+          "y": 8
+        },
+        "movement_cost": 1,
+        "state_id": "",
+        "terrain_id": "core:default",
+        "traversable": true
+      }
+    ],
+    "type": "HexGrid"
+  },
+  "map_revision": 0,
+  "objective": "АЭР / ПАРЯЩЕЕ ПЛАТО",
+  "outcome": 0,
+  "rng_state": "-1966449618399012673",
+  "round": 3,
+  "state_revision": 17,
+  "turn_order": [
+    "plateau:battle:author:placement_1",
+    "plateau:battle:author:placement_2",
+    "plateau:battle:author:placement_3",
+    "plateau:battle:author:placement_4"
+  ],
+  "units": [
+    {
+      "ability_area_radii": {},
+      "ability_cooldowns": {},
+      "ability_hex_targets": {},
+      "ability_ids": [],
+      "ability_ranges": {},
+      "ability_target_modes": {},
+      "basic_attack_damage": 4,
+      "basic_attack_damage_type": "physical",
+      "basic_attack_range": 1,
+      "basic_attack_statuses": {},
+      "definition_id": "custom_units:u_407a3c694d3db1b95aafc5b91bf723b6",
+      "faction": 1,
+      "health": {
+        "current": 3,
+        "maximum": 14,
+        "type": "HealthSnapshot"
+      },
+      "hex": {
+        "x": 5,
+        "y": 6
+      },
+      "passive_ability_ids": [],
+      "status_immunities": [],
+      "statuses": {
+        "core:electrified": 4
+      },
+      "turn": {
+        "main_action_available": true,
+        "movement_max": 3,
+        "movement_remaining": 3,
+        "type": "TurnSnapshot"
+      },
+      "turns_started": 3,
+      "type": "UnitSnapshot",
+      "unit_id": "plateau:battle:author:placement_4"
+    },
+    {
+      "ability_area_radii": {
+        "core:grenade": 1
+      },
+      "ability_cooldowns": {
+        "core:grenade": 0
+      },
+      "ability_hex_targets": {
+        "core:grenade": true
+      },
+      "ability_ids": [
+        "core:grenade"
+      ],
+      "ability_ranges": {
+        "core:grenade": 3
+      },
+      "ability_target_modes": {
+        "core:grenade": 0
+      },
+      "basic_attack_damage": 5,
+      "basic_attack_damage_type": "physical",
+      "basic_attack_range": 6,
+      "basic_attack_statuses": {},
+      "definition_id": "custom_units:u_7764a17875745a2ec2f6fa1e405b2771",
+      "faction": 1,
+      "health": {
+        "current": 10,
+        "maximum": 10,
+        "type": "HealthSnapshot"
+      },
+      "hex": {
+        "x": 11,
+        "y": 3
+      },
+      "passive_ability_ids": [
+        "core:attack_training"
+      ],
+      "status_immunities": [],
+      "statuses": {},
+      "turn": {
+        "main_action_available": false,
+        "movement_max": 3,
+        "movement_remaining": 3,
+        "type": "TurnSnapshot"
+      },
+      "turns_started": 3,
+      "type": "UnitSnapshot",
+      "unit_id": "plateau:battle:author:placement_3"
+    },
+    {
+      "ability_area_radii": {
+        "core:create_fire": 1,
+        "core:create_water": 1
+      },
+      "ability_cooldowns": {
+        "core:create_fire": 0,
+        "core:create_water": 0
+      },
+      "ability_hex_targets": {
+        "core:create_fire": true,
+        "core:create_water": true
+      },
+      "ability_ids": [
+        "core:create_fire",
+        "core:create_water"
+      ],
+      "ability_ranges": {
+        "core:create_fire": 3,
+        "core:create_water": 3
+      },
+      "ability_target_modes": {
+        "core:create_fire": 0,
+        "core:create_water": 0
+      },
+      "basic_attack_damage": 2,
+      "basic_attack_damage_type": "physical",
+      "basic_attack_range": 5,
+      "basic_attack_statuses": {
+        "core:plasma": 2
+      },
+      "definition_id": "custom_units:u_b0a4db80239e66ff744aa1c1606c9a87",
+      "faction": 0,
+      "health": {
+        "current": 7,
+        "maximum": 10,
+        "type": "HealthSnapshot"
+      },
+      "hex": {
+        "x": 6,
+        "y": 2
+      },
+      "passive_ability_ids": [
+        "core:attack_plasma"
+      ],
+      "status_immunities": [],
+      "statuses": {
+        "core:armor": 1
+      },
+      "turn": {
+        "main_action_available": true,
+        "movement_max": 4,
+        "movement_remaining": 4,
+        "type": "TurnSnapshot"
+      },
+      "turns_started": 3,
+      "type": "UnitSnapshot",
+      "unit_id": "plateau:battle:author:placement_2"
+    },
+    {
+      "ability_area_radii": {
+        "core:create_electricity": 1,
+        "core:electric_turret": 0,
+        "core:electromagnetic_shot": 1,
+        "core:emp_grenade": 1,
+        "core:laser": 0
+      },
+      "ability_cooldowns": {
+        "core:create_electricity": 0,
+        "core:electric_turret": 0,
+        "core:electromagnetic_shot": 0,
+        "core:emp_grenade": 0,
+        "core:laser": 0
+      },
+      "ability_hex_targets": {
+        "core:create_electricity": true,
+        "core:electric_turret": true,
+        "core:electromagnetic_shot": false,
+        "core:emp_grenade": true,
+        "core:laser": true
+      },
+      "ability_ids": [
+        "core:electric_turret",
+        "core:laser",
+        "core:emp_grenade",
+        "core:electromagnetic_shot",
+        "core:create_electricity"
+      ],
+      "ability_ranges": {
+        "core:create_electricity": 3,
+        "core:electric_turret": 4,
+        "core:electromagnetic_shot": 5,
+        "core:emp_grenade": 3,
+        "core:laser": 20
+      },
+      "ability_target_modes": {
+        "core:create_electricity": 0,
+        "core:electric_turret": 3,
+        "core:electromagnetic_shot": 1,
+        "core:emp_grenade": 2,
+        "core:laser": 4
+      },
+      "basic_attack_damage": 2,
+      "basic_attack_damage_type": "electric",
+      "basic_attack_range": 5,
+      "basic_attack_statuses": {
+        "core:electrified": 2
+      },
+      "definition_id": "custom_units:u_a122d84b0e6a6b4f10693069111c96e9",
+      "faction": 0,
+      "health": {
+        "current": 3,
+        "maximum": 10,
+        "type": "HealthSnapshot"
+      },
+      "hex": {
+        "x": 1,
+        "y": 7
+      },
+      "passive_ability_ids": [
+        "core:attack_electrified",
+        "core:electric_attack",
+        "core:immune_electrified"
+      ],
+      "status_immunities": [
+        "core:electrified"
+      ],
+      "statuses": {
+        "core:acid": 3
+      },
+      "turn": {
+        "main_action_available": false,
+        "movement_max": 5,
+        "movement_remaining": 2,
+        "type": "TurnSnapshot"
+      },
+      "turns_started": 3,
+      "type": "UnitSnapshot",
+      "unit_id": "plateau:battle:author:placement_1"
+    }
+  ],
+  "source_sequence": 43,
+  "description": "Recorded state before Chudishcherog ended its third turn: HP 3, electrified 4, Tesla at (1,7)."
+}

@@ -78,6 +78,11 @@ func setup(
 
 	_battle_session = prepared_session
 	_start_request = request
+	if BattleLoggingController.is_feature_enabled():
+		var logging := BattleLoggingController.new()
+		logging.name = "BattleLoggingController"
+		add_child(logging)
+		logging.setup(_battle_session, _hud, self)
 	_is_initialization_requested = true
 	call_deferred("_initialize_battle")
 	return true

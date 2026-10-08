@@ -19,6 +19,9 @@ var status_immunities: Array[StringName] = []
 var ability_cooldowns: Dictionary[StringName, int] = {}
 var ability_hex_targets: Dictionary[StringName, bool] = {}
 var ability_target_modes: Dictionary[StringName, int] = {}
+var passive_ability_ids: Array[StringName] = []
+var basic_attack_statuses: Dictionary[StringName, int] = {}
+var turns_started := 0
 
 
 func _init(state: UnitState) -> void:
@@ -30,6 +33,9 @@ func _init(state: UnitState) -> void:
 	status_immunities.assign(state.status_immunities)
 	basic_attack_damage_type = state.basic_attack_damage_type
 	ability_cooldowns.assign(state.ability_cooldowns)
+	passive_ability_ids.assign(state.passive_ability_ids)
+	basic_attack_statuses.assign(state.basic_attack_statuses)
+	turns_started = state.turns_started
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

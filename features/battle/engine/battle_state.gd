@@ -45,3 +45,16 @@ func get_corpses_at(hex: Vector2i) -> Array[UnitSnapshot]:
 		return String(a.unit_id) < String(b.unit_id)
 	)
 	return corpses
+
+
+## Rule definitions/objectives and frozen handlers are read-only; runtime and RNG are detached.
+func duplicate_for_prediction() -> BattleState:
+	var units: Dictionary[StringName, UnitState] = {}
+	for id: StringName in unit_states:
+		units[id] = unit_states[id].duplicate_state()
+	var copy := BattleState.new(battle_id, hex_grid.duplicate_grid(), units, turn_service.get_turn_order(), objective_system, deterministic_seed, mod_api.frozen_copy())
+	copy.turn_service = turn_service.duplicate_service()
+	copy.random.state = random.state
+	copy.state_revision = state_revision
+	copy.map_revision = map_revision
+	return copy

@@ -10,3 +10,6 @@ build/*
 !build/.gdignore
 content/authored/**/*.tmp
 content/authored/**/*.bak
+
+# Runtime battle diagnostics (beside the game/project)
+logs/

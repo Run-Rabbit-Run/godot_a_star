@@ -27,6 +27,10 @@ window/stretch/aspect="expand"
 version_control/plugin_name="GitPlugin"
 version_control/autoload_on_startup=true
 
+[feature_flags]
+
+battle_file_logging=true
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

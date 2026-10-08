@@ -35,6 +35,13 @@ func get_round_number() -> int:
 	return _round_number
 
 
+func duplicate_service() -> TurnService:
+	var copy := TurnService.new(_turn_order)
+	copy._active_index = _active_index
+	copy._round_number = _round_number
+	return copy
+
+
 func get_participant_count() -> int:
 	return _turn_order.size()
 

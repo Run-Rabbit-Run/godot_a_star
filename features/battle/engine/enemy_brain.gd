@@ -49,13 +49,14 @@ static func choose_move(
 	grid: HexGrid = null,
 	current_health: int = 0,
 	attack_range: int = 1,
-	forecast_unit: UnitSnapshot = null
+	forecast_unit: UnitSnapshot = null,
+	diagnostic_trace: Variant = null
 ) -> MoveCommand:
 	if unit_id.is_empty() or movement_search == null:
 		return null
 
 	var health := maxi(current_health, 1)
-	var approach_costs := _get_approach_costs(grid, target, attack_range)
+	var approach_costs := get_approach_costs(grid, target, attack_range)
 	# Without a path to an attack position the unit still closes the straight distance.
 	var uses_paths := approach_costs.has(start)
 	var start_approach := HexGrid.get_distance(start, target)
@@ -72,20 +73,28 @@ static func choose_move(
 	var best_cell := Vector2i.ZERO
 	var best_score := 0
 	var best_cost := 0
+	if diagnostic_trace != null:
+		diagnostic_trace["movement"] = {"stay_score": stay_score, "uses_paths": uses_paths, "health": health, "damage_weight": FULL_HEALTH_DETOUR_COST, "candidates": []}
 
 	for cell: Vector2i in movement_search.get_reachable_cells():
 		if cell == start:
 			continue
 
 		var cost := movement_search.get_cost(cell)
+		var candidate := {}
+		if diagnostic_trace != null:
+			candidate = {"hex": cell, "cost": cost, "path": movement_search.build_path(cell)}
+			diagnostic_trace["movement"]["candidates"].append(candidate)
 
 		if cost < 0:
+			candidate["rejected"] = "unreachable"
 			continue
 
 		var approach := HexGrid.get_distance(cell, target)
 
 		if uses_paths:
 			if not approach_costs.has(cell):
+				candidate["rejected"] = "no_path_to_attack_position"
 				continue
 
 			approach = approach_costs[cell]
@@ -93,13 +102,17 @@ static func choose_move(
 		var total_damage := 0
 		if forecast_unit != null and grid != null:
 			var forecast := MovementImpactForecast.evaluate(forecast_unit, grid, movement_search.build_path(cell))
+			if diagnostic_trace != null:
+				candidate["forecast"] = forecast
 			if not forecast.reached or forecast.lethal:
+				candidate["rejected"] = "lethal_or_interrupted_route"
 				continue
 			total_damage = forecast.damage
 		else:
 			var route_damage := _get_route_damage(grid, movement_search, cell)
 			# A unit that dies on the way never reaches the cell.
 			if grid != null and route_damage >= current_health:
+				candidate["rejected"] = "lethal_route"
 				continue
 			total_damage = route_damage + _get_standing_damage(grid, cell)
 
@@ -108,9 +121,12 @@ static func choose_move(
 			total_damage,
 			health
 		)
+		if diagnostic_trace != null:
+			candidate.merge({"approach": approach, "damage": total_damage, "score": score})
 
 		# Moving without gain only burns movement and makes units shuffle in place.
 		if score >= stay_score:
+			candidate["rejected"] = "no_improvement_over_staying"
 			continue
 
 		if has_best_cell and not _is_better_candidate(
@@ -121,6 +137,7 @@ static func choose_move(
 			best_score,
 			best_cost
 		):
+			candidate["rejected"] = "worse_than_current_best"
 			continue
 
 		has_best_cell = true
@@ -131,6 +148,8 @@ static func choose_move(
 	if not has_best_cell:
 		return null
 
+	if diagnostic_trace != null:
+		diagnostic_trace["movement"]["selected"] = {"hex": best_cell, "score": best_score, "cost": best_cost}
 	return MoveCommand.new(unit_id, best_cell)
 
 
@@ -141,7 +160,7 @@ static func _get_position_score(approach: int, damage: int, health: int) -> int:
 
 ## Movement cost from every connected cell to the nearest cell that can attack the target.
 ## Units are ignored: they move away, while walls and holes stay.
-static func _get_approach_costs(
+static func get_approach_costs(
 	grid: HexGrid,
 	target: Vector2i,
 	attack_range: int

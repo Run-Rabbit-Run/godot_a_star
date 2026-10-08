@@ -55,3 +55,20 @@ func start_cooldown_turn() -> void:
 
 func get_ability(ability_id: StringName) -> AbilityDefinition:
 	return abilities.get(ability_id) as AbilityDefinition
+
+
+func duplicate_state() -> UnitState:
+	var copied_abilities: Array[AbilityDefinition] = []
+	copied_abilities.assign(abilities.values())
+	var copy := UnitState.new(unit_id, definition_id, faction, hex, TurnState.new(turn.movement_max), HealthState.new(health.maximum), basic_attack_damage, basic_attack_range, copied_abilities)
+	copy.health.current = health.current
+	copy.turn.movement_remaining = turn.movement_remaining
+	copy.turn.main_action_available = turn.main_action_available
+	copy.statuses.assign(statuses)
+	copy.passive_ability_ids.assign(passive_ability_ids)
+	copy.basic_attack_damage_type = basic_attack_damage_type
+	copy.basic_attack_statuses.assign(basic_attack_statuses)
+	copy.status_immunities.assign(status_immunities)
+	copy.ability_cooldowns.assign(ability_cooldowns)
+	copy.turns_started = turns_started
+	return copy

@@ -7,8 +7,10 @@ var _initial_resolution: BattleResolution
 var _terminal_error := ""
 
 
-func _init(p_state: BattleState) -> void:
+func _init(p_state: BattleState, initialize := true) -> void:
 	_state = p_state
+	if not initialize:
+		return
 	_state.turn_service.start()
 	var initial_events: Array[BattleEvent] = []
 	HexStateService.propagate(_state.hex_grid, _state.hex_grid.get_cells(), initial_events)
@@ -41,6 +43,22 @@ func _init(p_state: BattleState) -> void:
 
 func get_initial_resolution() -> BattleResolution:
 	return _initial_resolution
+
+
+## A forecast never reapplies startup exposure, resets turns or consumes the live RNG.
+func fork_for_prediction() -> BattleEngine:
+	var copy := BattleEngine.new(_state.duplicate_for_prediction(), false)
+	copy._terminal_error = _terminal_error
+	return copy
+
+
+func supports_ability_prediction(ability: AbilityDefinition) -> bool:
+	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script()]
+	for effect: AbilityEffectDefinition in ability.effects:
+		var handler := _state.mod_api.get_effect_handler(effect.effect_type_id)
+		if handler == null or not supported.has(handler.get_script()):
+			return false
+	return true
 
 
 func get_unit(unit_id: StringName) -> UnitState:

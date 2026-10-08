@@ -46,6 +46,10 @@ func _run() -> void:
 		_test_statuses()
 	if only.is_empty() or only == "damage_log":
 		_test_damage_log()
+	if only.is_empty() or only == "file_logging":
+		_test_file_logging()
+	if only.is_empty() or only == "file_logging_ui":
+		await _test_file_logging_ui()
 	if only.is_empty() or only == "turn_effect_order":
 		_test_turn_effect_order()
 	if only.is_empty() or only == "commands":
@@ -56,6 +60,8 @@ func _run() -> void:
 		_test_documents()
 	if only.is_empty() or only == "ai_and_forecast":
 		_test_ai_and_forecast()
+	if only.is_empty() or only == "doomed_ai":
+		_test_doomed_ai()
 	if only.is_empty() or only == "summon_control":
 		_test_summon_control()
 	if only.is_empty() or only == "simulation":
@@ -76,6 +82,169 @@ func _run() -> void:
 	print("A_star regressions: %d checks, %d failures" % [checks, failures.size()])
 	get_tree().create_timer(0.1).timeout.connect(get_tree().quit.bind(0 if failures.is_empty() else 1))
 	queue_free()
+
+func _test_file_logging() -> void:
+	var session := BattleSessionFactory.create(fixture.request()).session
+	var baseline := BattleSessionFactory.create(fixture.request()).session
+	var directory := "user://logging_regression_%d" % Time.get_ticks_usec()
+	var logger := BattleFileLogger.new()
+	expect(not session.has_diagnostic_observer(), "No diagnostic observer by default")
+	expect(logger.start(session, directory, true), "File recording starts")
+	expect(session.has_diagnostic_observer(), "Recording attaches observer")
+	var bad := session.step(null)
+	expect(not bad.accepted, "Null command recorded as rejected without logging crash")
+	baseline.step(null)
+	var ai := AICommandSource.new(null)
+	session.set_side_command_source(session.setup.sides[0].side_id, ai)
+	baseline.set_side_command_source(baseline.setup.sides[0].side_id, AICommandSource.new(null))
+	var command := session.get_next_ai_command()
+	var baseline_command := baseline.get_next_ai_command()
+	expect(JSON.stringify(BattleLogSerializer.encode(command)) == JSON.stringify(BattleLogSerializer.encode(baseline_command)), "Diagnostics preserve AI choice")
+	if command != null:
+		session.step(command)
+		baseline.step(baseline_command)
+	expect(JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state())) == JSON.stringify(BattleLogSerializer.encode(baseline.get_diagnostic_state())), "Recording preserves gameplay and RNG")
+	var changed := session.apply_map_mutations([MapMutation.apply_hex_state(Vector2i(999, 999), &"core:fire")])
+	expect(not changed.accepted, "Rejected map mutation remains rejected")
+	var damage := UnitDamagedEvent.new(&"attacker", &"victim", 3, 0, true)
+	damage.base_damage = 6
+	damage.calculated_damage = 5
+	damage.damage_modifiers.append({"source_id": &"core:armor", "amount": -1})
+	logger.write_record("resolution", {"resolution": BattleResolution.success([damage], 0, &""), "state": session.get_diagnostic_state()})
+	logger.stop("scene_closed")
+	expect(not session.has_diagnostic_observer(), "Stop detaches observer")
+	var first_path := logger.path
+	var input := FileAccess.open(first_path, FileAccess.READ)
+	var records: Array = []
+	while input.get_position() < input.get_length():
+		var parsed: Variant = JSON.parse_string(input.get_line())
+		expect(parsed is Dictionary, "Every line parses as JSON")
+		if parsed is Dictionary:
+			records.append(parsed)
+	input.close()
+	expect(records[0].data.coverage == "battle_start" and records[1].kind == "initial_resolution", "Recording includes start and initial events")
+	expect(records[0].data.setup.unit_spawns.size() > 0 and records[0].data.unit_definitions.size() > 0, "Header includes effective content and setup")
+	expect(records[0].data.state.units.size() > 0 and records[0].data.state.grid.cells.size() > 0, "Header includes full state and terrain")
+	expect(records[3].kind == "resolution" and records[3].data.resolution.accepted == false, "Rejected command and reason persisted")
+	expect(records[-1].kind == "recording_stopped" and records[-1].data.reason == "scene_closed", "Interrupted recording has explicit footer")
+	expect(records[-1].data.analytics.rejected_operations == 2, "Analytics count rejected command and map mutation")
+	expect(int(records[-1].data.analytics.damage_by_type.physical) >= 3 and records[-1].data.analytics.defeated_units >= 1, "Analytics count actual damage and defeated targets")
+	var serialized_damage: Dictionary = records[-2].data.resolution.events[0]
+	expect(serialized_damage.type == "UnitDamagedEvent" and serialized_damage.base_damage == 6 and serialized_damage.calculated_damage == 5 and serialized_damage.damage == 3, "JSON retains damage formula and actual HP loss")
+	expect(serialized_damage.damage_modifiers[0].source_id == "core:armor" and serialized_damage.damage_modifiers[0].amount == -1, "JSON retains signed damage modifiers")
+	var has_ai := false
+	for index in range(records.size()):
+		expect(int(records[index].sequence) == index + 1, "Record sequence is consecutive")
+		if records[index].kind == "ai_decision":
+			has_ai = records[index].data.trace.has("reason")
+	expect(has_ai, "AI decision includes explanation")
+	expect(logger.start(session, directory, false), "Recording can resume")
+	expect(logger.path != first_path, "Resume uses a new file")
+	logger.stop("disabled")
+	input = FileAccess.open(logger.path, FileAccess.READ)
+	expect(JSON.parse_string(input.get_line()).data.coverage == "from_current_state", "Partial coverage is explicit")
+	input.close()
+	var count_before := records.size()
+	session.step(null)
+	expect(count_before == records.size() and not logger.is_recording(), "Disabled recorder remains stopped")
+	DirAccess.remove_absolute(first_path)
+	DirAccess.remove_absolute(logger.path)
+	DirAccess.remove_absolute(directory)
+	var blocked_directory := "user://blocked_log_%d" % Time.get_ticks_usec()
+	var blocker := FileAccess.open(blocked_directory, FileAccess.WRITE)
+	blocker.store_string("This is a file, not a directory")
+	blocker.close()
+	expect(not logger.start(session, blocked_directory), "Unwritable destination does not start recording")
+	expect(not logger.error_message.is_empty() and not session.has_diagnostic_observer(), "Recording error is explicit and leaves session detached")
+	DirAccess.remove_absolute(blocked_directory)
+	var participant := fixture.unit(&"snapshot", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	participant.passive_ability_ids.append(&"core:passive")
+	participant.basic_attack_statuses[&"core:wet"] = 2
+	participant.turns_started = 3
+	var snapshot := UnitSnapshot.new(participant)
+	snapshot.passive_ability_ids.clear()
+	snapshot.basic_attack_statuses.clear()
+	expect(participant.passive_ability_ids.size() == 1 and participant.basic_attack_statuses.size() == 1 and snapshot.turns_started == 3, "Extended diagnostic snapshot is detached from passives and attack statuses")
+
+
+func _test_file_logging_ui() -> void:
+	var flag: Variant = ProjectSettings.get_setting(BattleLoggingController.FEATURE_SETTING, false)
+	ProjectSettings.set_setting(BattleLoggingController.FEATURE_SETTING, false)
+	var screen := (load("res://features/battle/battle_screen.tscn") as PackedScene).instantiate() as BattleScreen
+	get_tree().root.add_child(screen)
+	expect(screen.setup(fixture.request(true)), "Logging UI fixture starts battle")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var controller := screen.get_node("BattleMap/BattleController") as BattleController
+	var hud := screen.get_node("BattleMap/BattleUI") as BattleHUD
+	expect(controller.get_node_or_null("BattleLoggingController") == null, "Disabled flag creates no recorder subsystem")
+	expect(hud.get_node_or_null("HUDRoot/SpeedPanel/Content/BattleFileLogging") == null, "Disabled flag hides recording controls")
+	var config_existed := FileAccess.file_exists(BattleLoggingController.CONFIG_PATH)
+	var original_config := FileAccess.get_file_as_string(BattleLoggingController.CONFIG_PATH) if config_existed else ""
+	var config := ConfigFile.new()
+	config.set_value("logging", "enabled", false)
+	config.save(BattleLoggingController.CONFIG_PATH)
+	ProjectSettings.set_setting(BattleLoggingController.FEATURE_SETTING, true)
+	var flagged_screen := (load("res://features/battle/battle_screen.tscn") as PackedScene).instantiate() as BattleScreen
+	get_tree().root.add_child(flagged_screen)
+	expect(flagged_screen.setup(fixture.request(true)), "Flagged battle starts")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	expect(flagged_screen.get_node_or_null("BattleMap/BattleController/BattleLoggingController") != null, "Enabled flag composes recorder subsystem")
+	expect(flagged_screen.get_node_or_null("BattleMap/BattleUI/HUDRoot/SpeedPanel/Content/BattleFileLogging") != null, "Enabled flag shows settings toggle")
+	flagged_screen.queue_free()
+	await get_tree().process_frame
+	ProjectSettings.set_setting(BattleLoggingController.FEATURE_SETTING, false)
+	var directory := "user://logging_ui_%d" % Time.get_ticks_usec()
+	var logging := BattleLoggingController.new()
+	controller.add_child(logging)
+	logging.setup(controller.get("_battle_session"), hud, controller, directory)
+	var section := hud.get_node("HUDRoot/SpeedPanel/Content/BattleFileLogging")
+	var check := section.get_child(0) as CheckButton
+	expect(not check.button_pressed, "Recording initially off")
+	check.button_pressed = true
+	var logger := logging.get("_logger") as BattleFileLogger
+	expect(logger.is_recording(), "Settings toggle starts recording mid-battle")
+	var first_path := logger.path
+	check.button_pressed = false
+	expect(not logger.is_recording(), "Settings toggle stops recording")
+	check.button_pressed = true
+	var second_path := logger.path
+	expect(first_path != second_path, "Settings re-enable creates a separate segment")
+	controller.battle_finished.emit(BattleResult.new(&"core:test", 7, BattleOutcome.Value.VICTORY, 1, null))
+	expect(not logger.is_recording(), "Battle finish closes recording")
+	var input := FileAccess.open(second_path, FileAccess.READ)
+	var last: Variant
+	while input.get_position() < input.get_length():
+		last = JSON.parse_string(input.get_line())
+	input.close()
+	expect(last.data.reason == "battle_finished", "Battle finish footer is explicit")
+	# A stopped battle must retain failure semantics if recording is enabled afterwards.
+	controller.battle_failed.disconnect(screen._on_battle_failed)
+	controller.battle_failed.emit("Injected runtime failure")
+	check.button_pressed = false
+	check.button_pressed = true
+	var failed_path := logger.path
+	expect(not logger.is_recording(), "Enabling after a failed battle produces a closed diagnostic segment")
+	input = FileAccess.open(failed_path, FileAccess.READ)
+	while input.get_position() < input.get_length():
+		last = JSON.parse_string(input.get_line())
+	input.close()
+	expect(last.data.reason == "battle_failed" and last.data.detail == "Injected runtime failure", "Late recording preserves failure reason and detail")
+	if config_existed:
+		var restored := FileAccess.open(BattleLoggingController.CONFIG_PATH, FileAccess.WRITE)
+		restored.store_string(original_config)
+		restored.close()
+	else:
+		DirAccess.remove_absolute(BattleLoggingController.CONFIG_PATH)
+	ProjectSettings.set_setting(BattleLoggingController.FEATURE_SETTING, flag)
+	screen.queue_free()
+	await get_tree().process_frame
+	DirAccess.remove_absolute(first_path)
+	DirAccess.remove_absolute(second_path)
+	DirAccess.remove_absolute(failed_path)
+	DirAccess.remove_absolute(directory)
+
 
 func _test_geometry() -> void:
 	for q in range(-4, 5):
@@ -470,6 +639,161 @@ func _test_ai_and_forecast() -> void:
 	var search := MovementService.search(grid, p.hex, 1, {})
 	var chosen := EnemyBrain.choose_move(p.unit_id, p.hex, Vector2i(2, 0), search, grid, 1, 1, UnitSnapshot.new(p))
 	expect(chosen != null and chosen.destination == Vector2i(1, 0), "AI accepts fire crossing protected by wet and burning immunity")
+
+func _ai_session(state: BattleState) -> BattleSession:
+	state.turn_service.start()
+	var setup := BattleSetup.new(state.battle_id, state.hex_grid, [], [], BattleObjectiveDefinition.new(), BattleFaction.Value.PLAYER, state.deterministic_seed)
+	return BattleSession.new(setup, state, BattleEngine.new(state, false), null)
+
+
+func _test_doomed_ai() -> void:
+	var cells: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0)]
+	var enemy := fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 3)
+	enemy.statuses[&"core:electrified"] = 4
+	var player := fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(3, 0), 20)
+	var session := _ai_session(fixture.state(cells, [enemy, player]))
+	var source := AICommandSource.new(null)
+	source.decision_trace = {}
+	var before := JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state()))
+	var command := source.next_command(session)
+	expect(command is MoveCommand and command.destination == Vector2i(2, 0), "Doomed unit moves into attack range before end-of-turn death")
+	expect(source.decision_trace.reason == "doomed_maximum_damage", "Doomed damage plan is explained in AI trace")
+	expect(before == JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state())), "Speculative actions do not mutate live units, map, turns, revisions or RNG")
+	expect(session.step(command).accepted and enemy.health.current == 3, "Doomed movement survives until action")
+	command = source.next_command(session)
+	expect(command is AttackCommand and command.target_id == player.unit_id, "Doomed unit attacks after approaching")
+	var resolution := session.step(command)
+	expect(resolution.accepted and player.health.current == 18 and enemy.health.is_defeated(), "Attack damages opponent before actor dies at end of turn")
+
+	# Maximize actual HP removed, even if a nearer target is already attackable.
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 4)
+	enemy.basic_attack_damage = 7
+	enemy.statuses[&"core:electrified"] = 4
+	var armored := fixture.unit(&"armor", BattleFaction.Value.PLAYER, Vector2i(1, 0), 20)
+	armored.statuses[&"core:armor"] = 6
+	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(3, 0), 20)
+	var detour: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1), Vector2i(2, 0), Vector2i(3, 0)]
+	session = _ai_session(fixture.state(detour, [enemy, armored, player]))
+	var plan := AILastActionPlanner.plan(session)
+	expect(plan.command is MoveCommand and plan.enemy_damage == 7 and plan.followup_command is AttackCommand and plan.followup_command.target_id == player.unit_id, "Doomed AI prefers 7 damage after movement over 1 damage to adjacent armor")
+
+	# Abilities compete with ordinary attacks using the real executor and cooldown legality.
+	var blast := fixture.ability(&"core:last_blast", AbilityDefinition.TargetMode.HEX, 0)
+	blast.effects[0].parameters.amount = 9
+	enemy.abilities[blast.id] = blast
+	enemy.ability_cooldowns[blast.id] = 0
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.command is UseAbilityCommand and plan.enemy_damage == 9, "Doomed AI chooses a damaging ability over weaker ordinary attack")
+	enemy.ability_cooldowns[blast.id] = 2
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.enemy_damage == 7 and plan.followup_command is AttackCommand, "Last-action planner respects ability cooldown")
+	enemy.ability_cooldowns[blast.id] = 0
+	enemy.abilities.erase(blast.id)
+	var ignition := fixture.ability(&"core:ignite_oil", AbilityDefinition.TargetMode.HEX)
+	ignition.effects[0].effect_type_id = &"core:unit_status"
+	ignition.effects[0].parameters = {"status_id": &"core:burning", "levels": 1}
+	enemy.abilities[ignition.id] = ignition
+	player.statuses[&"core:sticky_oil"] = 9
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.command is UseAbilityCommand and plan.enemy_damage == 10, "Status-only ignition competes via real immediate oil explosion damage")
+	player.statuses.clear()
+	enemy.abilities.erase(ignition.id)
+	blast.area_radius = 10
+	enemy.abilities[blast.id] = blast
+	var ally := fixture.unit(&"ally", BattleFaction.Value.ENEMY, Vector2i(3, -1), 20)
+	session.get("_state").unit_states[ally.unit_id] = ally
+	session.get("_state").hex_grid.add_cell(ally.hex, &"core:default", 1, true)
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.followup_command is AttackCommand, "Doomed planner rejects stronger area attack hitting a living ally")
+	enemy.abilities.erase(blast.id)
+
+	# No action is in reach: advance instead of dying in place.
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 1)
+	enemy.statuses[&"core:electrified"] = 4
+	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(4, 0), 20)
+	session = _ai_session(fixture.state(cells, [enemy, player]))
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.command is MoveCommand and plan.command.destination == Vector2i(1, 0) and plan.reason == "doomed_advance_toward_enemy", "Doomed AI advances when no damage can be dealt this turn")
+	expect(session.step(plan.command).accepted, "Desperate approach is a legal command")
+
+	# A safe option keeps normal survival policy, while route death cannot promise an attack.
+	enemy.statuses.clear()
+	expect(AILastActionPlanner.plan(session).is_empty(), "Living unit does not enter desperate policy")
+	enemy.statuses[&"core:electrified"] = 4
+	var state: BattleState = session.get("_state")
+	state.hex_grid.set_hex_state(Vector2i(2, 0), &"core:fire")
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.command is EndTurnCommand, "No movement is issued when no reachable progress remains")
+
+	# A lethal crossing is excluded from maximum-damage plans.
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 3)
+	enemy.statuses[&"core:electrified"] = 2
+	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(3, 0), 20)
+	state = fixture.state(cells, [enemy, player])
+	state.hex_grid.set_hex_state(Vector2i(1, 0), &"core:acid")
+	session = _ai_session(state)
+	plan = AILastActionPlanner.plan(session)
+	expect(plan.reason != "doomed_maximum_damage", "Unit dying on route is never scored as reaching an attack")
+	var predicted := session.create_prediction_engine()
+	predicted.get_unit(enemy.unit_id).statuses.clear()
+	predicted.get_unit(enemy.unit_id).abilities.clear()
+	expect(enemy.statuses.get(&"core:electrified", 0) == 2, "Forecast runtime collections are independent")
+
+	# A fire victim can save itself in water: desperate mode must not override that option.
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 1)
+	enemy.statuses[&"core:burning"] = 3
+	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(4, 0), 20)
+	state = fixture.state(cells, [enemy, player])
+	state.hex_grid.set_hex_state(Vector2i(1, 0), &"core:water")
+	session = _ai_session(state)
+	expect(AILastActionPlanner.plan(session).is_empty(), "Reachable water survival preserves ordinary safe movement policy")
+	command = source.next_command(session)
+	expect(command is MoveCommand and command.destination == Vector2i(1, 0), "Normal policy uses the safe water route")
+
+	# Reproduce the precise positions/statuses from record 43, without depending on local logs.
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://features/battle/tests/fixtures/chudishcherog_doomed_state.json"))
+	var participants: Dictionary[StringName, UnitState] = {}
+	var order: Array[StringName] = []
+	var map_cells: Array[Vector2i] = []
+	for cell: Dictionary in data.grid.cells:
+		map_cells.append(Vector2i(int(cell.hex.x), int(cell.hex.y)))
+	for unit: Dictionary in data.units:
+		var value := fixture.unit(StringName(unit.unit_id), int(unit.faction) as BattleFaction.Value, Vector2i(int(unit.hex.x), int(unit.hex.y)), int(unit.health.maximum), int(unit.turn.movement_max))
+		value.health.current = int(unit.health.current)
+		value.turn.movement_remaining = int(unit.turn.movement_remaining)
+		value.turn.main_action_available = bool(unit.turn.main_action_available)
+		value.turns_started = int(unit.turns_started)
+		value.basic_attack_damage = int(unit.basic_attack_damage)
+		value.basic_attack_range = int(unit.basic_attack_range)
+		value.basic_attack_damage_type = StringName(unit.basic_attack_damage_type)
+		for id: String in unit.statuses:
+			value.statuses[StringName(id)] = int(unit.statuses[id])
+		for id: String in unit.basic_attack_statuses:
+			value.basic_attack_statuses[StringName(id)] = int(unit.basic_attack_statuses[id])
+		for id: String in unit.status_immunities:
+			value.status_immunities.append(StringName(id))
+		participants[value.unit_id] = value
+	for id: String in data.turn_order:
+		order.append(StringName(id))
+	state = BattleState.new(&"core:logged_doom", HexGrid.new(map_cells), participants, order, ObjectiveSystem.new(EliminateFactionObjective.new(BattleFaction.Value.ENEMY, "Defeat enemies"), BattleFaction.Value.PLAYER), 1)
+	for cell: Dictionary in data.grid.cells:
+		var hex := Vector2i(int(cell.hex.x), int(cell.hex.y))
+		state.hex_grid.set_hex_state(hex, StringName(cell.state_id))
+		state.hex_grid.set_traversal(hex, bool(cell.traversable), int(cell.movement_cost))
+	session = _ai_session(state)
+	while state.turn_service.get_round_number() != int(data.round) or state.turn_service.get_active_unit_id() != StringName(data.active_unit_id):
+		state.turn_service.advance_turn()
+	state.random.state = int(data.rng_state)
+	source.decision_trace = {}
+	command = source.next_command(session)
+	expect(command is MoveCommand and source.decision_trace.reason == "doomed_maximum_damage", "Recorded Chudishcherog state now produces a last attack approach instead of EndTurn")
+	expect(session.step(command).accepted, "Recorded last attack approach executes legally")
+	command = source.next_command(session)
+	expect(command is AttackCommand and command.target_id == &"plateau:battle:author:placement_1", "Recorded Chudishcherog reaches Tesla for an attack")
+	resolution = session.step(command)
+	expect(resolution.accepted and participants[&"plateau:battle:author:placement_1"].health.current == 0, "Recorded Chudishcherog deals remaining 3 HP of damage to Tesla before dying")
+	expect(participants[&"plateau:battle:author:placement_4"].health.is_defeated(), "Recorded Chudishcherog still obeys lethal end-of-turn status rules")
+
 
 func _test_summon_control() -> void:
 	var request := fixture.request()
