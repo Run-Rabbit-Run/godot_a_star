@@ -44,6 +44,10 @@ func _run() -> void:
 		_test_properties()
 	if only.is_empty() or only == "statuses":
 		_test_statuses()
+	if only.is_empty() or only == "damage_log":
+		_test_damage_log()
+	if only.is_empty() or only == "turn_effect_order":
+		_test_turn_effect_order()
 	if only.is_empty() or only == "commands":
 		_test_commands()
 	if only.is_empty() or only == "content":
@@ -153,6 +157,164 @@ func _test_statuses() -> void:
 	var snapshot := UnitSnapshot.new(unit)
 	snapshot.statuses.clear()
 	expect(not unit.statuses.is_empty(), "Status snapshots are detached")
+
+func _test_turn_effect_order() -> void:
+	for action: String in ["end", "attack", "ability"]:
+		var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+		var e := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(1, 0))
+		var state := fixture.state([p.hex, e.hex], [p, e])
+		var engine := BattleEngine.new(state)
+		p.statuses[&"core:electrified"] = 2
+		var command = EndTurnCommand.new(p.unit_id)
+		if action == "attack":
+			command = AttackCommand.new(p.unit_id, e.unit_id)
+		elif action == "ability":
+			var ability := fixture.ability(&"test:turn_order", AbilityDefinition.TargetMode.ENEMY)
+			p.abilities[ability.id] = ability
+			command = UseAbilityCommand.new(p.unit_id, e.unit_id, ability.id)
+		var result := engine.execute(command)
+		var tick_index := -1
+		var boundary_index := -1
+		var ticks := 0
+		for index in range(result.events.size()):
+			var event := result.events[index]
+			if event is UnitDamagedEvent and event.source_status_id == &"core:electrified":
+				tick_index = index
+				ticks += 1
+			if event is TurnEndedEvent and event.previous_unit_id == p.unit_id:
+				boundary_index = index
+		expect(result.accepted and ticks == 1 and tick_index >= 0 and tick_index < boundary_index, "Periodic tick precedes handoff exactly once: %s" % action)
+		expect(p.health.current == 98 and p.statuses[&"core:electrified"] == 1, "End tick damage and decay remain unchanged: %s" % action)
+		p.health.current = 100
+		var start_result := engine.execute(EndTurnCommand.new(e.unit_id))
+		var premature_tick := false
+		for event: BattleEvent in start_result.events:
+			if event is UnitDamagedEvent and event.target_id == p.unit_id and not event.source_status_id.is_empty():
+				premature_tick = true
+		expect(start_result.accepted and engine.get_round_number() == 2 and p.health.current == 100 and not premature_tick, "Starting the next own turn does not apply periodic damage: %s" % action)
+	# A skipped unit has its own boundary, after its own tick, before the next round.
+	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	var e := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(1, 0))
+	var state := fixture.state([p.hex, e.hex], [p, e])
+	var engine := BattleEngine.new(state)
+	e.statuses.assign({&"core:electrified": 2, &"core:paralysis": 1})
+	var result := engine.execute(EndTurnCommand.new(p.unit_id))
+	var timeline: Array[String] = []
+	var skipped = null
+	for event: BattleEvent in result.events:
+		if event is TurnEndedEvent:
+			timeline.append("end:%s:%d" % [event.previous_unit_id, event.round_number])
+			if event.was_skipped:
+				skipped = event
+		elif event is UnitDamagedEvent:
+			timeline.append("tick:%s" % event.target_id)
+	expect(timeline == ["end:p:1", "tick:e", "end:e:2"], "Skipped turn tick is between its start handoff and its end handoff")
+	expect(skipped != null and skipped.previous_unit_id == e.unit_id and skipped.next_unit_id == p.unit_id, "Skipped turn explicitly identifies paralysis handoff")
+	expect(e.health.current == 98 and not e.statuses.has(&"core:paralysis") and engine.get_active_unit_id() == p.unit_id, "Paralysis skip retains tick and decay once")
+	var units: Dictionary[StringName, UnitDefinition] = {}
+	expect("пропущен из-за паралича" in BattleLogFormatter.describe(skipped, units, null), "Log explicitly explains skipped end-of-turn effects")
+	# Direct terrain damage still belongs to the new turn, unlike periodic status damage.
+	e.statuses.clear()
+	state.hex_grid.set_hex_state(e.hex, &"core:electricity")
+	result = engine.execute(EndTurnCommand.new(p.unit_id))
+	timeline.clear()
+	for event: BattleEvent in result.events:
+		if event is TurnEndedEvent:
+			timeline.append("handoff")
+		elif event is UnitDamagedEvent:
+			timeline.append("terrain" if event.source_hex_state_id == &"core:electricity" and event.source_status_id.is_empty() else "periodic")
+	expect(timeline == ["handoff", "terrain"], "Beginning terrain exposure follows handoff and does not tick electrified status")
+	# The first participant can already be paralyzed when the battle starts.
+	p.statuses.assign({&"core:electrified": 2, &"core:paralysis": 1})
+	e.statuses.clear()
+	state = fixture.state([p.hex, e.hex], [p, e])
+	engine = BattleEngine.new(state)
+	timeline.clear()
+	skipped = null
+	for event: BattleEvent in engine.get_initial_resolution().events:
+		if event is UnitDamagedEvent:
+			timeline.append("tick")
+		elif event is TurnEndedEvent:
+			timeline.append("handoff")
+			skipped = event
+	expect(timeline == ["tick", "handoff"] and engine.get_active_unit_id() == e.unit_id, "Initial paralysis resolves end tick before the handoff")
+	expect(skipped != null and skipped.was_skipped, "Initial paralysis is explicitly marked as a skipped turn")
+	# Lethal periodic damage must also precede the terminal turn boundary.
+	e.health.current = 1
+	e.statuses[&"core:electrified"] = 2
+	result = engine.execute(EndTurnCommand.new(e.unit_id))
+	timeline.clear()
+	for event: BattleEvent in result.events:
+		if event is UnitDamagedEvent:
+			timeline.append("tick")
+		elif event is TurnEndedEvent:
+			timeline.append("handoff")
+	expect(timeline == ["tick", "handoff"] and result.battle_result != null, "Lethal end tick precedes battle-ending boundary")
+
+
+func _test_damage_log() -> void:
+	var attacker := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	var target := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(2, 0))
+	attacker.basic_attack_damage = 6
+	attacker.basic_attack_range = 3
+	target.statuses[&"core:armor"] = 1
+	var state := fixture.state([attacker.hex, target.hex], [attacker, target])
+	state.hex_grid.set_hex_state(target.hex, &"core:steam")
+	var engine := BattleEngine.new(state)
+	var result := engine.execute(AttackCommand.new(attacker.unit_id, target.unit_id))
+	var hit: UnitDamagedEvent
+	for event: BattleEvent in result.events:
+		if event is UnitDamagedEvent and event.attacker_id == attacker.unit_id:
+			hit = event
+	expect(result.accepted and hit != null, "Ranged attack publishes a damage calculation")
+	if hit == null:
+		return
+	expect(hit.base_damage == 6 and hit.calculated_damage == 2 and hit.damage == 2, "Damage calculation preserves 6 minus steam 3 minus armor 1 equals 2")
+	expect(hit.damage_modifiers == [{"source_id": &"core:steam", "amount": -3}, {"source_id": &"core:armor", "amount": -1}], "Damage event identifies ordered actual reductions")
+	var units: Dictionary[StringName, UnitDefinition] = {}
+	var text := BattleLogFormatter.describe(hit, units, null)
+	expect("физический" in text and "6 (базовая атака) − 3 (гекс: Пар) − 1 (Броня) = 2." in text, "Combat log displays damage type and requested formula")
+	target.statuses.clear()
+	state.hex_grid.set_hex_state(target.hex, &"core:water")
+	expect(BattleLogFormatter.describe(hit, units, null) == text, "Later status and terrain changes cannot alter historical formula")
+	var ability := fixture.ability(&"test:ranged", AbilityDefinition.TargetMode.ENEMY)
+	attacker.abilities[ability.id] = ability
+	state.hex_grid.set_hex_state(target.hex, &"core:acid_vapour")
+	var context := BattleEffectContext.new(state, ability.id)
+	var events := context.apply_damage_events(attacker.unit_id, target.unit_id, 8, &"acid")
+	hit = events[0] as UnitDamagedEvent
+	expect(hit != null and hit.damage == 2 and hit.damage_modifiers == [{"source_id": &"core:acid_vapour", "amount": -6}], "Ability damage records acidic vapour protection")
+	expect("кислотный" in BattleLogFormatter.describe(hit, units, null) and "умение:" in BattleLogFormatter.describe(hit, units, null), "Ability log names damage type and origin")
+	# Each interaction is traced before the status is consumed or removed.
+	for scenario: Dictionary in [
+		{"type": &"fire", "status": &"core:wet", "levels": 2, "delta": -2, "final": 3},
+		{"type": &"water", "status": &"core:burning", "levels": 2, "delta": -2, "final": 3},
+		{"type": &"water", "status": &"core:plasma", "levels": 1, "delta": -5, "final": 0},
+		{"type": &"electric", "status": &"core:wet", "levels": 2, "delta": 2, "final": 7},
+		{"type": &"physical", "status": &"core:armor", "levels": 9, "delta": -5, "final": 0},
+	]:
+		var unit := fixture.unit(&"victim", BattleFaction.Value.ENEMY, Vector2i.ZERO)
+		unit.statuses[scenario.status] = scenario.levels
+		events.clear()
+		UnitStatusService.damage(unit, 5, scenario.type, events)
+		hit = events.back() as UnitDamagedEvent
+		expect(hit != null and hit.calculated_damage == scenario.final and hit.damage_modifiers == [{"source_id": scenario.status, "amount": scenario.delta}], "Trace matches actual status interaction: %s/%s" % [scenario.type, scenario.status])
+		var sum := hit.base_damage
+		for modifier: Dictionary in hit.damage_modifiers:
+			sum += int(modifier.amount)
+		expect(sum == hit.calculated_damage and unit.health.current == 100 - hit.damage, "Trace arithmetic reconciles with actual health loss")
+	var fragile := fixture.unit(&"fragile", BattleFaction.Value.ENEMY, Vector2i.ZERO, 2)
+	events.clear()
+	UnitStatusService.damage(fragile, 6, &"plasma", events, &"", &"core:plasma")
+	hit = events.back() as UnitDamagedEvent
+	expect(hit.base_damage == 6 and hit.calculated_damage == 6 and hit.damage == 2, "Overkill preserves calculated damage separately from health loss")
+	text = BattleLogFormatter.describe(hit, units, null)
+	expect("плазменный" in text and "гекс: Плазма" in text and "Снято 2 ОЗ" in text, "Log distinguishes overkill from damage absorption")
+	events.clear()
+	UnitStatusService.damage(target, 2, &"physical", events, attacker.unit_id, &"", &"", 3, &"", &"core:steam")
+	hit = events.back() as UnitDamagedEvent
+	expect(hit.damage == 0 and hit.damage_modifiers == [{"source_id": &"core:steam", "amount": -2}], "Protection records absorbed amount rather than unused capacity")
+
 
 func _test_commands() -> void:
 	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
@@ -376,6 +538,34 @@ func _test_presentation() -> void:
 	expect("Нет активных эффектов" not in (hud.get("_target_effects_label") as Label).text, "Target HUD displays actual statuses")
 	hud.set_interaction_enabled(false)
 	expect(not (hud.get("_speed_4_button") as Button).disabled, "Playback speed remains available during presentation")
+	var log_panel := hud.get_node("HUDRoot/BattleLogPanel") as PanelContainer
+	var log_button := hud.get_node("HUDRoot/BattleLogButton") as Button
+	var log_entries := hud.get_node("HUDRoot/BattleLogPanel/Content/Entries") as RichTextLabel
+	expect(not log_panel.visible and not log_button.button_pressed, "Battle log starts hidden")
+	var before_log := log_entries.get_parsed_text()
+	hud.append_battle_log("Hidden event [b]plain text[/b]")
+	log_button.button_pressed = true
+	expect(log_panel.visible and "Hidden event [b]plain text[/b]" in log_entries.get_parsed_text(), "Opening log retains hidden events as literal text")
+	expect(not log_button.disabled, "Log is available during presentation")
+	log_button.button_pressed = false
+	log_button.button_pressed = true
+	expect(log_entries.get_parsed_text() == before_log + "Hidden event [b]plain text[/b]\n", "Toggling log preserves history without duplicate entries")
+	expect(log_panel.get_global_rect().end.x < (hud.get_node("HUDRoot/StrategistPanel") as Control).get_global_rect().position.x, "Log is to the left of round information")
+	var logged_round: int = hud.get("_logged_round")
+	var before_round := log_entries.get_parsed_text()
+	hud.log_round(logged_round)
+	expect(log_entries.get_parsed_text() == before_round, "Repeated round refresh does not duplicate its heading")
+	var log_units: Dictionary[StringName, UnitDefinition] = {}
+	var victim := UnitDefinition.new()
+	victim.display_name = "Victim"
+	log_units[&"victim"] = victim
+	var damage := UnitDamagedEvent.new(&"source", &"victim", 4, 0, true)
+	damage.source_status_id = &"core:burning"
+	var damage_text := BattleLogFormatter.describe(damage, log_units, null)
+	expect(UnitStatusCatalog.display_name(&"core:burning") in damage_text and "Victim" in damage_text and "4" in damage_text and "погибает" in damage_text, "Damage log identifies periodic source, damage and defeat")
+	var status_unit := fixture.unit(&"victim", BattleFaction.Value.ENEMY, Vector2i.ZERO)
+	var status_text := BattleLogFormatter.describe(UnitStatusChangedEvent.new(status_unit, {&"core:burning": 1}), log_units, null)
+	expect("снят" in status_text, "Log reports removed statuses")
 	controller.set("_is_presenting", true)
 	var revision := (controller.get("_battle_session") as BattleSession).get_state_revision()
 	var rejected: BattleResolution = await controller.apply_map_mutations([MapMutation.apply_hex_state(Vector2i.ZERO, &"core:fire")])

@@ -76,6 +76,10 @@ var _ability_action_available := false
 var _ability_buttons: Array[Button] = []
 var _ability_button_ids: Array[StringName] = []
 var _display_settings: BattleDisplaySettingsController
+@onready var _battle_log_button: Button = $HUDRoot/BattleLogButton
+@onready var _battle_log_panel: PanelContainer = $HUDRoot/BattleLogPanel
+@onready var _battle_log_entries: RichTextLabel = $HUDRoot/BattleLogPanel/Content/Entries
+var _logged_round := 0
 
 
 func _enter_tree() -> void:
@@ -136,6 +140,11 @@ func _ready() -> void:
 	_speed_4_button.pressed.connect(_on_speed_requested.bind(4.0))
 	clear_target()
 	_mount_ui_profile()
+	_battle_log_panel.hide()
+	_battle_log_button.set_pressed_no_signal(false)
+	_battle_log_button.toggled.connect(_battle_log_panel.set_visible)
+	_battle_log_panel.add_theme_stylebox_override("panel", _make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 8))
+	_battle_log_entries.add_theme_color_override("default_color", COLOR_IVORY)
 
 
 
@@ -156,6 +165,17 @@ func _mount_ui_profile() -> void:
 	layout_presenter.setup($HUDRoot, document)
 	for diagnostic: String in layout_presenter.diagnostics:
 		push_warning(diagnostic)
+
+
+func append_battle_log(text: String) -> void:
+	if not text.is_empty():
+		_battle_log_entries.add_text(text + "\n")
+
+
+func log_round(round_number: int) -> void:
+	if round_number != _logged_round:
+		_logged_round = round_number
+		append_battle_log("— Раунд %d —" % round_number)
 
 
 func set_interaction_enabled(enabled: bool) -> void:
@@ -381,6 +401,7 @@ func show_outcome(outcome: BattleOutcome.Value) -> void:
 			return
 
 	_health_label.text = "БОЙ ЗАВЕРШЁН"
+	append_battle_log("Бой завершён: %s." % ("победа" if outcome == BattleOutcome.Value.VICTORY else "поражение"))
 	_movement_label.text = ""
 	_main_action_label.text = ""
 
@@ -520,6 +541,7 @@ func _apply_styles() -> void:
 		_basic_attack_button,
 		_ability_button_template,
 		_settings_button,
+		_battle_log_button,
 		_end_turn_button,
 		_speed_half_button,
 		_speed_1_button,

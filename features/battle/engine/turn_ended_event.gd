@@ -5,6 +5,8 @@ extends BattleEvent
 var previous_unit_id: StringName
 var next_unit_id: StringName
 var round_number: int
+## Automatic paralysis skips still resolve their own end-of-turn effects.
+var was_skipped := false
 
 
 func _init(

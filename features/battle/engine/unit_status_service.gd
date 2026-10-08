@@ -31,32 +31,47 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 	if id == &"core:burning" or (id == &"core:sticky_oil" and unit.statuses.get(&"core:burning", 0) > 0):
 		_explode_oil(unit, events)
 
-static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"") -> void:
+static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"", protection_hex_state: StringName = &"") -> void:
 	if unit == null or unit.health.is_defeated() or amount <= 0:
 		return
 	var before := unit.statuses.duplicate()
 	var adjusted := maxi(0, amount - ranged_reduction)
+	var modifiers: Array[Dictionary] = []
+	if adjusted != amount:
+		modifiers.append({"source_id": protection_hex_state if not protection_hex_state.is_empty() else &"ranged_protection", "amount": adjusted - amount})
+	var before_status_damage := adjusted
+	var modifier_status: StringName = &""
 	match type:
 		&"physical":
+			modifier_status = &"core:armor"
 			adjusted = maxi(0, adjusted - int(unit.statuses.get(&"core:armor", 0)))
 		&"fire":
+			modifier_status = &"core:wet"
 			var absorbed := mini(adjusted, int(unit.statuses.get(&"core:wet", 0)))
 			adjusted -= absorbed
 			_set_levels(unit, &"core:wet", int(unit.statuses.get(&"core:wet", 0)) - absorbed)
 		&"water":
 			if unit.statuses.get(&"core:plasma", 0) > 0:
+				modifier_status = &"core:plasma"
 				adjusted = 0
 			else:
+				modifier_status = &"core:burning"
 				var absorbed := mini(adjusted, int(unit.statuses.get(&"core:burning", 0)))
 				adjusted -= absorbed
 				_set_levels(unit, &"core:burning", int(unit.statuses.get(&"core:burning", 0)) - absorbed)
 		&"electric":
+			modifier_status = &"core:wet"
 			if adjusted > 0:
 				adjusted += int(unit.statuses.get(&"core:wet", 0))
+	if adjusted != before_status_damage:
+		modifiers.append({"source_id": modifier_status, "amount": adjusted - before_status_damage})
 	_emit(unit, before, events)
 	var applied := unit.health.apply_damage(adjusted)
 	var event := UnitDamagedEvent.new(source, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), hex_state, ability)
 	event.damage_type = type
+	event.base_damage = amount
+	event.calculated_damage = adjusted
+	event.damage_modifiers.assign(modifiers)
 	event.source_status_id = status
 	events.append(event)
 	if type == &"fire":

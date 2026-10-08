@@ -35,6 +35,9 @@ func present(
 	map_view.clear_ranged_attack_cells()
 
 	for event: BattleEvent in resolution.events:
+		hud.append_battle_log(BattleLogFormatter.describe(event, unit_definitions, _content_snapshot))
+		if event is TurnEndedEvent:
+			hud.log_round(event.round_number)
 		var was_presented := await _present_event(
 			event,
 			unit_actors,

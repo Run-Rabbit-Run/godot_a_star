@@ -23,7 +23,7 @@ func _init(p_state: BattleState) -> void:
 			_apply_hex_state_damage(unit_id, initial_events)
 		_start_unit_turn(get_active_unit_id())
 
-		_advance_defeated_active(initial_events)
+		_advance_defeated_active(initial_events, true)
 
 	if not initial_events.is_empty():
 		_state.state_revision += 1
@@ -304,36 +304,24 @@ func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
 	return _accepted(result.events)
 
 
-func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> void:
+func _finish_action_turn(_unit_id: StringName, events: Array[BattleEvent]) -> void:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
-	var turn_events: Array[BattleEvent] = []
-	var next_id := _end_turn(turn_events)
+	var next_id := _end_turn(events)
 	if next_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		_terminal_error = "The next unit turn could not be started."
-	events.append(TurnEndedEvent.new(unit_id, next_id, get_round_number()))
-	events.append_array(turn_events)
 
 
 func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 	if command.unit_id != get_active_unit_id():
 		return _rejected("Only the active unit can end its turn.")
 
-	var previous_unit_id := command.unit_id
-	var turn_damage_events: Array[BattleEvent] = []
-	var next_unit_id := _end_turn(turn_damage_events)
+	var events: Array[BattleEvent] = []
+	var next_unit_id := _end_turn(events)
 
 	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		_terminal_error = "The next unit turn could not be started."
 
-	var events: Array[BattleEvent] = [
-		TurnEndedEvent.new(
-			previous_unit_id,
-			next_unit_id,
-			get_round_number()
-		),
-	]
-	events.append_array(turn_damage_events)
 	return _accepted(events)
 
 
@@ -349,12 +337,17 @@ func _start_unit_turn(unit_id: StringName) -> bool:
 	return true
 
 
-func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
+func _end_turn(damage_events: Array[BattleEvent], initial_skip := false) -> StringName:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return StringName()
 
+	var previous_unit_id := get_active_unit_id()
+	var was_skipped := initial_skip
 	UnitStatusService.end_turn(get_unit(get_active_unit_id()), damage_events)
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		var ended := TurnEndedEvent.new(previous_unit_id, &"", get_round_number())
+		ended.was_skipped = was_skipped
+		damage_events.append(ended)
 		return StringName()
 	# Each skipped turn consumes paralysis or health; this bound covers chained skips.
 	var attempts := _state.turn_service.get_participant_count()
@@ -367,6 +360,12 @@ func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
 		if not _start_unit_turn(next_unit_id):
 			continue
 
+		# Finish the old turn after its status effects, before the new hex exposure.
+		var ended := TurnEndedEvent.new(previous_unit_id, next_unit_id, get_round_number())
+		ended.was_skipped = was_skipped
+		damage_events.append(ended)
+		previous_unit_id = next_unit_id
+		was_skipped = false
 		_apply_hex_state_damage(next_unit_id, damage_events)
 
 		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
@@ -376,8 +375,12 @@ func _end_turn(damage_events: Array[BattleEvent]) -> StringName:
 		if next.health.is_defeated():
 			continue
 		if next.statuses.get(&"core:paralysis", 0) > 0:
+			was_skipped = true
 			UnitStatusService.end_turn(next, damage_events)
 			if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+				var skipped := TurnEndedEvent.new(next_unit_id, &"", get_round_number())
+				skipped.was_skipped = true
+				damage_events.append(skipped)
 				return StringName()
 			continue
 		return next_unit_id
@@ -448,8 +451,9 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 		return AttackResult.failure()
 
 	var health_before := target.health.current
-	var reduction := HexStateCatalog.ranged_reduction(_state.hex_grid.get_hex_state_id(target.hex)) if attacker.basic_attack_range > 1 else 0
-	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction)
+	var protection_hex_state := _state.hex_grid.get_hex_state_id(target.hex)
+	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if attacker.basic_attack_range > 1 else 0
+	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction, &"", protection_hex_state)
 	for status: StringName in attacker.basic_attack_statuses:
 		UnitStatusService.apply(target, status, attacker.basic_attack_statuses[status], events)
 	events.append_array(DamageType.react(_state, target.hex, attacker.basic_attack_damage_type))
@@ -475,7 +479,7 @@ func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 	resolution.terminal_error = _terminal_error
 	return resolution
 
-func _advance_defeated_active(events: Array[BattleEvent]) -> void:
+func _advance_defeated_active(events: Array[BattleEvent], initial_turn := false) -> void:
 	var active := get_unit(get_active_unit_id())
 
 	if active == null or (not active.health.is_defeated() and active.statuses.get(&"core:paralysis", 0) <= 0):
@@ -484,16 +488,9 @@ func _advance_defeated_active(events: Array[BattleEvent]) -> void:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
 
-	var turn_damage_events: Array[BattleEvent] = []
-	var next_unit_id := _end_turn(turn_damage_events)
+	var next_unit_id := _end_turn(events, initial_turn and active.statuses.get(&"core:paralysis", 0) > 0)
 	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		_terminal_error = "The next unit turn could not be started."
-	events.append(TurnEndedEvent.new(
-		active.unit_id,
-		next_unit_id,
-		get_round_number()
-	))
-	events.append_array(turn_damage_events)
 
 
 func _rejected(reason: String) -> BattleResolution:

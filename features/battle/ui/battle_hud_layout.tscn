@@ -25,6 +25,45 @@ anchor_bottom = 1.0
 mouse_filter = 2
 script = ExtResource("7_shading")
 
+[node name="BattleLogButton" type="Button" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -536.0
+offset_top = 20.0
+offset_right = -396.0
+offset_bottom = 58.0
+text = "Боевой лог"
+toggle_mode = true
+tooltip_text = "Показать или скрыть историю боя"
+
+[node name="BattleLogPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -806.0
+offset_top = 68.0
+offset_right = -396.0
+offset_bottom = 340.0
+
+[node name="Content" type="VBoxContainer" parent="BattleLogPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="BattleLogPanel/Content"]
+layout_mode = 2
+text = "БОЕВОЙ ЛОГ"
+theme_override_font_sizes/font_size = 14
+
+[node name="Entries" type="RichTextLabel" parent="BattleLogPanel/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 14
+text = ""
+scroll_following = true
+selection_enabled = true
+
 [node name="StrategistPanel" type="PanelContainer" parent="."]
 layout_mode = 1
 offset_left = -380.0

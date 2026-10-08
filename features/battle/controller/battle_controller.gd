@@ -157,6 +157,8 @@ func _initialize_battle() -> void:
 	_presentation_queue.configure(_start_request.content_snapshot, _unit_views)
 	_set_presenting(true)
 	var initial_resolution := _battle_session.get_initial_resolution()
+	# Initial events can already include skipped turns crossing round boundaries.
+	_hud.log_round(1)
 	# Actors were created after the start effects; replay their damage from the prior health.
 	_unit_views.show_health_before(initial_resolution.events)
 	var was_initial_presented := await _present_resolution(
@@ -790,6 +792,7 @@ func _fail_runtime(message: String) -> void:
 		return
 	_runtime_failed = true
 	initialization_error = message
+	_hud.append_battle_log("Бой остановлен: %s" % message)
 	_set_presenting(true)
 	battle_failed.emit(message)
 
