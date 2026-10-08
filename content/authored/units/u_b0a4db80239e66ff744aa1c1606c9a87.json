@@ -1,0 +1,19 @@
+{
+	"abilities": [
+		"core:create_water",
+		"core:create_fire"
+	],
+	"armor": 1,
+	"attack_range": 5,
+	"attack_type": "ranged",
+	"damage": 2,
+	"hp": 10,
+	"id": "custom_units:u_b0a4db80239e66ff744aa1c1606c9a87",
+	"image": "gt_medic.png",
+	"movement": 4,
+	"name": "обоба",
+	"passives": [
+		"core:attack_plasma"
+	],
+	"schema_version": 1
+}

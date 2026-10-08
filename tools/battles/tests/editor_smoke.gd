@@ -109,10 +109,82 @@ func _run() -> void:
 	_expect(BattleDocumentSerializer.load(second_path) != null, "Second saved document must load.")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(first_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(second_path))
+	await _check_battle_library(editor)
 
 	editor.queue_free()
 	await process_frame
 	_finish()
+
+
+func _check_battle_library(editor: BattleEditorShell) -> void:
+	var snapshot: ContentSnapshot = editor.get("_snapshot")
+	var fixture := BattleDocumentSerializer.load("res://features/battle/tests/fixtures/regression_battle.json")
+	_expect(fixture != null and fixture.display_name.is_empty(), "Legacy documents must load without a name.")
+	var first := BattleLibrary.create_document(snapshot, editor.initial_battle_id)
+	var second := BattleLibrary.create_document(snapshot, editor.initial_battle_id)
+	_expect(first != null and second != null, "New fields must be created from base content.")
+	if first == null or second == null:
+		return
+	_expect(first.document_id != second.document_id and first.battle_definition.id != second.battle_definition.id and first.map_definition.id != second.map_definition.id, "New fields must have independent document, battle and map IDs.")
+	_expect(first.battle_definition.map_id == first.map_definition.id, "New field map references must agree.")
+	_expect(first.battle_definition.unit_placements.is_empty(), "New fields must have no units.")
+	_expect(first.map_definition.cells.size() == 216, "New fields must have a complete 18x12 grid.")
+	var clean := true
+	for cell: BattleMapCellDefinition in first.map_definition.cells:
+		clean = clean and EditorBattleView.is_in_frame(cell.hex) and cell.traversable and cell.hex_state_id.is_empty() and cell.movement_cost == 1
+	_expect(clean, "Every new cell must be clean and within the editable frame.")
+	editor.call("_replace_document", first, "", false)
+	_expect(editor.has_unsaved_changes(), "New fields must be unsaved drafts.")
+	var name_edit: LineEdit = editor.get("_name_edit")
+	name_edit.text = "Тестовое поле"
+	name_edit.caret_column = 3
+	name_edit.text_changed.emit(name_edit.text)
+	_expect(first.display_name == "Тестовое поле", "The name control must edit the document.")
+	_expect(name_edit.caret_column == 3, "Editing a name must preserve the text caret.")
+	editor.call("_undo")
+	_expect(first.display_name == "Новое поле боя" and name_edit.text == first.display_name, "Undo must restore both document name and control.")
+	editor.call("_redo")
+	_expect(first.display_name == "Тестовое поле", "Redo must restore the new name.")
+	var directory := "user://battle_library_%d" % OS.get_process_id()
+	var first_path := directory.path_join("first.json")
+	var second_path := directory.path_join("second.json")
+	_expect(editor.call("_save_to_path", first_path), "The named draft must save.")
+	_expect(not editor.has_unsaved_changes(), "Successful save must clear draft changes.")
+	var original_text := FileAccess.get_file_as_string(first_path)
+	editor.call("_create_new_document")
+	_expect(String(editor.get("_current_document_path")).is_empty(), "Creating a field must clear the previous save path.")
+	var fresh: BattleDocument = editor.get("_document")
+	_expect(fresh.document_id != first.document_id, "Creating a field must replace the previous identity.")
+	_expect(editor.call("_save_to_path", second_path), "The second field must save separately.")
+	_expect(FileAccess.get_file_as_string(first_path) == original_text, "Saving a second field must preserve the first file.")
+	var entries := BattleLibrary.list_documents(directory)
+	_expect(entries.size() == 2 and entries[0].label == "Тестовое поле", "The library must list named saved fields.")
+	editor.call("_load_document_path", first_path)
+	var reopened: BattleDocument = editor.get("_document")
+	_expect(reopened.document_id == first.document_id and reopened.display_name == "Тестовое поле" and not editor.has_unsaved_changes(), "Opening must restore name, identity and saved state.")
+	name_edit.text = "Несохранённое имя"
+	name_edit.text_changed.emit(name_edit.text)
+	var choice: OptionButton = editor.get("_battle_option")
+	var index := choice.item_count
+	choice.add_item("Second fixture")
+	choice.set_item_metadata(index, second_path)
+	editor.call("_on_battle_selected", index)
+	var discard: ConfirmationDialog = editor.get("_discard_dialog")
+	_expect(discard.visible and editor.get("_document") == reopened, "Selecting a saved field must guard the unsaved draft.")
+	discard.hide()
+	_expect(editor.get("_document") == reopened, "Canceling a switch must retain the draft.")
+	editor.call("_new_document_requested")
+	_expect(discard.visible and editor.get("_document") == reopened, "New field must guard unsaved changes before replacing the document.")
+	discard.hide()
+	editor.call("_confirm_discard")
+	_expect(editor.get("_document") != reopened, "Confirmed discard must create the requested field.")
+	var invalid_data := BattleDocumentSerializer.to_dictionary(first)
+	invalid_data["display_name"] = 42
+	_expect(BattleDocumentSerializer.from_dictionary(invalid_data) == null, "A non-string name must be rejected by the shared format.")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(first_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(second_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(directory))
+	await process_frame
 
 
 func _find_cell(

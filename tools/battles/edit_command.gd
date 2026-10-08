@@ -12,10 +12,12 @@ enum Kind {
 	UPDATE_HEX,
 	REMOVE_HEX,
 	SET_BACKGROUND,
+	SET_NAME,
 }
 
 
 var background_id: StringName
+var display_name := ""
 var kind: Kind
 var placement: UnitPlacementDefinition
 var placement_id: StringName
@@ -106,6 +108,12 @@ static func set_background(id: StringName) -> EditCommand:
 	return command
 
 
+static func rename_document(value: String) -> EditCommand:
+	var command := EditCommand.new(Kind.SET_NAME)
+	command.display_name = value
+	return command
+
+
 func apply(document: BattleDocument) -> bool:
 	if document == null or _before != null:
 		return false
@@ -113,6 +121,9 @@ func apply(document: BattleDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.SET_NAME:
+			document.display_name = display_name
+
 		Kind.SET_BACKGROUND:
 			document.map_definition.background_id = background_id
 

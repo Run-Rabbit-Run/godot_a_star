@@ -12,6 +12,8 @@ var content_packages: Array[ContentPackage] = []
 
 
 var _background_option: OptionButton
+var _battle_option: OptionButton
+var _name_edit: LineEdit
 var _selected_state_id: StringName = &"core:electricity"
 var _snapshot: ContentSnapshot
 var _document: BattleDocument
@@ -148,6 +150,21 @@ func _build_ui() -> void:
 	title.text = "РЕДАКТОР БОЯ"
 	title.add_theme_font_size_override("font_size", 22)
 	root.add_child(title)
+	_battle_option = OptionButton.new()
+	_battle_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_battle_option.fit_to_longest_item = false
+	_battle_option.clip_text = true
+	_battle_option.item_selected.connect(_on_battle_selected)
+	root.add_child(_labeled("Сохранённые поля боя", _battle_option))
+	var library_actions := HBoxContainer.new()
+	library_actions.add_child(_button("Новое поле", _new_document_requested))
+	library_actions.add_child(_button("Обновить список", _refresh_battle_library))
+	root.add_child(library_actions)
+	_name_edit = LineEdit.new()
+	_name_edit.placeholder_text = "Название поля боя"
+	_name_edit.max_length = 120
+	_name_edit.text_changed.connect(_on_name_changed)
+	root.add_child(_labeled("Название", _name_edit))
 	root.add_child(EditorDisplaySettings.new())
 
 	var hint := Label.new()
@@ -741,6 +758,7 @@ func _redo() -> void:
 
 func _after_document_changed() -> void:
 	_view.setup(_document)
+	_sync_document_name()
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_validate_document()
 
@@ -776,7 +794,8 @@ func _validate_document() -> void:
 
 func _save() -> void:
 	if _current_document_path.is_empty():
-		_save_as()
+		if _document != null:
+			_save_to_path(GameContentSettings.BATTLES.path_join(_suggested_document_filename()))
 		return
 	_save_to_path(_current_document_path)
 
@@ -830,13 +849,21 @@ func _load_document_path(path: String) -> void:
 		_set_status("Не удалось открыть %s: %s" % [path, load_result.error_message])
 		return
 
+	_replace_document(loaded, path, true)
+
+
+func _replace_document(loaded: BattleDocument, path: String, saved: bool) -> void:
 	_document = loaded
 	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
+	if not saved:
+		_saved_document = {}
 	_history = EditorCommandHistory.new()
 	_selected_placement_id = StringName()
 	_selected_definition_id = StringName()
 	_has_selected_hex = false
 	_current_document_path = path
+	_next_placement_number = 1
+	_selected_hex_label.text = "Гекс не выбран"
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_view.setup(_document)
 	_view.select_placement(StringName())
@@ -845,6 +872,55 @@ func _load_document_path(path: String) -> void:
 	_update_document_path_label()
 	_validate_document()
 	call_deferred("_frame_map")
+
+
+func _new_document_requested() -> void:
+	_guard_discard(_create_new_document)
+
+
+func _create_new_document() -> void:
+	var document := BattleLibrary.create_document(_snapshot, initial_battle_id)
+	if document == null:
+		_set_status("Не удалось создать поле: проверьте загрузку базового контента.")
+		return
+	_replace_document(document, "", false)
+
+
+func _on_name_changed(value: String) -> void:
+	if _document != null and _document.display_name != value:
+		_execute(EditCommand.rename_document(value))
+
+
+func _sync_document_name() -> void:
+	var value := _document.display_name if _document != null else ""
+	if _name_edit.text == value:
+		return
+	_name_edit.set_block_signals(true)
+	_name_edit.text = value
+	_name_edit.set_block_signals(false)
+
+
+func _refresh_battle_library() -> void:
+	_battle_option.clear()
+	_battle_option.add_item("Текущее поле: не сохранено" if _current_document_path.is_empty() else "Текущее поле")
+	_battle_option.set_item_metadata(0, "")
+	_battle_option.set_item_disabled(0, true)
+	var current := ProjectSettings.globalize_path(_current_document_path) if not _current_document_path.is_empty() else ""
+	for entry: Dictionary in BattleLibrary.list_documents():
+		var index := _battle_option.item_count
+		_battle_option.add_item(entry.label)
+		_battle_option.set_item_metadata(index, entry.path)
+		_battle_option.set_item_tooltip(index, entry.path if String(entry.error).is_empty() else entry.error)
+		_battle_option.set_item_disabled(index, not String(entry.error).is_empty())
+		if ProjectSettings.globalize_path(entry.path) == current:
+			_battle_option.select(index)
+
+
+func _on_battle_selected(index: int) -> void:
+	var path := String(_battle_option.get_item_metadata(index))
+	_refresh_battle_library()
+	if not path.is_empty() and ProjectSettings.globalize_path(path) != ProjectSettings.globalize_path(_current_document_path):
+		_guard_discard(_load_document_path.bind(path))
 
 
 func _suggested_document_filename() -> String:
@@ -860,6 +936,8 @@ func _ensure_json_extension(path: String) -> String:
 
 
 func _update_document_path_label() -> void:
+	_sync_document_name()
+	_refresh_battle_library()
 	_document_path_label.text = (
 		"Файл: %s" % ProjectSettings.globalize_path(_current_document_path)
 		if not _current_document_path.is_empty()

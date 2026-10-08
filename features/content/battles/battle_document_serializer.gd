@@ -126,6 +126,7 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 
 	return {
 		"document_id": String(document.document_id),
+		"display_name": document.display_name,
 		"schema_version": document.schema_version,
 		"package_versions": package_versions,
 		"editor_metadata": document.editor_metadata,
@@ -214,6 +215,7 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 		battle
 	)
 	document.editor_metadata = data.get("editor_metadata", {}).duplicate(true)
+	document.display_name = data.get("display_name", "")
 
 	for package_id: String in data.get("package_versions", {}):
 		document.package_versions[StringName(package_id)] = data["package_versions"][package_id]
@@ -224,6 +226,7 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 static func _validate_structure(data: Dictionary) -> String:
 	var error := _validate_fields(data, {
 		"schema_version": TYPE_INT, "document_id": TYPE_STRING,
+		"display_name": TYPE_STRING,
 		"map": TYPE_DICTIONARY, "battle": TYPE_DICTIONARY,
 		"package_versions": TYPE_DICTIONARY, "editor_metadata": TYPE_DICTIONARY,
 	}, "document")

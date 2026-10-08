@@ -5,6 +5,7 @@ extends RefCounted
 const SCHEMA_VERSION := 1
 
 var document_id: StringName
+var display_name := ""
 var schema_version := SCHEMA_VERSION
 var map_definition: BattleMapDefinition
 var battle_definition: BattleDefinition
@@ -59,6 +60,7 @@ func duplicate_document() -> BattleDocument:
 		battle_definition.duplicate(true) as BattleDefinition
 	)
 	copy.schema_version = schema_version
+	copy.display_name = display_name
 	copy.package_versions = package_versions.duplicate(true)
 	copy.editor_metadata = editor_metadata.duplicate(true)
 	return copy
@@ -66,6 +68,7 @@ func duplicate_document() -> BattleDocument:
 
 func copy_from(other: BattleDocument) -> void:
 	document_id = other.document_id
+	display_name = other.display_name
 	schema_version = other.schema_version
 	map_definition = other.map_definition.duplicate(true) as BattleMapDefinition
 	battle_definition = other.battle_definition.duplicate(true) as BattleDefinition
