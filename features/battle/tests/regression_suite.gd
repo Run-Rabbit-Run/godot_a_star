@@ -44,6 +44,7 @@ func _run() -> void:
 		_test_properties()
 	if only.is_empty() or only == "statuses":
 		_test_statuses()
+		_test_fixed_status_damage()
 	if only.is_empty() or only == "damage_log":
 		_test_damage_log()
 	if only.is_empty() or only == "file_logging":
@@ -301,18 +302,18 @@ func _test_statuses() -> void:
 	var events: Array[BattleEvent] = []
 	UnitStatusService.apply(unit, &"core:wet", 3, events)
 	UnitStatusService.damage(unit, 1, &"electric", events)
-	expect(unit.health.current == 96 and unit.statuses.get(&"core:wet", 0) == 3, "Wet amplifies electric damage without decay")
+	expect(unit.health.current == 98 and unit.statuses.get(&"core:wet", 0) == 3, "Wet amplifies electric damage without decay")
 	UnitStatusService.damage(unit, 2, &"fire", events)
-	expect(unit.health.current == 96 and unit.statuses.get(&"core:wet", 0) == 1, "Wet absorbs fire one-to-one")
+	expect(unit.health.current == 98 and unit.statuses.get(&"core:wet", 0) == 1, "Wet absorbs fire one-to-one")
 	UnitStatusService.apply(unit, &"core:plasma", 2, events)
 	expect(not unit.statuses.has(&"core:wet"), "Plasma removes wet")
 	UnitStatusService.damage(unit, 8, &"water", events)
-	expect(unit.health.current == 96, "Plasma blocks water damage")
+	expect(unit.health.current == 98, "Plasma blocks water damage")
 	unit.status_immunities.append(&"core:burning")
 	UnitStatusService.apply(unit, &"core:burning", 2, events)
 	expect(not unit.statuses.has(&"core:burning"), "Burning immunity blocks only status")
 	UnitStatusService.damage(unit, 2, &"fire", events)
-	expect(unit.health.current == 94, "Status immunity is not damage immunity")
+	expect(unit.health.current == 96, "Status immunity is not damage immunity")
 	UnitStatusService.apply(unit, &"core:armor", 8, events)
 	UnitStatusService.apply(unit, &"core:acid", 5, events)
 	expect(not unit.statuses.has(&"core:armor") and not unit.statuses.has(&"core:acid"), "Acid threshold removes armor and acid")
@@ -326,6 +327,43 @@ func _test_statuses() -> void:
 	var snapshot := UnitSnapshot.new(unit)
 	snapshot.statuses.clear()
 	expect(not unit.statuses.is_empty(), "Status snapshots are detached")
+
+func _test_fixed_status_damage() -> void:
+	for spec: Dictionary in [
+		{"id": &"core:burning", "amount": 1, "type": &"fire"},
+		{"id": &"core:electrified", "amount": 1, "type": &"electric"},
+		{"id": &"core:plasma", "amount": 2, "type": &"fire"},
+	]:
+		for levels: int in [0, 1, 3, 7]:
+			var unit := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+			if levels > 0:
+				unit.statuses[spec.id] = levels
+			var events: Array[BattleEvent] = []
+			UnitStatusService.end_turn(unit, events)
+			var expected_damage: int = spec.amount if levels > 0 else 0
+			expect(unit.health.current == 100 - expected_damage and unit.statuses.get(spec.id, 0) == maxi(0, levels - 1), "Fixed status damage and one-level decay: %s/%d" % [spec.id, levels])
+			var hits := 0
+			for event: BattleEvent in events:
+				if event is UnitDamagedEvent:
+					hits += 1
+					expect(event.base_damage == expected_damage and event.damage_type == spec.type and event.source_status_id == spec.id and event.source_hex_state_id.is_empty(), "Periodic event preserves fixed base, type and source: %s/%d" % [spec.id, levels])
+			expect(hits == (1 if levels > 0 else 0), "Absent status does not damage: %s/%d" % [spec.id, levels])
+	for levels: int in [0, 1, 3, 7]:
+		var unit := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+		if levels > 0:
+			unit.statuses[&"core:wet"] = levels
+		var events: Array[BattleEvent] = []
+		UnitStatusService.damage(unit, 3, &"electric", events)
+		expect(unit.health.current == (96 if levels > 0 else 97) and unit.statuses.get(&"core:wet", 0) == levels, "Wet adds one electric damage without consumption: %d" % levels)
+	var protected := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	protected.statuses.assign({&"core:plasma": 3, &"core:wet": 1})
+	var events: Array[BattleEvent] = []
+	UnitStatusService.end_turn(protected, events)
+	expect(protected.health.current == 99 and not protected.statuses.has(&"core:wet"), "Plasma periodic fire damage uses fire absorption")
+	var oily := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	oily.statuses[&"core:sticky_oil"] = 3
+	UnitStatusService.apply(oily, &"core:burning", 2, events)
+	expect(oily.health.current == 95 and not oily.statuses.has(&"core:sticky_oil"), "Oil explosion retains sum-of-levels rule")
 
 func _test_turn_effect_order() -> void:
 	for action: String in ["end", "attack", "ability"]:
@@ -353,7 +391,7 @@ func _test_turn_effect_order() -> void:
 			if event is TurnEndedEvent and event.previous_unit_id == p.unit_id:
 				boundary_index = index
 		expect(result.accepted and ticks == 1 and tick_index >= 0 and tick_index < boundary_index, "Periodic tick precedes handoff exactly once: %s" % action)
-		expect(p.health.current == 98 and p.statuses[&"core:electrified"] == 1, "End tick damage and decay remain unchanged: %s" % action)
+		expect(p.health.current == 99 and p.statuses[&"core:electrified"] == 1, "End tick uses fixed damage and one-level decay: %s" % action)
 		p.health.current = 100
 		var start_result := engine.execute(EndTurnCommand.new(e.unit_id))
 		var premature_tick := false
@@ -379,7 +417,7 @@ func _test_turn_effect_order() -> void:
 			timeline.append("tick:%s" % event.target_id)
 	expect(timeline == ["end:p:1", "tick:e", "end:e:2"], "Skipped turn tick is between its start handoff and its end handoff")
 	expect(skipped != null and skipped.previous_unit_id == e.unit_id and skipped.next_unit_id == p.unit_id, "Skipped turn explicitly identifies paralysis handoff")
-	expect(e.health.current == 98 and not e.statuses.has(&"core:paralysis") and engine.get_active_unit_id() == p.unit_id, "Paralysis skip retains tick and decay once")
+	expect(e.health.current == 99 and not e.statuses.has(&"core:paralysis") and engine.get_active_unit_id() == p.unit_id, "Paralysis skip retains tick and decay once")
 	var units: Dictionary[StringName, UnitDefinition] = {}
 	expect("пропущен из-за паралича" in BattleLogFormatter.describe(skipped, units, null), "Log explicitly explains skipped end-of-turn effects")
 	# Direct terrain damage still belongs to the new turn, unlike periodic status damage.
@@ -459,7 +497,7 @@ func _test_damage_log() -> void:
 		{"type": &"fire", "status": &"core:wet", "levels": 2, "delta": -2, "final": 3},
 		{"type": &"water", "status": &"core:burning", "levels": 2, "delta": -2, "final": 3},
 		{"type": &"water", "status": &"core:plasma", "levels": 1, "delta": -5, "final": 0},
-		{"type": &"electric", "status": &"core:wet", "levels": 2, "delta": 2, "final": 7},
+		{"type": &"electric", "status": &"core:wet", "levels": 2, "delta": 1, "final": 6},
 		{"type": &"physical", "status": &"core:armor", "levels": 9, "delta": -5, "final": 0},
 	]:
 		var unit := fixture.unit(&"victim", BattleFaction.Value.ENEMY, Vector2i.ZERO)
@@ -621,13 +659,13 @@ func _test_ai_and_forecast() -> void:
 	expect(command is UseAbilityCommand and command.targets_hex, "AI emits hex command for zero-radius HEX ability")
 	if command != null:
 		expect(session.step(command).accepted, "Engine accepts AI zero-radius hex command")
-	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO, 5)
+	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO, 2)
 	p.statuses[&"core:wet"] = 6
 	var grid := HexGrid.new([Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0)])
 	grid.set_hex_state(Vector2i(1, 0), &"core:electricity")
 	var forecast := MovementImpactForecast.evaluate(UnitSnapshot.new(p), grid, [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0)])
 	expect(forecast.lethal and not forecast.reached, "Forecast sees wet lethal electric crossing")
-	expect(p.health.current == 5 and p.statuses[&"core:wet"] == 6, "Forecast does not mutate actual unit")
+	expect(p.health.current == 2 and p.statuses[&"core:wet"] == 6, "Forecast does not mutate actual unit")
 	p = fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO, 100, 3)
 	grid.set_hex_state(Vector2i(1, 0), &"core:oil")
 	forecast = MovementImpactForecast.evaluate(UnitSnapshot.new(p), grid, [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0)])
@@ -648,7 +686,7 @@ func _ai_session(state: BattleState) -> BattleSession:
 
 func _test_doomed_ai() -> void:
 	var cells: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0)]
-	var enemy := fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 3)
+	var enemy := fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 3)
 	enemy.statuses[&"core:electrified"] = 4
 	var player := fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(3, 0), 20)
 	var session := _ai_session(fixture.state(cells, [enemy, player]))
@@ -659,14 +697,14 @@ func _test_doomed_ai() -> void:
 	expect(command is MoveCommand and command.destination == Vector2i(2, 0), "Doomed unit moves into attack range before end-of-turn death")
 	expect(source.decision_trace.reason == "doomed_maximum_damage", "Doomed damage plan is explained in AI trace")
 	expect(before == JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state())), "Speculative actions do not mutate live units, map, turns, revisions or RNG")
-	expect(session.step(command).accepted and enemy.health.current == 3, "Doomed movement survives until action")
+	expect(session.step(command).accepted and enemy.health.current == 1, "Doomed movement survives until action")
 	command = source.next_command(session)
 	expect(command is AttackCommand and command.target_id == player.unit_id, "Doomed unit attacks after approaching")
 	var resolution := session.step(command)
 	expect(resolution.accepted and player.health.current == 18 and enemy.health.is_defeated(), "Attack damages opponent before actor dies at end of turn")
 
 	# Maximize actual HP removed, even if a nearer target is already attackable.
-	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 4)
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 4)
 	enemy.basic_attack_damage = 7
 	enemy.statuses[&"core:electrified"] = 4
 	var armored := fixture.unit(&"armor", BattleFaction.Value.PLAYER, Vector2i(1, 0), 20)
@@ -708,7 +746,7 @@ func _test_doomed_ai() -> void:
 	enemy.abilities.erase(blast.id)
 
 	# No action is in reach: advance instead of dying in place.
-	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 1)
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 1)
 	enemy.statuses[&"core:electrified"] = 4
 	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(4, 0), 20)
 	session = _ai_session(fixture.state(cells, [enemy, player]))
@@ -740,8 +778,8 @@ func _test_doomed_ai() -> void:
 	expect(enemy.statuses.get(&"core:electrified", 0) == 2, "Forecast runtime collections are independent")
 
 	# A fire victim can save itself in water: desperate mode must not override that option.
-	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 3, 1)
-	enemy.statuses[&"core:burning"] = 3
+	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 1)
+	enemy.statuses[&"core:burning"] = 2
 	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i(4, 0), 20)
 	state = fixture.state(cells, [enemy, player])
 	state.hex_grid.set_hex_state(Vector2i(1, 0), &"core:water")
@@ -750,7 +788,7 @@ func _test_doomed_ai() -> void:
 	command = source.next_command(session)
 	expect(command is MoveCommand and command.destination == Vector2i(1, 0), "Normal policy uses the safe water route")
 
-	# Reproduce the precise positions/statuses from record 43, without depending on local logs.
+	# Reuse record 43 geometry/statuses with 1 HP to retain lethal fixed-damage coverage.
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://features/battle/tests/fixtures/chudishcherog_doomed_state.json"))
 	var participants: Dictionary[StringName, UnitState] = {}
 	var order: Array[StringName] = []
@@ -784,6 +822,7 @@ func _test_doomed_ai() -> void:
 	while state.turn_service.get_round_number() != int(data.round) or state.turn_service.get_active_unit_id() != StringName(data.active_unit_id):
 		state.turn_service.advance_turn()
 	state.random.state = int(data.rng_state)
+	participants[StringName(data.active_unit_id)].health.current = 1
 	source.decision_trace = {}
 	command = source.next_command(session)
 	expect(command is MoveCommand and source.decision_trace.reason == "doomed_maximum_damage", "Recorded Chudishcherog state now produces a last attack approach instead of EndTurn")

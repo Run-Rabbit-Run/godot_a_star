@@ -16,7 +16,7 @@ logs = Path(tempfile.mkdtemp(prefix="a_star_tests_"))
 suites = [
     ("features/battle/tests/hex_grid_smoke.gd", r"Battle smoke passed \((\d+) checks\)", 93),
     ("tools/battles/tests/editor_smoke.gd", r"Editor smoke passed \((\d+) checks\)", 42),
-    ("features/battle/tests/run_regressions.gd", r"A_star regressions: (\d+) checks, 0 failures", 679),
+    ("features/battle/tests/run_regressions.gd", r"A_star regressions: (\d+) checks, 0 failures", 718),
 ]
 total = 0
 failed = False

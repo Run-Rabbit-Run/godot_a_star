@@ -69,6 +69,7 @@
       }
     ]
   },
+  "display_name": "",
   "document_id": "document:plateau:battle",
   "editor_metadata": {},
   "map": {
@@ -147,14 +148,6 @@
         "traversable": true
       },
       {
-        "hex_state_id": "core:burning_oil",
-        "movement_cost": 2,
-        "q": 12,
-        "r": 2,
-        "terrain_id": "core:default",
-        "traversable": true
-      },
-      {
         "hex_state_id": "",
         "movement_cost": 1,
         "q": 2,
@@ -235,8 +228,8 @@
         "traversable": true
       },
       {
-        "hex_state_id": "",
-        "movement_cost": 1,
+        "hex_state_id": "core:burning_oil",
+        "movement_cost": 2,
         "q": 12,
         "r": 3,
         "terrain_id": "core:default",
@@ -1003,14 +996,6 @@
         "traversable": true
       },
       {
-        "hex_state_id": "core:burning_oil",
-        "movement_cost": 2,
-        "q": 13,
-        "r": 1,
-        "terrain_id": "core:default",
-        "traversable": true
-      },
-      {
         "hex_state_id": "",
         "movement_cost": 1,
         "q": 14,
@@ -1023,14 +1008,6 @@
         "movement_cost": 1,
         "q": 15,
         "r": 1,
-        "terrain_id": "core:default",
-        "traversable": true
-      },
-      {
-        "hex_state_id": "core:burning_oil",
-        "movement_cost": 2,
-        "q": 13,
-        "r": 2,
         "terrain_id": "core:default",
         "traversable": true
       },
@@ -1287,6 +1264,30 @@
         "movement_cost": 1,
         "q": -3,
         "r": 8,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "core:burning_oil",
+        "movement_cost": 2,
+        "q": 13,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "core:burning_oil",
+        "movement_cost": 2,
+        "q": 12,
+        "r": 2,
+        "terrain_id": "core:default",
+        "traversable": true
+      },
+      {
+        "hex_state_id": "",
+        "movement_cost": 1,
+        "q": 13,
+        "r": 1,
         "terrain_id": "core:default",
         "traversable": true
       }

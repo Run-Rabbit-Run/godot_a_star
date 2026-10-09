@@ -61,8 +61,8 @@ static func damage(unit: UnitState, amount: int, type: StringName, events: Array
 				_set_levels(unit, &"core:burning", int(unit.statuses.get(&"core:burning", 0)) - absorbed)
 		&"electric":
 			modifier_status = &"core:wet"
-			if adjusted > 0:
-				adjusted += int(unit.statuses.get(&"core:wet", 0))
+			if adjusted > 0 and unit.statuses.get(&"core:wet", 0) > 0:
+				adjusted += 1
 	if adjusted != before_status_damage:
 		modifiers.append({"source_id": modifier_status, "amount": adjusted - before_status_damage})
 	_emit(unit, before, events)
@@ -80,13 +80,13 @@ static func damage(unit: UnitState, amount: int, type: StringName, events: Array
 static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	if unit == null or unit.health.is_defeated():
 		return
-	# Use the levels present at the end of the turn, before decay.
+	# Presence determines periodic damage; levels determine decay and thresholds.
 	var burning := int(unit.statuses.get(&"core:burning", 0))
 	var plasma := int(unit.statuses.get(&"core:plasma", 0))
 	var electricity := int(unit.statuses.get(&"core:electrified", 0))
-	damage(unit, burning, &"fire", events, &"", &"", &"", 0, &"core:burning")
-	damage(unit, plasma * 2, &"plasma", events, &"", &"", &"", 0, &"core:plasma")
-	damage(unit, electricity, &"electric", events, &"", &"", &"", 0, &"core:electrified")
+	damage(unit, 1 if burning > 0 else 0, &"fire", events, &"", &"", &"", 0, &"core:burning")
+	damage(unit, 2 if plasma > 0 else 0, &"fire", events, &"", &"", &"", 0, &"core:plasma")
+	damage(unit, 1 if electricity > 0 else 0, &"electric", events, &"", &"", &"", 0, &"core:electrified")
 	var before := unit.statuses.duplicate()
 	if unit.statuses.get(&"core:acid", 0) > 0:
 		_set_levels(unit, &"core:armor", int(unit.statuses.get(&"core:armor", 0)) - 1)
