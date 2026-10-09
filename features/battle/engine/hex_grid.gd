@@ -17,6 +17,7 @@ var _movement_costs: Dictionary[Vector2i, int] = {}
 var _terrain_ids: Dictionary[Vector2i, StringName] = {}
 var _traversable: Dictionary[Vector2i, bool] = {}
 var _hex_state_ids: Dictionary[Vector2i, StringName] = {}
+var _hex_state_turns: Dictionary[Vector2i, int] = {}
 
 
 func _init(
@@ -24,7 +25,8 @@ func _init(
 	movement_costs: Dictionary[Vector2i, int] = {},
 	terrain_ids: Dictionary[Vector2i, StringName] = {},
 	traversal: Dictionary[Vector2i, bool] = {},
-	hex_state_ids: Dictionary[Vector2i, StringName] = {}
+	hex_state_ids: Dictionary[Vector2i, StringName] = {},
+	hex_state_turns: Dictionary[Vector2i, int] = {}
 ) -> void:
 	for cell: Vector2i in cells:
 		_cells[cell] = true
@@ -32,6 +34,7 @@ func _init(
 		_terrain_ids[cell] = terrain_ids.get(cell, &"core:default")
 		_traversable[cell] = traversal.get(cell, true)
 		_hex_state_ids[cell] = hex_state_ids.get(cell, StringName())
+		_hex_state_turns[cell] = hex_state_turns.get(cell, HexStateCatalog.LIFETIME) if not _hex_state_ids[cell].is_empty() else 0
 
 
 func has_cell(cell: Vector2i) -> bool:
@@ -62,6 +65,17 @@ func get_terrain_id(cell: Vector2i) -> StringName:
 
 func get_hex_state_id(cell: Vector2i) -> StringName:
 	return _hex_state_ids.get(cell, StringName())
+
+
+func get_hex_state_turns(cell: Vector2i) -> int:
+	return _hex_state_turns.get(cell, 0)
+
+
+func set_hex_state_turns(cell: Vector2i, turns: int) -> bool:
+	if not has_cell(cell) or get_hex_state_id(cell).is_empty() or turns < 1 or turns > HexStateCatalog.LIFETIME:
+		return false
+	_hex_state_turns[cell] = turns
+	return true
 
 
 func get_cells() -> Array[Vector2i]:
@@ -107,7 +121,8 @@ func duplicate_grid() -> HexGrid:
 		_movement_costs,
 		_terrain_ids,
 		_traversable,
-		_hex_state_ids
+		_hex_state_ids,
+		_hex_state_turns
 	)
 
 
@@ -120,6 +135,7 @@ func replace_with(other: HexGrid) -> bool:
 	_terrain_ids.clear()
 	_traversable.clear()
 	_hex_state_ids.clear()
+	_hex_state_turns.clear()
 
 	for cell: Vector2i in other.get_cells():
 		_cells[cell] = true
@@ -127,6 +143,7 @@ func replace_with(other: HexGrid) -> bool:
 		_terrain_ids[cell] = other._terrain_ids[cell]
 		_traversable[cell] = other._traversable[cell]
 		_hex_state_ids[cell] = other._hex_state_ids[cell]
+		_hex_state_turns[cell] = other._hex_state_turns[cell]
 
 	return true
 
@@ -152,6 +169,7 @@ func add_cell(
 	_terrain_ids[cell] = terrain_id
 	_traversable[cell] = traversable
 	_hex_state_ids[cell] = hex_state_id
+	_hex_state_turns[cell] = HexStateCatalog.LIFETIME if not hex_state_id.is_empty() else 0
 	return true
 
 
@@ -164,6 +182,7 @@ func remove_cell(cell: Vector2i) -> bool:
 	_terrain_ids.erase(cell)
 	_traversable.erase(cell)
 	_hex_state_ids.erase(cell)
+	_hex_state_turns.erase(cell)
 	return true
 
 
@@ -197,6 +216,7 @@ func set_hex_state(cell: Vector2i, id: StringName) -> bool:
 	if not has_cell(cell) or (not id.is_empty() and not HexStateCatalog.has_state(id)):
 		return false
 	_hex_state_ids[cell] = id
+	_hex_state_turns[cell] = HexStateCatalog.LIFETIME if not id.is_empty() else 0
 	_movement_costs[cell] = HexStateCatalog.get_movement_cost(id)
 	return true
 

@@ -373,7 +373,10 @@ func _end_turn(damage_events: Array[BattleEvent], initial_skip := false) -> Stri
 		attempts += unit.health.current + int(unit.statuses.get(&"core:paralysis", 0))
 	attempts *= _state.turn_service.get_participant_count()
 	for _attempt in range(attempts):
+		var previous_round := get_round_number()
 		var next_unit_id := _state.turn_service.advance_turn()
+		if get_round_number() != previous_round:
+			HexStateService.end_round(_state, damage_events)
 
 		if not _start_unit_turn(next_unit_id):
 			continue

@@ -27,7 +27,7 @@ static func encode(value: Variant, depth := 0) -> Variant:
 			if value is HexGrid:
 				var cells: Array = []
 				for cell: Vector2i in value.get_cells():
-					cells.append({"hex": encode(cell), "terrain_id": String(value.get_terrain_id(cell)), "state_id": String(value.get_hex_state_id(cell)), "traversable": value.is_traversable(cell), "movement_cost": value.get_configured_movement_cost(cell)})
+					cells.append({"hex": encode(cell), "terrain_id": String(value.get_terrain_id(cell)), "state_id": String(value.get_hex_state_id(cell)), "state_turns": value.get_hex_state_turns(cell), "traversable": value.is_traversable(cell), "movement_cost": value.get_configured_movement_cost(cell)})
 				return {"type": "HexGrid", "cells": cells}
 			if value is Node or value is Texture2D or value is Script:
 				return {"type": value.get_class()}

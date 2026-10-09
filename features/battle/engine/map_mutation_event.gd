@@ -8,6 +8,9 @@ var terrain_id: StringName
 var traversable: bool
 var movement_cost: int
 var hex_state_id: StringName
+var hex_state_turns := 0
+## Duration-only updates do not repeat exposure or rebuild the state artwork.
+var hex_state_changed := true
 
 
 func _init(

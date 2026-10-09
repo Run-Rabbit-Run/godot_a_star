@@ -42,6 +42,8 @@ func _run() -> void:
 		_test_terrain_reactions()
 	if only.is_empty() or only == "properties":
 		_test_properties()
+	if only.is_empty() or only == "hex_lifetime":
+		_test_hex_lifetime()
 	if only.is_empty() or only == "statuses":
 		_test_statuses()
 		_test_fixed_status_damage()
@@ -297,6 +299,72 @@ func _test_terrain_reactions() -> void:
 	expect(not first.events.is_empty() and levels == 3, "Changed terrain exposes occupant once")
 	expect(occupant.health.current == hp and occupant.statuses.get(&"core:electrified", 0) == levels, "No-op terrain does not repeat exposure")
 
+func _test_hex_lifetime() -> void:
+	var a := Vector2i.ZERO
+	var b := Vector2i(1, 0)
+	for id: StringName in HexStateCatalog.RULES:
+		var state := fixture.state([a])
+		MapMutationService.apply(state, [MapMutation.apply_hex_state(a, id)])
+		expect(state.hex_grid.get_hex_state_turns(a) == 3, "Every hex state starts with three rounds: %s" % id)
+		var events: Array[BattleEvent] = []
+		HexStateService.end_round(state, events)
+		HexStateService.end_round(state, events)
+		expect(state.hex_grid.get_hex_state_id(a) == id and state.hex_grid.get_hex_state_turns(a) == 1, "Hex state persists for first two round boundaries: %s" % id)
+		HexStateService.end_round(state, events)
+		expect(state.hex_grid.has_cell(a) and state.hex_grid.get_hex_state_id(a).is_empty() and state.hex_grid.get_hex_state_turns(a) == 0 and state.hex_grid.get_configured_movement_cost(a) == 1, "Third boundary clears only hex state and resets cost: %s" % id)
+	var occupant := fixture.unit(&"p", BattleFaction.Value.PLAYER, a)
+	var state := fixture.state([a, b], [occupant])
+	MapMutationService.apply(state, [MapMutation.apply_hex_state(a, &"core:electricity")])
+	var events: Array[BattleEvent] = []
+	HexStateService.end_round(state, events)
+	var copy := state.hex_grid.duplicate_grid()
+	copy.set_hex_state_turns(a, 1)
+	expect(state.hex_grid.get_hex_state_turns(a) == 2 and copy.get_hex_state_turns(a) == 1, "Grid copy keeps remaining duration detached")
+	var prediction := state.duplicate_for_prediction()
+	HexStateService.end_round(prediction, events)
+	expect(state.hex_grid.get_hex_state_turns(a) == 2 and prediction.hex_grid.get_hex_state_turns(a) == 1, "Prediction ticks its own map duration")
+	var hp := occupant.health.current
+	var statuses := occupant.statuses.duplicate()
+	var revision := state.map_revision
+	var application := MapMutationService.apply(state, [MapMutation.apply_hex_state(a, &"core:electricity")])
+	expect(application.accepted and state.hex_grid.get_hex_state_turns(a) == 3 and state.map_revision == revision + 1, "Same-state application refreshes duration and revision")
+	expect(occupant.health.current == hp and occupant.statuses == statuses and application.events.size() == 1 and not application.events[0].hex_state_changed, "Refresh emits duration without repeat exposure")
+	HexStateService.end_round(state, events)
+	application = MapMutationService.apply(state, [MapMutation.apply_hex_state(a, &"core:electricity"), MapMutation.remove_hex(Vector2i(99, 99))])
+	expect(not application.accepted and state.hex_grid.get_hex_state_turns(a) == 2, "Rejected batch does not refresh live duration")
+	MapMutationService.apply(state, [MapMutation.apply_hex_state(a, &"core:fire")])
+	expect(state.hex_grid.get_hex_state_id(a) == &"core:plasma" and state.hex_grid.get_hex_state_turns(a) == 3, "Reaction begins new three-round lifetime")
+	state.hex_grid.set_hex_state(a, &"core:water")
+	state.hex_grid.set_hex_state_turns(a, 1)
+	state.hex_grid.set_hex_state(b, &"core:water")
+	state.hex_grid.set_hex_state_turns(b, 1)
+	MapMutationService.apply(state, [MapMutation.apply_hex_state(a, &"core:electricity")])
+	expect(state.hex_grid.get_hex_state_id(b) == &"core:electrified_water" and state.hex_grid.get_hex_state_turns(b) == 3, "Propagation gives converted neighbor a fresh duration")
+	state.hex_grid.remove_cell(b)
+	state.hex_grid.add_cell(b, &"core:default", 1, true)
+	expect(state.hex_grid.get_hex_state_turns(b) == 0, "Removed hex does not leak duration to its replacement")
+	# Count one round, not one acting unit; expire before next-round exposure.
+	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, a)
+	var e := fixture.unit(&"e", BattleFaction.Value.ENEMY, b)
+	state = fixture.state([a, b], [p, e])
+	state.hex_grid.set_hex_state(a, &"core:oil")
+	var engine := BattleEngine.new(state)
+	for round_index: int in range(3):
+		engine.execute(EndTurnCommand.new(p.unit_id))
+		expect(state.hex_grid.get_hex_state_turns(a) == 3 - round_index, "Individual unit turn does not age the map: %d" % round_index)
+		var result := engine.execute(EndTurnCommand.new(e.unit_id))
+		expect(result.accepted and state.hex_grid.get_hex_state_turns(a) == 2 - round_index and engine.get_round_number() == round_index + 2, "Whole round ages map exactly once: %d" % round_index)
+	expect(p.statuses.get(&"core:sticky_oil", 0) == 3 and p.turn.movement_remaining == 7, "Expired state cannot reapply at next turn; existing unit status remains")
+	var corpse := fixture.unit(&"dead", BattleFaction.Value.ENEMY, Vector2i(2, 0))
+	corpse.health.current = 0
+	p.statuses.clear()
+	e.statuses.assign({&"core:paralysis": 1})
+	state = fixture.state([a, b, corpse.hex], [p, e, corpse])
+	state.hex_grid.set_hex_state(a, &"core:water")
+	engine = BattleEngine.new(state)
+	engine.execute(EndTurnCommand.new(p.unit_id))
+	expect(engine.get_active_unit_id() == p.unit_id and state.hex_grid.get_hex_state_turns(a) == 2, "Skipped and defeated participants still produce one round tick")
+
 func _test_statuses() -> void:
 	var unit := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	var events: Array[BattleEvent] = []
@@ -355,6 +423,11 @@ func _test_fixed_status_damage() -> void:
 		var events: Array[BattleEvent] = []
 		UnitStatusService.damage(unit, 3, &"electric", events)
 		expect(unit.health.current == (96 if levels > 0 else 97) and unit.statuses.get(&"core:wet", 0) == levels, "Wet adds one electric damage without consumption: %d" % levels)
+	var wet := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	wet.statuses[&"core:wet"] = 3
+	var no_damage: Array[BattleEvent] = []
+	UnitStatusService.damage(wet, 0, &"electric", no_damage)
+	expect(wet.health.current == 100 and no_damage.is_empty(), "Wet amplification cannot create damage from zero")
 	var protected := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	protected.statuses.assign({&"core:plasma": 3, &"core:wet": 1})
 	var events: Array[BattleEvent] = []
@@ -946,6 +1019,35 @@ func _test_presentation() -> void:
 	expect(not marker_labels.is_empty() and is_equal_approx(upright.x, upright.y), "Marker text keeps upright proportions on the scaled board")
 	var hex_state_art := map.get_node("HexStateVisuals") as Node2D
 	expect(markers.z_index == hex_state_art.z_index and markers.get_index() > hex_state_art.get_index(), "Markers draw above hex-state art")
+	# Hex details consume displayed events; the permanent movement-cost digit is gone.
+	var details := map.get_node("HexStateDetails") as HexStateDetails
+	grid.set_hex_state(Vector2i.ZERO, &"core:burning_oil")
+	map.render_grid(grid)
+	expect(markers.find_children("*", "Label", true, false).size() == 1, "State movement cost has no permanent numeric marker")
+	var timers: Dictionary = details.get("_labels")
+	expect(timers.has(Vector2i.ZERO) and timers[Vector2i.ZERO].text == "3" and not timers[Vector2i.ZERO].visible, "State duration starts at three and is hidden without Alt")
+	details.hover(Vector2i.ZERO)
+	details.set("_hover_time", 0.35)
+	details.call("_update_popup")
+	var popup := details.get_node("HexStatePopup") as PanelContainer
+	var body: Label = details.get("_body")
+	expect(popup.visible and "Горящее масло" == (details.get("_title") as Label).text and "Стоимость прохода: 2" in body.text and "Осталось ходов (раундов): 3" in body.text, "Hover popup shows state, cost and current duration")
+	expect("Горение ×3" in body.text and "Тягучее масло ×3" in body.text and "2 огненного" in body.text, "Hover properties match catalog effects and damage")
+	var timer_event := MapMutationEvent.new(MapMutationKind.Value.APPLY_HEX_STATE, Vector2i.ZERO, &"core:default", true, 2)
+	timer_event.hex_state_id = &"core:burning_oil"
+	timer_event.hex_state_turns = 2
+	timer_event.hex_state_changed = false
+	map.apply_map_event(timer_event)
+	expect(timers[Vector2i.ZERO].text == "2" and "Осталось ходов (раундов): 2" in body.text, "Timer events update both badge and open popup")
+	details.clear_hover()
+	expect(not popup.visible, "Leaving hex hides its popup")
+	timer_event.hex_state_id = &""
+	timer_event.hex_state_turns = 0
+	timer_event.hex_state_changed = true
+	map.apply_map_event(timer_event)
+	expect(not timers.has(Vector2i.ZERO), "Expiration removes duration badge")
+	grid.set_hex_state(Vector2i.ZERO, &"")
+	map.render_grid(grid)
 	var selected: Array[Vector2i] = []
 	var router := screen.get_node("BattleMap/BattleInputRouter") as BattleInputRouter
 	router.setup(grid)

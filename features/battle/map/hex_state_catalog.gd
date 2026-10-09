@@ -2,6 +2,8 @@ class_name HexStateCatalog
 extends RefCounted
 
 
+const LIFETIME := 3
+
 ## Built-in gameplay rules, shared by graphical battles and simulation.
 const RULES := {
 	&"core:electricity": {"name": "Электричество", "cost": 1, "damage": 1},
@@ -107,3 +109,25 @@ static func propagation(id: StringName) -> Dictionary:
 		&"core:boiling_acid", &"core:burning_oil":
 			return {&"core:water": &"core:boiling_acid", &"core:acid": &"core:boiling_acid"}
 	return {}
+
+
+static func description(id: StringName) -> String:
+	if not has_state(id):
+		return ""
+	var parts: PackedStringArray = []
+	var effects: Dictionary = EFFECTS.get(id, {})
+	var statuses: PackedStringArray = []
+	for status: StringName in effects:
+		statuses.append("%s ×%d" % [UnitStatusCatalog.display_name(status), effects[status]])
+	parts.append("При входе и в начале своего хода: %s." % ", ".join(statuses))
+	var amount := get_damage(id)
+	if amount > 0:
+		var types := {&"fire": "огненного", &"electric": "электрического", &"acid": "кислотного", &"plasma": "плазменного", &"physical": "физического"}
+		parts.append("Наносит %d %s урона после наложения эффектов." % [amount, types.get(get_damage_type(id), "")])
+	var reduction := ranged_reduction(id)
+	if reduction > 0:
+		parts.append("Снижает урон дальних атак и способностей на %d." % reduction)
+	var spread := propagation(id)
+	for base: StringName in spread:
+		parts.append("Превращает соседние гексы «%s» в «%s»." % [get_display_name(base), get_display_name(spread[base])])
+	return "\n".join(parts)

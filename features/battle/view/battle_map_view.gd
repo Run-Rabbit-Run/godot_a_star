@@ -43,6 +43,7 @@ var _ranged_attack_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
+var _hex_state_details: HexStateDetails
 var _cursor_mode := CursorMode.DEFAULT
 var _grid_rulers: Node2D
 var _terrain_property_visuals: Node2D
@@ -72,6 +73,10 @@ func _ready() -> void:
 	_input_router.hex_hover_exited.connect(_clear_hover)
 	_capture_terrain_tiles()
 	_mount_hex_state_visuals()
+	_hex_state_details = HexStateDetails.new()
+	_hex_state_details.name = "HexStateDetails"
+	add_child(_hex_state_details)
+	_hex_state_details.setup(self, _displayed_properties)
 	_mount_path_visuals()
 	_mount_ability_visuals()
 	_mount_interaction_visuals()
@@ -336,9 +341,10 @@ func render_grid(grid: HexGrid) -> void:
 		)
 
 	for hex: Vector2i in grid.get_cells():
-		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex)}
+		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "state": grid.get_hex_state_id(hex), "turns": grid.get_hex_state_turns(hex)}
 	_refresh_terrain_properties()
 	_hex_state_visuals.render(grid)
+	_hex_state_details.refresh()
 	_fit_battlefield_to_viewport()
 
 
@@ -520,13 +526,19 @@ func apply_map_event(event: MapMutationEvent) -> void:
 	if event == null:
 		return
 
-	clear_overlays()
+	if event.hex_state_changed or event.kind != MapMutationKind.Value.APPLY_HEX_STATE:
+		clear_overlays()
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:
 		_displayed_properties.erase(event.hex)
 	else:
-		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost}
+		var previous: Dictionary = _displayed_properties.get(event.hex, {})
+		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost, "state": previous.get("state", &""), "turns": previous.get("turns", 0)}
 	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
-		_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
+		_displayed_properties[event.hex]["state"] = event.hex_state_id
+		_displayed_properties[event.hex]["turns"] = event.hex_state_turns
+		if event.hex_state_changed:
+			_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
+		_hex_state_details.refresh()
 		_update_terrain_properties(event.hex)
 		return
 	var map_cell := HexCoordinateMapper.axial_to_offset(event.hex)
@@ -534,6 +546,7 @@ func apply_map_event(event: MapMutationEvent) -> void:
 	if event.kind == MapMutationKind.Value.REMOVE_HEX:
 		_terrain_layer.erase_cell(map_cell)
 		_hex_state_visuals.remove_hex(event.hex)
+		_hex_state_details.refresh()
 		_update_terrain_properties(event.hex)
 		return
 
@@ -592,6 +605,7 @@ func _get_terrain_tile(_movement_cost: int) -> Dictionary:
 	)
 
 func _show_hover(axial_cell: Vector2i) -> void:
+	_hex_state_details.hover(axial_cell)
 	_highlight_layer.clear()
 	_clear_hex_visuals(_hover_visuals)
 	_paint_cell_on_layer(axial_cell, _highlight_layer)
@@ -702,6 +716,8 @@ func _show_path_polyline(cells: Array[Vector2i]) -> void:
 
 
 func _clear_hover() -> void:
+	if _hex_state_details != null:
+		_hex_state_details.clear_hover()
 	_highlight_layer.clear()
 	_clear_hex_visuals(_hover_visuals)
 
@@ -728,8 +744,7 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 	var properties: Dictionary = _displayed_properties[hex]
 	var blocked: bool = not properties.traversable
 	var custom_terrain: bool = properties.terrain != &"core:default"
-	var costly := int(properties.cost) > 1
-	if not blocked and not custom_terrain and not costly:
+	if not blocked and not custom_terrain:
 		return
 	var container := Node2D.new()
 	_terrain_property_visuals.add_child(container)
@@ -741,8 +756,6 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 	elif custom_terrain:
 		var hue := float(absi(String(properties.terrain).hash()) % 360) / 360.0
 		_add_hex_visual(container, hex, Color.from_hsv(hue, 0.35, 0.55, 0.17), Color.from_hsv(hue, 0.25, 0.75, 0.3), 1.0)
-	if costly:
-		container.add_child(_create_marker_label(str(properties.cost), 11, center + Vector2(15, 17)))
 
 
 ## The board is scaled unevenly for perspective; marker text keeps upright screen proportions.

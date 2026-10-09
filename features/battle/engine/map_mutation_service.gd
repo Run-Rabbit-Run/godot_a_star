@@ -58,7 +58,7 @@ static func apply(
 				seeds.append(neighbor)
 	HexStateService.propagate(candidate, seeds, events)
 
-	# Reapplying an existing state changes nothing; stable revisions keep views' queries valid.
+	# No-op batches keep revisions stable; duration refreshes publish an update.
 	if events.is_empty():
 		return MapMutationApplicationResult.success(events)
 
@@ -75,7 +75,7 @@ static func apply(
 				UnitStatusService.damage(unit, 3, &"physical", events, &"", explosion.state_id)
 	var changed: Dictionary[Vector2i, bool] = {}
 	for event: BattleEvent in events.duplicate():
-		if event is MapMutationEvent and event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
+		if event is MapMutationEvent and event.kind == MapMutationKind.Value.APPLY_HEX_STATE and event.hex_state_changed:
 			changed[event.hex] = true
 	for unit: UnitState in state.unit_states.values():
 		if changed.has(unit.hex):

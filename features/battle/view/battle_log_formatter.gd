@@ -38,6 +38,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		return "%s завершает ход." % _unit(event.previous_unit_id, units)
 	if event is MapMutationEvent:
 		if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
+			if not event.hex_state_changed:
+				return ""
 			return "Гекс %s: %s." % [_hex(event.hex), HexStateCatalog.get_display_name(event.hex_state_id) if not event.hex_state_id.is_empty() else "состояние снято"]
 		var actions := ["добавлен", "удалён", "местность изменена", "проходимость изменена"]
 		return "Гекс %s: %s." % [_hex(event.hex), actions[event.kind]]
