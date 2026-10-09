@@ -97,6 +97,17 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	context.target_hex = center
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
+		if handler is DamageEffectHandler:
+			var hit: Dictionary[StringName, bool] = {}
+			var ordered_cells := cells.duplicate()
+			ordered_cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(center, a) < HexGrid.get_distance(center, b))
+			for hex: Vector2i in ordered_cells:
+				var obstacle := state.hex_grid.get_obstacle(hex)
+				if obstacle == null or hit.has(obstacle.id):
+					continue
+				hit[obstacle.id] = true
+				var amount := int(effect.parameters["amount"] if hex == center else effect.parameters.get("secondary_amount", effect.parameters["amount"]))
+				ObstacleService.damage(state, hex, amount, events)
 		if handler.affects_hexes():
 			var effect_cells: Array[Vector2i] = []
 			if effect.parameters.get("center_only", false):

@@ -13,8 +13,13 @@ enum Kind {
 	REMOVE_HEX,
 	SET_BACKGROUND,
 	SET_NAME,
+	PUT_OBSTACLE,
+	REMOVE_OBSTACLE,
 }
 
+
+var obstacle: BattleObstacleDefinition
+var obstacle_id: StringName
 
 var background_id: StringName
 var display_name := ""
@@ -114,6 +119,17 @@ static func rename_document(value: String) -> EditCommand:
 	return command
 
 
+static func put_obstacle(value: BattleObstacleDefinition, replace_id: StringName = &"") -> EditCommand:
+	var command := EditCommand.new(Kind.PUT_OBSTACLE)
+	command.obstacle = value.duplicate(true) as BattleObstacleDefinition
+	command.obstacle_id = replace_id
+	return command
+
+static func remove_obstacle(id: StringName) -> EditCommand:
+	var command := EditCommand.new(Kind.REMOVE_OBSTACLE)
+	command.obstacle_id = id
+	return command
+
 func apply(document: BattleDocument) -> bool:
 	if document == null or _before != null:
 		return false
@@ -121,6 +137,29 @@ func apply(document: BattleDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.PUT_OBSTACLE:
+			if not obstacle.validate().is_empty():
+				return _restore_failed(document)
+			if not obstacle_id.is_empty() and not _remove_obstacle(document, obstacle_id):
+				return _restore_failed(document)
+			for hex: Vector2i in obstacle.hexes:
+				if _find_cell_index(document, hex) < 0 or not document.map_definition.cells[_find_cell_index(document, hex)].traversable:
+					return _restore_failed(document)
+				for placed: UnitPlacementDefinition in document.battle_definition.unit_placements:
+					if placed.start_hex == hex:
+						return _restore_failed(document)
+				for existing: BattleObstacleDefinition in document.map_definition.obstacles:
+					if existing.id == obstacle.id or existing.hexes.has(hex):
+						return _restore_failed(document)
+			for hex: Vector2i in obstacle.hexes:
+				var cell := document.map_definition.cells[_find_cell_index(document, hex)]
+				if not cell.hex_state_id.is_empty():
+					cell.hex_state_id = &""
+					cell.movement_cost = 1
+			document.map_definition.obstacles.append(obstacle.duplicate(true) as BattleObstacleDefinition)
+		Kind.REMOVE_OBSTACLE:
+			if not _remove_obstacle(document, obstacle_id):
+				return _restore_failed(document)
 		Kind.SET_NAME:
 			document.display_name = display_name
 
@@ -168,6 +207,9 @@ func apply(document: BattleDocument) -> bool:
 			)
 
 		Kind.UPDATE_HEX:
+			for existing: BattleObstacleDefinition in document.map_definition.obstacles:
+				if existing.hexes.has(target_hex) and (not map_cell.hex_state_id.is_empty() or not map_cell.traversable):
+					return _restore_failed(document)
 			var index := _find_cell_index(document, target_hex)
 			if index < 0:
 				return _restore_failed(document)
@@ -176,6 +218,9 @@ func apply(document: BattleDocument) -> bool:
 			)
 
 		Kind.REMOVE_HEX:
+			for existing: BattleObstacleDefinition in document.map_definition.obstacles:
+				if existing.hexes.has(target_hex):
+					return _restore_failed(document)
 			var index := _find_cell_index(document, target_hex)
 			if index < 0:
 				return _restore_failed(document)
@@ -220,3 +265,11 @@ func _find_cell_index(document: BattleDocument, hex: Vector2i) -> int:
 		if document.map_definition.cells[index].hex == hex:
 			return index
 	return -1
+
+
+func _remove_obstacle(document: BattleDocument, id: StringName) -> bool:
+	for index in range(document.map_definition.obstacles.size()):
+		if document.map_definition.obstacles[index].id == id:
+			document.map_definition.obstacles.remove_at(index)
+			return true
+	return false

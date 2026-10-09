@@ -110,6 +110,12 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 			"character_binding": String(placement.character_binding),
 		})
 
+	var obstacles: Array[Dictionary] = []
+	for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
+		var hexes: Array = []
+		for hex: Vector2i in obstacle.hexes:
+			hexes.append([hex.x, hex.y])
+		obstacles.append({"id": String(obstacle.id), "terrain_type": String(obstacle.terrain_type), "hexes": hexes, "destructible": obstacle.destructible, "max_hp": obstacle.max_hp})
 	var objective: Dictionary = {}
 
 	if document.battle_definition.primary_objective != null:
@@ -135,6 +141,7 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 			"background_id": String(document.map_definition.background_id),
 			"presentation_frame": [document.map_definition.presentation_frame.x, document.map_definition.presentation_frame.y],
 			"cells": cells,
+			"obstacles": obstacles,
 		},
 		"battle": {
 			"id": String(document.battle_definition.id),
@@ -174,6 +181,16 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 			StringName(cell_data.get("hex_state_id", ""))
 		))
 
+	for obstacle_data: Dictionary in map_data.get("obstacles", []):
+		var obstacle := BattleObstacleDefinition.new()
+		obstacle.id = StringName(obstacle_data.get("id", ""))
+		obstacle.terrain_type = StringName(obstacle_data.get("terrain_type", "rocks"))
+		obstacle.destructible = obstacle_data.get("destructible", false)
+		obstacle.max_hp = int(obstacle_data.get("max_hp", 10))
+		obstacle.current_hp = obstacle.max_hp
+		for hex: Array in obstacle_data.get("hexes", []):
+			obstacle.hexes.append(Vector2i(int(hex[0]), int(hex[1])))
+		map.obstacles.append(obstacle)
 	var battle := BattleDefinition.new()
 	battle.id = StringName(battle_data.get("id", ""))
 	battle.map_id = StringName(battle_data.get("map_id", ""))
@@ -240,7 +257,7 @@ static func _validate_structure(data: Dictionary) -> String:
 	var battle: Dictionary = data["battle"]
 	error = _validate_fields(map, {
 		"id": TYPE_STRING, "background_id": TYPE_STRING,
-		"presentation_frame": TYPE_ARRAY, "cells": TYPE_ARRAY,
+		"presentation_frame": TYPE_ARRAY, "cells": TYPE_ARRAY, "obstacles": TYPE_ARRAY,
 	}, "map")
 	if not error.is_empty():
 		return error
@@ -283,6 +300,15 @@ static func _validate_structure(data: Dictionary) -> String:
 			error = _validate_fields(items[index], entry["fields"], path)
 			if not error.is_empty():
 				return error
+	for item: Variant in map.get("obstacles", []):
+		if not (item is Dictionary):
+			return "map.obstacles entries must be objects."
+		error = _validate_fields(item, {"id": TYPE_STRING, "terrain_type": TYPE_STRING, "destructible": TYPE_BOOL, "max_hp": TYPE_INT, "hexes": TYPE_ARRAY}, "map.obstacles")
+		if not error.is_empty():
+			return error
+		for hex: Variant in item.get("hexes", []):
+			if not (hex is Array) or hex.size() != 2 or not _is_integer(hex[0]) or not _is_integer(hex[1]):
+				return "Obstacle hex requires two integers."
 	var versions: Dictionary = data.get("package_versions", {})
 	for key: Variant in versions:
 		if not (key is String) or not (versions[key] is String):

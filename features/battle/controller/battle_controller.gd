@@ -243,6 +243,8 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 
 		if target != null and target.unit_id != active_unit_id:
 			command = AttackCommand.new(active_unit_id, target.unit_id)
+		elif _battle_session.get_hex_grid().has_obstacle(axial_cell):
+			command = AttackObstacleCommand.new(active_unit_id, axial_cell)
 		else:
 			command = MoveCommand.new(active_unit_id, axial_cell)
 
@@ -343,6 +345,10 @@ func _update_attack_cursor(axial_cell: Vector2i) -> void:
 	var active_unit_id := _battle_session.get_active_unit_id()
 	var active := _battle_session.get_unit(active_unit_id)
 	var target := _battle_session.get_unit_at(axial_cell)
+	var obstacle := _battle_session.get_hex_grid().get_obstacle(axial_cell)
+	if active != null and obstacle != null and obstacle.destructible and not _battle_session.is_unit_ai_controlled(active_unit_id) and active.turn.main_action_available:
+		_map_view.set_cursor_mode(BattleMapView.CursorMode.RANGED if active.basic_attack_range > 1 else BattleMapView.CursorMode.MELEE)
+		return
 
 	if (
 		active == null
@@ -673,6 +679,11 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	for target: UnitSnapshot in targets:
 		_attackable_target_hexes.append(target.hex)
 
+	var grid := _battle_session.get_hex_grid()
+	for hex: Vector2i in grid.get_cells_in_range(state.hex, state.basic_attack_range):
+		var obstacle := grid.get_obstacle(hex)
+		if obstacle != null and obstacle.destructible:
+			_attackable_target_hexes.append(hex)
 	if state.basic_attack_range <= 1:
 		_map_view.show_targetable_cells(_attackable_target_hexes)
 

@@ -251,6 +251,9 @@ func execute(command: BattleCommand) -> BattleResolution:
 	if command is MoveCommand:
 		return _resolve_move(command as MoveCommand)
 
+	if command is AttackObstacleCommand:
+		return _resolve_obstacle_attack(command as AttackObstacleCommand)
+
 	if command is AttackCommand:
 		return _resolve_attack(command as AttackCommand)
 
@@ -547,3 +550,19 @@ func _get_blocked_cells(
 		blocked_cells[state.hex] = true
 
 	return blocked_cells
+
+
+func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolution:
+	var attacker := get_unit(command.attacker_id)
+	var obstacle := _state.hex_grid.get_obstacle(command.target_hex)
+	if attacker == null or obstacle == null or not obstacle.destructible:
+		return _rejected("Уничтожаемое препятствие не найдено.")
+	if attacker.unit_id != get_active_unit_id() or attacker.health.is_defeated() or not attacker.turn.main_action_available:
+		return _rejected("Атака препятствия недоступна.")
+	if HexGrid.get_distance(attacker.hex, command.target_hex) > attacker.basic_attack_range:
+		return _rejected("Препятствие вне дальности атаки.")
+	attacker.turn.spend_main_action()
+	var events: Array[BattleEvent] = []
+	ObstacleService.damage(_state, command.target_hex, attacker.basic_attack_damage, events)
+	_finish_action_turn(attacker.unit_id, events)
+	return _accepted(events)

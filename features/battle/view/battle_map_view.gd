@@ -341,7 +341,7 @@ func render_grid(grid: HexGrid) -> void:
 		)
 
 	for hex: Vector2i in grid.get_cells():
-		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "state": grid.get_hex_state_id(hex), "turns": grid.get_hex_state_turns(hex)}
+		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "state": grid.get_hex_state_id(hex), "turns": grid.get_hex_state_turns(hex), "obstacle": grid.get_obstacle(hex)}
 	_refresh_terrain_properties()
 	_hex_state_visuals.render(grid)
 	_hex_state_details.refresh()
@@ -532,7 +532,7 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		_displayed_properties.erase(event.hex)
 	else:
 		var previous: Dictionary = _displayed_properties.get(event.hex, {})
-		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost, "state": previous.get("state", &""), "turns": previous.get("turns", 0)}
+		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost, "state": previous.get("state", &""), "turns": previous.get("turns", 0), "obstacle": event.obstacle if event.obstacle_changed else previous.get("obstacle")}
 	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 		_displayed_properties[event.hex]["state"] = event.hex_state_id
 		_displayed_properties[event.hex]["turns"] = event.hex_state_turns
@@ -564,6 +564,7 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		)
 
 	_update_terrain_properties(event.hex)
+	_hex_state_details.refresh()
 
 
 func _capture_terrain_tiles() -> void:
@@ -742,6 +743,16 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 	if not _displayed_properties.has(hex):
 		return
 	var properties: Dictionary = _displayed_properties[hex]
+	var obstacle := properties.get("obstacle") as BattleObstacleDefinition
+	if obstacle != null:
+		var artwork := ObstacleCellVisual.new()
+		artwork.obstacle = obstacle
+		artwork.hex = hex
+		artwork.position = to_local(hex_to_global_position(hex))
+		artwork.scale = Vector2(56.0 / 94.0, 64.0 / 78.0)
+		_terrain_property_visuals.add_child(artwork)
+		_terrain_property_nodes[hex] = artwork
+		return
 	var blocked: bool = not properties.traversable
 	var custom_terrain: bool = properties.terrain != &"core:default"
 	if not blocked and not custom_terrain:

@@ -12,6 +12,9 @@ const DIRECTIONS: Array[Vector2i] = [
 ]
 
 
+var _obstacles: Dictionary[StringName, BattleObstacleDefinition] = {}
+var _obstacle_cells: Dictionary[Vector2i, StringName] = {}
+
 var _cells: Dictionary[Vector2i, bool] = {}
 var _movement_costs: Dictionary[Vector2i, int] = {}
 var _terrain_ids: Dictionary[Vector2i, StringName] = {}
@@ -42,7 +45,7 @@ func has_cell(cell: Vector2i) -> bool:
 
 
 func is_traversable(cell: Vector2i) -> bool:
-	return has_cell(cell) and _traversable.get(cell, false)
+	return has_cell(cell) and not has_obstacle(cell) and _traversable.get(cell, false)
 
 
 func get_movement_cost(cell: Vector2i) -> int:
@@ -116,7 +119,7 @@ func get_cells_in_range(
 
 
 func duplicate_grid() -> HexGrid:
-	return HexGrid.new(
+	var copy := HexGrid.new(
 		get_cells(),
 		_movement_costs,
 		_terrain_ids,
@@ -124,12 +127,15 @@ func duplicate_grid() -> HexGrid:
 		_hex_state_ids,
 		_hex_state_turns
 	)
+	copy._copy_obstacles(self)
+	return copy
 
 
 func replace_with(other: HexGrid) -> bool:
 	if other == null:
 		return false
 
+	_copy_obstacles(other)
 	_cells.clear()
 	_movement_costs.clear()
 	_terrain_ids.clear()
@@ -174,7 +180,7 @@ func add_cell(
 
 
 func remove_cell(cell: Vector2i) -> bool:
-	if not has_cell(cell):
+	if not has_cell(cell) or has_obstacle(cell):
 		return false
 
 	_cells.erase(cell)
@@ -213,7 +219,7 @@ func set_traversal(
 
 
 func set_hex_state(cell: Vector2i, id: StringName) -> bool:
-	if not has_cell(cell) or (not id.is_empty() and not HexStateCatalog.has_state(id)):
+	if not has_cell(cell) or has_obstacle(cell) or (not id.is_empty() and not HexStateCatalog.has_state(id)):
 		return false
 	_hex_state_ids[cell] = id
 	_hex_state_turns[cell] = HexStateCatalog.LIFETIME if not id.is_empty() else 0
@@ -229,3 +235,42 @@ static func get_distance(from_cell: Vector2i, to_cell: Vector2i) -> int:
 		absi(delta_q),
 		maxi(absi(delta_r), absi(delta_s))
 	)
+
+
+func has_obstacle(hex: Vector2i) -> bool:
+	return _obstacle_cells.has(hex)
+
+func get_obstacle(hex: Vector2i) -> BattleObstacleDefinition:
+	var value := _obstacles.get(_obstacle_cells.get(hex, &"")) as BattleObstacleDefinition
+	return value.duplicate(true) as BattleObstacleDefinition if value != null else null
+
+func add_obstacle(value: BattleObstacleDefinition) -> bool:
+	if value == null or not value.validate().is_empty() or _obstacles.has(value.id):
+		return false
+	for hex: Vector2i in value.hexes:
+		if not is_traversable(hex) or has_obstacle(hex) or not get_hex_state_id(hex).is_empty():
+			return false
+	var copy := value.duplicate(true) as BattleObstacleDefinition
+	copy.current_hp = copy.max_hp
+	_obstacles[copy.id] = copy
+	for hex: Vector2i in copy.hexes:
+		_obstacle_cells[hex] = copy.id
+	return true
+
+func damage_obstacle(hex: Vector2i, amount: int) -> int:
+	var value := _obstacles.get(_obstacle_cells.get(hex, &"")) as BattleObstacleDefinition
+	if value == null or not value.destructible or amount <= 0:
+		return 0
+	var damage := mini(amount, value.current_hp)
+	value.current_hp -= damage
+	if value.current_hp == 0:
+		for occupied: Vector2i in value.hexes:
+			_obstacle_cells.erase(occupied)
+		_obstacles.erase(value.id)
+	return damage
+
+func _copy_obstacles(other: HexGrid) -> void:
+	_obstacles.clear()
+	_obstacle_cells = other._obstacle_cells.duplicate()
+	for id: StringName in other._obstacles:
+		_obstacles[id] = other._obstacles[id].duplicate(true) as BattleObstacleDefinition

@@ -103,6 +103,8 @@ static func _validate_mutation(
 				return "AddHex movement cost must be at least 1."
 
 		MapMutationKind.Value.REMOVE_HEX:
+			if candidate.has_obstacle(mutation.hex):
+				return "Cannot remove a hex occupied by an obstacle."
 			if not candidate.has_cell(mutation.hex):
 				return "RemoveHex target does not exist: %s." % mutation.hex
 			if _is_occupied(state, mutation.hex):
@@ -115,6 +117,8 @@ static func _validate_mutation(
 				return "ChangeTerrain terrain id must not be empty."
 
 		MapMutationKind.Value.SET_TRAVERSAL:
+			if candidate.has_obstacle(mutation.hex):
+				return "Cannot change traversal underneath an obstacle."
 			if not candidate.has_cell(mutation.hex):
 				return "SetTraversal target does not exist: %s." % mutation.hex
 			if mutation.movement_cost < 1:

@@ -61,10 +61,15 @@ static func create_hex_grid(
 		traversal[cell_definition.hex] = cell_definition.traversable
 		hex_state_ids[cell_definition.hex] = cell_definition.hex_state_id
 
-	return HexGrid.new(
+	var grid := HexGrid.new(
 		axial_cells,
 		movement_costs,
 		terrain_ids,
 		traversal,
 		hex_state_ids
 	)
+	for obstacle: BattleObstacleDefinition in definition.obstacles:
+		if not grid.add_obstacle(obstacle):
+			push_error("Invalid obstacle: missing/overlapping cells, hex state, ID, footprint or HP.")
+			return null
+	return grid

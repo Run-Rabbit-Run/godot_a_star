@@ -73,7 +73,8 @@ func next_command(session: BattleSession) -> BattleCommand:
 
 	if active.turn.movement_remaining <= 0:
 		_trace("reason", "movement_exhausted")
-		return EndTurnCommand.new(active_unit_id)
+		var obstacle_command := _choose_obstacle_command(session, active, target)
+		return obstacle_command if obstacle_command != null else EndTurnCommand.new(active_unit_id)
 
 	var movement_search := session.get_movement_search(active.unit_id)
 	var move := EnemyBrain.choose_move(
@@ -92,8 +93,24 @@ func next_command(session: BattleSession) -> BattleCommand:
 		_trace("reason", "approach_with_hazard_forecast")
 		return move
 
+	var obstacle_command := _choose_obstacle_command(session, active, target)
+	if obstacle_command != null:
+		return obstacle_command
+
 	_trace("reason", "no_improving_safe_move")
 	return EndTurnCommand.new(active_unit_id)
+
+
+func _choose_obstacle_command(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot) -> AttackObstacleCommand:
+	var grid := session.get_hex_grid()
+	var candidates := grid.get_cells_in_range(active.hex, active.basic_attack_range)
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(a, target.hex) < HexGrid.get_distance(b, target.hex) if HexGrid.get_distance(a, target.hex) != HexGrid.get_distance(b, target.hex) else a < b)
+	for hex: Vector2i in candidates:
+		var obstacle := grid.get_obstacle(hex)
+		if obstacle != null and obstacle.destructible and HexGrid.get_distance(hex, target.hex) < HexGrid.get_distance(active.hex, target.hex):
+			_trace("reason", "clear_destructible_obstacle")
+			return AttackObstacleCommand.new(active.unit_id, hex)
+	return null
 
 
 func _choose_ability_command(

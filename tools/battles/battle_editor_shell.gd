@@ -32,6 +32,12 @@ var _tool_option: OptionButton
 var _selected_hex_label: Label
 var _terrain_id_edit: LineEdit
 var _movement_cost_spin: SpinBox
+var _obstacle_type: OptionButton
+var _obstacle_size: SpinBox
+var _obstacle_direction: OptionButton
+var _obstacle_destructible: CheckButton
+var _obstacle_hp: SpinBox
+
 var _traversable_check: CheckButton
 var _q_spin: SpinBox
 var _r_spin: SpinBox
@@ -168,7 +174,7 @@ func _build_ui() -> void:
 	root.add_child(EditorDisplaySettings.new())
 
 	var hint := Label.new()
-	hint.text = "ЛКМ — инструмент · ПКМ — стереть состояние / юнита · СКМ — панорама"
+	hint.text = "ЛКМ — инструмент · ПКМ — удалить препятствие / состояние / юнита · СКМ — панорама"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(hint)
 
@@ -217,6 +223,40 @@ func _build_ui() -> void:
 	_traversable_check.button_pressed = true
 	root.add_child(_traversable_check)
 	root.add_child(_button("Применить к выбранному гексу", _apply_selected_hex))
+	root.add_child(HSeparator.new())
+	_obstacle_type = OptionButton.new()
+	for label: String in BattleObstacleDefinition.NAMES:
+		_obstacle_type.add_item(label)
+	root.add_child(_labeled("Препятствие: местность", _obstacle_type))
+	_obstacle_size = SpinBox.new()
+	_obstacle_size.min_value = 1
+	_obstacle_size.max_value = 4
+	_obstacle_size.value = 1
+	_obstacle_size.value_changed.connect(func(value: float) -> void:
+		_view.obstacle_size = int(value)
+		_view.refresh()
+	)
+	root.add_child(_labeled("Гексов подряд (общие HP)", _obstacle_size))
+	_obstacle_direction = OptionButton.new()
+	for label: String in ["Вправо", "Вверх вправо", "Вверх влево", "Влево", "Вниз влево", "Вниз вправо"]:
+		_obstacle_direction.add_item(label)
+	_obstacle_direction.item_selected.connect(func(index: int) -> void:
+		_view.obstacle_direction = index
+		_view.refresh()
+	)
+	root.add_child(_labeled("Направление от выбранного гекса", _obstacle_direction))
+	_obstacle_destructible = CheckButton.new()
+	_obstacle_destructible.text = "Уничтожаемое препятствие"
+	root.add_child(_obstacle_destructible)
+	_obstacle_hp = SpinBox.new()
+	_obstacle_hp.min_value = 1
+	_obstacle_hp.max_value = 1000000
+	_obstacle_hp.value = 10
+	_obstacle_hp.editable = false
+	_obstacle_destructible.toggled.connect(func(value: bool) -> void: _obstacle_hp.editable = value)
+	root.add_child(_labeled("HP всего препятствия", _obstacle_hp))
+	root.add_child(_button("Поставить / обновить препятствие", _apply_selected_obstacle))
+	root.add_child(_button("Удалить выбранное препятствие", _remove_selected_obstacle))
 
 	var coords := HBoxContainer.new()
 	_q_spin = _coordinate_spin()
@@ -514,13 +554,13 @@ func _on_hex_activated(hex: Vector2i) -> void:
 			_remove_hex(hex)
 
 		EditorBattleView.Tool.PAINT_TERRAIN:
-			_update_hex(hex, true, false, false)
+			_update_hex(hex, true, false)
 
 		EditorBattleView.Tool.PAINT_COST:
-			_update_hex(hex, false, true, false)
+			_update_hex(hex, false, true)
 
 		EditorBattleView.Tool.PAINT_OBSTACLE:
-			_update_hex(hex, false, false, true)
+			_put_obstacle(hex)
 
 		EditorBattleView.Tool.PLACE_UNIT:
 			_place_or_move_unit(hex)
@@ -542,7 +582,17 @@ func _select_hex(hex: Vector2i) -> void:
 	_view.select_hex(hex)
 	_terrain_id_edit.text = String(cell.terrain_id)
 	_movement_cost_spin.value = cell.movement_cost
-	_traversable_check.button_pressed = cell.traversable
+	_traversable_check.button_pressed = cell.traversable and _obstacle_at(hex) == null
+	var obstacle := _obstacle_at(hex)
+	if obstacle != null:
+		_obstacle_type.select(BattleObstacleDefinition.TYPES.find(obstacle.terrain_type))
+		_obstacle_size.value = obstacle.hexes.size()
+		_obstacle_destructible.button_pressed = obstacle.destructible
+		_obstacle_hp.editable = obstacle.destructible
+		_obstacle_hp.value = obstacle.max_hp
+		if obstacle.hexes.size() > 1:
+			_obstacle_direction.select(HexGrid.DIRECTIONS.find(obstacle.hexes[1] - obstacle.hexes[0]))
+		_view.obstacle_direction = _obstacle_direction.selected
 	_selected_hex_label.text = "Выбран гекс: q=%d, r=%d" % [hex.x, hex.y]
 	_set_status("Свойства выбранного гекса загружены в панель.")
 
@@ -563,6 +613,9 @@ func _add_hex(hex: Vector2i) -> void:
 
 
 func _remove_hex(hex: Vector2i) -> void:
+	if _obstacle_at(hex) != null:
+		_set_status("Сначала удалите препятствие целиком.")
+		return
 	if _find_cell(hex) == null:
 		return
 
@@ -581,8 +634,7 @@ func _remove_hex(hex: Vector2i) -> void:
 func _update_hex(
 	hex: Vector2i,
 	change_terrain: bool,
-	change_cost: bool,
-	make_obstacle: bool
+	change_cost: bool
 ) -> void:
 	var cell := _find_cell(hex)
 
@@ -597,16 +649,14 @@ func _update_hex(
 		updated.movement_cost = int(_movement_cost_spin.value)
 		if not updated.hex_state_id.is_empty():
 			updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
-	if make_obstacle:
-		if _hex_is_occupied(hex):
-			_set_status("Нельзя сделать занятый гекс непроходимым.")
-			return
-		updated.traversable = false
 
 	_execute(EditCommand.update_hex(updated))
 
 
 func _apply_selected_hex() -> void:
+	if _has_selected_hex and _obstacle_at(_selected_hex) != null:
+		_set_status("Используйте свойства препятствия или удалите его целиком.")
+		return
 	if not _has_selected_hex:
 		_set_status("Сначала выберите существующий гекс.")
 		return
@@ -656,7 +706,7 @@ func _place_or_move_unit(hex: Vector2i) -> void:
 		_set_status("Юнита можно поставить только на существующий гекс.")
 		return
 
-	if not _find_cell(hex).traversable:
+	if not _find_cell(hex).traversable or _obstacle_at(hex) != null:
 		_set_status("Нельзя поставить юнита на непроходимый гекс.")
 		return
 	if not _selected_placement_id.is_empty():
@@ -1154,6 +1204,9 @@ func _build_visual_controls(parent: Control) -> void:
 
 func _paint_state(hex: Vector2i, state_id: StringName) -> void:
 	var cell := _find_cell(hex)
+	if _obstacle_at(hex) != null:
+		_set_status("К препятствиям состояния не применяются.")
+		return
 	if cell == null or cell.hex_state_id == state_id:
 		return
 	var updated := cell.duplicate(true) as BattleMapCellDefinition
@@ -1163,6 +1216,10 @@ func _paint_state(hex: Vector2i, state_id: StringName) -> void:
 
 
 func _on_hex_erased(hex: Vector2i) -> void:
+	var obstacle := _obstacle_at(hex)
+	if obstacle != null:
+		_execute(EditCommand.remove_obstacle(obstacle.id))
+		return
 	if _view.active_tool == EditorBattleView.Tool.PLACE_UNIT or _view.active_tool == EditorBattleView.Tool.SELECT:
 		for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
 			if placement.start_hex == hex:
@@ -1189,7 +1246,7 @@ func _free_hex_near(origin: Vector2i) -> Vector2i:
 	var best := Vector2i(999999, 999999)
 	var best_distance := 999999
 	for cell: BattleMapCellDefinition in _document.map_definition.cells:
-		if not cell.traversable or occupied.has(cell.hex) or not EditorBattleView.is_in_frame(cell.hex):
+		if not cell.traversable or _obstacle_at(cell.hex) != null or occupied.has(cell.hex) or not EditorBattleView.is_in_frame(cell.hex):
 			continue
 		var delta := cell.hex - origin
 		var distance := maxi(absi(delta.x), maxi(absi(delta.y), absi(delta.x + delta.y)))
@@ -1237,3 +1294,45 @@ func _hex_is_occupied(hex: Vector2i) -> bool:
 		if placement.start_hex == hex:
 			return true
 	return false
+
+
+func _obstacle_at(hex: Vector2i) -> BattleObstacleDefinition:
+	for obstacle: BattleObstacleDefinition in _document.map_definition.obstacles:
+		if obstacle.hexes.has(hex):
+			return obstacle
+	return null
+
+func _apply_selected_obstacle() -> void:
+	if _has_selected_hex:
+		_put_obstacle(_selected_hex)
+	else:
+		_set_status("Выберите начальный гекс или используйте кисть препятствий.")
+
+func _remove_selected_obstacle() -> void:
+	if not _has_selected_hex:
+		return
+	var obstacle := _obstacle_at(_selected_hex)
+	if obstacle != null:
+		_execute(EditCommand.remove_obstacle(obstacle.id))
+
+func _put_obstacle(hex: Vector2i) -> void:
+	var previous := _obstacle_at(hex)
+	var value := BattleObstacleDefinition.new()
+	value.id = previous.id if previous != null else StringName("obstacle:%d" % Time.get_ticks_usec())
+	value.terrain_type = BattleObstacleDefinition.TYPES[_obstacle_type.selected]
+	value.destructible = _obstacle_destructible.button_pressed
+	value.max_hp = int(_obstacle_hp.value)
+	value.current_hp = value.max_hp
+	var origin := previous.hexes[0] if previous != null else hex
+	for index in range(int(_obstacle_size.value)):
+		var occupied := origin + HexGrid.DIRECTIONS[_obstacle_direction.selected] * index
+		if not EditorBattleView.is_in_frame(occupied) or _find_cell(occupied) == null or not _find_cell(occupied).traversable or _hex_is_occupied(occupied):
+			_set_status("Препятствие требует свободные существующие гексы внутри поля.")
+			return
+		var other := _obstacle_at(occupied)
+		if other != null and other != previous:
+			_set_status("Препятствия не могут пересекаться.")
+			return
+		value.hexes.append(occupied)
+	_execute(EditCommand.put_obstacle(value, previous.id if previous != null else &""))
+	_select_hex(origin)

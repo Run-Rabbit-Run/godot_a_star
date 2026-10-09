@@ -11,6 +11,8 @@ static func expose(unit: UnitState, grid: HexGrid, events: Array[BattleEvent]) -
 	UnitStatusService.damage(unit, HexStateCatalog.get_damage(id), HexStateCatalog.get_damage_type(id), events, &"", id)
 
 static func apply_to_grid(grid: HexGrid, hex: Vector2i, incoming: StringName, events: Array[BattleEvent], explosions: Array[Dictionary]) -> void:
+	if not grid.has_cell(hex) or grid.has_obstacle(hex):
+		return
 	var previous := grid.get_hex_state_id(hex)
 	var result := HexStateCatalog.combine(previous, incoming)
 	if previous == result:
@@ -37,7 +39,7 @@ static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[Battl
 		var rules := HexStateCatalog.propagation(grid.get_hex_state_id(hex))
 		for direction: Vector2i in HexGrid.DIRECTIONS:
 			var neighbor := hex + direction
-			if not grid.has_cell(neighbor):
+			if not grid.has_cell(neighbor) or grid.has_obstacle(neighbor):
 				continue
 			var previous := grid.get_hex_state_id(neighbor)
 			if rules.has(previous):

@@ -38,6 +38,8 @@ var document: BattleDocument
 var selected_placement_id: StringName
 var selected_hex := Vector2i.ZERO
 var has_selected_hex := false
+var obstacle_size := 1
+var obstacle_direction := 0
 var active_tool: Tool = Tool.SELECT
 var _hovered_hex := Vector2i.ZERO
 var _has_hovered_hex := false
@@ -120,6 +122,9 @@ func _draw() -> void:
 				draw_colored_polygon(_hex_polygon(center), Color(0.025, 0.035, 0.03, 0.65))
 				if active_tool == Tool.ADD_HEX:
 					draw_polyline(_closed_hex_polygon(center), Color(0.5, 0.8, 0.6, 0.3), 1)
+	for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
+		for hex: Vector2i in obstacle.hexes:
+			ObstacleArt.draw(self, _hex_center(hex), obstacle, hex)
 	if show_units:
 		var placements := document.battle_definition.unit_placements.duplicate()
 		placements.sort_custom(func(a: UnitPlacementDefinition, b: UnitPlacementDefinition) -> bool: return a.start_hex.y < b.start_hex.y)
@@ -127,6 +132,21 @@ func _draw() -> void:
 			occupancy[placement.start_hex] = occupancy.get(placement.start_hex, 0) + 1
 		for placement: UnitPlacementDefinition in placements:
 			_draw_unit(placement, not existing.has(placement.start_hex) or occupancy[placement.start_hex] > 1)
+	if _has_hovered_hex and active_tool == Tool.PAINT_OBSTACLE:
+		var origin := _hovered_hex
+		var replaced: BattleObstacleDefinition
+		for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
+			if obstacle.hexes.has(_hovered_hex):
+				origin = obstacle.hexes[0]
+				replaced = obstacle
+		for index in range(obstacle_size):
+			var hex := origin + HexGrid.DIRECTIONS[obstacle_direction] * index
+			var valid := existing.has(hex) and is_in_frame(hex)
+			for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
+				valid = valid and placement.start_hex != hex
+			for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
+				valid = valid and (obstacle == replaced or not obstacle.hexes.has(hex))
+			draw_polyline(_closed_hex_polygon(_hex_center(hex)), HOVER_COLOR if valid else Color.SALMON, 3, true)
 	if _has_hovered_hex and is_in_frame(_hovered_hex):
 		draw_polyline(_closed_hex_polygon(_hex_center(_hovered_hex)), HOVER_COLOR, 3, true)
 
@@ -261,7 +281,6 @@ func _tool_supports_drag() -> bool:
 		Tool.REMOVE_HEX,
 		Tool.PAINT_TERRAIN,
 		Tool.PAINT_COST,
-		Tool.PAINT_OBSTACLE,
 	]
 
 

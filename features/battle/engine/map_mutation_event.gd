@@ -2,6 +2,10 @@ class_name MapMutationEvent
 extends BattleEvent
 
 
+var obstacle_changed := false
+var obstacle: BattleObstacleDefinition
+var obstacle_damage := 0
+
 var kind: MapMutationKind.Value
 var hex: Vector2i
 var terrain_id: StringName

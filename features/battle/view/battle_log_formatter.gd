@@ -37,6 +37,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 			return "Ход %s пропущен из-за паралича; эффекты конца хода применены." % _unit(event.previous_unit_id, units)
 		return "%s завершает ход." % _unit(event.previous_unit_id, units)
 	if event is MapMutationEvent:
+		if event.obstacle_changed:
+			return "Препятствие %s: %d урона, %s." % [_hex(event.hex), event.obstacle_damage, "уничтожено, проход открыт" if event.obstacle == null else "осталось %d / %d HP" % [event.obstacle.current_hp, event.obstacle.max_hp]]
 		if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 			if not event.hex_state_changed:
 				return ""

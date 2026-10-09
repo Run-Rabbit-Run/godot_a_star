@@ -110,6 +110,13 @@ func _update_popup() -> void:
 		_popup.hide()
 		return
 	var properties := _properties[_hovered]
+	var obstacle := properties.get("obstacle") as BattleObstacleDefinition
+	if obstacle != null:
+		_title.text = BattleObstacleDefinition.NAMES[BattleObstacleDefinition.TYPES.find(obstacle.terrain_type)]
+		_body.text = "Препятствие: %d гекс.\nПроход запрещён. Состояния не применяются.\n%s" % [obstacle.hexes.size(), "HP: %d / %d. Атакуйте любой гекс препятствия." % [obstacle.current_hp, obstacle.max_hp] if obstacle.destructible else "Неуничтожаемое."]
+		_popup.reset_size()
+		_popup.show()
+		return
 	var id := StringName(properties.get("state", &""))
 	if id.is_empty():
 		_popup.hide()

@@ -36,6 +36,10 @@ func expect(value: bool, message: String) -> void:
 		failures.append(message)
 
 func _run() -> void:
+	if only.is_empty() or only == "obstacles":
+		_test_obstacles()
+	if only.is_empty() or only == "obstacle_ui":
+		await _test_obstacle_ui()
 	if only.is_empty() or only == "geometry":
 		_test_geometry()
 	if only.is_empty() or only == "terrain_reactions":
@@ -1332,4 +1336,190 @@ func _test_review_fixes_ui() -> void:
 		editor.call("_return_from_trial")
 		expect((editor.get("_status") as Label).text.contains("остановлен ошибкой"), "Editor status reports the stopped trial")
 	editor.queue_free()
+	await get_tree().process_frame
+
+
+func _test_obstacles() -> void:
+	var cells: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0)]
+	var obstacle := BattleObstacleDefinition.new()
+	obstacle.id = &"test:obstacle"
+	obstacle.destructible = true
+	obstacle.max_hp = 5
+	for size in range(1, 5):
+		obstacle.hexes.clear()
+		for index in range(size):
+			obstacle.hexes.append(Vector2i(index + 1, 0))
+		var grid := HexGrid.new(cells)
+		expect(grid.add_obstacle(obstacle), "Place obstacle of size %d" % size)
+		expect(not grid.is_traversable(obstacle.hexes.back()), "Every obstacle hex blocks movement")
+		expect(not grid.set_hex_state(obstacle.hexes[0], &"core:fire"), "Obstacle rejects direct hex states")
+		var events: Array[BattleEvent] = []
+		var explosions: Array[Dictionary] = []
+		HexStateService.apply_to_grid(grid, obstacle.hexes[0], &"core:water", events, explosions)
+		expect(events.is_empty() and grid.get_hex_state_id(obstacle.hexes[0]).is_empty(), "Hex state effect skips obstacle without events")
+		var snapshot := grid.get_obstacle(obstacle.hexes[0])
+		snapshot.current_hp = 1
+		expect(grid.get_obstacle(obstacle.hexes[0]).current_hp == 5, "Obstacle query is detached")
+		expect(grid.damage_obstacle(obstacle.hexes.back(), 2) == 2, "Any obstacle hex can receive damage")
+		expect(grid.get_obstacle(obstacle.hexes[0]).current_hp == 3, "Footprint shares HP")
+		var copy := grid.duplicate_grid()
+		expect(copy.get_obstacle(obstacle.hexes[0]).current_hp == 3, "Grid clone preserves partial HP")
+		copy.damage_obstacle(obstacle.hexes[0], 30)
+		expect(grid.has_obstacle(obstacle.hexes[0]), "Prediction clone cannot destroy live obstacle")
+		expect(copy.is_traversable(obstacle.hexes.back()), "Destroyed clone releases whole footprint")
+		grid.replace_with(copy)
+		expect(not grid.has_obstacle(obstacle.hexes[0]), "Grid commit copies obstacle removal")
+	obstacle.hexes.assign([Vector2i(1, 0), Vector2i(2, 0)])
+	obstacle.destructible = false
+	var grid := HexGrid.new(cells)
+	grid.add_obstacle(obstacle)
+	expect(grid.damage_obstacle(Vector2i(1, 0), 999) == 0 and grid.has_obstacle(Vector2i(1, 0)), "Indestructible obstacle ignores damage")
+	var overlap := obstacle.duplicate(true) as BattleObstacleDefinition
+	overlap.id = &"test:overlap"
+	expect(not grid.add_obstacle(overlap), "Overlapping obstacle rejected")
+	expect(not grid.remove_cell(Vector2i(1, 0)), "Cannot delete part of a runtime obstacle")
+	var invalid := obstacle.duplicate(true) as BattleObstacleDefinition
+	invalid.hexes.assign([Vector2i(1, 0), Vector2i(3, 0)])
+	expect(not invalid.validate().is_empty(), "Footprint with a gap rejected")
+	invalid.hexes.assign([Vector2i(1, 0), Vector2i(2, 0), Vector2i(2, 1)])
+	expect(not invalid.validate().is_empty(), "Bent footprint rejected")
+	invalid.hexes.assign(cells)
+	expect(not invalid.validate().is_empty(), "Footprint larger than four rejected")
+	invalid.hexes.assign([Vector2i(1, 0)])
+	invalid.max_hp = 0
+	expect(not invalid.validate().is_empty(), "Nonpositive obstacle HP rejected")
+	grid.set_hex_state(Vector2i.ZERO, &"core:fire")
+	var propagation: Array[BattleEvent] = []
+	HexStateService.propagate(grid, [Vector2i.ZERO], propagation)
+	expect(grid.get_hex_state_id(Vector2i(1, 0)).is_empty(), "Propagation cannot give obstacle a state")
+	# Document round trip and undo/redo use exactly the same resource definition.
+	var map := BattleMapDefinition.new()
+	map.id = &"test:map"
+	for hex: Vector2i in cells:
+		map.cells.append(BattleMapCellDefinition.new(hex))
+	var battle := BattleDefinition.new()
+	battle.id = &"test:battle"
+	battle.map_id = map.id
+	var document := BattleDocument.new(&"test:document", map, battle)
+	var history := EditorCommandHistory.new()
+	obstacle.destructible = true
+	expect(history.execute(EditCommand.put_obstacle(obstacle), document), "Place obstacle through editor command")
+	var encoded := BattleDocumentSerializer.to_dictionary(document)
+	var loaded := BattleDocumentSerializer.from_dictionary(encoded)
+	expect(loaded != null and loaded.map_definition.obstacles.size() == 1, "Obstacle JSON round trip")
+	expect(loaded.map_definition.obstacles[0].hexes == obstacle.hexes and loaded.map_definition.obstacles[0].max_hp == 5, "Footprint and HP survive JSON")
+	expect(BattleMapFactory.create_hex_grid(loaded.map_definition).has_obstacle(Vector2i(2, 0)), "Saved document builds obstacle in ordinary map factory")
+	encoded.map.obstacles[0].hexes = [["bad", 0]]
+	expect(BattleDocumentSerializer.from_dictionary(encoded) == null, "Malformed obstacle coordinate rejected structurally")
+	expect(history.undo(document) and document.map_definition.obstacles.is_empty(), "Undo obstacle placement")
+	expect(history.redo(document) and document.map_definition.obstacles.size() == 1, "Redo obstacle placement")
+	var baseline := BattleDocumentSerializer.to_dictionary(document)
+	expect(not history.execute(EditCommand.put_obstacle(overlap), document) and baseline == BattleDocumentSerializer.to_dictionary(document), "Rejected overlap leaves entire document unchanged")
+	expect(not history.execute(EditCommand.remove_hex(Vector2i(1, 0)), document), "Editor cannot delete part of obstacle")
+	var changed := document.map_definition.cells[1].duplicate(true) as BattleMapCellDefinition
+	changed.hex_state_id = &"core:fire"
+	changed.movement_cost = HexStateCatalog.get_movement_cost(changed.hex_state_id)
+	expect(not history.execute(EditCommand.update_hex(changed), document), "Editor cannot paint state over obstacle")
+	expect(history.execute(EditCommand.remove_obstacle(obstacle.id), document), "Delete obstacle as one command")
+	expect(history.undo(document) and document.map_definition.obstacles.size() == 1, "Undo restores whole obstacle")
+	# Attack consumes one action, rejects invalid attempts, frees all cells after destruction.
+	var player := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	var enemy := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(5, 0))
+	var state := fixture.state(cells, [player, enemy])
+	state.hex_grid.add_obstacle(obstacle)
+	var engine := BattleEngine.new(state)
+	var result := engine.execute(AttackObstacleCommand.new(player.unit_id, Vector2i(2, 0)))
+	expect(not result.accepted and player.turn.main_action_available, "Out of range obstacle attack consumes nothing")
+	result = engine.execute(AttackObstacleCommand.new(player.unit_id, Vector2i(1, 0)))
+	expect(result.accepted and state.hex_grid.get_obstacle(Vector2i(2, 0)).current_hp == 3, "Basic attack damages shared obstacle HP")
+	expect(engine.get_active_unit_id() == enemy.unit_id, "Obstacle attack ends acting unit turn")
+	var damage_events: Array[BattleEvent] = []
+	ObstacleService.damage(state, Vector2i(2, 0), 3, damage_events)
+	expect(state.hex_grid.is_traversable(Vector2i(1, 0)) and state.hex_grid.is_traversable(Vector2i(2, 0)), "Destruction frees every hex")
+	expect(damage_events.size() == 2 and damage_events[0].obstacle == null, "Destruction publishes map updates for every occupied cell")
+	expect(not BattleLogFormatter.describe(damage_events[0], {}, null).is_empty(), "Obstacle damage is visible in battle log")
+	# Area damage hits a multi-cell obstacle once, and state-only casts skip it.
+	player = fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	enemy = fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(5, 0))
+	var ability := fixture.ability(&"test:blast", AbilityDefinition.TargetMode.HEX, 1)
+	player.abilities[ability.id] = ability
+	state = fixture.state(cells, [player, enemy])
+	state.hex_grid.add_obstacle(obstacle)
+	engine = BattleEngine.new(state)
+	result = engine.execute(UseAbilityCommand.at_hex(player.unit_id, Vector2i(1, 0), ability.id))
+	expect(result.accepted and state.hex_grid.get_obstacle(Vector2i(2, 0)).current_hp == 2, "Area damage hits obstacle exactly once")
+	var serialized: Dictionary = BattleLogSerializer.encode(state.hex_grid)
+	expect(serialized.cells[1].obstacle.current_hp == 2, "Diagnostic snapshot includes obstacle HP")
+	# AI clears a reachable destructible barrier when no movement can approach the enemy.
+	player = fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i(5, 0))
+	enemy = fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i.ZERO)
+	state = fixture.state(cells, [enemy, player])
+	state.hex_grid.add_obstacle(obstacle)
+	var session := _ai_session(state)
+	var command := AICommandSource.new(null).next_command(session)
+	expect(command is AttackObstacleCommand, "AI chooses obstacle attack with movement available")
+	enemy.turn.movement_remaining = 0
+	command = AICommandSource.new(null).next_command(session)
+	expect(command is AttackObstacleCommand and session.step(command).accepted, "AI attacks a blocking barrier even after movement is exhausted")
+
+
+func _test_obstacle_ui() -> void:
+	var editor := (load("res://tools/battles/battle_editor.tscn") as PackedScene).instantiate() as BattleEditorShell
+	get_tree().root.add_child(editor)
+	await get_tree().process_frame
+	editor.call("_create_new_document")
+	var origin := HexCoordinateMapper.offset_to_axial(Vector2i(4, 4))
+	var document: BattleDocument = editor.get("_document")
+	editor.call("_paint_state", origin, &"core:fire")
+	(editor.get("_obstacle_size") as SpinBox).value = 4
+	(editor.get("_obstacle_destructible") as CheckButton).button_pressed = true
+	(editor.get("_obstacle_hp") as SpinBox).value = 12
+	editor.call("_select_tool", EditorBattleView.Tool.PAINT_OBSTACLE)
+	editor.call("_on_hex_activated", origin)
+	expect(document.map_definition.obstacles.size() == 1 and document.map_definition.obstacles[0].hexes.size() == 4, "Editor obstacle brush places whole configured footprint")
+	expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Obstacle placement clears painted state")
+	editor.call("_undo")
+	expect(document.map_definition.obstacles.is_empty() and (editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id == &"core:fire", "Undo restores state under removed obstacle")
+	editor.call("_redo")
+	editor.call("_select_hex", origin + Vector2i(2, 0))
+	expect((editor.get("_obstacle_size") as SpinBox).value == 4 and (editor.get("_obstacle_hp") as SpinBox).value == 12, "Selecting any occupied hex loads shared obstacle properties")
+	(editor.get("_obstacle_size") as SpinBox).value = 2
+	editor.call("_apply_selected_obstacle")
+	expect(document.map_definition.obstacles[0].hexes.size() == 2 and document.map_definition.obstacles[0].hexes[0] == origin, "Updating obstacle from middle hex preserves its anchor")
+	editor.call("_paint_state", origin, &"core:water")
+	expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Editor state brush skips obstacles")
+	editor.call("_on_hex_erased", origin + Vector2i(1, 0))
+	expect(document.map_definition.obstacles.is_empty(), "Right click deletes whole footprint")
+	editor.queue_free()
+	await get_tree().process_frame
+	var request := fixture.request(true)
+	var screen := (load("res://features/battle/battle_screen.tscn") as PackedScene).instantiate() as BattleScreen
+	screen.setup(request)
+	get_tree().root.add_child(screen)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var map := screen.get_node("BattleMap") as BattleMapView
+	var grid := HexGrid.new([origin, origin + Vector2i(1, 0)])
+	var obstacle := BattleObstacleDefinition.new()
+	obstacle.id = &"test:view_obstacle"
+	obstacle.hexes.assign([origin, origin + Vector2i(1, 0)])
+	obstacle.destructible = true
+	obstacle.max_hp = 5
+	grid.add_obstacle(obstacle)
+	map.render_grid(grid)
+	var visuals: Dictionary = map.get("_terrain_property_nodes")
+	expect(visuals[origin] is ObstacleCellVisual and visuals[origin + Vector2i(1, 0)] is ObstacleCellVisual, "Runtime map draws terrain artwork on every obstacle cell")
+	var events: Array[BattleEvent] = []
+	var state := fixture.state(grid.get_cells())
+	state.hex_grid = grid
+	ObstacleService.damage(state, origin, 2, events)
+	for event: MapMutationEvent in events:
+		map.apply_map_event(event)
+	expect((visuals[origin] as ObstacleCellVisual).obstacle.current_hp == 3, "Runtime map applies HP update from authoritative events")
+	events.clear()
+	ObstacleService.damage(state, origin, 9, events)
+	for event: MapMutationEvent in events:
+		map.apply_map_event(event)
+	expect(not visuals.has(origin) and not visuals.has(origin + Vector2i(1, 0)), "Runtime destruction events remove all obstacle artwork")
+	screen.queue_free()
 	await get_tree().process_frame
