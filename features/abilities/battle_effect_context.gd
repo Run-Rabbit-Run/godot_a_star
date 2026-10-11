@@ -40,6 +40,11 @@ func summon(source_id: StringName, hex: Vector2i, definition: UnitDefinition) ->
 	return events
 
 
+func get_base_attack_damage(id: StringName) -> int:
+	var unit := _state.unit_states.get(id) as UnitState
+	return unit.basic_attack_damage if unit != null else 0
+
+
 func get_unit_hex(id: StringName) -> Vector2i:
 	var unit := _state.unit_states.get(id) as UnitState
 	return unit.hex if unit != null else Vector2i.ZERO

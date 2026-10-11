@@ -390,6 +390,9 @@ func _end_turn(damage_events: Array[BattleEvent], initial_skip := false) -> Stri
 		damage_events.append(ended)
 		previous_unit_id = next_unit_id
 		was_skipped = false
+		SpearReturnService.resolve(_state, get_unit(next_unit_id), damage_events)
+		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+			return StringName()
 		_apply_hex_state_damage(next_unit_id, damage_events)
 
 		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
@@ -482,6 +485,8 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 		UnitStatusService.apply(target, status, attacker.basic_attack_statuses[status], events)
 	events.append_array(DamageType.react(_state, target.hex, attacker.basic_attack_damage_type))
 	var damage := health_before - target.health.current
+	if attacker.basic_attack_range == 1:
+		RetaliationService.respond(_state, attacker, target, events)
 	return AttackResult.success(
 		attacker.unit_id,
 		target.unit_id,

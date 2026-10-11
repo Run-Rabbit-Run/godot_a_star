@@ -6,6 +6,8 @@ var user_id: StringName
 var ability_id: StringName
 var target_hex: Vector2i
 var affected_hexes: Array[Vector2i] = []
+var is_return := false
+var origin_hex := Vector2i.ZERO
 
 
 func _init(

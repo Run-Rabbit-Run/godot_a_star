@@ -18,6 +18,7 @@ var basic_attack_statuses: Dictionary[StringName, int] = {}
 var status_immunities: Array[StringName] = []
 var ability_cooldowns: Dictionary[StringName, int] = {}
 var turns_started := 0
+var pending_spear_return: Dictionary = {}
 
 
 func _init(
@@ -71,4 +72,5 @@ func duplicate_state() -> UnitState:
 	copy.status_immunities.assign(status_immunities)
 	copy.ability_cooldowns.assign(ability_cooldowns)
 	copy.turns_started = turns_started
+	copy.pending_spear_return = pending_spear_return.duplicate(true)
 	return copy

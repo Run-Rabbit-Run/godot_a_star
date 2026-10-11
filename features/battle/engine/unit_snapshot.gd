@@ -22,6 +22,7 @@ var ability_target_modes: Dictionary[StringName, int] = {}
 var passive_ability_ids: Array[StringName] = []
 var basic_attack_statuses: Dictionary[StringName, int] = {}
 var turns_started := 0
+var pending_spear_return: Dictionary = {}
 
 
 func _init(state: UnitState) -> void:
@@ -36,6 +37,7 @@ func _init(state: UnitState) -> void:
 	passive_ability_ids.assign(state.passive_ability_ids)
 	basic_attack_statuses.assign(state.basic_attack_statuses)
 	turns_started = state.turns_started
+	pending_spear_return = state.pending_spear_return.duplicate(true)
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

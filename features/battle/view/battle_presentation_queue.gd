@@ -2,6 +2,9 @@ class_name BattlePresentationQueue
 extends Node
 
 
+const SPEAR_GLYPH := preload("res://features/battle/view/spear_glyph.gd")
+
+var _landed_spears: Dictionary[StringName, Node2D] = {}
 var settings := BattlePlaybackSettings.new()
 var _active_tweens: Array[Tween] = []
 var _content_snapshot: ContentSnapshot
@@ -14,6 +17,10 @@ func _ready() -> void:
 
 ## Without a snapshot every ability uses the fallback visuals.
 func configure(content_snapshot: ContentSnapshot, unit_views: BattleUnitViewRegistry = null) -> void:
+	for spear: Node2D in _landed_spears.values():
+		if is_instance_valid(spear):
+			spear.queue_free()
+	_landed_spears.clear()
 	_content_snapshot = content_snapshot
 	_unit_views = unit_views
 
@@ -170,7 +177,7 @@ func _present_damage(
 	var contact := _show_damage_health.bind(event, actor, unit_definitions)
 	var tween: Tween
 	if (
-		event.source_ability_id.is_empty()
+		(event.source_ability_id.is_empty() or event.source_ability_id == &"core:melee_retaliation")
 		and event.source_hex_state_id.is_empty()
 		and event.source_status_id.is_empty()
 		and attacker != null
@@ -287,6 +294,8 @@ func _present_area_ability(
 
 	var presentation := _get_ability_presentation(event.ability_id, true)
 	var ability := _content_snapshot.get_ability_definition(event.ability_id) if _content_snapshot != null else null
+	if event.is_return or (ability != null and ability.returns_next_turn):
+		return await _present_spear(event, user, map_view)
 	if ability != null and ability.target_mode == AbilityDefinition.TargetMode.LINE:
 		return await _present_beam(user, event.affected_hexes, map_view, presentation.impact_color)
 	var finish := map_view.to_local(
@@ -294,7 +303,7 @@ func _present_area_ability(
 	)
 	await _present_delivery(
 		presentation,
-		map_view.to_local(user.global_position),
+		map_view.to_local(map_view.hex_to_global_position(event.origin_hex)) if event.is_return else map_view.to_local(user.global_position),
 		finish,
 		map_view,
 		"Ability"
@@ -527,3 +536,36 @@ func _get_display_name(
 		return String(unit_id)
 
 	return definition.display_name
+
+
+## Resolve presentation from the event being shown, never the engine's future snapshot.
+func _present_spear(event: AreaAbilityUsedEvent, user: UnitActor, map_view: BattleMapView) -> bool:
+	var spear: Node2D = _landed_spears.get(event.user_id)
+	var start := map_view.to_local(user.get_combat_anchor())
+	var finish := map_view.to_local(map_view.hex_to_global_position(event.target_hex))
+	if event.is_return:
+		start = map_view.to_local(map_view.hex_to_global_position(event.origin_hex)) + Vector2(0, 8)
+		finish = map_view.to_local(user.get_combat_anchor())
+		_landed_spears.erase(event.user_id)
+	if not is_instance_valid(spear):
+		spear = SPEAR_GLYPH.new()
+		spear.name = "Spear_" + String(event.user_id)
+		spear.z_index = 65
+		# Match normal 94x78 battlefield art on the 56x64 logical tiles.
+		spear.scale = Vector2(56.0 / 94.0, 64.0 / 78.0)
+		map_view.add_child(spear)
+	spear.position = start
+	spear.rotation = (finish - start).angle()
+	var flight := spear.create_tween()
+	flight.tween_property(spear, "position", finish, clampf(start.distance_to(finish) / 850.0, 0.18, 0.5))
+	_track_tween(flight)
+	await flight.finished
+	if event.is_return:
+		spear.queue_free()
+	else:
+		spear.position = finish + Vector2(0, 8)
+		spear.rotation = -0.42
+		spear.set_meta("landing_hex", event.target_hex)
+		spear.set_meta("owner_id", event.user_id)
+		_landed_spears[event.user_id] = spear
+	return true

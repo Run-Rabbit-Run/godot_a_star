@@ -137,9 +137,10 @@ func _choose_ability_command(
 			if not target_hexes.is_empty():
 				return UseAbilityCommand.at_hex(active.unit_id, target_hexes[0], ability_id)
 			continue
-		if mode == AbilityDefinition.TargetMode.LINE:
+		if mode in [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]:
 			var ability := AbilityDefinition.new()
-			ability.target_mode = AbilityDefinition.TargetMode.LINE
+			ability.target_mode = mode as AbilityDefinition.TargetMode
+			ability.area_radius = radius
 			for center: Vector2i in target_hexes:
 				var cells := AbilityExecutor.get_affected_hexes(session.get_hex_grid(), active.hex, ability, center)
 				var hits := 0

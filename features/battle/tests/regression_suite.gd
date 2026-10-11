@@ -36,6 +36,10 @@ func expect(value: bool, message: String) -> void:
 		failures.append(message)
 
 func _run() -> void:
+	if only.is_empty() or only == "spear":
+		preload("res://features/battle/tests/spear_regressions.gd").new().run(self)
+		await preload("res://features/battle/tests/spear_regressions.gd").new().run_editor(self)
+		await preload("res://features/battle/tests/spear_regressions.gd").new().run_presentation(self)
 	if only.is_empty() or only == "obstacles":
 		_test_obstacles()
 	if only.is_empty() or only == "obstacle_ui":

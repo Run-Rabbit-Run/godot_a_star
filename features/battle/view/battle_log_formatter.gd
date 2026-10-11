@@ -20,6 +20,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 	if event is AbilityUsedEvent:
 		return "%s применяет «%s» к %s." % [_unit(event.user_id, units), _ability(event.ability_id, content), _unit(event.target_id, units)]
 	if event is AreaAbilityUsedEvent:
+		if event.is_return:
+			return "Копьё возвращается к %s из %s." % [_unit(event.user_id, units), _hex(event.origin_hex)]
 		return "%s применяет «%s» в %s." % [_unit(event.user_id, units), _ability(event.ability_id, content), _hex(event.target_hex)]
 	if event is UnitSummonedEvent:
 		return "%s призывает %s в %s." % [_unit(event.summoner_id, units), event.definition.display_name, _hex(event.unit.hex)]
@@ -54,6 +56,8 @@ static func _unit(id: StringName, units: Dictionary[StringName, UnitDefinition])
 
 
 static func _ability(id: StringName, content: ContentSnapshot) -> String:
+	if PassiveAbilityCatalog.DEFINITIONS.has(id):
+		return PassiveAbilityCatalog.DEFINITIONS[id].name
 	var definition := content.get_ability_definition(id) if content != null else null
 	return definition.display_name if definition != null else String(id)
 

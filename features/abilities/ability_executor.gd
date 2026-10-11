@@ -9,6 +9,9 @@ static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id
 	var ability := user.get_ability(ability_id)
 	if ability == null or user.ability_cooldowns.get(ability_id, 0) > 0:
 		return targets
+	if ability.target_mode == AbilityDefinition.TargetMode.SELF:
+		targets.append(user.hex)
+		return targets
 	if not ability.targets_hex():
 		for target: UnitState in state.unit_states.values():
 			if not target.health.is_defeated() and target.faction != user.faction and HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user):
@@ -33,6 +36,13 @@ static func get_line_direction(origin: Vector2i, target: Vector2i) -> Vector2i:
 	return Vector2i.ZERO
 
 static func get_affected_hexes(grid: HexGrid, origin: Vector2i, ability: AbilityDefinition, center: Vector2i) -> Array[Vector2i]:
+	if ability.target_mode == AbilityDefinition.TargetMode.PATH:
+		return get_path_hexes(grid, origin, center)
+	if ability.target_mode == AbilityDefinition.TargetMode.SELF:
+		var neighbors := grid.get_cells_in_range(origin, ability.area_radius)
+		neighbors.erase(origin)
+		neighbors.sort()
+		return neighbors
 	if ability.target_mode != AbilityDefinition.TargetMode.LINE:
 		var area := grid.get_cells_in_range(center, ability.area_radius)
 		area.sort()
@@ -97,7 +107,7 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	context.target_hex = center
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
-		if handler is DamageEffectHandler:
+		if handler is DamageEffectHandler and effect.parameters.get("affects_obstacles", true):
 			var hit: Dictionary[StringName, bool] = {}
 			var ordered_cells := cells.duplicate()
 			ordered_cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(center, a) < HexGrid.get_distance(center, b))
@@ -106,7 +116,7 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 				if obstacle == null or hit.has(obstacle.id):
 					continue
 				hit[obstacle.id] = true
-				var amount := int(effect.parameters["amount"] if hex == center else effect.parameters.get("secondary_amount", effect.parameters["amount"]))
+				var amount := user.basic_attack_damage if effect.parameters.get("use_base_attack", false) else int(effect.parameters["amount"] if hex == center else effect.parameters.get("secondary_amount", effect.parameters["amount"]))
 				ObstacleService.damage(state, hex, amount, events)
 		if handler.affects_hexes():
 			var effect_cells: Array[Vector2i] = []
@@ -118,6 +128,11 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 		else:
 			for target_id: StringName in target_ids:
 				events.append_array(handler.execute(effect, context, user.unit_id, target_id))
+	if ability.returns_next_turn:
+		user.pending_spear_return = {"hex": center, "ability_id": ability.id}
+	if ability.melee_attack:
+		for target_id: StringName in target_ids:
+			RetaliationService.respond(state, user, state.unit_states[target_id], events)
 	return AbilityExecutionResult.success(events)
 
 static func _occupied(state: BattleState, hex: Vector2i) -> bool:
@@ -125,3 +140,25 @@ static func _occupied(state: BattleState, hex: Vector2i) -> bool:
 		if unit.hex == hex and not unit.health.is_defeated():
 			return true
 	return false
+
+## Cube interpolation supports every axial target, including targets off the six axes.
+## The source is excluded; holes are crossed, but have no occupant to hit.
+static func get_path_hexes(grid: HexGrid, origin: Vector2i, target: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	var distance := HexGrid.get_distance(origin, target)
+	for step in range(1, distance + 1):
+		var t := float(step) / distance
+		var x := lerpf(origin.x, target.x, t) + 0.000001
+		var z := lerpf(origin.y, target.y, t) + 0.000001
+		var y := -x - z
+		var rx := roundi(x)
+		var ry := roundi(y)
+		var rz := roundi(z)
+		if absf(rx - x) > absf(ry - y) and absf(rx - x) > absf(rz - z):
+			rx = -ry - rz
+		elif absf(ry - y) <= absf(rz - z):
+			rz = -rx - ry
+		var hex := Vector2i(rx, rz)
+		if grid.has_cell(hex) and not cells.has(hex):
+			cells.append(hex)
+	return cells

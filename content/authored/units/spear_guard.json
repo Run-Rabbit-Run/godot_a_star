@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "custom_units:spear_guard",
+  "name": "Копейщик возвратного контура",
+  "image": "gt_spear_guard.png",
+  "hp": 18,
+  "damage": 4,
+  "attack_type": "melee",
+  "attack_range": 1,
+  "movement": 4,
+  "armor": 1,
+  "abilities": [
+    "core:spear_throw",
+    "core:spear_sweep",
+    "core:spear_pin"
+  ],
+  "passives": [
+    "core:melee_retaliation"
+  ]
+}

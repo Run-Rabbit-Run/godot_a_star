@@ -20,17 +20,6 @@
         "side_id": "player"
       },
       {
-        "ai_profile_override_id": "",
-        "character_binding": "",
-        "definition_id": "custom_units:u_b0a4db80239e66ff744aa1c1606c9a87",
-        "facing": 0,
-        "modifiers": {},
-        "placement_id": "author:placement_2",
-        "q": 3,
-        "r": 3,
-        "side_id": "player"
-      },
-      {
         "ai_profile_override_id": "core:basic_enemy_ai",
         "character_binding": "",
         "definition_id": "custom_units:u_7764a17875745a2ec2f6fa1e405b2771",
@@ -51,6 +40,17 @@
         "q": 9,
         "r": 7,
         "side_id": "enemy"
+      },
+      {
+        "ai_profile_override_id": "",
+        "character_binding": "",
+        "definition_id": "custom_units:u_cbefe957557035fabff6101d4e9e4e5b",
+        "facing": 0,
+        "modifiers": {},
+        "placement_id": "author:placement_2",
+        "q": 4,
+        "r": 9,
+        "side_id": "player"
       }
     ],
     "protected_faction": 0,
@@ -1293,6 +1293,32 @@
       }
     ],
     "id": "plateau:map",
+    "obstacles": [
+      {
+        "destructible": false,
+        "hexes": [
+          [
+            6,
+            6
+          ]
+        ],
+        "id": "obstacle:25121847",
+        "max_hp": 10,
+        "terrain_type": "hill"
+      },
+      {
+        "destructible": true,
+        "hexes": [
+          [
+            6,
+            5
+          ]
+        ],
+        "id": "obstacle:44941599",
+        "max_hp": 2,
+        "terrain_type": "hill"
+      }
+    ],
     "presentation_frame": [
       18,
       12

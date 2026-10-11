@@ -15,8 +15,8 @@ var _name: LineEdit
 var _assets: OptionButton
 var _attack: OptionButton
 var _numbers: Dictionary[String, SpinBox] = {}
-var _ability_checks: Dictionary[String, CheckBox] = {}
-var _passive_checks: Dictionary[String, CheckBox] = {}
+var _active_menu: MenuButton
+var _passive_menu: MenuButton
 var _corpse_status: Label
 var _preview: TextureRect
 var _status: Label
@@ -121,18 +121,11 @@ func _build_ui() -> void:
 	_field(form, "Тип атаки", _attack)
 	_number(form, "Дальность дальней атаки (2–20 гексов)", "attack_range", 2, 20)
 	_number(form, "Дальность передвижения (очки)", "movement", 0, 100)
-	for id: String in UnitLibrary.ACTIVE_ABILITIES:
-		var check := CheckBox.new()
-		check.text = UnitLibrary.ACTIVE_ABILITIES[id]
-		check.toggled.connect(func(enabled: bool) -> void: _toggle("abilities", id, enabled))
-		_ability_checks[id] = check
-		form.add_child(check)
+	_active_menu = _ability_menu(form, "Активные умения", "abilities", UnitLibrary.ACTIVE_ABILITIES)
+	var passives: Dictionary = {}
 	for id: StringName in PassiveAbilityCatalog.DEFINITIONS:
-		var check := CheckBox.new()
-		check.text = PassiveAbilityCatalog.DEFINITIONS[id].name
-		check.toggled.connect(func(enabled: bool) -> void: _toggle("passives", String(id), enabled))
-		_passive_checks[String(id)] = check
-		form.add_child(check)
+		passives[String(id)] = PassiveAbilityCatalog.DEFINITIONS[id].name
+	_passive_menu = _ability_menu(form, "Пассивные умения", "passives", passives)
 	_effective_damage = Label.new()
 	form.add_child(_effective_damage)
 	var preview_column := VBoxContainer.new()
@@ -220,10 +213,6 @@ func _render() -> void:
 			_assets.select(index)
 	for key: String in _numbers:
 		_numbers[key].value = _document.get(key, 0)
-	for id: String in _ability_checks:
-		_ability_checks[id].button_pressed = id in _document.abilities
-	for id: String in _passive_checks:
-		_passive_checks[id].button_pressed = id in _document.passives
 	_sync = false
 	_update_preview()
 
@@ -235,6 +224,8 @@ func _update_preview() -> void:
 		_preview_asset = _document.image
 		_preview.texture = UnitLibrary.texture_for(_document.image)
 		_corpse_status.text = ("Погибший ассет: " + String(_document.image).get_basename() + ".png") if UnitLibrary.corpse_for(_document.image) != null else "Погибший ассет не добавлен: используется базовое изображение тела."
+	_sync_ability_menu(_active_menu, "abilities")
+	_sync_ability_menu(_passive_menu, "passives")
 	var ids: Array[StringName] = []
 	ids.assign(_document.passives)
 	var bonus := PassiveAbilityCatalog.attack_bonus(ids)
@@ -335,3 +326,30 @@ func _leave() -> void:
 		queue_free()
 	else:
 		get_tree().quit()
+
+## Checkable dropdowns preserve multiple abilities and the document's undo/redo.
+func _ability_menu(parent: Control, title: String, key: String, catalog: Dictionary) -> MenuButton:
+	var menu := MenuButton.new()
+	menu.flat = false
+	menu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var popup := menu.get_popup()
+	popup.hide_on_checkable_item_selection = false
+	for id: Variant in catalog:
+		popup.add_check_item(String(catalog[id]))
+		popup.set_item_metadata(popup.item_count - 1, String(id))
+	popup.index_pressed.connect(func(index: int) -> void:
+		_toggle(key, popup.get_item_metadata(index), not popup.is_item_checked(index))
+	)
+	_field(parent, title, menu)
+	return menu
+
+func _sync_ability_menu(menu: MenuButton, key: String) -> void:
+	var popup := menu.get_popup()
+	var names: PackedStringArray = []
+	for index in range(popup.item_count):
+		var selected: bool = popup.get_item_metadata(index) in _document[key]
+		popup.set_item_checked(index, selected)
+		if selected:
+			names.append(popup.get_item_text(index))
+	menu.text = "Выбрано: %d ▾" % names.size() if not names.is_empty() else "Выбрать умения ▾"
+	menu.tooltip_text = "\n".join(names)

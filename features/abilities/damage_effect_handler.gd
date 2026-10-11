@@ -6,6 +6,10 @@ func validate(effect: AbilityEffectDefinition) -> String:
 	if effect == null:
 		return "Damage effect must not be null."
 
+	if not effect.parameters.get("affects_obstacles", true) is bool:
+		return "Damage affects_obstacles must be boolean."
+	if not effect.parameters.get("use_base_attack", false) is bool:
+		return "Damage use_base_attack must be boolean."
 	var amount: Variant = effect.parameters.get("amount")
 
 	if not (amount is int) or amount <= 0:
@@ -29,6 +33,6 @@ func execute(
 	return context.apply_damage_events(
 		source_unit_id,
 		target_unit_id,
-		int(effect.parameters["amount"] if context.get_unit_hex(target_unit_id) == context.target_hex else effect.parameters.get("secondary_amount", effect.parameters["amount"])),
+		context.get_base_attack_damage(source_unit_id) if effect.parameters.get("use_base_attack", false) else int(effect.parameters["amount"] if context.get_unit_hex(target_unit_id) == context.target_hex else effect.parameters.get("secondary_amount", effect.parameters["amount"])),
 		StringName(effect.parameters.get("damage_type", "physical"))
 	)

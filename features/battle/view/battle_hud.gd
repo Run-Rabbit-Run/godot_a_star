@@ -239,6 +239,12 @@ func show_combat_stats(damage: int, attack_range: int) -> void:
 
 
 func show_ability_targeting(display_name: String, area_radius: int, mode: int = AbilityDefinition.TargetMode.AUTO) -> void:
+	if mode == AbilityDefinition.TargetMode.PATH:
+		_action_label.text = "ВЫБЕРИТЕ ГЕКС БРОСКА: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.SELF:
+		_action_label.text = "НАЖМИТЕ НА ГЕКС СВОЕГО ЮНИТА: %s" % display_name.to_upper()
+		return
 	if mode == AbilityDefinition.TargetMode.LINE:
 		_action_label.text = "ВЫБЕРИТЕ НАПРАВЛЕНИЕ ЛУЧА: %s" % display_name.to_upper()
 		return

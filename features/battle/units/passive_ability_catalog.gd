@@ -2,6 +2,7 @@ class_name PassiveAbilityCatalog
 extends RefCounted
 
 const DEFINITIONS := {
+	&"core:melee_retaliation": {"name": "Ответный удар в ближнем бою"},
 	&"core:attack_training": {"name": "Боевая подготовка (+3 к атаке)", "attack_bonus": 3},
 	&"core:immune_burning": {"name": "Невосприимчивость к горению", "immunity": &"core:burning"},
 	&"core:immune_electrified": {"name": "Невосприимчивость к наэлектризованности", "immunity": &"core:electrified"},

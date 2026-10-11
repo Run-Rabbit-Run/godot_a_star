@@ -1,0 +1,20 @@
+{
+	"abilities": [
+		"core:spear_throw",
+		"core:spear_sweep",
+		"core:spear_pin"
+	],
+	"armor": 1,
+	"attack_range": 3,
+	"attack_type": "melee",
+	"damage": 4,
+	"hp": 10,
+	"id": "custom_units:u_cbefe957557035fabff6101d4e9e4e5b",
+	"image": "gt_spear_guard.png",
+	"movement": 5,
+	"name": "Копьеносец",
+	"passives": [
+		"core:melee_retaliation"
+	],
+	"schema_version": 1
+}

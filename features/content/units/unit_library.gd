@@ -5,7 +5,7 @@ const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
 const VISUAL_PROFILES := "res://content/authored/unit_visual_profiles.json"
-const ACTIVE_ABILITIES := {"core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту", "core:electromagnetic_shot": "Электромагнитный выстрел", "core:emp_grenade": "ЭМИ граната", "core:laser": "Лазер", "core:electric_turret": "Электро турель"}
+const ACTIVE_ABILITIES := {"core:spear_throw": "Бросок копья", "core:spear_sweep": "Взмах копьём", "core:spear_pin": "Пригвоздить", "core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту", "core:electromagnetic_shot": "Электромагнитный выстрел", "core:emp_grenade": "ЭМИ граната", "core:laser": "Лазер", "core:electric_turret": "Электро турель"}
 
 
 static var _visual_profiles: Dictionary = {}

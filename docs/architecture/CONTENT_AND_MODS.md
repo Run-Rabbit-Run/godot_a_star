@@ -182,3 +182,10 @@ Snapshot копирует входящие определения и возвр�
 Площадной обработчик может переопределить `execute_hexes(effect, context, source, hexes)`, чтобы разрешить всю область одним пакетом; по умолчанию он вызывает `execute_hex()` для каждой клетки. `core:hex_state` использует `BattleEffectContext.apply_hex_states()`: все клетки меняются до распространения реакций, порядок клеток не влияет на результат.
 
 Кампания проверяется как замкнутый граф: вход и цели переходов входят в `scenario_ids`, сценарий указан в списке один раз, на каждый исход не больше одного перехода. Непустые зарезервированные поля расстановки (`facing`, `modifiers`, `character_binding`) дают предупреждение: бой их пока игнорирует.
+
+
+## Общие умения копья — 2026-10-11
+
+Core package регистрирует `core:spear_throw`, `core:spear_sweep`, `core:spear_pin` и физическое presentation `core:spear_presentation`; пассивный каталог — `core:melee_retaliation`. Авторский `custom_units:spear_guard` находится в `content/authored/units/spear_guard.json` и выбирается обычной палитрой редактора. Изображение/профиль — project-owned `gt_spear_guard.png` и unit_visual_profiles.json. Схема JSON юнита сохраняется.
+
+AbilityDefinition расширен добавленными в конец `TargetMode.PATH/SELF`, флагами `returns_next_turn/melee_attack`; возврат допускается только для PATH, radius 0 и damage effects. DamageEffectHandler принимает boolean `use_base_attack` (по умолчанию false) и `affects_obstacles` (по умолчанию true). У копья препятствия не повреждаются. Новые поля имеют совместимые значения по умолчанию.
