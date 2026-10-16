@@ -3,7 +3,7 @@ extends Node2D
 
 
 const BATTLE_BACKDROP := preload(
-	"res://features/battle/art/plateau.png"
+	"res://features/battle/art/classic/plateau.png"
 )
 const CURSOR_DEFAULT := preload(
 	"res://features/battle/ui/icons/cursor_default.svg"
@@ -68,6 +68,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_apply_visual_profile()
 	_input_router.hex_hovered.connect(_show_hover)
 	_input_router.hex_hover_exited.connect(_clear_hover)
@@ -375,7 +376,7 @@ func show_selected_hex(axial_cell: Vector2i) -> void:
 		_selection_visuals,
 		axial_cell,
 		Color(0.92, 0.90, 0.75, 0.10),
-		Color(0.94, 0.92, 0.78, 0.88),
+		Color(1.0, 0.81, 0.39, 0.96),
 		1.7
 	)
 
@@ -388,8 +389,8 @@ func show_reachable_cells(cells: Array[Vector2i]) -> void:
 		_add_hex_visual(
 			_reachable_visuals,
 			cell,
-			Color(0.51, 0.75, 0.75, 0.20),
-			Color(0.67, 0.86, 0.86, 0.70),
+			Color(0.32, 0.59, 0.72, 0.11),
+			Color(0.55, 0.77, 0.83, 0.46),
 			1.05
 		)
 

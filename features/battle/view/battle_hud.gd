@@ -16,10 +16,10 @@ var layout_presenter: UILayoutPresenter
 
 
 const HUD_LAYOUT := preload("res://features/battle/ui/battle_hud_layout.tscn")
-const COLOR_PANEL := Color(0.055, 0.060, 0.056, 0.88)
-const COLOR_PANEL_INNER := Color(0.088, 0.094, 0.086, 0.94)
-const COLOR_IVORY := Color(0.820, 0.800, 0.705, 1.0)
-const COLOR_BRONZE := Color(0.330, 0.335, 0.290, 1.0)
+const COLOR_PANEL := Color("241717")
+const COLOR_PANEL_INNER := Color("30201a")
+const COLOR_IVORY := Color("eadbb9")
+const COLOR_BRONZE := Color("d0ab61")
 const COLOR_ENEMY := Color(0.565, 0.215, 0.185, 1.0)
 const COLOR_SIGNAL := Color(0.635, 0.225, 0.175, 1.0)
 const COLOR_MUTED := Color(0.515, 0.510, 0.455, 1.0)
@@ -113,7 +113,9 @@ func _fit_hud_to_viewport() -> void:
 		hud_root.size = Vector2(1920, 1080)
 		hud_root.scale = viewport_size / hud_root.size
 	else:
-		hud_root.size = viewport_size
+		var ui_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+		hud_root.size = viewport_size / maxf(ui_scale, 0.01)
+		hud_root.scale = Vector2.ONE * ui_scale
 
 
 func _ready() -> void:
@@ -143,7 +145,7 @@ func _ready() -> void:
 	_battle_log_panel.hide()
 	_battle_log_button.set_pressed_no_signal(false)
 	_battle_log_button.toggled.connect(_battle_log_panel.set_visible)
-	_battle_log_panel.add_theme_stylebox_override("panel", _make_panel_style(COLOR_PANEL, COLOR_BRONZE, 1, 8))
+	_battle_log_panel.add_theme_stylebox_override("panel", BattleVisualTheme.panel())
 	_battle_log_entries.add_theme_color_override("default_color", COLOR_IVORY)
 
 
@@ -475,6 +477,8 @@ func _rebuild_ability_buttons(abilities: Array[AbilityDefinition]) -> void:
 		var button := _ability_button_template.duplicate() as Button
 		button.name = get_ability_button_name(ability.id)
 		button.text = ability.display_name
+		if button.icon == null:
+			button.icon = BattleActionIcons.ability(ability.id)
 		# The authored template supplies appearance/size; generated actions stay in the row.
 		if layout_presenter != null:
 			var template_id := String(layout_presenter.root.get_path_to(_ability_button_template))
@@ -494,7 +498,7 @@ func _rebuild_ability_buttons(abilities: Array[AbilityDefinition]) -> void:
 
 func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(32.0, 44.0)
+	card.custom_minimum_size = Vector2(44.0, 56.0)
 	var faction: int = entry.get("faction", BattleFaction.Value.PLAYER)
 	var border_color := COLOR_IVORY if faction == BattleFaction.Value.PLAYER else COLOR_ENEMY
 	card.add_theme_stylebox_override(
@@ -511,7 +515,7 @@ func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelC
 	stack.add_theme_constant_override("separation", 1)
 	card.add_child(stack)
 	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(27.0, 27.0)
+	portrait.custom_minimum_size = Vector2(37.0, 37.0)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.texture = entry.get("texture") as Texture2D
@@ -533,63 +537,11 @@ func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelC
 
 
 func _apply_styles() -> void:
-	_target_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL, COLOR_ENEMY, 1, 1)
-	)
-	_speed_panel.add_theme_stylebox_override(
-		"panel",
-		_make_panel_style(COLOR_PANEL_INNER, COLOR_IVORY, 1, 1)
-	)
-
-	for button: Button in [
-		_movement_button,
-		_basic_attack_button,
-		_ability_button_template,
-		_settings_button,
-		_battle_log_button,
-		_end_turn_button,
-		_speed_half_button,
-		_speed_1_button,
-		_speed_2_button,
-		_speed_4_button,
-		_resolution_option,
-		_fullscreen_check,
-		_health_alt_check,
-	]:
-		button.add_theme_color_override("font_color", COLOR_IVORY)
-		button.add_theme_color_override("font_hover_color", Color(0.90, 0.86, 0.75))
-		button.add_theme_stylebox_override(
-			"normal",
-			_make_panel_style(COLOR_PANEL_INNER, COLOR_BRONZE, 1, 4)
-		)
-		button.add_theme_stylebox_override(
-			"hover",
-			_make_panel_style(Color(0.25, 0.22, 0.18, 1.0), COLOR_SIGNAL, 1, 3)
-		)
-		button.add_theme_stylebox_override(
-			"pressed",
-			_make_panel_style(Color(0.31, 0.20, 0.17, 1.0), COLOR_SIGNAL, 2, 3)
-		)
-
-	for panel: PanelContainer in [_strategist_panel, _active_unit_panel, _turn_queue_panel, _action_panel, _system_panel]:
-		panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	for button: Button in [_movement_button, _basic_attack_button, _ability_button_template, _end_turn_button]:
-		button.icon = null
-		button.add_theme_font_size_override("font_size", 16)
-		for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-			var line_style := StyleBoxFlat.new()
-			line_style.bg_color = Color(0.07, 0.09, 0.086, 0.0 if state_name == "normal" else 0.30)
-			line_style.border_color = Color("d4c28c") if button == _end_turn_button else Color("829281")
-			if state_name == "disabled":
-				line_style.border_color.a = 0.25
-			line_style.border_width_bottom = 2 if state_name == "focus" else 1
-			line_style.content_margin_bottom = 10
-			button.add_theme_stylebox_override(state_name, line_style)
-		button.add_theme_color_override("font_disabled_color", Color(0.72, 0.75, 0.68, 0.4))
-	_end_turn_button.add_theme_color_override("font_color", Color("e4d09d"))
-	_settings_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	_settings_button.add_theme_color_override("icon_normal_color", Color("f2ead6"))
+	BattleVisualTheme.apply_to($HUDRoot)
+	_movement_button.icon = BattleActionIcons.ICONS.move
+	_basic_attack_button.icon = BattleActionIcons.ICONS.attack
+	_end_turn_button.icon = BattleActionIcons.ICONS.defend
+	_end_turn_button.add_theme_color_override("font_color", Color("f5d995"))
 
 
 func _apply_health_badge(label: Label, current: int, maximum: int) -> void:

@@ -10,11 +10,11 @@ const SOURCES: Dictionary = {
 	&"rocks": preload("res://features/battle/art/obstacles/rocks-v1.png"),
 }
 const REGIONS: Dictionary = {
-	&"hill": Rect2(29, 172, 1488, 722),
-	&"river": Rect2(46, 161, 1684, 603),
-	&"puddle": Rect2(39, 37, 1459, 938),
-	&"trees": Rect2(111, 35, 1301, 931),
-	&"rocks": Rect2(51, 148, 1432, 762),
+	&"hill": Rect2(0.0, 76.0, 1522.0, 871.0),
+	&"river": Rect2(0.0, 112.0, 1758.0, 663.0),
+	&"puddle": Rect2(0.0, 7.0, 1528.0, 1009.0),
+	&"trees": Rect2(5.0, 15.0, 1512.0, 1009.0),
+	&"rocks": Rect2(23.0, 102.0, 1493.0, 828.0),
 }
 const WIDTHS: Dictionary = {&"hill": 94.0, &"river": 112.0, &"puddle": 90.0, &"trees": 96.0, &"rocks": 88.0}
 const ANCHORS: Dictionary = {&"hill": 0.65, &"river": 0.5, &"puddle": 0.5, &"trees": 0.85, &"rocks": 0.75}

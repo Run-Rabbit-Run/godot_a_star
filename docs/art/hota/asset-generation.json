@@ -1,0 +1,1174 @@
+{
+  "tool": "built-in image_gen",
+  "count": 61,
+  "assets": {
+    "corpse-0": {
+      "bounds": [
+        0.0,
+        242.0,
+        1498.0,
+        480.0
+      ],
+      "foot_anchor": [
+        0.521158854166667,
+        0.705078125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/0.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-1": {
+      "bounds": [
+        0.0,
+        281.0,
+        1522.0,
+        454.0
+      ],
+      "foot_anchor": [
+        0.638671875,
+        0.7177734375
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/1.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-2": {
+      "bounds": [
+        0.0,
+        146.0,
+        1485.0,
+        705.0
+      ],
+      "foot_anchor": [
+        0.481119791666667,
+        0.8310546875
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/2.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-3": {
+      "bounds": [
+        65.0,
+        239.0,
+        1451.0,
+        547.0
+      ],
+      "foot_anchor": [
+        0.567057291666667,
+        0.767578125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/3.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-4": {
+      "bounds": [
+        0.0,
+        112.0,
+        1520.0,
+        780.0
+      ],
+      "foot_anchor": [
+        0.485026041666667,
+        0.87109375
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/4.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-5": {
+      "bounds": [
+        79.0,
+        180.0,
+        1417.0,
+        671.0
+      ],
+      "foot_anchor": [
+        0.638346354166667,
+        0.8310546875
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/5.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-6": {
+      "bounds": [
+        43,
+        183,
+        1469,
+        678
+      ],
+      "foot_anchor": [
+        0.871744791666667,
+        0.8408203125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/6.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-7": {
+      "bounds": [
+        0,
+        81,
+        1477,
+        856
+      ],
+      "foot_anchor": [
+        0.731770833333333,
+        0.9150390625
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/7.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_alien_rifleman": {
+      "bounds": [
+        34,
+        294,
+        1457,
+        431
+      ],
+      "foot_anchor": [
+        0.4931640625,
+        0.7080078125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_alien_rifleman.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_engineer": {
+      "bounds": [
+        0.0,
+        137.0,
+        1522.0,
+        698.0
+      ],
+      "foot_anchor": [
+        0.606119791666667,
+        0.8154296875
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_engineer.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-gt_gun_walker": {
+      "bounds": [
+        0.0,
+        163.0,
+        1522.0,
+        718.0
+      ],
+      "foot_anchor": [
+        0.497721354166667,
+        0.8603515625
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_gun_walker.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-gt_heavy_gunner": {
+      "bounds": [
+        34,
+        134,
+        1489,
+        716
+      ],
+      "foot_anchor": [
+        0.565104166666667,
+        0.830078125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_heavy_gunner.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_large_mantis": {
+      "bounds": [
+        0.0,
+        101.0,
+        1536.0,
+        808.0
+      ],
+      "foot_anchor": [
+        0.419270833333333,
+        0.8876953125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_large_mantis.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-gt_medic": {
+      "bounds": [
+        0,
+        159,
+        1526,
+        673
+      ],
+      "foot_anchor": [
+        0.513020833333333,
+        0.8125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_medic.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_mystic": {
+      "bounds": [
+        0,
+        216,
+        1522,
+        589
+      ],
+      "foot_anchor": [
+        0.587565104166667,
+        0.7861328125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_mystic.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_officer": {
+      "bounds": [
+        25,
+        182,
+        1621,
+        598
+      ],
+      "foot_anchor": [
+        0.553528708133971,
+        0.828905419766206
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_officer.png",
+      "size": [
+        1672,
+        941
+      ]
+    },
+    "corpse-gt_shield_guard": {
+      "bounds": [
+        33,
+        221,
+        1487,
+        557
+      ],
+      "foot_anchor": [
+        0.537434895833333,
+        0.759765625
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_shield_guard.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_small_stalker": {
+      "bounds": [
+        0,
+        210,
+        1520,
+        634
+      ],
+      "foot_anchor": [
+        0.470052083333333,
+        0.82421875
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_small_stalker.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-gt_sniper": {
+      "bounds": [
+        0,
+        205,
+        1565,
+        551
+      ],
+      "foot_anchor": [
+        0.90271772699197,
+        0.778578784757981
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_sniper.png",
+      "size": [
+        1619,
+        971
+      ]
+    },
+    "corpse-gt_spear_guard": {
+      "bounds": [
+        50.0,
+        226.0,
+        1436.0,
+        572.0
+      ],
+      "foot_anchor": [
+        0.810546875,
+        0.779296875
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_spear_guard.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "corpse-gt_spore_walker": {
+      "bounds": [
+        0,
+        161,
+        1525,
+        721
+      ],
+      "foot_anchor": [
+        0.389973958333333,
+        0.861328125
+      ],
+      "kind": "corpse",
+      "path": "res://content/authored/assets/corpses/gt_spore_walker.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "corpse-turret": {
+      "bounds": [
+        50,
+        136,
+        1436,
+        751
+      ],
+      "foot_anchor": [
+        0.489908854166667,
+        0.8662109375
+      ],
+      "kind": "corpse",
+      "path": "res://content/packages/core/electric_turret_dead.png",
+      "size": [
+        1536,
+        1024
+      ]
+    },
+    "obstacle-hill": {
+      "bounds": [
+        0.0,
+        76.0,
+        1522.0,
+        871.0
+      ],
+      "foot_anchor": [
+        0.509440104166667,
+        0.9248046875
+      ],
+      "kind": "obstacle",
+      "path": "res://features/battle/art/obstacles/hill-v1.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "obstacle-puddle": {
+      "bounds": [
+        0.0,
+        7.0,
+        1528.0,
+        1009.0
+      ],
+      "foot_anchor": [
+        0.598958333333333,
+        0.9921875
+      ],
+      "kind": "obstacle",
+      "path": "res://features/battle/art/obstacles/puddle-v1.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "obstacle-river": {
+      "bounds": [
+        0.0,
+        112.0,
+        1758.0,
+        663.0
+      ],
+      "foot_anchor": [
+        0.75,
+        0.873731679819617
+      ],
+      "kind": "obstacle",
+      "path": "res://features/battle/art/obstacles/river-v1.png",
+      "size": [
+        1774.0,
+        887.0
+      ]
+    },
+    "obstacle-rocks": {
+      "bounds": [
+        23.0,
+        102.0,
+        1493.0,
+        828.0
+      ],
+      "foot_anchor": [
+        0.516276041666667,
+        0.908203125
+      ],
+      "kind": "obstacle",
+      "path": "res://features/battle/art/obstacles/rocks-v1.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "obstacle-trees": {
+      "bounds": [
+        5.0,
+        15.0,
+        1512.0,
+        1009.0
+      ],
+      "foot_anchor": [
+        0.560221354166667,
+        1.0
+      ],
+      "kind": "obstacle",
+      "path": "res://features/battle/art/obstacles/trees-v1.png",
+      "size": [
+        1536.0,
+        1024.0
+      ]
+    },
+    "state-01-electricity": {
+      "bounds": [
+        0.0,
+        37.0,
+        362.0,
+        276.0
+      ],
+      "foot_anchor": [
+        0.408839779005525,
+        0.894285714285714
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/01-electricity.png",
+      "size": [
+        362.0,
+        350.0
+      ]
+    },
+    "state-02-water": {
+      "bounds": [
+        0.0,
+        90.0,
+        362.0,
+        203.0
+      ],
+      "foot_anchor": [
+        0.524861878453039,
+        0.837142857142857
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/02-water.png",
+      "size": [
+        362.0,
+        350.0
+      ]
+    },
+    "state-03-fire": {
+      "bounds": [
+        0.0,
+        66.0,
+        354.0,
+        239.0
+      ],
+      "foot_anchor": [
+        0.527624309392265,
+        0.871428571428571
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/03-fire.png",
+      "size": [
+        362.0,
+        350.0
+      ]
+    },
+    "state-04-oil": {
+      "bounds": [
+        98.0,
+        142.0,
+        1397.0,
+        704.0
+      ],
+      "foot_anchor": [
+        0.497445721583653,
+        0.842629482071713
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/04-oil.png",
+      "size": [
+        1566.0,
+        1004.0
+      ]
+    },
+    "state-05-acid": {
+      "bounds": [
+        0.0,
+        54.0,
+        362.0,
+        222.0
+      ],
+      "foot_anchor": [
+        0.498618784530387,
+        0.867924528301887
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/05-acid.png",
+      "size": [
+        362.0,
+        318.0
+      ]
+    },
+    "state-06-electrified-water": {
+      "bounds": [
+        0.0,
+        42.0,
+        362.0,
+        232.0
+      ],
+      "foot_anchor": [
+        0.498618784530387,
+        0.861635220125786
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/06-electrified-water.png",
+      "size": [
+        362.0,
+        318.0
+      ]
+    },
+    "state-07-plasma": {
+      "bounds": [
+        0.0,
+        18.0,
+        362.0,
+        275.0
+      ],
+      "foot_anchor": [
+        0.519337016574586,
+        0.921383647798742
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/07-plasma.png",
+      "size": [
+        362.0,
+        318.0
+      ]
+    },
+    "state-08-electrified-acid": {
+      "bounds": [
+        0.0,
+        36.0,
+        348.0,
+        245.0
+      ],
+      "foot_anchor": [
+        0.569060773480663,
+        0.883647798742138
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/08-electrified-acid.png",
+      "size": [
+        362.0,
+        318.0
+      ]
+    },
+    "state-09-steam": {
+      "bounds": [
+        0.0,
+        24.0,
+        362.0,
+        321.0
+      ],
+      "foot_anchor": [
+        0.477900552486188,
+        0.825358851674641
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/09-steam.png",
+      "size": [
+        362.0,
+        418.0
+      ]
+    },
+    "state-10-boiling-acid": {
+      "bounds": [
+        1.0,
+        69.0,
+        361.0,
+        285.0
+      ],
+      "foot_anchor": [
+        0.671270718232044,
+        0.84688995215311
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/10-boiling-acid.png",
+      "size": [
+        362.0,
+        418.0
+      ]
+    },
+    "state-11-burning-oil": {
+      "bounds": [
+        0.0,
+        59.0,
+        362.0,
+        308.0
+      ],
+      "foot_anchor": [
+        0.62707182320442,
+        0.87799043062201
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/11-burning-oil.png",
+      "size": [
+        362.0,
+        418.0
+      ]
+    },
+    "state-12-acid-vapour": {
+      "bounds": [
+        0.0,
+        42.0,
+        347.0,
+        317.0
+      ],
+      "foot_anchor": [
+        0.524861878453039,
+        0.858851674641148
+      ],
+      "kind": "state",
+      "path": "res://features/battle/art/hex_states/12-acid-vapour.png",
+      "size": [
+        362.0,
+        418.0
+      ]
+    },
+    "turret": {
+      "bounds": [
+        15.0,
+        22.0,
+        354.0,
+        339.0
+      ],
+      "foot_anchor": [
+        0.454427083333333,
+        0.940104166666667
+      ],
+      "kind": "turret",
+      "path": "res://content/packages/core/electric_turret.png",
+      "size": [
+        384.0,
+        384.0
+      ]
+    },
+    "unit-0": {
+      "bounds": [
+        14.0,
+        32.0,
+        342.0,
+        401.0
+      ],
+      "foot_anchor": [
+        0.391666666666667,
+        0.977426636568849
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/0.png",
+      "size": [
+        360.0,
+        443.0
+      ]
+    },
+    "unit-1": {
+      "bounds": [
+        5.0,
+        30.0,
+        367.0,
+        385.0
+      ],
+      "foot_anchor": [
+        0.39238845144357,
+        0.954022988505747
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/1.png",
+      "size": [
+        381.0,
+        435.0
+      ]
+    },
+    "unit-2": {
+      "bounds": [
+        3.0,
+        17.0,
+        364.0,
+        400.0
+      ],
+      "foot_anchor": [
+        0.359210526315789,
+        0.963048498845266
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/2.png",
+      "size": [
+        380.0,
+        433.0
+      ]
+    },
+    "unit-3": {
+      "bounds": [
+        5.0,
+        12.0,
+        301.0,
+        441.0
+      ],
+      "foot_anchor": [
+        0.432475884244373,
+        0.978401727861771
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/3.png",
+      "size": [
+        311.0,
+        463.0
+      ]
+    },
+    "unit-4": {
+      "bounds": [
+        15.0,
+        23.0,
+        403.0,
+        334.0
+      ],
+      "foot_anchor": [
+        0.517647058823529,
+        0.978082191780822
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/4.png",
+      "size": [
+        425.0,
+        365.0
+      ]
+    },
+    "unit-5": {
+      "bounds": [
+        13.0,
+        20.0,
+        299.0,
+        452.0
+      ],
+      "foot_anchor": [
+        0.537151702786378,
+        0.989517819706499
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/5.png",
+      "size": [
+        323.0,
+        477.0
+      ]
+    },
+    "unit-6": {
+      "bounds": [
+        17.0,
+        22.0,
+        250.0,
+        446.0
+      ],
+      "foot_anchor": [
+        0.516891891891892,
+        0.981132075471698
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/6.png",
+      "size": [
+        296.0,
+        477.0
+      ]
+    },
+    "unit-7": {
+      "bounds": [
+        9.0,
+        13.0,
+        331.0,
+        444.0
+      ],
+      "foot_anchor": [
+        0.569405099150142,
+        0.948132780082988
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/7.png",
+      "size": [
+        353.0,
+        482.0
+      ]
+    },
+    "unit-gt_alien_rifleman": {
+      "bounds": [
+        14.0,
+        251.0,
+        295.0,
+        220.0
+      ],
+      "foot_anchor": [
+        0.645510835913313,
+        0.987421383647799
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_alien_rifleman.png",
+      "size": [
+        323.0,
+        477.0
+      ]
+    },
+    "unit-gt_engineer": {
+      "bounds": [
+        6.0,
+        172.0,
+        311.0,
+        299.0
+      ],
+      "foot_anchor": [
+        0.354489164086687,
+        0.987421383647799
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_engineer.png",
+      "size": [
+        323.0,
+        477.0
+      ]
+    },
+    "unit-gt_gun_walker": {
+      "bounds": [
+        6.0,
+        26.0,
+        413.0,
+        333.0
+      ],
+      "foot_anchor": [
+        0.688235294117647,
+        0.983561643835616
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_gun_walker.png",
+      "size": [
+        425.0,
+        365.0
+      ]
+    },
+    "unit-gt_heavy_gunner": {
+      "bounds": [
+        8.0,
+        10.0,
+        409.0,
+        349.0
+      ],
+      "foot_anchor": [
+        0.381176470588235,
+        0.983561643835616
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_heavy_gunner.png",
+      "size": [
+        425.0,
+        365.0
+      ]
+    },
+    "unit-gt_large_mantis": {
+      "bounds": [
+        9.0,
+        172.0,
+        334.0,
+        304.0
+      ],
+      "foot_anchor": [
+        0.576487252124646,
+        0.987551867219917
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_large_mantis.png",
+      "size": [
+        353.0,
+        482.0
+      ]
+    },
+    "unit-gt_medic": {
+      "bounds": [
+        16.0,
+        20.0,
+        280.0,
+        437.0
+      ],
+      "foot_anchor": [
+        0.57395498392283,
+        0.987041036717063
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_medic.png",
+      "size": [
+        311.0,
+        463.0
+      ]
+    },
+    "unit-gt_mystic": {
+      "bounds": [
+        6.0,
+        35.0,
+        284.0,
+        436.0
+      ],
+      "foot_anchor": [
+        0.376689189189189,
+        0.987421383647799
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_mystic.png",
+      "size": [
+        296.0,
+        477.0
+      ]
+    },
+    "unit-gt_officer": {
+      "bounds": [
+        9.0,
+        99.0,
+        342.0,
+        338.0
+      ],
+      "foot_anchor": [
+        0.330555555555556,
+        0.986455981941309
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_officer.png",
+      "size": [
+        360.0,
+        443.0
+      ]
+    },
+    "unit-gt_shield_guard": {
+      "bounds": [
+        11.0,
+        21.0,
+        358.0,
+        406.0
+      ],
+      "foot_anchor": [
+        0.434210526315789,
+        0.986143187066975
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_shield_guard.png",
+      "size": [
+        380.0,
+        433.0
+      ]
+    },
+    "unit-gt_small_stalker": {
+      "bounds": [
+        6.0,
+        167.0,
+        341.0,
+        309.0
+      ],
+      "foot_anchor": [
+        0.539660056657224,
+        0.987551867219917
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_small_stalker.png",
+      "size": [
+        353.0,
+        482.0
+      ]
+    },
+    "unit-gt_sniper": {
+      "bounds": [
+        6.0,
+        184.0,
+        369.0,
+        245.0
+      ],
+      "foot_anchor": [
+        0.332020997375328,
+        0.986206896551724
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_sniper.png",
+      "size": [
+        381.0,
+        435.0
+      ]
+    },
+    "unit-gt_spear_guard": {
+      "bounds": [
+        97.0,
+        29.0,
+        1069.0,
+        1179.0
+      ],
+      "foot_anchor": [
+        0.389280125195618,
+        0.982113821138211
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_spear_guard.png",
+      "size": [
+        1278.0,
+        1230.0
+      ]
+    },
+    "unit-gt_spore_walker": {
+      "bounds": [
+        9.0,
+        226.0,
+        277.0,
+        245.0
+      ],
+      "foot_anchor": [
+        0.591216216216216,
+        0.987421383647799
+      ],
+      "kind": "unit",
+      "path": "res://content/authored/assets/units/gt_spore_walker.png",
+      "size": [
+        296.0,
+        477.0
+      ]
+    }
+  },
+  "source_image_ids": {
+    "unit-gt_engineer": "6c05446e-8912-44e0-95ae-98037a12dfb3",
+    "unit-gt_spear_guard": "926c39ee-d949-492a-8a8b-3f3fa1988dc2",
+    "unit-gt_gun_walker": "f814654f-f015-4e06-a620-05f39a9cefac",
+    "unit-gt_large_mantis": "115ae9be-5149-41bb-91f5-5b65dcbfc4cf",
+    "unit-0": "ea8492a6-dc23-4c9e-b98b-991a9e8d58c2",
+    "unit-1": "80bef028-64bc-44bd-9096-38de75a291c2",
+    "unit-2": "4e0a9b4c-1c0b-47d4-9c65-cb357f162409",
+    "unit-3": "9e8dbb6f-82eb-414d-871a-42ed7cc2b63c",
+    "unit-4": "904fc15a-bdfa-4112-b640-231d6c9fc96d",
+    "unit-7": "96bcca80-e934-4bfb-b763-8824d7cdfe80",
+    "unit-gt_officer": "780582cb-5fdb-477d-9c48-8eae044134bc",
+    "unit-gt_medic": "0e31f4a6-bef8-4a5e-b1c9-a0cb43d9f113",
+    "corpse-gt_engineer": "8f9170ed-cac0-4f5b-a171-d4abe45dc264",
+    "corpse-gt_spear_guard": "66b55397-4d2b-40d7-8dbc-74593603a537",
+    "corpse-gt_gun_walker": "02efe393-d16e-4081-afb6-97d59b993cd9",
+    "corpse-gt_large_mantis": "2cfbd5a5-a527-4d26-a2cb-e3a24e451241",
+    "corpse-0": "4a2dfb9c-4298-448a-964a-22f3290d0de3",
+    "state-01-electricity": "d90e91ac-2527-480f-afa0-586e7138b71d",
+    "state-02-water": "e12641c3-3f75-4b43-b7d1-c31d4db3333b",
+    "state-03-fire": "b0edd426-403b-4d07-9a8d-0aedcda35e61",
+    "state-04-oil": "91f8a9ce-c1b9-4645-a7ea-73a3bb8b23cb",
+    "state-07-plasma": "0a6d795c-dacb-45e6-97b8-157e0106951a",
+    "state-08-electrified-acid": "6f3a9285-96a3-47bf-8e96-c4f131f3f8ca",
+    "state-09-steam": "61cff8ba-04a3-4198-a53c-ce7626a78ad1",
+    "state-10-boiling-acid": "db0132b8-f9aa-4c43-a823-cc7f88370682",
+    "obstacle-hill": "b7c16dc9-363a-4a23-bac1-83aa770b07bb",
+    "obstacle-river": "54d6887b-99ce-458a-921c-582ff1246bad",
+    "turret": "283b68da-b92d-4f56-bfa4-0ac4a0f48fa4",
+    "state-05-acid": "06449d27-7c3e-402a-95e2-4ef5a4245fc0",
+    "unit-6": "1e96d49d-3d9b-43e1-bb1b-62da834a4f29",
+    "state-11-burning-oil": "21c1f966-2c3d-4762-8979-c4e6cf9d0878",
+    "obstacle-trees": "268104e5-07e2-43e0-994c-5d86cb6dab24",
+    "unit-gt_sniper": "39531c69-ae9d-4938-b7a3-214d6fc0cb37",
+    "corpse-2": "46d97695-641b-47b0-ac66-9738f3690343",
+    "unit-5": "5986dfb3-ec13-495a-9316-83d9b08b7035",
+    "unit-gt_shield_guard": "6037f8b1-fd2f-4722-a96c-790f7bd1fc9b",
+    "obstacle-puddle": "69ee278c-45f5-4258-bf1d-9344ce9763f8",
+    "corpse-1": "8099f9db-188d-4b6b-af24-e502df42d726",
+    "corpse-5": "8843427b-532b-47ac-8994-ea70dad04f55",
+    "unit-gt_mystic": "8c9542f7-108d-4553-83ce-719f8a0bf988",
+    "obstacle-rocks": "a3cd37d8-0174-4785-8637-ad23caa358c8",
+    "unit-gt_alien_rifleman": "a653934e-f34b-40c2-bb26-e08588814a6c",
+    "unit-gt_heavy_gunner": "af10afdc-2b56-4403-bdec-f206257bcfc6",
+    "corpse-3": "d82a6c7d-cd7e-4ffc-b06a-f1a51ded5913",
+    "state-12-acid-vapour": "da8b9af4-cde8-48ee-855b-76c36e8451dc",
+    "corpse-4": "daf6b55c-978a-4302-ab5a-acb283c2fff8",
+    "unit-gt_spore_walker": "e2471a3c-a160-4697-abfb-02c3bd9efe1d",
+    "state-06-electrified-water": "f592dc0a-bcda-430f-b3af-804fb55459a9",
+    "unit-gt_small_stalker": "f644ba9d-b412-4462-ad4b-a0c0a1d54568",
+    "corpse-6": "2b6fed16-ffd4-45ea-b3bd-a56efb13c2db",
+    "corpse-7": "1fca213d-7e07-45ff-ac4f-47d913ceaedc",
+    "corpse-gt_officer": "3003d880-2a42-4332-ae2b-57af52bc0c4a",
+    "corpse-gt_alien_rifleman": "6ae8d9b3-4c06-4900-878a-cd16d4c52ff0",
+    "corpse-gt_heavy_gunner": "f0825dd2-65d0-435a-9f13-1ee840034457",
+    "corpse-gt_medic": "9c1556b0-99f3-4485-a207-37b5031cf45b",
+    "corpse-gt_mystic": "e6b81f38-905b-4e7b-a3c7-a76ac2197a7e",
+    "corpse-gt_shield_guard": "dba391b5-a6ce-46e9-9289-1e9e4af2c4c2",
+    "corpse-gt_sniper": "e53b9719-4be7-4fbc-944c-78e4af74a436",
+    "corpse-gt_spore_walker": "43399099-ba59-4b25-9c8b-c4590271e736",
+    "corpse-gt_small_stalker": "c29f2b70-f53c-427c-86b2-3886c24139c8",
+    "corpse-turret": "37e9d9e1-d5cb-40e6-930e-b2f89b786d60"
+  },
+  "prompt_specs": {
+    "live": "Style transfer preserving identity, pose, species and equipment. HotA-inspired sculpted painterly miniature; steel, antique brass, oxblood, ivory upper-left light, cool brown shadows. Broad planes, thin colored contour, no ink hatching, transparent background. Preserve original canvas and visible size class.",
+    "hex_states": "Repaint the original state as natural material patches with a broken organic horseshoe perimeter and open center. Preserve distinct water, electricity, fire, oil, acid, plasma and steam colors. No geometric hex outline; readable at 94x58; true alpha.",
+    "obstacles": "Repaint original obstacle keeping footprint and camera. Broad painted facets, ochre, ivory, slate and olive, miniature terrain readable at 90-112px, transparent background.",
+    "corpse": "Matching reference identity, species, clothing and equipment, in a newly drawn collapsed lying pose, never a rotated standing sprite. No gore, floor or halo. Extinguish lights; warm ivory upper-left highlights and cool brown shadows. Transparent landscape canvas, legible at 76-96px wide."
+  },
+  "normalization": "Godot Image: uniform resize into original canvas, crop bounds measured at alpha > 8/255; explicit foot anchors and atlas regions."
+}

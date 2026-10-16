@@ -3,6 +3,6 @@
 [resource]
 script = ExtResource("script")
 id = &"core:electric_ability_actor"
-projectile_color = Color(0.2, 0.5, 1, 1)
-trail_color = Color(0.3, 0.7, 1, 0.8)
-impact_color = Color(0.2, 0.5, 1, 1)
+projectile_color = Color(0.46, 0.72, 0.84, 1)
+trail_color = Color(0.46, 0.72, 0.84, 0.65)
+impact_color = Color(0.46, 0.72, 0.84, 1)

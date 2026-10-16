@@ -65,7 +65,8 @@ func _render_state(hex: Vector2i, state_id: StringName) -> void:
 	var sprite := Sprite2D.new()
 	sprite.name = "HexState_%d_%d" % [hex.x, hex.y]
 	sprite.texture = texture
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.modulate = BattleVisualPalette.STATE_TINT
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	# Reference rim: 90 x 58 inside a projected 94 x 78 hex.
 	sprite.scale = Vector2(56.0 * 90.0 / 94.0, 64.0 * 58.0 / 78.0) / texture.get_size()
 	sprite.position = center + Vector2(0, -64.0 / 78.0)

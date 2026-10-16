@@ -39,7 +39,7 @@ func _draw() -> void:
 	for i in range(49):
 		var angle := TAU * float(i) / 48.0
 		base_points.append(Vector2(cos(angle) * 29.0, sin(angle) * 11.0))
-	draw_colored_polygon(base_points, Color(0.0, 0.0, 0.0, 0.25))
+	draw_colored_polygon(base_points, Color(0.07, 0.035, 0.018, 0.42))
 	draw_polyline(base_points, _faction_color, 1.5, true)
 
 func setup(
@@ -69,6 +69,7 @@ func setup(
 	if presentation != null and presentation.actor_texture != null:
 		_sprite.texture = presentation.actor_texture
 		_sprite.material = null
+		_sprite.self_modulate = BattleVisualPalette.MINIATURE_TINT
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		var texture_size := presentation.actor_texture.get_size()
 		var longest_side := maxf(texture_size.x, texture_size.y)
@@ -96,7 +97,7 @@ func show_health(current: int, maximum: int) -> void:
 	_health_bar.value = clampi(current, 0, maxi(maximum, 1))
 	_apply_health_display()
 	var ratio := 0.0 if maximum <= 0 else float(current) / float(maximum)
-	var bar_color := Color(0.23, 0.48, 0.29)
+	var bar_color := Color(0.37, 0.57, 0.25)
 
 	if ratio <= 0.33:
 		bar_color = Color(0.65, 0.22, 0.17)

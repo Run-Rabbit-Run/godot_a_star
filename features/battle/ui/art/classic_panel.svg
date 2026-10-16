@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+<defs><linearGradient id="wood" x2="0" y2="1"><stop stop-color="#38221e"/><stop offset=".5" stop-color="#241515"/><stop offset="1" stop-color="#140e0d"/></linearGradient><linearGradient id="gold" x2=".7" y2="1"><stop stop-color="#f1d896"/><stop offset=".45" stop-color="#aa803b"/><stop offset="1" stop-color="#6f4e25"/></linearGradient></defs>
+<rect x="1" y="1" width="94" height="94" rx="3" fill="#100d0b" stroke="#332419" stroke-width="2"/>
+<rect x="3" y="3" width="90" height="90" rx="2" fill="url(#wood)" stroke="url(#gold)" stroke-width="2"/>
+<rect x="7" y="7" width="82" height="82" fill="none" stroke="#805d30" stroke-width="1"/>
+<path d="M11 7H7V13M7 11L13 5M85 7H89V13M89 11L83 5M7 83V89H13M7 85L13 91M89 83V89H83M89 85L83 91" fill="none" stroke="#dbb968" stroke-width="1"/>
+<path d="M16 5H80M5 16V80" stroke="#e7c57c" opacity=".55"/><path d="M16 91H80M91 16V80" stroke="#3a2618"/>
+<g fill="#e2c77e" stroke="#6f4f27" stroke-width=".6"><path d="m5 3 2 2-2 2-2-2z"/><path d="m91 3 2 2-2 2-2-2z"/><path d="m5 89 2 2-2 2-2-2z"/><path d="m91 89 2 2-2 2-2-2z"/></g>
+</svg>

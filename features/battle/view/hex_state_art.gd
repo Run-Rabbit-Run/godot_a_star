@@ -17,18 +17,18 @@ const TEXTURES := {
 	&"core:acid_vapour": preload("res://features/battle/art/hex_states/12-acid-vapour.png"),
 }
 const REGIONS := {
-	&"core:electricity": Rect2(22, 75, 331, 263),
-	&"core:water": Rect2(17, 109, 329, 221),
-	&"core:fire": Rect2(14, 69, 328, 264),
-	&"core:oil": Rect2(126, 191, 1343, 635),
-	&"core:acid": Rect2(22, 54, 334, 229),
-	&"core:electrified_water": Rect2(16, 24, 336, 268),
-	&"core:plasma": Rect2(15, 28, 330, 261),
-	&"core:electrified_acid": Rect2(7, 40, 333, 258),
-	&"core:steam": Rect2(20, 42, 334, 292),
-	&"core:boiling_acid": Rect2(14, 42, 337, 293),
-	&"core:burning_oil": Rect2(8, 30, 342, 303),
-	&"core:acid_vapour": Rect2(15, 33, 325, 298),
+	&"core:electricity": Rect2(0.0, 37.0, 362.0, 276.0),
+	&"core:water": Rect2(0.0, 90.0, 362.0, 203.0),
+	&"core:fire": Rect2(0.0, 66.0, 354.0, 239.0),
+	&"core:oil": Rect2(98.0, 142.0, 1397.0, 704.0),
+	&"core:acid": Rect2(0.0, 54.0, 362.0, 222.0),
+	&"core:electrified_water": Rect2(0.0, 42.0, 362.0, 232.0),
+	&"core:plasma": Rect2(0.0, 18.0, 362.0, 275.0),
+	&"core:electrified_acid": Rect2(0.0, 36.0, 348.0, 245.0),
+	&"core:steam": Rect2(0.0, 24.0, 362.0, 321.0),
+	&"core:boiling_acid": Rect2(1.0, 69.0, 361.0, 285.0),
+	&"core:burning_oil": Rect2(0.0, 59.0, 362.0, 308.0),
+	&"core:acid_vapour": Rect2(0.0, 42.0, 347.0, 317.0),
 }
 
 

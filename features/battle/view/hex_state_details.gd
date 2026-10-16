@@ -20,28 +20,21 @@ func setup(map: BattleMapView, properties: Dictionary[Vector2i, Dictionary]) -> 
 	_popup = PanelContainer.new()
 	_popup.name = "HexStatePopup"
 	_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07, 0.09, 0.10, 0.97)
-	style.border_color = Color(0.65, 0.61, 0.42, 0.9)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	_popup.add_theme_stylebox_override("panel", style)
+	_popup.add_theme_stylebox_override("panel", BattleVisualTheme.panel(Color.WHITE, 14.0))
 	var column := VBoxContainer.new()
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_theme_constant_override("separation", 7)
 	_title = Label.new()
 	_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_title.add_theme_font_size_override("font_size", 18)
+	_title.add_theme_color_override("font_color", Color("f5d995"))
 	column.add_child(_title)
 	_body = Label.new()
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_body.custom_minimum_size.x = 320
 	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_body.add_theme_font_size_override("font_size", 15)
+	_body.add_theme_color_override("font_color", BattleVisualTheme.IVORY)
 	column.add_child(_body)
 	_popup.add_child(column)
 	add_child(_popup)

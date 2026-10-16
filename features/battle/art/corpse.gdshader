@@ -10,7 +10,7 @@ void vertex() {
 void fragment() {
 	vec4 texel = texture(TEXTURE, UV);
 	float value = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
-	vec3 muted = mix(texel.rgb, vec3(value), 0.70);
-	muted = (muted - vec3(0.38)) * 0.72 + vec3(0.32);
-	COLOR = instance_tint * vec4(muted * vec3(1.0, 0.96, 0.89), texel.a * 0.88);
+	vec3 muted = mix(texel.rgb, vec3(value), 0.35);
+	muted = (muted - vec3(0.38)) * 0.85 + vec3(0.32);
+	COLOR = instance_tint * vec4(muted * vec3(1.0, 0.96, 0.89), texel.a * 0.94);
 }

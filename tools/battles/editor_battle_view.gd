@@ -104,7 +104,7 @@ func _draw() -> void:
 		var center := _hex_center(cell.hex)
 		var texture := HexStateArt.texture(cell.hex_state_id)
 		if texture != null:
-			draw_texture_rect(texture, Rect2(center - Vector2(45, 30), Vector2(90, 58)), false)
+			draw_texture_rect(texture, Rect2(center - Vector2(45, 30), Vector2(90, 58)), false, BattleVisualPalette.STATE_TINT)
 		if show_grid:
 			draw_polyline(_closed_hex_polygon(center), Color(0.85, 0.84, 0.72, 0.5), 1.2, true)
 		if not cell.traversable:
@@ -159,7 +159,7 @@ func _draw_unit(placement: UnitPlacementDefinition, invalid: bool) -> void:
 	if presentation != null and presentation.actor_texture != null:
 		var texture := presentation.actor_texture
 		var dimensions := texture.get_size() * presentation.texture_scale()
-		draw_texture_rect(texture, Rect2(center - dimensions * presentation.actor_foot_anchor, dimensions), false, presentation.actor_color)
+		draw_texture_rect(texture, Rect2(center - dimensions * presentation.actor_foot_anchor, dimensions), false, presentation.actor_color * BattleVisualPalette.MINIATURE_TINT)
 	else:
 		draw_circle(center, 14, color)
 		draw_string(ThemeDB.fallback_font, center + Vector2(-30, -23), _short_placement_name(placement.definition_id), HORIZONTAL_ALIGNMENT_CENTER, 60, 13)
@@ -339,3 +339,7 @@ func _short_placement_name(placement_id: StringName) -> String:
 	var value := String(placement_id)
 	var separator := value.rfind(":")
 	return value.substr(separator + 1).left(10) if separator >= 0 else value.left(10)
+
+
+func _init() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

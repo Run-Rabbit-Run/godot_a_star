@@ -2,288 +2,295 @@
   "0.png": {
     "height": 82,
     "foot_anchor": [
-      0.386,
-      0.959
+      0.391666666666667,
+      0.977426636568849
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      106,
-      242,
-      1340,
-      543
+      0.0,
+      242.0,
+      1498.0,
+      480.0
     ]
   },
   "1.png": {
     "height": 82,
     "foot_anchor": [
-      0.388,
-      0.959
+      0.39238845144357,
+      0.954022988505747
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      60,
-      210,
-      1435,
-      652
+      0.0,
+      281.0,
+      1522.0,
+      454.0
     ]
   },
   "2.png": {
     "height": 90,
     "foot_anchor": [
-      0.395,
-      0.958
+      0.359210526315789,
+      0.963048498845266
     ],
     "corpse_width": 90,
     "corpse_visible_region": [
-      50,
-      175,
-      1425,
-      709
+      0.0,
+      146.0,
+      1485.0,
+      705.0
     ]
   },
   "3.png": {
     "height": 82,
     "foot_anchor": [
-      0.575,
-      0.932
+      0.432475884244373,
+      0.978401727861771
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      80,
-      164,
-      1374,
-      707
+      65.0,
+      239.0,
+      1451.0,
+      547.0
     ]
   },
   "4.png": {
     "height": 76,
     "foot_anchor": [
-      0.536,
-      0.91
+      0.517647058823529,
+      0.978082191780822
     ],
     "corpse_width": 76,
     "corpse_visible_region": [
-      102,
-      218,
-      1416,
-      594
+      0.0,
+      112.0,
+      1520.0,
+      780.0
     ]
   },
   "5.png": {
     "height": 96,
     "foot_anchor": [
-      0.514,
-      0.961
+      0.537151702786378,
+      0.989517819706499
     ],
     "corpse_width": 96,
     "corpse_visible_region": [
-      98,
-      201,
-      1384,
-      654
+      79.0,
+      180.0,
+      1417.0,
+      671.0
     ]
   },
   "6.png": {
     "height": 82,
     "foot_anchor": [
-      0.389,
-      0.95
+      0.516891891891892,
+      0.981132075471698
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      63,
-      241,
-      1438,
-      624
+      43,
+      183,
+      1469,
+      678
     ]
   },
   "7.png": {
     "height": 90,
     "foot_anchor": [
-      0.508,
-      0.941
+      0.569405099150142,
+      0.948132780082988
     ],
     "corpse_width": 90,
     "corpse_visible_region": [
-      90,
-      236,
-      1384,
-      631
+      0,
+      81,
+      1477,
+      856
     ]
   },
   "gt_officer.png": {
     "height": 82,
     "foot_anchor": [
-      0.4,
-      0.985
+      0.330555555555556,
+      0.986455981941309
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      49,
-      272,
-      1594,
-      512
+      25,
+      182,
+      1621,
+      598
     ]
   },
   "gt_shield_guard.png": {
     "height": 90,
     "foot_anchor": [
-      0.47,
-      0.985
+      0.434210526315789,
+      0.986143187066975
     ],
     "corpse_width": 90,
     "corpse_visible_region": [
-      36,
-      171,
-      1462,
-      756
+      33,
+      221,
+      1487,
+      557
     ]
   },
   "gt_sniper.png": {
     "height": 82,
     "foot_anchor": [
-      0.43,
-      0.986
+      0.332020997375328,
+      0.986206896551724
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      61,
-      251,
-      1500,
-      552
+      0,
+      205,
+      1565,
+      551
     ]
   },
   "gt_medic.png": {
     "height": 82,
     "foot_anchor": [
-      0.48,
-      0.987
+      0.57395498392283,
+      0.987041036717063
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      77,
-      173,
-      1446,
-      703
+      0,
+      159,
+      1526,
+      673
     ]
   },
   "gt_heavy_gunner.png": {
     "height": 90,
     "foot_anchor": [
-      0.4,
-      0.984
+      0.381176470588235,
+      0.983561643835616
     ],
     "corpse_width": 90,
     "corpse_visible_region": [
-      36,
-      173,
-      1484,
-      694
+      34,
+      134,
+      1489,
+      716
     ]
   },
   "gt_engineer.png": {
     "height": 82,
     "foot_anchor": [
-      0.47,
-      0.987
+      0.354489164086687,
+      0.987421383647799
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      67,
-      218,
-      1453,
-      657
+      0.0,
+      137.0,
+      1522.0,
+      698.0
     ]
   },
   "gt_mystic.png": {
     "height": 82,
     "foot_anchor": [
-      0.46,
-      0.987
+      0.376689189189189,
+      0.987421383647799
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      16,
-      120,
-      1503,
-      837
+      0,
+      216,
+      1522,
+      589
     ]
   },
   "gt_small_stalker.png": {
     "height": 76,
     "foot_anchor": [
-      0.54,
-      0.987
+      0.539660056657224,
+      0.987551867219917
     ],
     "corpse_width": 76,
     "corpse_visible_region": [
-      22,
-      258,
-      1492,
-      595
+      0,
+      210,
+      1520,
+      634
     ]
   },
   "gt_large_mantis.png": {
     "height": 96,
     "foot_anchor": [
-      0.54,
-      0.987
+      0.576487252124646,
+      0.987551867219917
     ],
     "corpse_width": 96,
     "corpse_visible_region": [
-      12,
-      197,
-      1519,
-      749
+      0.0,
+      101.0,
+      1536.0,
+      808.0
     ]
   },
   "gt_spore_walker.png": {
     "height": 76,
     "foot_anchor": [
-      0.5,
-      0.987
+      0.591216216216216,
+      0.987421383647799
     ],
     "corpse_width": 76,
     "corpse_visible_region": [
-      23,
-      223,
-      1500,
-      679
+      0,
+      161,
+      1525,
+      721
     ]
   },
   "gt_alien_rifleman.png": {
     "height": 82,
     "foot_anchor": [
-      0.64,
-      0.987
+      0.645510835913313,
+      0.987421383647799
     ],
     "corpse_width": 82,
     "corpse_visible_region": [
-      37,
-      262,
-      1452,
-      574
+      34,
+      294,
+      1457,
+      431
     ]
   },
   "gt_gun_walker.png": {
     "height": 86,
     "foot_anchor": [
-      0.68,
-      0.984
+      0.688235294117647,
+      0.983561643835616
     ],
     "corpse_width": 86,
     "corpse_visible_region": [
-      18,
-      171,
-      1500,
-      692
+      0.0,
+      163.0,
+      1522.0,
+      718.0
     ]
   },
   "gt_spear_guard.png": {
     "height": 82,
     "foot_anchor": [
-      0.44,
-      0.9821138211382113
-    ]
+      0.389280125195618,
+      0.982113821138211
+    ],
+    "corpse_visible_region": [
+      50.0,
+      226.0,
+      1436.0,
+      572.0
+    ],
+    "corpse_width": 82
   }
 }

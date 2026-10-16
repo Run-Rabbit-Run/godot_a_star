@@ -15,7 +15,7 @@ func _ready() -> void:
 	_fit()
 	get_viewport().size_changed.connect(_fit)
 	var background := Sprite2D.new()
-	background.texture = preload("res://features/battle/art/plateau.png")
+	background.texture = preload("res://features/battle/art/classic/plateau.png")
 	background.centered = false
 	background.scale = Vector2(1920.0 / 1672.0, 1080.0 / 941.0)
 	background.z_index = -1
@@ -72,7 +72,7 @@ func _create_actor(index: int, at: Vector2) -> UnitActor:
 
 
 func _origin(index: int) -> Vector2:
-	return Vector2(286 + (index % 5) * 355, 235 + (index / 5) * 220)
+	return Vector2(286 + (index % 5) * 355, 190 + (index / 5) * 175)
 
 
 func _fit() -> void:
