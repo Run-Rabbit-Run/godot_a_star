@@ -54,6 +54,7 @@ var _activate_after_save := false
 var _trial_return_layer: CanvasLayer
 var _trial_screen: BattleScreen
 var _unit_editor: UnitEditor
+var _skill_editor: SkillEditor
 var _discard_dialog: ConfirmationDialog
 var _pending_discard_action: Callable
 var _saved_document: Dictionary = {}
@@ -276,6 +277,7 @@ func _build_ui() -> void:
 	unit_title.add_theme_font_size_override("font_size", 14)
 	root.add_child(unit_title)
 	root.add_child(_button("Редактор юнитов", _open_unit_editor))
+	root.add_child(_button("Навыки и эффекты", _open_skill_editor))
 	root.add_child(_button("Обновить библиотеку юнитов", _reload_unit_library))
 
 	_palette_search = LineEdit.new()
@@ -403,6 +405,21 @@ func _select_tool(tool: EditorBattleView.Tool) -> void:
 			_tool_option.select(index)
 			_view.set_tool(tool)
 			return
+
+
+func _open_skill_editor() -> void:
+	var editor := preload("res://tools/skills/skill_editor.tscn").instantiate() as SkillEditor
+	editor.embedded = true
+	_skill_editor = editor
+	_ui.hide()
+	_view.set_process_input(false)
+	editor.closed.connect(func() -> void:
+		_skill_editor = null
+		_ui.show()
+		_view.set_process_input(true)
+		_reload_unit_library()
+	)
+	add_child(editor)
 
 
 func _open_unit_editor() -> void:
@@ -1280,7 +1297,9 @@ func _notification(what: int) -> void:
 ## The embedded unit editor confirms its own draft first; quitting then guards the battle draft.
 func request_quit() -> void:
 	var quit_guarded := func() -> void: _guard_discard(func() -> void: get_tree().quit())
-	if is_instance_valid(_unit_editor):
+	if is_instance_valid(_skill_editor):
+		_skill_editor.request_close(quit_guarded)
+	elif is_instance_valid(_unit_editor):
 		_unit_editor.request_close(quit_guarded)
 	else:
 		quit_guarded.call()

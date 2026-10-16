@@ -16,7 +16,7 @@ func validate(effect: AbilityEffectDefinition) -> String:
 		return error
 	if not effect.parameters.get("center_only", false):
 		return "Summoning must target the center only."
-	return PassiveAbilityCatalog.validate(definition.passive_ability_ids)
+	return PassiveAbilityCatalog.validate(definition.passive_ability_ids, definition.passive_definitions)
 
 func execute_hex(effect: AbilityEffectDefinition, context: BattleEffectContext, source: StringName, hex: Vector2i) -> Array[BattleEvent]:
 	return context.summon(source, hex, effect.parameters["unit"] as UnitDefinition)

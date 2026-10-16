@@ -55,7 +55,8 @@ static func new_document() -> Dictionary:
 		"abilities": [], "passives": [], "armor": 0,
 	}
 
-static func validate(data: Dictionary) -> String:
+static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
+	if skills.is_empty(): skills = SkillLibrary.catalog()
 	var armor: Variant = data.get("armor", 0)
 	if not (armor is int or armor is float) or not is_finite(float(armor)) or float(armor) != floor(float(armor)) or armor < 0 or armor > 9999:
 		return "Броня: целое число 0–9999."
@@ -95,16 +96,16 @@ static func validate(data: Dictionary) -> String:
 			if value in seen:
 				return "Умение выбрано дважды: %s" % value
 			seen.append(value)
-			if key == "abilities" and not ACTIVE_ABILITIES.has(value):
+			if key == "abilities" and skills.get(value, {}).get("kind", "") != "active":
 				return "Неизвестное активное умение: %s" % value
-			if key == "passives" and not PassiveAbilityCatalog.DEFINITIONS.has(StringName(value)):
+			if key == "passives" and skills.get(value, {}).get("kind", "") != "passive":
 				return "Неизвестное пассивное умение: %s" % value
 	var passives: Array[StringName] = []
 	for passive_id: String in data.passives:
 		passives.append(StringName(passive_id))
-	return PassiveAbilityCatalog.validate(passives)
+	return PassiveAbilityCatalog.validate(passives, SkillLibrary.passive_definitions(skills))
 
-static func read_document(path: String) -> Dictionary:
+static func read_document(path: String, skills: Dictionary = {}) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {"error": "Не удалось прочитать %s" % path}
@@ -118,7 +119,7 @@ static func read_document(path: String) -> Dictionary:
 	var data: Dictionary = json.data
 	if not data.has("armor"):
 		data["armor"] = 0
-	var error := validate(data)
+	var error := validate(data, skills)
 	if not error.is_empty():
 		return {"error": "%s: %s" % [path, error]}
 	if path.get_file() != String(data.id).trim_prefix("custom_units:") + ".json":
@@ -158,6 +159,13 @@ static func save_document(data: Dictionary) -> String:
 
 static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
 	var result := ContentLoadResult.new()
+	var authored := SkillLibrary.read_all()
+	if not authored.errors.is_empty():
+		result.errors.append_array(authored.errors)
+		return result
+	var definitions := SkillLibrary.passive_definitions(authored.documents)
+	var available := SkillLibrary.builtin_documents()
+	available.merge(authored.documents, true)
 	if not DirAccess.dir_exists_absolute(UNITS):
 		result.add_error("Не найдена библиотека юнитов проекта: %s" % UNITS)
 		return result
@@ -167,10 +175,13 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 	var dependency := ContentPackageDependency.new()
 	dependency.package_id = &"core"
 	package.manifest.dependencies.append(dependency)
+	var skill_dependency := ContentPackageDependency.new()
+	skill_dependency.package_id = &"custom_skills"
+	package.manifest.dependencies.append(skill_dependency)
 	for filename: String in DirAccess.get_files_at(UNITS):
 		if filename.get_extension().to_lower() != "json":
 			continue
-		var loaded := read_document(UNITS.path_join(filename))
+		var loaded := read_document(UNITS.path_join(filename), available)
 		if not String(loaded.error).is_empty():
 			result.add_error(loaded.error)
 			continue
@@ -187,6 +198,7 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 		unit.base_stats.armor_levels = int(data.get("armor", 0))
 		unit.ability_ids.assign(data.abilities)
 		unit.passive_ability_ids.assign(data.passives)
+		unit.passive_definitions = definitions.duplicate(true)
 		var presentation := presentation_for(String(data.image)) if include_presentation else UnitPresentationDefinition.new()
 		presentation.id = unit.presentation_id
 		if include_presentation and presentation.actor_texture == null:
@@ -195,7 +207,7 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 		package.unit_presentations.append(presentation)
 	if not result.errors.is_empty():
 		return result
-	var combined: Array[ContentPackage] = packages.duplicate()
+	var combined := SkillLibrary.apply_to_packages(packages, authored.documents)
 	combined.append(package)
 	var loaded := ContentLoader.load_packages(combined)
 	loaded.warnings.append_array(result.warnings)

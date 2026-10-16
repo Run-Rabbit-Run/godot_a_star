@@ -121,10 +121,9 @@ func _build_ui() -> void:
 	_field(form, "Тип атаки", _attack)
 	_number(form, "Дальность дальней атаки (2–20 гексов)", "attack_range", 2, 20)
 	_number(form, "Дальность передвижения (очки)", "movement", 0, 100)
-	_active_menu = _ability_menu(form, "Активные умения", "abilities", UnitLibrary.ACTIVE_ABILITIES)
+	_active_menu = _ability_menu(form, "Активные умения", "abilities", SkillLibrary.names("active"))
 	var passives: Dictionary = {}
-	for id: StringName in PassiveAbilityCatalog.DEFINITIONS:
-		passives[String(id)] = PassiveAbilityCatalog.DEFINITIONS[id].name
+	passives = SkillLibrary.names("passive")
 	_passive_menu = _ability_menu(form, "Пассивные умения", "passives", passives)
 	_effective_damage = Label.new()
 	form.add_child(_effective_damage)
@@ -228,7 +227,7 @@ func _update_preview() -> void:
 	_sync_ability_menu(_passive_menu, "passives")
 	var ids: Array[StringName] = []
 	ids.assign(_document.passives)
-	var bonus := PassiveAbilityCatalog.attack_bonus(ids)
+	var bonus := PassiveAbilityCatalog.attack_bonus(ids, SkillLibrary.passive_definitions(SkillLibrary.catalog()))
 	_effective_damage.text = "Урон обычной атаки в бою: %s + %s = %s" % [_document.damage, bonus, int(_document.damage) + bonus]
 
 func _undo_edit() -> void:
@@ -305,6 +304,13 @@ func _refresh() -> void:
 	_preview_asset = ""
 	_refresh_assets()
 	_refresh_list()
+	for pair: Array in [[_active_menu, "active"], [_passive_menu, "passive"]]:
+		var popup: PopupMenu = pair[0].get_popup()
+		popup.clear()
+		var catalog := SkillLibrary.names(pair[1])
+		for id: String in catalog:
+			popup.add_check_item(catalog[id])
+			popup.set_item_metadata(popup.item_count - 1, id)
 	_render()
 	_status.text = "Списки обновлены."
 

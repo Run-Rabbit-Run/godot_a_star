@@ -18,6 +18,8 @@ var basic_attack_statuses: Dictionary[StringName, int] = {}
 var status_immunities: Array[StringName] = []
 var ability_cooldowns: Dictionary[StringName, int] = {}
 var turns_started := 0
+var melee_retaliation := false
+var retaliation_configured := false
 var pending_spear_return: Dictionary = {}
 
 
@@ -72,5 +74,7 @@ func duplicate_state() -> UnitState:
 	copy.status_immunities.assign(status_immunities)
 	copy.ability_cooldowns.assign(ability_cooldowns)
 	copy.turns_started = turns_started
+	copy.melee_retaliation = melee_retaliation
+	copy.retaliation_configured = retaliation_configured
 	copy.pending_spear_return = pending_spear_return.duplicate(true)
 	return copy

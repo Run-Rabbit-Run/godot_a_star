@@ -25,7 +25,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		push_error(stats_error)
 		return null
 	var passive_ids := spawn.unit_definition.passive_ability_ids
-	var passive_error := PassiveAbilityCatalog.validate(passive_ids)
+	var passive_error := PassiveAbilityCatalog.validate(passive_ids, spawn.unit_definition.passive_definitions)
 	if not passive_error.is_empty():
 		push_error(passive_error)
 		return null
@@ -39,19 +39,22 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		spawn.hex,
 		turn,
 		health,
-		base_stats.basic_attack_damage + PassiveAbilityCatalog.attack_bonus(passive_ids),
+		base_stats.basic_attack_damage + PassiveAbilityCatalog.attack_bonus(passive_ids, spawn.unit_definition.passive_definitions),
 		base_stats.basic_attack_range,
 		spawn.abilities
 	)
 	if base_stats.armor_levels > 0:
 		state.statuses[&"core:armor"] = base_stats.armor_levels
 	state.passive_ability_ids.assign(passive_ids)
+	state.retaliation_configured = true
 	for id: StringName in passive_ids:
-		var passive: Dictionary = PassiveAbilityCatalog.DEFINITIONS[id]
+		var passive: Dictionary = spawn.unit_definition.passive_definitions.get(id, PassiveAbilityCatalog.DEFINITIONS.get(id, {}))
+		if passive.get("retaliation", id == &"core:melee_retaliation"):
+			state.melee_retaliation = true
 		if passive.has("damage_type"):
 			state.basic_attack_damage_type = passive.damage_type
 		if passive.has("status"):
-			state.basic_attack_statuses[passive.status] = 2
+			state.basic_attack_statuses[passive.status] = int(passive.get("levels", 2))
 		if passive.has("immunity"):
 			state.status_immunities.append(passive.immunity)
 	return state

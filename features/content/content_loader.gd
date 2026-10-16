@@ -330,7 +330,7 @@ static func _validate_references(
 			var stats_error := unit.base_stats.validate()
 			if not stats_error.is_empty():
 				result.add_error("%s: %s" % [unit.id, stats_error])
-		var passive_error := PassiveAbilityCatalog.validate(unit.passive_ability_ids)
+		var passive_error := PassiveAbilityCatalog.validate(unit.passive_ability_ids, unit.passive_definitions)
 		if not passive_error.is_empty():
 			result.add_error("%s: %s" % [unit.id, passive_error])
 		if not unit.race_id.is_empty() and snapshot.get_race_definition(unit.race_id) == null:

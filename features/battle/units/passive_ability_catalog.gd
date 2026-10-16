@@ -18,23 +18,27 @@ const DEFINITIONS := {
 	&"core:plasma_attack": {"name": "Плазменная базовая атака", "damage_type": &"plasma"},
 }
 
-static func validate(ids: Array[StringName]) -> String:
+static func validate(ids: Array[StringName], overrides: Dictionary = {}) -> String:
+	var definitions := DEFINITIONS.duplicate(true)
+	definitions.merge(overrides, true)
 	var seen: Array[StringName] = []
 	var attack_type_count := 0
 	for id: StringName in ids:
-		if not DEFINITIONS.has(id):
+		if not definitions.has(id):
 			return "Неизвестное пассивное умение: %s" % id
 		if id in seen:
 			return "Повтор пассивного умения: %s" % id
 		seen.append(id)
-		if DEFINITIONS[id].has("damage_type"):
+		if definitions[id].has("damage_type"):
 			attack_type_count += 1
 	if attack_type_count > 1:
 		return "Выберите только один тип урона базовой атаки."
 	return ""
 
-static func attack_bonus(ids: Array[StringName]) -> int:
+static func attack_bonus(ids: Array[StringName], overrides: Dictionary = {}) -> int:
+	var definitions := DEFINITIONS.duplicate(true)
+	definitions.merge(overrides, true)
 	var bonus := 0
 	for id: StringName in ids:
-		bonus += int(DEFINITIONS[id].get("attack_bonus", 0))
+		bonus += int(definitions.get(id, {}).get("attack_bonus", 0))
 	return bonus

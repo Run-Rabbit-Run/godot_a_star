@@ -189,3 +189,9 @@ Snapshot копирует входящие определения и возвр�
 Core package регистрирует `core:spear_throw`, `core:spear_sweep`, `core:spear_pin` и физическое presentation `core:spear_presentation`; пассивный каталог — `core:melee_retaliation`. Авторский `custom_units:spear_guard` находится в `content/authored/units/spear_guard.json` и выбирается обычной палитрой редактора. Изображение/профиль — project-owned `gt_spear_guard.png` и unit_visual_profiles.json. Схема JSON юнита сохраняется.
 
 AbilityDefinition расширен добавленными в конец `TargetMode.PATH/SELF`, флагами `returns_next_turn/melee_attack`; возврат допускается только для PATH, radius 0 и damage effects. DamageEffectHandler принимает boolean `use_base_attack` (по умолчанию false) и `affects_obstacles` (по умолчанию true). У копья препятствия не повреждаются. Новые поля имеют совместимые значения по умолчанию.
+
+## Авторские навыки — 2026-10-11
+
+`UnitLibrary.load_content` сначала читает SkillLibrary JSON, останавливает загрузку при ошибке и копирует входящие пакеты для применения встроенных переопределений. Новые активные навыки включаются в пакет `custom_skills`, зависимый от исходных пакетов; `custom_units` объявляет зависимость от `custom_skills`. Шаблоны эффектов являются авторскими заготовками и копируются в массив effects, не требуют файлового чтения из ядра боя.
+
+`UnitDefinition.passive_definitions` хранит отдельный словарь авторских пассивных определений, участвующий в копировании и fingerprint Resource. Валидаторы и UnitStateFactory используют этот словарь с fallback на встроенный PassiveAbilityCatalog; глобальный каталог не мутируется. В runtime свойства преобразуются в урон, состояния атаки, иммунитеты и признак ответного удара. Копия состояния сохраняет эту политику. Правило единственного пассивного типа урона применяется к встроенным и авторским навыкам вместе.

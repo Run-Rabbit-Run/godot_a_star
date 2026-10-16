@@ -5,7 +5,8 @@ extends RefCounted
 static func respond(state: BattleState, attacker: UnitState, defender: UnitState, events: Array[BattleEvent]) -> void:
 	if attacker == null or defender == null or attacker.health.is_defeated() or defender.health.is_defeated():
 		return
-	if not defender.passive_ability_ids.has(&"core:melee_retaliation") or defender.statuses.get(&"core:paralysis", 0) > 0:
+	var enabled := defender.melee_retaliation if defender.retaliation_configured else defender.passive_ability_ids.has(&"core:melee_retaliation")
+	if not enabled or defender.statuses.get(&"core:paralysis", 0) > 0:
 		return
 	if HexGrid.get_distance(attacker.hex, defender.hex) > 1:
 		return

@@ -166,4 +166,4 @@ static func _validate_unit_definition(definition: UnitDefinition) -> String:
 	var stats_error := definition.base_stats.validate()
 	if not stats_error.is_empty():
 		return "%s: %s" % [definition.id, stats_error]
-	return PassiveAbilityCatalog.validate(definition.passive_ability_ids)
+	return PassiveAbilityCatalog.validate(definition.passive_ability_ids, definition.passive_definitions)
