@@ -1,4 +1,0 @@
-PASS features/battle/tests/hex_grid_smoke.gd: 93 checks
-PASS tools/battles/tests/editor_smoke.gd: 42 checks
-PASS features/battle/tests/run_regressions.gd: 953 checks
-Total: 1088 passed checks; logs: Z:\TEMP\a_star_tests_utqgvze7
