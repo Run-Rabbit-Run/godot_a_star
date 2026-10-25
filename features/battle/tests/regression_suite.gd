@@ -39,6 +39,9 @@ func _run() -> void:
 	if only.is_empty() or only == "skill_editor":
 		preload("res://features/battle/tests/skill_editor_regressions.gd").new().run(self)
 		await preload("res://features/battle/tests/skill_editor_regressions.gd").new().run_editor(self)
+	if only.is_empty() or only == "editor_ui":
+		preload("res://features/battle/tests/editor_ui_regressions.gd").new().run(self)
+		await preload("res://features/battle/tests/editor_ui_regressions.gd").new().run_editor(self)
 	if only.is_empty() or only == "spear":
 		preload("res://features/battle/tests/spear_regressions.gd").new().run(self)
 		await preload("res://features/battle/tests/spear_regressions.gd").new().run_editor(self)

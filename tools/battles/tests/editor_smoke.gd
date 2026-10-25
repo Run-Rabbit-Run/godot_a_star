@@ -25,12 +25,12 @@ func _run() -> void:
 	var document: BattleDocument = editor.get("_document")
 	var view: EditorBattleView = editor.get("_view")
 	var workspace: Control = editor.get("_map_workspace")
-	var tool_option: OptionButton = editor.get("_tool_option")
+	var tool_bar: EditorToolBar = editor.get("_tool_bar")
 	var save_dialog: FileDialog = editor.get("_save_dialog")
 	var open_dialog: FileDialog = editor.get("_open_dialog")
 	_expect(document != null, "Editor must create an BattleDocument.")
 	_expect(view != null and workspace != null, "Editor must create a clipped map workspace.")
-	_expect(tool_option != null and tool_option.item_count == EditorBattleView.Tool.size(), "Editor must expose all map and unit tools.")
+	_expect(tool_bar != null and tool_bar.tool_count() == EditorBattleView.Tool.size(), "Editor must expose all map and unit tools.")
 	_expect(save_dialog != null and open_dialog != null, "Editor must expose save-as and open dialogs.")
 
 	if document == null or view == null or workspace == null:
@@ -112,6 +112,7 @@ func _run() -> void:
 	await _check_battle_library(editor)
 	_check_backdrops(editor)
 	await preload("res://tools/battles/tests/grid_layout_checks.gd").new().run(editor, _expect)
+	await preload("res://tools/battles/tests/editor_workflow_checks.gd").new().run(editor, _expect)
 
 	editor.queue_free()
 	await process_frame

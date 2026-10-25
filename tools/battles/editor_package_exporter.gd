@@ -7,13 +7,13 @@ static func export(
 	root_path: String
 ) -> String:
 	if document == null:
-		return "BattleDocument is missing."
+		return "Нет документа боя для экспорта."
 
 	var absolute_root := ProjectSettings.globalize_path(root_path)
 	var directory_error := DirAccess.make_dir_recursive_absolute(absolute_root)
 
 	if directory_error != OK:
-		return "Could not create export directory: %s." % root_path
+		return "Не удалось создать папку экспорта %s: %s" % [root_path, error_string(directory_error)]
 
 	var package_id := _namespace_of(document.battle_definition.id)
 	var dependencies: Array[Dictionary] = []
@@ -38,9 +38,13 @@ static func export(
 	var manifest_file := FileAccess.open(root_path.path_join("manifest.json"), FileAccess.WRITE)
 
 	if manifest_file == null:
-		return "Could not write exported manifest."
+		return "Не удалось записать manifest.json: %s" % error_string(FileAccess.get_open_error())
 
 	manifest_file.store_string(JSON.stringify(manifest, "  "))
+	var write_error := manifest_file.get_error()
+	manifest_file.close()
+	if write_error != OK:
+		return "Ошибка записи manifest.json: %s" % error_string(write_error)
 	return BattleDocumentSerializer.save(
 		document,
 		root_path.path_join("battle_document.json")

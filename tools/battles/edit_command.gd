@@ -140,6 +140,14 @@ static func remove_obstacle(id: StringName) -> EditCommand:
 	command.obstacle_id = id
 	return command
 
+## Typing a name extends the previous rename; its snapshot still restores the name before typing.
+func absorb(next: EditCommand) -> bool:
+	if kind != Kind.SET_NAME or next == null or next.kind != Kind.SET_NAME or _before == null:
+		return false
+	display_name = next.display_name
+	return true
+
+
 func apply(document: BattleDocument) -> bool:
 	if document == null or _before != null:
 		return false

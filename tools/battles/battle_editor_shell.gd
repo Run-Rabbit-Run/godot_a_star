@@ -1,9 +1,13 @@
 class_name BattleEditorShell
 extends Control
+## Coordinates the battle map editor: document workflow, edit commands, panels and trial battles.
 
 
 const DEFAULT_DRAFT_FILENAME := "battle_editor_draft.json"
 const BATTLE_SCREEN_SCENE := preload("res://features/battle/battle_screen.tscn")
+const NO_HEX := Vector2i(999999, 999999)
+
+enum FileAction { NEW, OPEN, SAVE, SAVE_AS, REFRESH_LIST, RELOAD_LIBRARY, EXPORT, USE_IN_GAME }
 
 
 var content_packages: Array[ContentPackage] = []
@@ -15,6 +19,7 @@ var _background_option: OptionButton
 var _grid_layout_controls: EditorGridLayoutControls
 var _battle_option: OptionButton
 var _name_edit: LineEdit
+var _dirty_label: Label
 var _selected_state_id: StringName = &"core:electricity"
 var _snapshot: ContentSnapshot
 var _document: BattleDocument
@@ -22,14 +27,18 @@ var _history := EditorCommandHistory.new()
 var _view: EditorBattleView
 var _ui: Control
 var _map_workspace: Control
+var _tool_bar: EditorToolBar
+var _inspector: BattleEditorInspector
+var _state_palette: EditorStatePalette
+var _roster: ItemList
 var _palette: ItemList
 var _palette_search: LineEdit
 var _side_option: OptionButton
 var _ai_option: OptionButton
-var _diagnostics: ItemList
+var _validation_badge: Button
 var _status: Label
 var _cursor_label: Label
-var _tool_option: OptionButton
+var _zoom_label: Label
 var _selected_hex_label: Label
 var _terrain_id_edit: LineEdit
 var _movement_cost_spin: SpinBox
@@ -61,19 +70,22 @@ var _pending_discard_action: Callable
 var _saved_document: Dictionary = {}
 var _trial_result: BattleResult
 var _trial_error := ""
+## Names and portraits by definition ID for one snapshot; snapshot getters return deep copies.
+var _unit_info: Dictionary[StringName, Dictionary] = {}
+var _unit_info_snapshot: ContentSnapshot
+## Folder of the first ordinary save of a new field; tests point it at user://.
+var battles_directory := GameContentSettings.BATTLES
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	get_tree().auto_accept_quit = false
-	_discard_dialog = ConfirmationDialog.new()
-	_discard_dialog.dialog_text = "Есть несохранённые изменения. Отбросить их?"
-	_discard_dialog.confirmed.connect(_confirm_discard)
-	add_child(_discard_dialog)
+	_discard_dialog = EditorUi.confirm_discard(self, "Есть несохранённые изменения поля боя. Отбросить их?", _confirm_discard)
+	_discard_dialog.theme = EditorUi.theme()
 	var settings := GameContentSettings.read()
 	if settings == null:
-		_set_status("Не удалось прочитать content/game_content.tres.")
+		_set_status("Не удалось прочитать content/game_content.tres.", EditorUi.Severity.ERROR)
 		return
 	content_packages = settings.content_packages
 	var load_result := UnitLibrary.load_content(content_packages)
@@ -86,7 +98,7 @@ func _ready() -> void:
 	if not settings.battle_document_path.is_empty():
 		var loaded := BattleDocumentSerializer.load_result(settings.battle_document_path)
 		if loaded.document == null:
-			_set_status(loaded.error_message)
+			_set_status(loaded.error_message, EditorUi.Severity.ERROR)
 			return
 		_document = loaded.document
 		_current_document_path = settings.battle_document_path
@@ -94,7 +106,7 @@ func _ready() -> void:
 		_document = BattleDocument.from_snapshot(_snapshot, initial_battle_id)
 
 	if _document == null:
-		_set_status("Не удалось открыть стартовый бой.")
+		_set_status("Не удалось открыть стартовый бой.", EditorUi.Severity.ERROR)
 		return
 
 	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
@@ -106,283 +118,245 @@ func _ready() -> void:
 	_populate_side_options()
 	_populate_ai_options()
 	_update_document_path_label()
-	_validate_document()
+	_after_document_changed()
+	_set_status("Открыт стартовый бой игры. Выберите инструмент сверху или нажмите его клавишу.")
 	call_deferred("_frame_map")
 
 
 func _build_ui() -> void:
-	var background := ColorRect.new()
-	background.color = Color(0.035, 0.05, 0.065)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(background)
-	_ui = background
+	var root := EditorUi.background(self)
+	_ui = root.get_parent() as Control
+	# The skin is scoped to the editor UI: trial battles and embedded tools keep their own look.
+	EditorUi.apply(_ui)
+	_build_top_bar(root)
+	var body := HBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 0)
+	root.add_child(body)
+	var workspace_column := VBoxContainer.new()
+	workspace_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	workspace_column.add_theme_constant_override("separation", 0)
+	body.add_child(workspace_column)
+	var tools := EditorUi.bar(workspace_column)
+	_tool_bar = EditorToolBar.new()
+	_tool_bar.tool_selected.connect(_on_tool_selected)
+	tools.add_child(_tool_bar)
 
 	_map_workspace = Control.new()
 	_map_workspace.name = "MapWorkspace"
-	_map_workspace.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_map_workspace.offset_right = -380.0
-	_map_workspace.offset_top = 52.0
-	_map_workspace.offset_bottom = -150.0
+	_map_workspace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_map_workspace.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_map_workspace.clip_contents = true
-	_map_workspace.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	background.add_child(_map_workspace)
-
+	_map_workspace.mouse_filter = Control.MOUSE_FILTER_STOP
+	workspace_column.add_child(_map_workspace)
 	_view = EditorBattleView.new()
 	_view.hex_activated.connect(_on_hex_activated)
 	_view.hex_erased.connect(_on_hex_erased)
 	_view.placement_selected.connect(_on_placement_selected)
+	_view.placement_moved.connect(_move_placement)
 	_view.hovered_hex_changed.connect(_on_hovered_hex_changed)
 	_map_workspace.add_child(_view)
+	_map_workspace.gui_input.connect(func(event: InputEvent) -> void:
+		if _view.handle_input(event):
+			_map_workspace.accept_event()
+	)
+	_map_workspace.mouse_exited.connect(_view.clear_hover)
 	_map_workspace.resized.connect(_frame_map)
-	_build_visual_controls(background)
+	_build_map_overlay()
+	_build_inspector(body)
+	_build_status_bar(root)
 
-	var panel := PanelContainer.new()
-	panel.name = "ToolsPanel"
-	panel.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
-	panel.offset_left = -364.0
-	panel.offset_top = 16.0
-	panel.offset_right = -16.0
-	panel.offset_bottom = -16.0
-	background.add_child(panel)
+	_save_dialog = _create_file_dialog(FileDialog.FILE_MODE_SAVE_FILE)
+	_save_dialog.file_selected.connect(_on_save_path_selected)
+	_open_dialog = _create_file_dialog(FileDialog.FILE_MODE_OPEN_FILE)
+	_open_dialog.file_selected.connect(_on_open_path_selected)
+	_update_inspector()
 
-	var scroll := ScrollContainer.new()
-	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	panel.add_child(scroll)
-	var root := VBoxContainer.new()
-	root.custom_minimum_size = Vector2(320.0, 0.0)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 7)
-	scroll.add_child(root)
 
-	var title := Label.new()
-	title.text = "РЕДАКТОР БОЯ"
-	title.add_theme_font_size_override("font_size", 22)
-	root.add_child(title)
+func _build_top_bar(root: Control) -> void:
+	var bar := EditorUi.bar(root)
+	bar.add_child(EditorUi.label("Редактор поля боя", &"TitleLabel"))
+	var file_menu := MenuButton.new()
+	file_menu.text = "Файл ▾"
+	file_menu.flat = false
+	var popup := file_menu.get_popup()
+	popup.add_item("Новое поле", FileAction.NEW, (KEY_MASK_CMD_OR_CTRL | KEY_N) as Key)
+	popup.add_item("Открыть…", FileAction.OPEN, (KEY_MASK_CMD_OR_CTRL | KEY_O) as Key)
+	popup.add_separator()
+	popup.add_item("Сохранить", FileAction.SAVE, (KEY_MASK_CMD_OR_CTRL | KEY_S) as Key)
+	popup.add_item("Сохранить как…", FileAction.SAVE_AS, (KEY_MASK_CMD_OR_CTRL | KEY_MASK_SHIFT | KEY_S) as Key)
+	popup.add_separator()
+	popup.add_item("Обновить список полей", FileAction.REFRESH_LIST)
+	popup.add_item("Перечитать библиотеку юнитов", FileAction.RELOAD_LIBRARY)
+	popup.add_item("Экспорт копии документа", FileAction.EXPORT)
+	popup.add_separator()
+	popup.add_item("Сделать стартовым боем", FileAction.USE_IN_GAME)
+	popup.id_pressed.connect(_on_file_action)
+	bar.add_child(file_menu)
+	bar.add_child(EditorUi.separator())
+	bar.add_child(EditorUi.label("Поле", &"FieldLabel"))
 	_battle_option = OptionButton.new()
-	_battle_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_battle_option.custom_minimum_size.x = 250
 	_battle_option.fit_to_longest_item = false
 	_battle_option.clip_text = true
+	_battle_option.tooltip_text = "Сохранённые поля боя из content/authored/battles"
 	_battle_option.item_selected.connect(_on_battle_selected)
-	root.add_child(_labeled("Сохранённые поля боя", _battle_option))
-	var library_actions := HBoxContainer.new()
-	library_actions.add_child(_button("Новое поле", _new_document_requested))
-	library_actions.add_child(_button("Обновить список", _refresh_battle_library))
-	root.add_child(library_actions)
+	bar.add_child(_battle_option)
 	_name_edit = LineEdit.new()
 	_name_edit.placeholder_text = "Название поля боя"
 	_name_edit.max_length = 120
+	_name_edit.custom_minimum_size.x = 250
+	_name_edit.tooltip_text = "Название поля; ID и путь файла при переименовании не меняются."
 	_name_edit.text_changed.connect(_on_name_changed)
-	root.add_child(_labeled("Название", _name_edit))
-	_grid_layout_controls = EditorGridLayoutControls.new()
+	bar.add_child(_name_edit)
+	_dirty_label = EditorUi.label("")
+	bar.add_child(_dirty_label)
+	bar.add_child(EditorUi.spacer())
+	var undo := EditorUi.button("Отменить", _undo)
+	EditorUi.add_shortcut(undo, KEY_Z, true)
+	bar.add_child(undo)
+	var redo := EditorUi.button("Повторить", _redo)
+	EditorUi.add_shortcut(redo, KEY_Y, true)
+	EditorUi.add_shortcut(redo, KEY_Z, true, true)
+	bar.add_child(redo)
+	bar.add_child(EditorUi.separator())
+	bar.add_child(EditorUi.button("Юниты…", _open_unit_editor, "Открыть редактор юнитов; при возврате палитра обновится"))
+	bar.add_child(EditorUi.button("Навыки…", _open_skill_editor, "Открыть редактор навыков и эффектов"))
+	bar.add_child(EditorUi.separator())
+	bar.add_child(EditorUi.button("Сохранить", _save, "Сохранить поле (Ctrl+S)"))
+	bar.add_child(EditorUi.button("▶ Пробный бой", _start_trial, "Запустить текущий черновик в обычном бою без записи результата", &"PrimaryButton"))
+
+
+func _build_map_overlay() -> void:
+	var overlay := PanelContainer.new()
+	overlay.theme_type_variation = &"EditorOverlay"
+	overlay.anchor_left = 1.0
+	overlay.anchor_right = 1.0
+	overlay.offset_left = -12.0
+	overlay.offset_right = -12.0
+	overlay.offset_top = 12.0
+	overlay.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_map_workspace.add_child(overlay)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	overlay.add_child(row)
+	for title: String in ["Сетка", "Юниты"]:
+		var check := CheckButton.new()
+		check.text = title
+		check.button_pressed = true
+		check.focus_mode = Control.FOCUS_NONE
+		check.tooltip_text = "Показать или скрыть %s. Документ не меняется." % ("сетку" if title == "Сетка" else "фигуры юнитов")
+		check.toggled.connect(func(enabled: bool) -> void:
+			if title == "Сетка":
+				_view.show_grid = enabled
+			else:
+				_view.show_units = enabled
+			_view.refresh()
+		)
+		row.add_child(check)
+	row.add_child(EditorUi.separator())
+	var zoom_out := EditorUi.button("−", func() -> void: _zoom_view(1.0 / 1.2), "Уменьшить")
+	EditorUi.add_shortcut(zoom_out, KEY_MINUS)
+	var zoom_in := EditorUi.button("+", func() -> void: _zoom_view(1.2), "Увеличить")
+	EditorUi.add_shortcut(zoom_in, KEY_EQUAL)
+	EditorUi.add_shortcut(zoom_in, KEY_PLUS)
+	var fit := EditorUi.button("Вписать", _frame_map, "Показать всё поле")
+	EditorUi.add_shortcut(fit, KEY_F)
+	for button: Button in [zoom_out, zoom_in, fit]:
+		button.focus_mode = Control.FOCUS_NONE
+		row.add_child(button)
+
+
+func _build_inspector(body: Control) -> void:
+	_inspector = BattleEditorInspector.new()
+	body.add_child(_inspector)
+	# Short aliases keep the workflow code and its tests independent of the panel layout.
+	_state_palette = _inspector.state_palette
+	_palette = _inspector.palette
+	_palette_search = _inspector.palette_search
+	_roster = _inspector.roster
+	_side_option = _inspector.side_option
+	_ai_option = _inspector.ai_option
+	_selected_hex_label = _inspector.selected_hex_label
+	_terrain_id_edit = _inspector.terrain_id_edit
+	_movement_cost_spin = _inspector.movement_cost_spin
+	_traversable_check = _inspector.traversable_check
+	_q_spin = _inspector.q_spin
+	_r_spin = _inspector.r_spin
+	_obstacle_type = _inspector.obstacle_type
+	_obstacle_size = _inspector.obstacle_size
+	_obstacle_direction = _inspector.obstacle_direction
+	_obstacle_destructible = _inspector.obstacle_destructible
+	_obstacle_hp = _inspector.obstacle_hp
+	_document_path_label = _inspector.document_path_label
+	_background_option = _inspector.background_option
+	_grid_layout_controls = _inspector.grid_layout_controls
+
+	_state_palette.state_selected.connect(func(id: StringName) -> void:
+		_selected_state_id = id
+		_select_tool(EditorBattleView.Tool.PAINT_STATE)
+	)
+	_state_palette.erase_selected.connect(func() -> void: _select_tool(EditorBattleView.Tool.ERASE_STATE))
+	_palette_search.text_changed.connect(_on_palette_search_changed)
+	_palette.item_selected.connect(_on_palette_selected)
+	_roster.item_selected.connect(func(index: int) -> void: _on_placement_selected(_roster.get_item_metadata(index)))
+	_side_option.item_selected.connect(_on_side_changed)
+	_ai_option.item_selected.connect(_on_ai_override_changed)
+	_obstacle_size.value_changed.connect(func(value: float) -> void:
+		_view.obstacle_size = int(value)
+		_view.refresh()
+	)
+	_obstacle_direction.item_selected.connect(func(index: int) -> void:
+		_view.obstacle_direction = index
+		_view.refresh()
+	)
+	_background_option.item_selected.connect(func(_index: int) -> void:
+		if _document != null:
+			_execute(EditCommand.set_background(_background_option.get_selected_metadata()))
+	)
 	_grid_layout_controls.offset_changed.connect(func(value: int, custom: bool) -> void:
 		if _document != null:
 			_execute(EditCommand.set_grid_offset(value, custom))
 	)
 	_grid_layout_controls.default_saved.connect(func(_value: int) -> void:
 		_sync_grid_layout()
-		_set_status("Высота по умолчанию сохранена для полей без своей настройки.")
+		_set_status("Высота по умолчанию сохранена для полей без своей настройки.", EditorUi.Severity.OK)
 	)
-	_grid_layout_controls.save_failed.connect(_set_status)
-	root.add_child(_grid_layout_controls)
-	root.add_child(EditorDisplaySettings.new())
-
-	var hint := Label.new()
-	hint.text = "ЛКМ — инструмент · ПКМ — удалить препятствие / состояние / юнита · СКМ — панорама"
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(hint)
-
-	_cursor_label = Label.new()
-	_cursor_label.text = "Курсор: вне поля"
-	_cursor_label.add_theme_color_override("font_color", Color(0.3, 0.82, 0.9))
-	root.add_child(_cursor_label)
-
-	_tool_option = OptionButton.new()
-	_add_tool("Выбор клетки / юнита", EditorBattleView.Tool.SELECT)
-	_add_tool("Кисть: состояние", EditorBattleView.Tool.PAINT_STATE)
-	_add_tool("Ластик: состояние", EditorBattleView.Tool.ERASE_STATE)
-	_add_tool("Кисть: добавить гексы", EditorBattleView.Tool.ADD_HEX)
-	_add_tool("Кисть: удалить гексы", EditorBattleView.Tool.REMOVE_HEX)
-	_add_tool("Кисть: поверхность", EditorBattleView.Tool.PAINT_TERRAIN)
-	_add_tool("Кисть: стоимость движения", EditorBattleView.Tool.PAINT_COST)
-	_add_tool("Кисть: препятствие", EditorBattleView.Tool.PAINT_OBSTACLE)
-	_add_tool("Поставить / переместить юнита", EditorBattleView.Tool.PLACE_UNIT)
-	_tool_option.item_selected.connect(_on_tool_changed)
-	root.add_child(_labeled("Инструмент", _tool_option))
-	root.add_child(_button("Показать всё поле", _frame_map))
-	root.add_child(HSeparator.new())
-
-	var map_title := Label.new()
-	map_title.text = "СВОЙСТВА ГЕКСА И КИСТИ"
-	map_title.add_theme_font_size_override("font_size", 14)
-	root.add_child(map_title)
-
-	_selected_hex_label = Label.new()
-	_selected_hex_label.text = "Гекс не выбран"
-	root.add_child(_selected_hex_label)
-
-	_terrain_id_edit = LineEdit.new()
-	_terrain_id_edit.text = "core:default"
-	_terrain_id_edit.placeholder_text = "core:default"
-	root.add_child(_labeled("ID поверхности", _terrain_id_edit))
-
-	_movement_cost_spin = SpinBox.new()
-	_movement_cost_spin.min_value = 1
-	_movement_cost_spin.max_value = 99
-	_movement_cost_spin.value = 1
-	root.add_child(_labeled("Стоимость движения", _movement_cost_spin))
-
-	_traversable_check = CheckButton.new()
-	_traversable_check.text = "Проходимый гекс"
-	_traversable_check.button_pressed = true
-	root.add_child(_traversable_check)
-	root.add_child(_button("Применить к выбранному гексу", _apply_selected_hex))
-	root.add_child(HSeparator.new())
-	_obstacle_type = OptionButton.new()
-	for label: String in BattleObstacleDefinition.NAMES:
-		_obstacle_type.add_item(label)
-	root.add_child(_labeled("Препятствие: местность", _obstacle_type))
-	_obstacle_size = SpinBox.new()
-	_obstacle_size.min_value = 1
-	_obstacle_size.max_value = 4
-	_obstacle_size.value = 1
-	_obstacle_size.value_changed.connect(func(value: float) -> void:
-		_view.obstacle_size = int(value)
-		_view.refresh()
-	)
-	root.add_child(_labeled("Гексов подряд (общие HP)", _obstacle_size))
-	_obstacle_direction = OptionButton.new()
-	for label: String in ["Вправо", "Вверх вправо", "Вверх влево", "Влево", "Вниз влево", "Вниз вправо"]:
-		_obstacle_direction.add_item(label)
-	_obstacle_direction.item_selected.connect(func(index: int) -> void:
-		_view.obstacle_direction = index
-		_view.refresh()
-	)
-	root.add_child(_labeled("Направление от выбранного гекса", _obstacle_direction))
-	_obstacle_destructible = CheckButton.new()
-	_obstacle_destructible.text = "Уничтожаемое препятствие"
-	root.add_child(_obstacle_destructible)
-	_obstacle_hp = SpinBox.new()
-	_obstacle_hp.min_value = 1
-	_obstacle_hp.max_value = 1000000
-	_obstacle_hp.value = 10
-	_obstacle_hp.editable = false
-	_obstacle_destructible.toggled.connect(func(value: bool) -> void: _obstacle_hp.editable = value)
-	root.add_child(_labeled("HP всего препятствия", _obstacle_hp))
-	root.add_child(_button("Поставить / обновить препятствие", _apply_selected_obstacle))
-	root.add_child(_button("Удалить выбранное препятствие", _remove_selected_obstacle))
-
-	var coords := HBoxContainer.new()
-	_q_spin = _coordinate_spin()
-	_r_spin = _coordinate_spin()
-	coords.add_child(_labeled("q", _q_spin))
-	coords.add_child(_labeled("r", _r_spin))
-	root.add_child(coords)
-
-	var coordinate_actions := HBoxContainer.new()
-	coordinate_actions.add_child(_button("Добавить по q,r", _add_hex_by_coordinates))
-	coordinate_actions.add_child(_button("Удалить по q,r", _remove_hex_by_coordinates))
-	root.add_child(coordinate_actions)
-	root.add_child(HSeparator.new())
-
-	var unit_title := Label.new()
-	unit_title.text = "РАССТАНОВКА ЮНИТОВ"
-	unit_title.add_theme_font_size_override("font_size", 14)
-	root.add_child(unit_title)
-	root.add_child(_button("Редактор юнитов", _open_unit_editor))
-	root.add_child(_button("Навыки и эффекты", _open_skill_editor))
-	root.add_child(_button("Обновить библиотеку юнитов", _reload_unit_library))
-
-	_palette_search = LineEdit.new()
-	_palette_search.placeholder_text = "Поиск юнита"
-	_palette_search.text_changed.connect(_on_palette_search_changed)
-	root.add_child(_palette_search)
-
-	_palette = ItemList.new()
-	_palette.custom_minimum_size = Vector2(0, 180)
-	_palette.fixed_icon_size = Vector2i(40, 40)
-	_palette.item_selected.connect(_on_palette_selected)
-	root.add_child(_palette)
-
-	_side_option = OptionButton.new()
-	_side_option.item_selected.connect(_on_side_changed)
-	root.add_child(_labeled("Сторона", _side_option))
-
-	_ai_option = OptionButton.new()
-	_ai_option.item_selected.connect(_on_ai_override_changed)
-	root.add_child(_labeled("Профиль ИИ", _ai_option))
-
-	var placement_actions := HBoxContainer.new()
-	placement_actions.add_child(_button("Дублировать", _duplicate_selected))
-	placement_actions.add_child(_button("Удалить юнита", _delete_selected))
-	root.add_child(placement_actions)
-	root.add_child(HSeparator.new())
-
-	var history_title := Label.new()
-	history_title.text = "ДОКУМЕНТ"
-	history_title.add_theme_font_size_override("font_size", 14)
-	root.add_child(history_title)
-
-	var history_actions := HBoxContainer.new()
-	history_actions.add_child(_button("Отменить", _undo))
-	history_actions.add_child(_button("Повторить", _redo))
-	root.add_child(history_actions)
-
-	_document_path_label = Label.new()
-	_document_path_label.text = "Файл: не сохранён"
-	_document_path_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_document_path_label)
-
-	var save_actions := HBoxContainer.new()
-	save_actions.add_child(_button("Сохранить", _save))
-	save_actions.add_child(_button("Сохранить как…", _save_as))
-	save_actions.add_child(_button("Открыть…", _open_dialog_requested))
-	root.add_child(save_actions)
-
-	var document_actions := HBoxContainer.new()
-	document_actions.add_child(_button("Экспорт", _export))
-	document_actions.add_child(_button("Проверить", _validate_document))
-	root.add_child(document_actions)
-	root.add_child(_button("Пробный бой", _start_trial))
-	root.add_child(_button("Сделать стартовым боем", _use_in_game))
-
-	_diagnostics = ItemList.new()
-	_diagnostics.custom_minimum_size = Vector2(0, 130)
-	root.add_child(_diagnostics)
-	_status = Label.new()
-	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	root.add_child(_status)
-
-	_save_dialog = _create_file_dialog(FileDialog.FILE_MODE_SAVE_FILE)
-	_save_dialog.file_selected.connect(_on_save_path_selected)
-	_open_dialog = _create_file_dialog(FileDialog.FILE_MODE_OPEN_FILE)
-	_open_dialog.file_selected.connect(_on_open_path_selected)
+	_grid_layout_controls.save_failed.connect(func(message: String) -> void: _set_status(message, EditorUi.Severity.ERROR))
+	for pair: Array in [
+		[_inspector.unit_editor_button, _open_unit_editor], [_inspector.reload_button, _reload_unit_library],
+		[_inspector.duplicate_button, _duplicate_selected], [_inspector.delete_button, _delete_selected],
+		[_inspector.hex_apply_button, _apply_selected_hex], [_inspector.add_hex_button, _add_hex_by_coordinates],
+		[_inspector.remove_hex_button, _remove_hex_by_coordinates], [_inspector.obstacle_apply_button, _apply_selected_obstacle],
+		[_inspector.obstacle_remove_button, _remove_selected_obstacle], [_inspector.open_button, _open_dialog_requested],
+		[_inspector.save_as_button, _save_as], [_inspector.new_button, _new_document_requested],
+		[_inspector.export_button, _export], [_inspector.check_button, _check_document],
+		[_inspector.trial_button, _start_trial],
+	]:
+		(pair[0] as Button).pressed.connect(pair[1])
+	for button: Button in _inspector.use_in_game_buttons:
+		button.pressed.connect(_use_in_game)
 
 
-func _labeled(text: String, control: Control) -> Control:
-	var box := VBoxContainer.new()
-	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var label := Label.new()
-	label.text = text
-	box.add_child(label)
-	box.add_child(control)
-	return box
-
-
-func _button(text: String, callback: Callable) -> Button:
-	var button := Button.new()
-	button.text = text
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.pressed.connect(callback)
-	return button
-
-
-func _coordinate_spin() -> SpinBox:
-	var spin := SpinBox.new()
-	spin.min_value = -999
-	spin.max_value = 999
-	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	return spin
+func _build_status_bar(root: Control) -> void:
+	var bar := EditorUi.bar(root, &"EditorStatusBar")
+	_status = EditorUi.label("")
+	_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_status.mouse_filter = Control.MOUSE_FILTER_PASS
+	bar.add_child(_status)
+	_cursor_label = EditorUi.label("Курсор: вне поля", &"MutedLabel")
+	_cursor_label.custom_minimum_size.x = 340
+	_cursor_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	bar.add_child(_cursor_label)
+	_zoom_label = EditorUi.label("", &"MutedLabel")
+	bar.add_child(_zoom_label)
+	_validation_badge = Button.new()
+	_validation_badge.flat = true
+	_validation_badge.focus_mode = Control.FOCUS_NONE
+	_validation_badge.tooltip_text = "Открыть вкладку «Проверка»"
+	_validation_badge.pressed.connect(func() -> void: _inspector.current_tab = BattleEditorInspector.Page.CHECKS)
+	bar.add_child(_validation_badge)
 
 
 func _create_file_dialog(mode: FileDialog.FileMode) -> FileDialog:
@@ -394,30 +368,59 @@ func _create_file_dialog(mode: FileDialog.FileMode) -> FileDialog:
 	dialog.current_dir = ProjectSettings.globalize_path(GameContentSettings.BATTLES)
 	dialog.canceled.connect(func() -> void: _activate_after_save = false)
 	dialog.size = Vector2i(820, 560)
-	dialog.about_to_popup.connect(func() -> void: _view.set_process_input(false))
-	dialog.visibility_changed.connect(func() -> void: _view.set_process_input(not dialog.visible))
+	dialog.theme = EditorUi.theme()
 	add_child(dialog)
 	return dialog
 
 
-func _add_tool(label: String, tool: EditorBattleView.Tool) -> void:
-	var index := _tool_option.item_count
-	_tool_option.add_item(label)
-	_tool_option.set_item_metadata(index, tool)
+func _on_file_action(id: int) -> void:
+	match id:
+		FileAction.NEW:
+			_new_document_requested()
+		FileAction.OPEN:
+			_open_dialog_requested()
+		FileAction.SAVE:
+			_save()
+		FileAction.SAVE_AS:
+			_save_as()
+		FileAction.REFRESH_LIST:
+			_refresh_battle_library()
+			_set_status("Список сохранённых полей обновлён.")
+		FileAction.RELOAD_LIBRARY:
+			_reload_unit_library()
+		FileAction.EXPORT:
+			_export()
+		FileAction.USE_IN_GAME:
+			_use_in_game()
 
 
-func _on_tool_changed(index: int) -> void:
-	var tool := int(_tool_option.get_item_metadata(index)) as EditorBattleView.Tool
-	_view.set_tool(tool)
-	_set_status("Инструмент: %s." % _tool_option.get_item_text(index))
+func _on_tool_selected(tool: EditorBattleView.Tool) -> void:
+	_apply_tool(tool)
+	_set_status("Инструмент: %s. %s" % [EditorToolBar.caption(tool), EditorToolBar.help(tool)])
 
 
 func _select_tool(tool: EditorBattleView.Tool) -> void:
-	for index: int in range(_tool_option.item_count):
-		if int(_tool_option.get_item_metadata(index)) == int(tool):
-			_tool_option.select(index)
-			_view.set_tool(tool)
-			return
+	_tool_bar.select(tool)
+	_apply_tool(tool)
+
+
+func _apply_tool(tool: EditorBattleView.Tool) -> void:
+	_view.set_tool(tool)
+	_view.cancel_drag()
+	_state_palette.show_brush(_selected_state_id, tool == EditorBattleView.Tool.ERASE_STATE)
+	_inspector.current_tab = BattleEditorInspector.Page.INSPECTOR
+	_update_inspector()
+
+
+func _update_inspector() -> void:
+	var placement := _find_placement(_selected_placement_id)
+	_inspector.show_context(
+		_view.active_tool,
+		_placement_caption(placement) if placement != null else "",
+		_definition_name(_selected_definition_id) if not _selected_definition_id.is_empty() else "",
+		_has_selected_hex,
+		_has_selected_hex and _obstacle_at(_selected_hex) != null,
+	)
 
 
 func _open_skill_editor() -> void:
@@ -425,11 +428,9 @@ func _open_skill_editor() -> void:
 	editor.embedded = true
 	_skill_editor = editor
 	_ui.hide()
-	_view.set_process_input(false)
 	editor.closed.connect(func() -> void:
 		_skill_editor = null
 		_ui.show()
-		_view.set_process_input(true)
 		_reload_unit_library()
 	)
 	add_child(editor)
@@ -440,11 +441,9 @@ func _open_unit_editor() -> void:
 	editor.embedded = true
 	_unit_editor = editor
 	_ui.hide()
-	_view.set_process_input(false)
 	editor.closed.connect(func() -> void:
 		_unit_editor = null
 		_ui.show()
-		_view.set_process_input(true)
 		_reload_unit_library()
 	)
 	add_child(editor)
@@ -454,7 +453,7 @@ func _reload_unit_library() -> void:
 	var result := UnitLibrary.load_content(content_packages)
 	if not result.is_successful:
 		_show_load_errors(result.errors)
-		_set_status("Библиотека не обновлена: исправьте ошибки файлов. Предыдущий снимок сохранён.")
+		_set_status("Библиотека не обновлена: исправьте ошибки файлов. Предыдущий снимок сохранён.", EditorUi.Severity.ERROR)
 		return
 	_snapshot = result.snapshot
 	if _document == null:
@@ -463,13 +462,13 @@ func _reload_unit_library() -> void:
 			var loaded := BattleDocumentSerializer.load_result(settings.battle_document_path)
 			_document = loaded.document
 			if _document == null:
-				_set_status(loaded.error_message)
+				_set_status(loaded.error_message, EditorUi.Severity.ERROR)
 				return
 			_current_document_path = settings.battle_document_path
 		else:
 			_document = BattleDocument.from_snapshot(_snapshot, initial_battle_id)
 		if _document == null:
-			_set_status("Не найден стартовый бой.")
+			_set_status("Не найден стартовый бой.", EditorUi.Severity.ERROR)
 			return
 		_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
 		_populate_side_options()
@@ -479,7 +478,8 @@ func _reload_unit_library() -> void:
 	_view.setup(_document)
 	_populate_palette(_palette_search.text)
 	_sync_grid_layout()
-	_validate_document()
+	_after_document_changed()
+	_set_status("Библиотека юнитов перечитана; черновик поля и история сохранены.", EditorUi.Severity.OK)
 
 
 func _populate_palette(filter_text: String = "") -> void:
@@ -494,13 +494,15 @@ func _populate_palette(filter_text: String = "") -> void:
 		if not filter.is_empty() and not searchable.to_lower().contains(filter):
 			continue
 
-		var index := _palette.add_item(
-			"%s  [%s]" % [definition.display_name, definition.id]
-		)
+		var index := _palette.add_item(definition.display_name)
 		_palette.set_item_metadata(index, definition.id)
-		var presentation := _snapshot.get_unit_presentation_definition(definition.presentation_id)
-		if presentation != null:
-			_palette.set_item_icon(index, presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture)
+		var stats := definition.base_stats
+		_palette.set_item_tooltip(index, "%s\nОЗ %d · урон %d · дальность %d · передвижение %d" % [
+			definition.id, stats.max_health, stats.basic_attack_damage, stats.basic_attack_range, stats.movement_points,
+		] if stats != null else String(definition.id))
+		_palette.set_item_icon(index, _portrait_for(definition.id))
+		if definition.id == _selected_definition_id:
+			_palette.select(index)
 
 
 func _populate_side_options() -> void:
@@ -508,7 +510,11 @@ func _populate_side_options() -> void:
 
 	for side: BattleSideDefinition in _document.battle_definition.sides:
 		var index := _side_option.item_count
-		_side_option.add_item(String(side.side_id))
+		_side_option.add_item("%s · %s%s" % [
+			side.side_id,
+			"игрок" if side.faction == BattleFaction.Value.PLAYER else "противник",
+			", ИИ" if side.control_source == BattleControlSource.Value.AI else "",
+		])
 		_side_option.set_item_metadata(index, side.side_id)
 
 
@@ -525,6 +531,59 @@ func _populate_ai_options() -> void:
 		_ai_option.set_item_metadata(index, ai_id)
 
 
+func _refresh_roster() -> void:
+	_roster.clear()
+	if _document == null:
+		return
+	var placements := _document.battle_definition.unit_placements.duplicate()
+	placements.sort_custom(func(a: UnitPlacementDefinition, b: UnitPlacementDefinition) -> bool:
+		return [String(a.side_id), a.start_hex.y, a.start_hex.x] < [String(b.side_id), b.start_hex.y, b.start_hex.x]
+	)
+	for placement: UnitPlacementDefinition in placements:
+		var index := _roster.add_item(_placement_caption(placement), _portrait_for(placement.definition_id))
+		_roster.set_item_metadata(index, placement.placement_id)
+		_roster.set_item_tooltip(index, String(placement.placement_id))
+	_sync_roster_selection()
+
+
+func _sync_roster_selection() -> void:
+	_roster.deselect_all()
+	for index: int in range(_roster.item_count):
+		if _roster.get_item_metadata(index) == _selected_placement_id:
+			_roster.select(index)
+			_roster.ensure_current_is_visible()
+
+
+func _placement_caption(placement: UnitPlacementDefinition) -> String:
+	return "%s — %s (q %d, r %d)" % [_definition_name(placement.definition_id), placement.side_id, placement.start_hex.x, placement.start_hex.y]
+
+
+func _definition_name(definition_id: StringName) -> String:
+	return String(_describe_unit(definition_id).get("name", definition_id))
+
+
+func _portrait_for(definition_id: StringName) -> Texture2D:
+	return _describe_unit(definition_id).get("portrait") as Texture2D
+
+
+func _describe_unit(definition_id: StringName) -> Dictionary:
+	if _snapshot == null:
+		return {}
+	if _unit_info_snapshot != _snapshot:
+		_unit_info.clear()
+		_unit_info_snapshot = _snapshot
+	if not _unit_info.has(definition_id):
+		var info := {}
+		var definition := _snapshot.get_unit_definition(definition_id)
+		if definition != null:
+			info["name"] = definition.display_name
+			var presentation := _snapshot.get_unit_presentation_definition(definition.presentation_id)
+			if presentation != null:
+				info["portrait"] = presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture
+		_unit_info[definition_id] = info
+	return _unit_info[definition_id]
+
+
 func _on_palette_search_changed(text: String) -> void:
 	_populate_palette(text)
 
@@ -533,8 +592,9 @@ func _on_palette_selected(index: int) -> void:
 	_selected_definition_id = _palette.get_item_metadata(index)
 	_selected_placement_id = StringName()
 	_view.select_placement(StringName())
+	_sync_roster_selection()
 	_select_tool(EditorBattleView.Tool.PLACE_UNIT)
-	_set_status("Выбран юнит %s. Щёлкните по существующему гексу." % _selected_definition_id)
+	_set_status("Выбран юнит «%s». Щёлкните по свободному гексу." % _definition_name(_selected_definition_id))
 
 
 func _on_placement_selected(placement_id: StringName) -> void:
@@ -545,23 +605,36 @@ func _on_placement_selected(placement_id: StringName) -> void:
 	var placement := _find_placement(placement_id)
 
 	if placement == null:
+		_update_inspector()
 		return
 
 	_select_option_by_metadata(_side_option, placement.side_id)
 	_select_option_by_metadata(_ai_option, placement.ai_profile_override_id)
-	_set_status(
-		"Выбрано размещение %s. Для перемещения выберите инструмент юнита."
-		% placement_id
-	)
+	_sync_roster_selection()
+	_update_inspector()
+	_set_status("Выбран юнит «%s». Перетащите его на другой гекс; Delete — удалить, Ctrl+D — дублировать." % _definition_name(placement.definition_id))
 
 
 func _on_hovered_hex_changed(hex: Vector2i, is_inside: bool) -> void:
-	_cursor_label.text = (
-		"Курсор: q=%d, r=%d · масштаб %d%%"
-		% [hex.x, hex.y, roundi(_view.get_zoom() * 100.0)]
-		if is_inside
-		else "Курсор: вне поля"
-	)
+	if not is_inside or _document == null:
+		_cursor_label.text = "Курсор: вне поля"
+		return
+	var parts: PackedStringArray = ["q %d, r %d" % [hex.x, hex.y]]
+	var cell := _find_cell(hex)
+	if cell == null:
+		parts.append("клетки нет")
+	else:
+		if not cell.hex_state_id.is_empty():
+			parts.append(HexStateCatalog.get_display_name(cell.hex_state_id))
+		parts.append("ход %d" % cell.movement_cost)
+		if not cell.traversable:
+			parts.append("непроходим")
+		if _obstacle_at(hex) != null:
+			parts.append("препятствие")
+	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
+		if placement.start_hex == hex:
+			parts.append(_definition_name(placement.definition_id))
+	_cursor_label.text = " · ".join(parts)
 
 
 func _on_hex_activated(hex: Vector2i) -> void:
@@ -599,17 +672,21 @@ func _on_hex_activated(hex: Vector2i) -> void:
 
 func _select_hex(hex: Vector2i) -> void:
 	var cell := _find_cell(hex)
+	# Any click on the map replaces the previous selection, including the unit selection.
+	_selected_placement_id = StringName()
+	_selected_definition_id = StringName()
+	_sync_roster_selection()
 
 	if cell == null:
 		_has_selected_hex = false
 		_view.select_hex(hex, false)
 		_selected_hex_label.text = "Гекс q=%d, r=%d отсутствует" % [hex.x, hex.y]
+		_update_inspector()
+		_set_status("Клетки q=%d, r=%d нет на карте. Восстановите её инструментом «+ Гексы»." % [hex.x, hex.y])
 		return
 
 	_selected_hex = hex
 	_has_selected_hex = true
-	_selected_placement_id = StringName()
-	_selected_definition_id = StringName()
 	_view.select_hex(hex)
 	_terrain_id_edit.text = String(cell.terrain_id)
 	_movement_cost_spin.value = cell.movement_cost
@@ -624,13 +701,34 @@ func _select_hex(hex: Vector2i) -> void:
 		if obstacle.hexes.size() > 1:
 			_obstacle_direction.select(HexGrid.DIRECTIONS.find(obstacle.hexes[1] - obstacle.hexes[0]))
 		_view.obstacle_direction = _obstacle_direction.selected
-	_selected_hex_label.text = "Выбран гекс: q=%d, r=%d" % [hex.x, hex.y]
-	_set_status("Свойства выбранного гекса загружены в панель.")
+	_selected_hex_label.text = "Выбран гекс q=%d, r=%d%s" % [hex.x, hex.y, " · " + HexStateCatalog.get_display_name(cell.hex_state_id) if not cell.hex_state_id.is_empty() else ""]
+	_update_inspector()
+	_set_status("Свойства гекса загружены в инспектор.")
+
+
+func _clear_selection() -> void:
+	_selected_placement_id = StringName()
+	_selected_definition_id = StringName()
+	_has_selected_hex = false
+	_view.select_placement(StringName())
+	_view.cancel_drag()
+	_palette.deselect_all()
+	_sync_roster_selection()
+	_selected_hex_label.text = "Гекс не выбран"
+	_update_inspector()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not _ui.visible or _trial_screen != null:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		_clear_selection()
+		get_viewport().set_input_as_handled()
 
 
 func _add_hex(hex: Vector2i) -> void:
 	if not EditorBattleView.is_in_frame(hex):
-		_set_status("Максимальная сетка — 18×12.")
+		_set_status("Максимальная сетка — 18×12.", EditorUi.Severity.WARN)
 		return
 	if _find_cell(hex) != null:
 		return
@@ -645,21 +743,15 @@ func _add_hex(hex: Vector2i) -> void:
 
 func _remove_hex(hex: Vector2i) -> void:
 	if _obstacle_at(hex) != null:
-		_set_status("Сначала удалите препятствие целиком.")
+		_set_status("Сначала удалите препятствие целиком.", EditorUi.Severity.WARN)
 		return
 	if _find_cell(hex) == null:
 		return
 
-	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		if placement.start_hex == hex:
-			_set_status("Сначала переместите или удалите юнита с этого гекса.")
-			return
+	if _hex_is_occupied(hex):
+		_set_status("Сначала переместите или удалите юнита с этого гекса.", EditorUi.Severity.WARN)
+		return
 	_execute(EditCommand.remove_hex(hex))
-
-	if _has_selected_hex and _selected_hex == hex:
-		_has_selected_hex = false
-		_view.select_hex(hex, false)
-		_selected_hex_label.text = "Гекс удалён"
 
 
 func _update_hex(
@@ -686,16 +778,16 @@ func _update_hex(
 
 func _apply_selected_hex() -> void:
 	if _has_selected_hex and _obstacle_at(_selected_hex) != null:
-		_set_status("Используйте свойства препятствия или удалите его целиком.")
+		_set_status("Используйте свойства препятствия или удалите его целиком.", EditorUi.Severity.WARN)
 		return
 	if not _has_selected_hex:
-		_set_status("Сначала выберите существующий гекс.")
+		_set_status("Сначала выберите существующий гекс.", EditorUi.Severity.WARN)
 		return
 
 	var cell := _find_cell(_selected_hex)
 
 	if cell == null:
-		_set_status("Выбранный гекс больше не существует.")
+		_set_status("Выбранный гекс больше не существует.", EditorUi.Severity.WARN)
 		return
 
 	var updated := cell.duplicate(true) as BattleMapCellDefinition
@@ -704,11 +796,11 @@ func _apply_selected_hex() -> void:
 	if not updated.hex_state_id.is_empty():
 		updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
 	if not _traversable_check.button_pressed and _hex_is_occupied(_selected_hex):
-		_set_status("Нельзя сделать занятый гекс непроходимым.")
+		_set_status("Нельзя сделать занятый гекс непроходимым.", EditorUi.Severity.WARN)
 		return
 	updated.traversable = _traversable_check.button_pressed
 	_execute(EditCommand.update_hex(updated))
-	_set_status("Свойства гекса q=%d, r=%d обновлены." % [_selected_hex.x, _selected_hex.y])
+	_set_status("Свойства гекса q=%d, r=%d обновлены." % [_selected_hex.x, _selected_hex.y], EditorUi.Severity.OK)
 
 
 func _brush_terrain_id() -> StringName:
@@ -728,25 +820,31 @@ func _selected_coordinate() -> Vector2i:
 	return Vector2i(int(_q_spin.value), int(_r_spin.value))
 
 
-func _place_or_move_unit(hex: Vector2i) -> void:
+## Empty when a unit (other than the ignored one) may start on the hex.
+func _placement_target_error(hex: Vector2i, ignored_placement_id: StringName) -> String:
 	for existing: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		if existing.start_hex == hex and existing.placement_id != _selected_placement_id:
-			_set_status("Гекс уже занят юнитом.")
-			return
-	if _find_cell(hex) == null:
-		_set_status("Юнита можно поставить только на существующий гекс.")
-		return
+		if existing.start_hex == hex and existing.placement_id != ignored_placement_id:
+			return "Гекс уже занят юнитом."
+	var cell := _find_cell(hex)
+	if cell == null:
+		return "Юнита можно поставить только на существующий гекс."
+	if not cell.traversable or _obstacle_at(hex) != null:
+		return "Нельзя поставить юнита на непроходимый гекс."
+	return ""
 
-	if not _find_cell(hex).traversable or _obstacle_at(hex) != null:
-		_set_status("Нельзя поставить юнита на непроходимый гекс.")
-		return
+
+func _place_or_move_unit(hex: Vector2i) -> void:
 	if not _selected_placement_id.is_empty():
-		_execute(EditCommand.move_placement(_selected_placement_id, hex))
-		_select_tool(EditorBattleView.Tool.SELECT)
+		if _move_placement(_selected_placement_id, hex):
+			_select_tool(EditorBattleView.Tool.SELECT)
+		return
+	var error := _placement_target_error(hex, StringName())
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.WARN)
 		return
 
 	if _selected_definition_id.is_empty() or _side_option.item_count == 0:
-		_set_status("Сначала выберите юнита из палитры или маркер на поле.")
+		_set_status("Сначала выберите юнита из списка или маркер на поле.", EditorUi.Severity.WARN)
 		return
 
 	var placement := UnitPlacementDefinition.new()
@@ -757,6 +855,19 @@ func _place_or_move_unit(hex: Vector2i) -> void:
 	placement.ai_profile_override_id = _ai_option.get_selected_metadata()
 	_execute(EditCommand.add_placement(placement))
 	_view.select_placement(StringName())
+
+
+func _move_placement(placement_id: StringName, hex: Vector2i) -> bool:
+	if _find_placement(placement_id) == null:
+		return false
+	var error := _placement_target_error(hex, placement_id)
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.WARN)
+		return false
+	_selected_placement_id = placement_id
+	_execute(EditCommand.move_placement(placement_id, hex))
+	_set_status("Юнит перемещён на q=%d, r=%d." % [hex.x, hex.y], EditorUi.Severity.OK)
+	return true
 
 
 func _on_side_changed(_index: int) -> void:
@@ -785,64 +896,87 @@ func _duplicate_selected() -> void:
 	var placement := _find_placement(_selected_placement_id)
 
 	if placement == null:
-		_set_status("Сначала выберите маркер юнита на поле.")
+		_set_status("Сначала выберите маркер юнита на поле.", EditorUi.Severity.WARN)
 		return
 
 	var destination := _free_hex_near(placement.start_hex)
-	if destination == Vector2i(999999, 999999):
-		_set_status("Нет свободного проходимого гекса для копии.")
+	if destination == NO_HEX:
+		_set_status("Нет свободного проходимого гекса для копии.", EditorUi.Severity.WARN)
 		return
 	var new_id := _new_placement_id()
-	_selected_placement_id = new_id
-	_execute(EditCommand.duplicate_placement(
-		placement.placement_id,
-		new_id,
-		destination
-	))
-	_view.select_placement(new_id)
+	if _execute(EditCommand.duplicate_placement(placement.placement_id, new_id, destination)):
+		_selected_placement_id = new_id
+		_after_selection_changed()
 
 
 func _delete_selected() -> void:
 	if _selected_placement_id.is_empty():
-		_set_status("Сначала выберите маркер юнита на поле.")
+		_set_status("Сначала выберите маркер юнита на поле.", EditorUi.Severity.WARN)
 		return
 
 	_execute(EditCommand.remove_placement(_selected_placement_id))
-	_selected_placement_id = StringName()
-	_view.select_placement(StringName())
 
 
-func _execute(command: EditCommand) -> void:
+func _execute(command: EditCommand) -> bool:
 	if _document == null:
-		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
-		return
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
+		return false
 	if not _history.execute(command, _document):
-		_set_status("Команда не применена.")
-		return
+		_set_status("Команда не применена.", EditorUi.Severity.WARN)
+		return false
 
 	_after_document_changed()
+	return true
 
 
 func _undo() -> void:
-	if _history.undo(_document):
+	if _document != null and _history.undo(_document):
 		_after_document_changed()
+		_set_status("Отменено.")
 	else:
 		_set_status("Нечего отменять.")
 
 
 func _redo() -> void:
-	if _history.redo(_document):
+	if _document != null and _history.redo(_document):
 		_after_document_changed()
+		_set_status("Повторено.")
 	else:
 		_set_status("Нечего повторять.")
 
 
 func _after_document_changed() -> void:
+	if _document == null:
+		return
 	_view.setup(_document)
 	_sync_grid_layout()
 	_sync_document_name()
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_validate_document()
+	_refresh_roster()
+	_after_selection_changed()
+	_update_dirty()
+
+
+## Drops selections that undo or deletion removed from the document.
+func _after_selection_changed() -> void:
+	if not _selected_placement_id.is_empty() and _find_placement(_selected_placement_id) == null:
+		_selected_placement_id = StringName()
+	if _has_selected_hex and _find_cell(_selected_hex) == null:
+		_has_selected_hex = false
+		_selected_hex_label.text = "Гекс удалён"
+	if not _selected_placement_id.is_empty():
+		_view.select_placement(_selected_placement_id)
+	elif _has_selected_hex:
+		_view.select_hex(_selected_hex)
+	else:
+		_view.select_placement(StringName())
+	_sync_roster_selection()
+	_update_inspector()
+
+
+func _update_dirty() -> void:
+	EditorUi.set_dirty(_dirty_label, has_unsaved_changes(), not _current_document_path.is_empty())
 
 
 func _sync_grid_layout() -> void:
@@ -855,7 +989,16 @@ func _frame_map() -> void:
 	if _view == null or _map_workspace == null:
 		return
 	_view.frame_document(_map_workspace.size)
-	_set_status("Поле вписано в рабочую область.")
+	_update_zoom_label()
+
+
+func _zoom_view(factor: float) -> void:
+	_view.zoom_by(factor, _map_workspace.size)
+	_update_zoom_label()
+
+
+func _update_zoom_label() -> void:
+	_zoom_label.text = "Масштаб %d%%" % roundi(_view.get_zoom() * 100.0)
 
 
 func _validate_document() -> void:
@@ -863,29 +1006,39 @@ func _validate_document() -> void:
 		return
 
 	var validation := _document.validate(_snapshot)
-	_diagnostics.clear()
-
-	for error: String in validation.errors:
-		_diagnostics.add_item("Ошибка: %s" % error)
-
-	for warning: String in validation.warnings:
-		_diagnostics.add_item("Предупреждение: %s" % warning)
-
+	_inspector.show_validation(validation.errors, validation.warnings)
 	if validation.is_valid:
-		_set_status("Документ готов к сохранению, экспорту и пробному запуску.")
+		_validation_badge.text = "✓ Готово к запуску" + (" · предупреждений: %d" % validation.warnings.size() if not validation.warnings.is_empty() else "")
+		_validation_badge.add_theme_color_override("font_color", EditorUi.OK)
 	else:
-		_set_status(
-			"Черновик можно сохранить, но запуск заблокирован: ошибок %s."
-			% validation.errors.size()
-		)
+		_validation_badge.text = "✗ Ошибок: %d" % validation.errors.size()
+		_validation_badge.add_theme_color_override("font_color", EditorUi.ERROR)
 
 
+func _check_document() -> void:
+	_validate_document()
+	_inspector.current_tab = BattleEditorInspector.Page.CHECKS
+	_set_status(_inspector.validation_summary.text, EditorUi.Severity.OK if _inspector.diagnostics.item_count == 0 else EditorUi.Severity.WARN)
+
+
+## The first ordinary save of a new field never replaces another battle's file silently.
 func _save() -> void:
-	if _current_document_path.is_empty():
-		if _document != null:
-			_save_to_path(GameContentSettings.BATTLES.path_join(_suggested_document_filename()))
+	if _document == null:
 		return
-	_save_to_path(_current_document_path)
+	if not _current_document_path.is_empty():
+		_save_to_path(_current_document_path)
+		return
+	var path := battles_directory.path_join(_suggested_document_filename())
+	if FileAccess.file_exists(path) and not _is_same_document(path):
+		_set_status("Файл %s принадлежит другому полю: выберите имя файла." % path.get_file(), EditorUi.Severity.WARN)
+		_save_as()
+		return
+	_save_to_path(path)
+
+
+func _is_same_document(path: String) -> bool:
+	var existing := BattleDocumentSerializer.load_result(path).document
+	return existing != null and existing.document_id == _document.document_id
 
 
 func _save_as() -> void:
@@ -907,18 +1060,19 @@ func _on_save_path_selected(path: String) -> void:
 
 func _save_to_path(path: String) -> bool:
 	if _document == null:
-		_set_status("Нет документа боя для сохранения.")
+		_set_status("Нет документа боя для сохранения.", EditorUi.Severity.ERROR)
 		return false
 	var error := BattleDocumentSerializer.save(_document, path)
 
 	if not error.is_empty():
-		_set_status(error)
+		_set_status("Не сохранено: %s" % error, EditorUi.Severity.ERROR)
 		return false
 
 	_current_document_path = path
 	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
 	_update_document_path_label()
-	_set_status("Сохранено: %s" % ProjectSettings.globalize_path(path))
+	_update_dirty()
+	_set_status("Сохранено: %s" % ProjectSettings.globalize_path(path), EditorUi.Severity.OK)
 	return true
 
 
@@ -928,16 +1082,17 @@ func _on_open_path_selected(path: String) -> void:
 
 func _load_document_path(path: String) -> void:
 	if _snapshot == null:
-		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
 		return
 	var load_result := BattleDocumentSerializer.load_result(path)
 	var loaded := load_result.document
 
 	if loaded == null:
-		_set_status("Не удалось открыть %s: %s" % [path, load_result.error_message])
+		_set_status("Не удалось открыть %s: %s" % [path, load_result.error_message], EditorUi.Severity.ERROR)
 		return
 
 	_replace_document(loaded, path, true)
+	_set_status("Открыто: %s" % ProjectSettings.globalize_path(path))
 
 
 func _replace_document(loaded: BattleDocument, path: String, saved: bool) -> void:
@@ -959,7 +1114,7 @@ func _replace_document(loaded: BattleDocument, path: String, saved: bool) -> voi
 	_populate_side_options()
 	_populate_ai_options()
 	_update_document_path_label()
-	_validate_document()
+	_after_document_changed()
 	call_deferred("_frame_map")
 
 
@@ -968,11 +1123,15 @@ func _new_document_requested() -> void:
 
 
 func _create_new_document() -> void:
+	if _snapshot == null:
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
+		return
 	var document := BattleLibrary.create_document(_snapshot, initial_battle_id)
 	if document == null:
-		_set_status("Не удалось создать поле: проверьте загрузку базового контента.")
+		_set_status("Не удалось создать поле: проверьте загрузку базового контента.", EditorUi.Severity.ERROR)
 		return
 	_replace_document(document, "", false)
+	_set_status("Создано новое поле 18×12. Введите название и сохраните его.")
 
 
 func _on_name_changed(value: String) -> void:
@@ -1027,6 +1186,11 @@ func _ensure_json_extension(path: String) -> String:
 func _update_document_path_label() -> void:
 	_sync_document_name()
 	_refresh_battle_library()
+	# Legacy fields without a name are listed by file name; the empty field says so.
+	_name_edit.placeholder_text = (
+		"Без названия · %s" % _current_document_path.get_file().get_basename()
+		if not _current_document_path.is_empty() else "Название поля боя"
+	)
 	_document_path_label.text = (
 		"Файл: %s" % ProjectSettings.globalize_path(_current_document_path)
 		if not _current_document_path.is_empty()
@@ -1040,7 +1204,8 @@ func _use_in_game() -> void:
 	var validation := _document.validate(_snapshot)
 	if not validation.is_valid:
 		_validate_document()
-		_set_status("Назначение заблокировано ошибками документа.")
+		_inspector.current_tab = BattleEditorInspector.Page.CHECKS
+		_set_status("Назначение заблокировано ошибками документа.", EditorUi.Severity.ERROR)
 		return
 	if _current_document_path.is_empty():
 		_activate_after_save = true
@@ -1053,33 +1218,39 @@ func _use_in_game() -> void:
 func _assign_starting_battle() -> void:
 	var result := ProjectBattleLoader.load_battle(content_packages, _current_document_path, trial_seed)
 	if result.request == null:
-		_set_status(result.error_message)
+		_set_status(result.error_message, EditorUi.Severity.ERROR)
 		return
 	var error := GameContentSettings.select_battle(_current_document_path)
-	_set_status(
-		"Стартовый бой игры: %s" % ProjectSettings.globalize_path(_current_document_path)
-		if error == OK else "Сохраните бой внутри content/: %s" % error_string(error)
-	)
+	if error == OK:
+		_set_status("Стартовый бой игры: %s" % ProjectSettings.globalize_path(_current_document_path), EditorUi.Severity.OK)
+	else:
+		_set_status("Сохраните бой внутри content/: %s" % error_string(error), EditorUi.Severity.ERROR)
 
 
 func _export() -> void:
 	if _document == null:
-		_set_status("Нет документа боя для экспорта.")
+		_set_status("Нет документа боя для экспорта.", EditorUi.Severity.ERROR)
 		return
 	var path := GameContentSettings.EXPORTS.path_join(String(_document.battle_definition.id).replace(":", "_"))
 	var error := EditorPackageExporter.export(_document, path)
-	_set_status("Экспортировано: %s" % ProjectSettings.globalize_path(path) if error.is_empty() else error)
+	if error.is_empty():
+		_set_status("Экспортировано: %s" % ProjectSettings.globalize_path(path), EditorUi.Severity.OK)
+	else:
+		_set_status(error, EditorUi.Severity.ERROR)
 
 
 func _start_trial() -> void:
 	if _document == null or _snapshot == null:
-		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.")
+		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
+		return
+	if _trial_screen != null:
 		return
 	var request := _document.create_start_request(_snapshot, trial_seed)
 
 	if request == null:
 		_validate_document()
-		_set_status("Пробный запуск заблокирован ошибками документа.")
+		_inspector.current_tab = BattleEditorInspector.Page.CHECKS
+		_set_status("Пробный запуск заблокирован ошибками документа.", EditorUi.Severity.ERROR)
 		return
 
 	_trial_screen = BATTLE_SCREEN_SCENE.instantiate() as BattleScreen
@@ -1089,7 +1260,7 @@ func _start_trial() -> void:
 		var error := _trial_screen.initialization_error
 		_trial_screen.free()
 		_trial_screen = null
-		_set_status("Пробный запуск отклонён: %s" % error)
+		_set_status("Пробный запуск отклонён: %s" % error, EditorUi.Severity.ERROR)
 		return
 
 	_trial_screen.battle_finished.connect(_on_trial_finished)
@@ -1099,7 +1270,8 @@ func _start_trial() -> void:
 	_trial_return_layer = CanvasLayer.new()
 	_trial_return_layer.layer = 100
 	add_child(_trial_return_layer)
-	var back := _button("Вернуться в редактор", _return_from_trial)
+	var back := EditorUi.button("← Вернуться в редактор", _return_from_trial)
+	back.theme = EditorUi.theme()
 	back.position = Vector2(20, 12)
 	_trial_return_layer.add_child(back)
 
@@ -1113,16 +1285,17 @@ func _on_trial_finished(result: BattleResult) -> void:
 func _on_trial_failed(message: String) -> void:
 	if _trial_screen == null or not _trial_screen.has_started():
 		_return_from_trial()
-		_set_status("Пробный бой не запущен: %s" % message)
+		_set_status("Пробный бой не запущен: %s" % message, EditorUi.Severity.ERROR)
 		return
 	# A battle that stopped mid-play stays visible for diagnosis until the author returns.
 	_trial_error = message
 	var label := Label.new()
 	label.name = "TrialError"
 	label.text = "Бой остановлен из-за ошибки:\n%s" % message
-	label.position = Vector2(20, 52)
+	label.position = Vector2(20, 60)
 	label.custom_minimum_size.x = 850
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", EditorUi.ERROR)
 	_trial_return_layer.add_child(label)
 
 
@@ -1148,7 +1321,7 @@ func _return_from_trial() -> void:
 
 	_trial_result = null
 	if not _trial_error.is_empty():
-		_set_status("Пробный бой остановлен ошибкой: %s; BattleDocument не изменён." % _trial_error)
+		_set_status("Пробный бой остановлен ошибкой: %s; BattleDocument не изменён." % _trial_error, EditorUi.Severity.ERROR)
 		_trial_error = ""
 		return
 	_set_status("Пробный бой завершён%s; BattleDocument не изменён." % outcome)
@@ -1184,67 +1357,19 @@ func _select_option_by_metadata(option: OptionButton, value: Variant) -> void:
 
 
 func _show_load_errors(errors: Array[String]) -> void:
-	for error: String in errors:
-		_diagnostics.add_item(error)
-	_set_status("Пакеты контента не загружены.")
+	_inspector.show_load_errors(errors)
+	_set_status("Пакеты контента не загружены.", EditorUi.Severity.ERROR)
 
 
-func _set_status(message: String) -> void:
-	_status.text = message
-
-
-func _build_visual_controls(parent: Control) -> void:
-	var toolbar := HBoxContainer.new()
-	toolbar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	toolbar.offset_left = 16
-	toolbar.offset_top = 8
-	toolbar.offset_right = -380
-	parent.add_child(toolbar)
-	_background_option = OptionButton.new()
-	for id: StringName in BattleBackdrops.NAMES:
-		var index := _background_option.item_count
-		_background_option.add_item(BattleBackdrops.NAMES[id])
-		_background_option.set_item_metadata(index, id)
-	_background_option.item_selected.connect(func(_index: int) -> void:
-		if _document != null:
-			_execute(EditCommand.set_background(_background_option.get_selected_metadata()))
-	)
-	toolbar.add_child(_background_option)
-	for title: String in ["Сетка", "Юниты"]:
-		var check := CheckButton.new()
-		check.text = title
-		check.button_pressed = true
-		check.toggled.connect(func(enabled: bool) -> void:
-			if title == "Сетка":
-				_view.show_grid = enabled
-			else:
-				_view.show_units = enabled
-			_view.refresh()
-		)
-		toolbar.add_child(check)
-	toolbar.add_child(_button("По размеру окна", _frame_map))
-	toolbar.add_child(_button("Отменить", _undo))
-	toolbar.add_child(_button("Повторить", _redo))
-	toolbar.add_child(_button("Сохранить", _save))
-	toolbar.add_child(_button("Пробный бой", _start_trial))
-	var palette := EditorStatePalette.new()
-	palette.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	palette.offset_left = 16
-	palette.offset_right = -380
-	palette.offset_top = -142
-	palette.offset_bottom = -8
-	palette.state_selected.connect(func(id: StringName) -> void:
-		_selected_state_id = id
-		_select_tool(EditorBattleView.Tool.PAINT_STATE)
-	)
-	palette.erase_selected.connect(func() -> void: _select_tool(EditorBattleView.Tool.ERASE_STATE))
-	parent.add_child(palette)
+func _set_status(message: String, severity := EditorUi.Severity.INFO) -> void:
+	EditorUi.set_status(_status, message, severity)
+	_status.tooltip_text = message
 
 
 func _paint_state(hex: Vector2i, state_id: StringName) -> void:
 	var cell := _find_cell(hex)
 	if _obstacle_at(hex) != null:
-		_set_status("К препятствиям состояния не применяются.")
+		_set_status("К препятствиям состояния не применяются.", EditorUi.Severity.WARN)
 		return
 	if cell == null or cell.hex_state_id == state_id:
 		return
@@ -1263,8 +1388,6 @@ func _on_hex_erased(hex: Vector2i) -> void:
 		for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
 			if placement.start_hex == hex:
 				_execute(EditCommand.remove_placement(placement.placement_id))
-				_selected_placement_id = StringName()
-				_view.select_placement(StringName())
 				return
 	_paint_state(hex, StringName())
 
@@ -1282,7 +1405,7 @@ func _free_hex_near(origin: Vector2i) -> Vector2i:
 	var occupied: Dictionary[Vector2i, bool] = {}
 	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
 		occupied[placement.start_hex] = true
-	var best := Vector2i(999999, 999999)
+	var best := NO_HEX
 	var best_distance := 999999
 	for cell: BattleMapCellDefinition in _document.map_definition.cells:
 		if not cell.traversable or _obstacle_at(cell.hex) != null or occupied.has(cell.hex) or not EditorBattleView.is_in_frame(cell.hex):
@@ -1331,6 +1454,8 @@ func _exit_tree() -> void:
 		get_tree().auto_accept_quit = true
 
 func _hex_is_occupied(hex: Vector2i) -> bool:
+	if _document == null:
+		return false
 	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
 		if placement.start_hex == hex:
 			return true
@@ -1338,6 +1463,8 @@ func _hex_is_occupied(hex: Vector2i) -> bool:
 
 
 func _obstacle_at(hex: Vector2i) -> BattleObstacleDefinition:
+	if _document == null:
+		return null
 	for obstacle: BattleObstacleDefinition in _document.map_definition.obstacles:
 		if obstacle.hexes.has(hex):
 			return obstacle
@@ -1347,7 +1474,7 @@ func _apply_selected_obstacle() -> void:
 	if _has_selected_hex:
 		_put_obstacle(_selected_hex)
 	else:
-		_set_status("Выберите начальный гекс или используйте кисть препятствий.")
+		_set_status("Выберите начальный гекс или используйте кисть препятствий.", EditorUi.Severity.WARN)
 
 func _remove_selected_obstacle() -> void:
 	if not _has_selected_hex:
@@ -1356,10 +1483,17 @@ func _remove_selected_obstacle() -> void:
 	if obstacle != null:
 		_execute(EditCommand.remove_obstacle(obstacle.id))
 
+## Obstacle IDs stay unique inside the document across editor sessions.
+func _new_obstacle_id() -> StringName:
+	var id := StringName()
+	while id.is_empty() or _document.map_definition.obstacles.any(func(obstacle: BattleObstacleDefinition) -> bool: return obstacle.id == id):
+		id = StringName("obstacle:%s" % Crypto.new().generate_random_bytes(8).hex_encode())
+	return id
+
 func _put_obstacle(hex: Vector2i) -> void:
 	var previous := _obstacle_at(hex)
 	var value := BattleObstacleDefinition.new()
-	value.id = previous.id if previous != null else StringName("obstacle:%d" % Time.get_ticks_usec())
+	value.id = previous.id if previous != null else _new_obstacle_id()
 	value.terrain_type = BattleObstacleDefinition.TYPES[_obstacle_type.selected]
 	value.destructible = _obstacle_destructible.button_pressed
 	value.max_hp = int(_obstacle_hp.value)
@@ -1368,12 +1502,12 @@ func _put_obstacle(hex: Vector2i) -> void:
 	for index in range(int(_obstacle_size.value)):
 		var occupied := origin + HexGrid.DIRECTIONS[_obstacle_direction.selected] * index
 		if not EditorBattleView.is_in_frame(occupied) or _find_cell(occupied) == null or not _find_cell(occupied).traversable or _hex_is_occupied(occupied):
-			_set_status("Препятствие требует свободные существующие гексы внутри поля.")
+			_set_status("Препятствие требует свободные существующие гексы внутри поля.", EditorUi.Severity.WARN)
 			return
 		var other := _obstacle_at(occupied)
 		if other != null and other != previous:
-			_set_status("Препятствия не могут пересекаться.")
+			_set_status("Препятствия не могут пересекаться.", EditorUi.Severity.WARN)
 			return
 		value.hexes.append(occupied)
-	_execute(EditCommand.put_obstacle(value, previous.id if previous != null else &""))
-	_select_hex(origin)
+	if _execute(EditCommand.put_obstacle(value, previous.id if previous != null else &"")):
+		_select_hex(origin)

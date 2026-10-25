@@ -5,6 +5,8 @@ extends Node2D
 signal hex_activated(hex: Vector2i)
 signal hex_erased(hex: Vector2i)
 signal placement_selected(placement_id: StringName)
+## A placement was dragged with the selection tool and released over another hex.
+signal placement_moved(placement_id: StringName, hex: Vector2i)
 signal hovered_hex_changed(hex: Vector2i, is_inside: bool)
 
 
@@ -47,6 +49,7 @@ var _has_hovered_hex := false
 var _is_panning := false
 var _is_painting := false
 var _last_painted_hex := Vector2i(999999, 999999)
+var _dragged_placement_id: StringName
 var _zoom := 1.0
 # Snapshot getters return detached copies; drawing runs on every hover and pan.
 var _presentations_by_definition: Dictionary[StringName, UnitPresentationDefinition] = {}
@@ -86,8 +89,21 @@ func frame_document(view_size: Vector2) -> void:
 	position = (view_size - Vector2(1920, 1080) * _zoom) * 0.5
 
 
+## Scales the view around the centre of the workspace; the document is unchanged.
+func zoom_by(factor: float, view_size: Vector2) -> void:
+	var anchor := view_size * 0.5
+	var canvas_point := (anchor - position) / _zoom
+	_zoom = clampf(_zoom * factor, MIN_ZOOM, MAX_ZOOM)
+	scale = Vector2.ONE * _zoom
+	position = anchor - canvas_point * _zoom
+
+
 func get_zoom() -> float:
 	return _zoom
+
+
+func is_dragging_placement() -> bool:
+	return not _dragged_placement_id.is_empty()
 
 
 func screen_position_to_hex(screen_position: Vector2) -> Vector2i:
@@ -148,8 +164,24 @@ func _draw() -> void:
 			for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
 				valid = valid and (obstacle == replaced or not obstacle.hexes.has(hex))
 			draw_polyline(_closed_hex_polygon(_hex_center(hex)), HOVER_COLOR if valid else Color.SALMON, 3, true)
+	if is_dragging_placement() and _has_hovered_hex and is_in_frame(_hovered_hex):
+		_draw_drag_target(existing)
 	if _has_hovered_hex and is_in_frame(_hovered_hex):
 		draw_polyline(_closed_hex_polygon(_hex_center(_hovered_hex)), HOVER_COLOR, 3, true)
+
+
+func _draw_drag_target(existing: Dictionary[Vector2i, bool]) -> void:
+	var valid := existing.has(_hovered_hex)
+	for obstacle: BattleObstacleDefinition in document.map_definition.obstacles:
+		valid = valid and not obstacle.hexes.has(_hovered_hex)
+	for cell: BattleMapCellDefinition in document.map_definition.cells:
+		if cell.hex == _hovered_hex:
+			valid = valid and cell.traversable
+	for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
+		valid = valid and (placement.start_hex != _hovered_hex or placement.placement_id == _dragged_placement_id)
+	var center := _hex_center(_hovered_hex)
+	draw_colored_polygon(_hex_polygon(center), Color(HOVER_COLOR if valid else Color.SALMON, 0.25))
+	draw_line(_hex_center(_start_hex_of(_dragged_placement_id)), center, Color(SELECTED_COLOR, 0.8), 3, true)
 
 
 func _draw_unit(placement: UnitPlacementDefinition, invalid: bool) -> void:
@@ -186,76 +218,97 @@ static func is_in_frame(hex: Vector2i) -> bool:
 	return offset.x >= 0 and offset.x < 18 and offset.y >= 0 and offset.y < 12
 
 
-func _input(event: InputEvent) -> void:
+## Mouse input of the map workspace control. GUI routing keeps overlays and popups above the map.
+## Returns true when the event was used.
+func handle_input(event: InputEvent) -> bool:
 	if document == null or not is_visible_in_tree():
-		return
+		return false
 
 	if event is InputEventMouseMotion:
-		_handle_mouse_motion(event as InputEventMouseMotion)
-		return
+		return _handle_mouse_motion(event as InputEventMouseMotion)
 
 	if not (event is InputEventMouseButton):
-		return
+		return false
 
 	var mouse := event as InputEventMouseButton
 
 	if mouse.button_index == MOUSE_BUTTON_MIDDLE:
-		_is_panning = mouse.pressed and _is_pointer_in_workspace(mouse.position)
-		if _is_panning:
-			get_viewport().set_input_as_handled()
-		return
+		_is_panning = mouse.pressed
+		return true
 
 	if mouse.button_index == MOUSE_BUTTON_LEFT and not mouse.pressed:
 		_is_painting = false
 		_last_painted_hex = Vector2i(999999, 999999)
-		return
+		_finish_drag(screen_position_to_hex(mouse.global_position))
+		return true
 
-	if not mouse.pressed or not _is_pointer_in_workspace(mouse.position):
-		return
+	if not mouse.pressed:
+		return false
 
 	if mouse.button_index == MOUSE_BUTTON_RIGHT:
-		var erased := screen_position_to_hex(mouse.position)
+		var erased := screen_position_to_hex(mouse.global_position)
 		if is_in_frame(erased):
 			hex_erased.emit(erased)
-		get_viewport().set_input_as_handled()
-		return
+		return true
 
 	if mouse.button_index != MOUSE_BUTTON_LEFT:
-		return
+		return false
 
-	var hex := screen_position_to_hex(mouse.position)
+	var hex := screen_position_to_hex(mouse.global_position)
 
 	if not is_in_frame(hex):
-		return
+		return true
 
 	if active_tool == Tool.SELECT and show_units:
 		for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
 			if placement.start_hex == hex:
 				placement_selected.emit(placement.placement_id)
-				get_viewport().set_input_as_handled()
-				return
+				_dragged_placement_id = placement.placement_id
+				return true
 
 	hex_activated.emit(hex)
 	_is_painting = _tool_supports_drag()
 	_last_painted_hex = hex
-	get_viewport().set_input_as_handled()
+	return true
 
 
-func _handle_mouse_motion(motion: InputEventMouseMotion) -> void:
+## Hover leaves the map when the pointer exits the workspace.
+func clear_hover() -> void:
+	if _has_hovered_hex:
+		_has_hovered_hex = false
+		hovered_hex_changed.emit(_hovered_hex, false)
+		queue_redraw()
+
+
+func cancel_drag() -> void:
+	_dragged_placement_id = StringName()
+	queue_redraw()
+
+
+func _finish_drag(hex: Vector2i) -> void:
+	if _dragged_placement_id.is_empty():
+		return
+	var placement_id := _dragged_placement_id
+	var start := _start_hex_of(placement_id)
+	cancel_drag()
+	if is_in_frame(hex) and hex != start:
+		placement_moved.emit(placement_id, hex)
+
+
+func _start_hex_of(placement_id: StringName) -> Vector2i:
+	for placement: UnitPlacementDefinition in document.battle_definition.unit_placements:
+		if placement.placement_id == placement_id:
+			return placement.start_hex
+	return Vector2i(999999, 999999)
+
+
+func _handle_mouse_motion(motion: InputEventMouseMotion) -> bool:
 	if _is_panning:
 		position += motion.relative
 		queue_redraw()
-		get_viewport().set_input_as_handled()
-		return
+		return true
 
-	if not _is_pointer_in_workspace(motion.position):
-		if _has_hovered_hex:
-			_has_hovered_hex = false
-			hovered_hex_changed.emit(_hovered_hex, false)
-			queue_redraw()
-		return
-
-	var hex := screen_position_to_hex(motion.position)
+	var hex := screen_position_to_hex(motion.global_position)
 
 	if not _has_hovered_hex or hex != _hovered_hex:
 		_hovered_hex = hex
@@ -271,7 +324,7 @@ func _handle_mouse_motion(motion: InputEventMouseMotion) -> void:
 	):
 		_last_painted_hex = hex
 		hex_activated.emit(hex)
-		get_viewport().set_input_as_handled()
+	return true
 
 
 func _tool_supports_drag() -> bool:
@@ -283,14 +336,6 @@ func _tool_supports_drag() -> bool:
 		Tool.PAINT_TERRAIN,
 		Tool.PAINT_COST,
 	]
-
-
-func _is_pointer_in_workspace(screen_position: Vector2) -> bool:
-	var workspace := get_parent() as Control
-	return (
-		workspace != null
-		and workspace.get_global_rect().has_point(screen_position)
-	)
 
 
 func _pixel_to_hex(point: Vector2) -> Vector2i:

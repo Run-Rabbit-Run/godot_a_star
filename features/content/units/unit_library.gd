@@ -5,6 +5,7 @@ const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
 const VISUAL_PROFILES := "res://content/authored/unit_visual_profiles.json"
+const FIELD_NAMES := {"id": "ID", "name": "Имя", "image": "Изображение", "attack_type": "Тип атаки", "schema_version": "Версия схемы", "hp": "ОЗ", "damage": "Урон", "attack_range": "Дальность", "movement": "Передвижение", "abilities": "Активные умения", "passives": "Пассивные умения"}
 const ACTIVE_ABILITIES := {"core:spear_throw": "Бросок копья", "core:spear_sweep": "Взмах копьём", "core:spear_pin": "Пригвоздить", "core:grenade": "Бросок гранаты", "core:create_electricity": "Электрическое поле", "core:create_water": "Разлить воду", "core:create_fire": "Огненное поле", "core:create_oil": "Разлить масло", "core:create_acid": "Разлить кислоту", "core:electromagnetic_shot": "Электромагнитный выстрел", "core:emp_grenade": "ЭМИ граната", "core:laser": "Лазер", "core:electric_turret": "Электро турель"}
 
 
@@ -56,13 +57,18 @@ static func new_document() -> Dictionary:
 	}
 
 static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
-	if skills.is_empty(): skills = SkillLibrary.catalog()
+	var error := validate_structure(data)
+	return error if not error.is_empty() else validate_references(data, skills)
+
+
+## Types, ranges and identity of one unit document, without looking at the skill catalog.
+static func validate_structure(data: Dictionary) -> String:
 	var armor: Variant = data.get("armor", 0)
 	if not (armor is int or armor is float) or not is_finite(float(armor)) or float(armor) != floor(float(armor)) or armor < 0 or armor > 9999:
 		return "Броня: целое число 0–9999."
 	for key: String in ["id", "name", "image", "attack_type"]:
 		if not data.get(key) is String or String(data[key]).strip_edges().is_empty():
-			return "Поле %s должно содержать текст." % key
+			return "Поле «%s» должно содержать текст." % FIELD_NAMES[key]
 	var id := String(data.id)
 	if not id.begins_with("custom_units:") or not id.trim_prefix("custom_units:").is_valid_identifier():
 		return "Некорректный ID юнита: %s" % id
@@ -70,10 +76,8 @@ static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
 		return "Имя не должно превышать 120 символов."
 	for key: String in ["schema_version", "hp", "damage", "attack_range", "movement"]:
 		var value: Variant = data.get(key)
-		if not (value is int or value is float):
-			return "Поле %s должно быть целым числом." % key
-		if not is_finite(float(value)) or float(value) != floor(float(value)):
-			return "Поле %s должно быть целым числом." % key
+		if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floor(float(value)):
+			return "Поле «%s» должно быть целым числом." % FIELD_NAMES[key]
 	if data.schema_version != 1:
 		return "Неизвестная версия формата юнита."
 	if data.hp < 1 or data.hp > 9999 or data.damage < 0 or data.damage > 9999:
@@ -88,7 +92,7 @@ static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
 		return "Выберите изображение из папки assets."
 	for key: String in ["abilities", "passives"]:
 		if not data.get(key) is Array:
-			return "Поле %s должно быть списком." % key
+			return "Поле «%s» должно быть списком." % FIELD_NAMES[key]
 		var seen: Array[String] = []
 		for value: Variant in data[key]:
 			if not value is String:
@@ -96,6 +100,14 @@ static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
 			if value in seen:
 				return "Умение выбрано дважды: %s" % value
 			seen.append(value)
+	return ""
+
+
+## Skill references of a structurally valid document; such documents remain repairable in the editor.
+static func validate_references(data: Dictionary, skills: Dictionary = {}) -> String:
+	if skills.is_empty(): skills = SkillLibrary.catalog()
+	for key: String in ["abilities", "passives"]:
+		for value: String in data[key]:
 			if key == "abilities" and skills.get(value, {}).get("kind", "") != "active":
 				return "Неизвестное активное умение: %s" % value
 			if key == "passives" and skills.get(value, {}).get("kind", "") != "passive":
@@ -119,11 +131,15 @@ static func read_document(path: String, skills: Dictionary = {}) -> Dictionary:
 	var data: Dictionary = json.data
 	if not data.has("armor"):
 		data["armor"] = 0
-	var error := validate(data, skills)
+	var error := validate_structure(data)
 	if not error.is_empty():
 		return {"error": "%s: %s" % [path, error]}
 	if path.get_file() != String(data.id).trim_prefix("custom_units:") + ".json":
 		return {"error": "%s: имя файла должно совпадать с ID без custom_units:." % path}
+	# A broken skill reference keeps the document so the editor can repair it; loading still fails.
+	var references := validate_references(data, skills)
+	if not references.is_empty():
+		return {"error": "%s: %s" % [path, references], "document": data}
 	return {"error": "", "document": data}
 
 static func save_document(data: Dictionary) -> String:

@@ -4,6 +4,8 @@ extends RefCounted
 
 const ROOT := "res://content/authored/skills"
 const KINDS := ["active", "passive", "effect"]
+## Form limits of active skills: key -> [minimum, maximum, caption].
+const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [0, 8, "Радиус области"], "target_mode": [0, 6, "Цель"], "cooldown_turns": [1, 99, "Перезарядка"], "initial_cooldown_turns": [0, 99, "Начальная перезарядка"]}
 const DAMAGE_TYPES := {"physical": "Физический", "electric": "Электрический", "fire": "Огненный", "water": "Водный", "acid": "Кислотный", "plasma": "Плазменный"}
 
 static func packages() -> Array[ContentPackage]:
@@ -123,7 +125,7 @@ static func _integer(data: Dictionary, key: String, minimum: int, maximum: int) 
 static func validate(data: Dictionary) -> String:
 	if data.get("schema_version") != 1 or data.get("kind") not in KINDS: return "Неизвестная схема или категория."
 	for key: String in ["id", "name"]:
-		if not data.get(key) is String or String(data[key]).strip_edges().is_empty(): return "Заполните " + key
+		if not data.get(key) is String or String(data[key]).strip_edges().is_empty(): return "Заполните %s." % ("ID" if key == "id" else "название")
 	if String(data.name).length() > 120: return "Имя: до 120 символов."
 	var parts := String(data.id).split(":")
 	if parts.size() != 2 or not parts[0].is_valid_identifier() or not parts[1].is_valid_identifier(): return "Некорректный ID."
@@ -142,8 +144,9 @@ static func validate(data: Dictionary) -> String:
 		for key: String in ["status", "immunity"]:
 			if data[key] != "" and not UnitStatusCatalog.has_status(StringName(data[key])): return "Неизвестное состояние."
 		return ""
-	for key: String in ["range", "area_radius", "target_mode", "cooldown_turns", "initial_cooldown_turns"]:
-		if not _integer(data, key, 0, 99): return "Некорректное целое число: " + key
+	for key: String in ACTIVE_LIMITS:
+		var limit: Array = ACTIVE_LIMITS[key]
+		if not _integer(data, key, limit[0], limit[1]): return "%s: целое число %d–%d." % [limit[2], limit[0], limit[1]]
 	for key: String in ["uses_attack_range", "returns_next_turn", "melee_attack"]:
 		if not data.get(key) is bool: return "Некорректный переключатель: " + key
 	if not data.get("presentation_id") is String: return "Некорректный ID представления."
@@ -152,6 +155,12 @@ static func validate(data: Dictionary) -> String:
 		if not value is Dictionary: return "Некорректный эффект."
 		var error := validate_effect(value)
 		if not error.is_empty(): return error
+	var types: Array = data.effects.map(func(effect: Dictionary) -> Variant: return effect.type)
+	if data.returns_next_turn and (int(data.target_mode) != AbilityDefinition.TargetMode.PATH or int(data.area_radius) != 0 or types.any(func(type: Variant) -> bool: return type != "core:damage")):
+		return "Возврат оружия: цель «Путь», радиус 0 и только эффекты урона."
+	if types.has("core:summon") and (int(data.target_mode) != AbilityDefinition.TargetMode.EMPTY_HEX or int(data.area_radius) != 0 or types.size() != 1):
+		return "Призыв: цель «Пустой гекс», радиус 0 и единственный эффект."
+	# Core rules stay the final authority for anything the form does not phrase itself.
 	return to_ability(data).validate()
 
 static func to_effect(data: Dictionary) -> AbilityEffectDefinition:
@@ -172,7 +181,16 @@ static func validate_effect(data: Dictionary) -> String:
 	if not data.get("type") is String or not data.get("parameters") is Dictionary: return "Некорректный формат эффекта."
 	var params: Dictionary = data.parameters
 	for key: String in ["amount", "secondary_amount", "levels"]:
-		if params.has(key) and not _integer(params, key, 1, 9999): return "Эффект: " + key + " должен быть целым числом 1–9999."
+		if params.has(key) and not _integer(params, key, 1, 9999): return "Эффект: %s — целое число 1–9999." % {"amount": "урон основной цели", "secondary_amount": "урон остальных целей", "levels": "уровни состояния"}[key]
+	match data.type:
+		"core:damage":
+			if not DAMAGE_TYPES.has(params.get("damage_type", "physical")): return "Эффект урона: неизвестный тип урона."
+		"core:unit_status":
+			if not UnitStatusCatalog.has_status(StringName(str(params.get("status_id", "")))): return "Эффект состояния: выберите известное состояние юнита."
+		"core:hex_state":
+			if not HexStateCatalog.has_state(StringName(str(params.get("state_id", "")))): return "Эффект гекса: выберите известное состояние гекса."
+		"core:summon":
+			if to_effect(data).parameters.get("unit") == null: return "Призыв: выберите существующего призываемого юнита."
 	var handler: AbilityEffectHandler
 	match data.type:
 		"core:damage": handler = DamageEffectHandler.new()

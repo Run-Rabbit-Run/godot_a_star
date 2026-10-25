@@ -14,6 +14,10 @@ func execute(command: EditCommand, document: BattleDocument) -> bool:
 	if command == null or not command.apply(document):
 		return false
 
+	if _redo_stack.is_empty() and not _undo_stack.is_empty() and _undo_stack.back().absorb(command):
+		changed.emit()
+		return true
+
 	_undo_stack.append(command)
 	if _undo_stack.size() > MAX_UNDO_COMMANDS:
 		_undo_stack.pop_front()
