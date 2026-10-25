@@ -110,6 +110,8 @@ func _run() -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(first_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(second_path))
 	await _check_battle_library(editor)
+	_check_backdrops(editor)
+	await preload("res://tools/battles/tests/grid_layout_checks.gd").new().run(editor, _expect)
 
 	editor.queue_free()
 	await process_frame
@@ -185,6 +187,42 @@ func _check_battle_library(editor: BattleEditorShell) -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(second_path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(directory))
 	await process_frame
+
+
+func _check_backdrops(editor: BattleEditorShell) -> void:
+	var document := BattleDocumentSerializer.load("res://features/battle/tests/fixtures/regression_battle.json")
+	_expect(document != null, "Backdrop checks must use a fixed battle fixture.")
+	if document == null:
+		return
+	editor.call("_replace_document", document, "", false)
+	var option: OptionButton = editor.get("_background_option")
+	var expected_paths := {
+		&"alien_arena": "res://features/battle/art/generated/alien_arena_2026_10_17/alien_arena_2560x1440.png",
+		&"alien_crystal_arena": "res://features/battle/art/generated/alien_arena_2026_10_17/alien_crystal_arena_2560x1440.png",
+	}
+	for id: StringName in expected_paths:
+		var index := -1
+		for item: int in option.item_count:
+			if option.get_item_metadata(item) == id:
+				index = item
+		_expect(index >= 0, "New backdrop must be selectable in the editor: %s" % id)
+		if index < 0:
+			continue
+		var texture := BattleBackdrops.texture(id)
+		_expect(texture.resource_path == expected_paths[id] and texture.get_size() == Vector2(2560, 1440), "New backdrop must resolve to its full-size texture rather than fallback: %s" % id)
+		var previous_id := document.map_definition.background_id
+		option.select(index)
+		option.item_selected.emit(index)
+		_expect(document.map_definition.background_id == id, "Selecting a backdrop must update the battle document: %s" % id)
+		var path := "user://editor_backdrop_%s_%d.json" % [id, OS.get_process_id()]
+		_expect(editor.call("_save_to_path", path), "Selected backdrop must save: %s" % id)
+		var reopened := BattleDocumentSerializer.load(path)
+		_expect(reopened != null and reopened.map_definition.background_id == id, "Saved backdrop must survive JSON reload: %s" % id)
+		editor.call("_undo")
+		_expect(document.map_definition.background_id == previous_id and option.get_selected_metadata() == previous_id, "Undo must restore the previous backdrop and selector: %s" % id)
+		editor.call("_redo")
+		_expect(document.map_definition.background_id == id and option.get_selected_metadata() == id, "Redo must restore the selected backdrop and selector: %s" % id)
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _find_cell(

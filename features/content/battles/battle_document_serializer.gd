@@ -130,7 +130,7 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 	for package_id: StringName in document.package_versions:
 		package_versions[String(package_id)] = document.package_versions[package_id]
 
-	return {
+	var result := {
 		"document_id": String(document.document_id),
 		"display_name": document.display_name,
 		"schema_version": document.schema_version,
@@ -152,6 +152,9 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 			"placements": placements,
 		},
 	}
+	if document.map_definition.has_custom_grid_offset:
+		result["map"]["grid_offset_y"] = document.map_definition.grid_offset_y
+	return result
 
 
 static func from_dictionary(data: Dictionary) -> BattleDocument:
@@ -168,6 +171,8 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 	var map := BattleMapDefinition.new()
 	map.id = StringName(map_data.get("id", ""))
 	map.background_id = StringName(map_data.get("background_id", "plateau"))
+	map.has_custom_grid_offset = map_data.has("grid_offset_y")
+	map.grid_offset_y = int(map_data.get("grid_offset_y", 0))
 	var frame: Array = map_data.get("presentation_frame", [0, 0])
 	if frame.size() == 2:
 		map.presentation_frame = Vector2i(int(frame[0]), int(frame[1]))
@@ -257,6 +262,7 @@ static func _validate_structure(data: Dictionary) -> String:
 	var battle: Dictionary = data["battle"]
 	error = _validate_fields(map, {
 		"id": TYPE_STRING, "background_id": TYPE_STRING,
+		"grid_offset_y": TYPE_INT,
 		"presentation_frame": TYPE_ARRAY, "cells": TYPE_ARRAY, "obstacles": TYPE_ARRAY,
 	}, "map")
 	if not error.is_empty():
@@ -265,6 +271,8 @@ static func _validate_structure(data: Dictionary) -> String:
 		var frame: Array = map["presentation_frame"]
 		if frame.size() != 2 or not _is_integer(frame[0]) or not _is_integer(frame[1]):
 			return "map.presentation_frame requires two integers."
+	if map.has("grid_offset_y") and (map["grid_offset_y"] < BattleMapDefinition.MIN_GRID_OFFSET_Y or map["grid_offset_y"] > BattleMapDefinition.MAX_GRID_OFFSET_Y):
+		return "map.grid_offset_y must be between -540 and 540."
 	error = _validate_fields(battle, {
 		"id": TYPE_STRING, "map_id": TYPE_STRING, "protected_faction": TYPE_INT,
 		"objective": TYPE_DICTIONARY, "sides": TYPE_ARRAY, "placements": TYPE_ARRAY,

@@ -15,6 +15,7 @@ enum Kind {
 	SET_NAME,
 	PUT_OBSTACLE,
 	REMOVE_OBSTACLE,
+	SET_GRID_OFFSET,
 }
 
 
@@ -22,6 +23,8 @@ var obstacle: BattleObstacleDefinition
 var obstacle_id: StringName
 
 var background_id: StringName
+var grid_offset_y := 0
+var custom_grid_offset := true
 var display_name := ""
 var kind: Kind
 var placement: UnitPlacementDefinition
@@ -113,6 +116,13 @@ static func set_background(id: StringName) -> EditCommand:
 	return command
 
 
+static func set_grid_offset(value: int, custom: bool = true) -> EditCommand:
+	var command := EditCommand.new(Kind.SET_GRID_OFFSET)
+	command.grid_offset_y = value
+	command.custom_grid_offset = custom
+	return command
+
+
 static func rename_document(value: String) -> EditCommand:
 	var command := EditCommand.new(Kind.SET_NAME)
 	command.display_name = value
@@ -137,6 +147,11 @@ func apply(document: BattleDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.SET_GRID_OFFSET:
+			if grid_offset_y < BattleMapDefinition.MIN_GRID_OFFSET_Y or grid_offset_y > BattleMapDefinition.MAX_GRID_OFFSET_Y:
+				return _restore_failed(document)
+			document.map_definition.grid_offset_y = grid_offset_y if custom_grid_offset else 0
+			document.map_definition.has_custom_grid_offset = custom_grid_offset
 		Kind.PUT_OBSTACLE:
 			if not obstacle.validate().is_empty():
 				return _restore_failed(document)

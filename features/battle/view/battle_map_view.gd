@@ -51,10 +51,12 @@ var _terrain_property_nodes: Dictionary[Vector2i, Node2D] = {}
 var _displayed_properties: Dictionary[Vector2i, Dictionary] = {}
 
 var _presentation_frame := Vector2i.ZERO
+var _grid_offset_y := 0
 
 
 func set_map_presentation(definition: BattleMapDefinition) -> void:
 	_presentation_frame = definition.presentation_frame
+	_grid_offset_y = BattleGridLayoutSettings.resolve_offset(definition, BattleGridLayoutSettings.load_default())
 	_battle_backdrop.texture = BattleBackdrops.texture(definition.background_id)
 	_fit_battlefield_to_viewport()
 
@@ -230,7 +232,7 @@ func _fit_battlefield_to_viewport() -> void:
 	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
 	var available_size := Vector2(1739.0, 721.5) * screen_scale
 	scale = available_size / _grid_local_bounds.size
-	position = viewport_size * 0.5 + Vector2(0, -21.25) * screen_scale - _grid_local_bounds.get_center() * scale
+	position = viewport_size * 0.5 + Vector2(0, -21.25 + _grid_offset_y) * screen_scale - _grid_local_bounds.get_center() * scale
 	# Figures stay upright, independent of the board's perspective compression.
 	var units := get_node_or_null("Units") as Node2D
 	if units != null:

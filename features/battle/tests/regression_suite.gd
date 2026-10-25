@@ -1019,6 +1019,34 @@ func _test_presentation() -> void:
 	expect(not rejected.accepted and (controller.get("_battle_session") as BattleSession).get_state_revision() == revision, "Concurrent public mutation rejected without state changes")
 	controller.set("_is_presenting", false)
 	var map := screen.get_node("BattleMap") as BattleMapView
+	var layout_map := BattleDocumentSerializer.load(fixture.BATTLE_PATH).map_definition
+	layout_map.has_custom_grid_offset = true
+	layout_map.grid_offset_y = 0
+	map.set_map_presentation(layout_map)
+	var initial_position := map.position
+	var backdrop: TextureRect = map.get("_battle_backdrop")
+	var backdrop_position := backdrop.global_position
+	var initial_hex := map.hex_to_global_position(Vector2i.ZERO)
+	layout_map.grid_offset_y = 96
+	map.set_map_presentation(layout_map)
+	var pixel_scale := minf(get_viewport().get_visible_rect().size.x / 1920.0, get_viewport().get_visible_rect().size.y / 1080.0)
+	expect(map.position.is_equal_approx(initial_position + Vector2(0, 96 * pixel_scale)), "Runtime board uses the authored vertical offset at viewport scale")
+	expect(map.hex_to_global_position(Vector2i.ZERO).is_equal_approx(initial_hex + Vector2(0, 96 * pixel_scale)), "Runtime hex projection follows the shifted board")
+	expect(backdrop.global_position == backdrop_position, "Grid shifting leaves the backdrop fixed")
+	map.call("_fit_battlefield_to_viewport")
+	expect(map.position.is_equal_approx(initial_position + Vector2(0, 96 * pixel_scale)), "Refitting retains the offset without accumulating it")
+	var layer: TileMapLayer = map.get_node("TerrainLayer")
+	var screen_point := map.hex_to_global_position(Vector2i.ZERO)
+	expect(HexCoordinateMapper.offset_to_axial(layer.local_to_map(layer.to_local(screen_point))) == Vector2i.ZERO, "Runtime input conversion remains aligned after shifting")
+	layout_map.grid_offset_y = -48
+	map.set_map_presentation(layout_map)
+	expect(map.position.is_equal_approx(initial_position + Vector2(0, -48 * pixel_scale)), "Runtime board supports upward offsets")
+	layout_map.has_custom_grid_offset = false
+	map.set_map_presentation(layout_map)
+	expect(map.position.is_equal_approx(initial_position + Vector2(0, BattleGridLayoutSettings.load_default() * pixel_scale)), "Runtime uses the project default for maps without their own height")
+	layout_map.has_custom_grid_offset = true
+	layout_map.grid_offset_y = 0
+	map.set_map_presentation(layout_map)
 	var grid := HexGrid.new([Vector2i.ZERO, Vector2i(1, 0)])
 	grid.set_traversal(Vector2i(1, 0), false, 1)
 	map.render_grid(grid)

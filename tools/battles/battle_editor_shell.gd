@@ -12,6 +12,7 @@ var content_packages: Array[ContentPackage] = []
 
 
 var _background_option: OptionButton
+var _grid_layout_controls: EditorGridLayoutControls
 var _battle_option: OptionButton
 var _name_edit: LineEdit
 var _selected_state_id: StringName = &"core:electricity"
@@ -101,6 +102,7 @@ func _ready() -> void:
 	_view.snapshot = _snapshot
 	_view.setup(_document)
 	_populate_palette()
+	_sync_grid_layout()
 	_populate_side_options()
 	_populate_ai_options()
 	_update_document_path_label()
@@ -172,6 +174,17 @@ func _build_ui() -> void:
 	_name_edit.max_length = 120
 	_name_edit.text_changed.connect(_on_name_changed)
 	root.add_child(_labeled("Название", _name_edit))
+	_grid_layout_controls = EditorGridLayoutControls.new()
+	_grid_layout_controls.offset_changed.connect(func(value: int, custom: bool) -> void:
+		if _document != null:
+			_execute(EditCommand.set_grid_offset(value, custom))
+	)
+	_grid_layout_controls.default_saved.connect(func(_value: int) -> void:
+		_sync_grid_layout()
+		_set_status("Высота по умолчанию сохранена для полей без своей настройки.")
+	)
+	_grid_layout_controls.save_failed.connect(_set_status)
+	root.add_child(_grid_layout_controls)
 	root.add_child(EditorDisplaySettings.new())
 
 	var hint := Label.new()
@@ -465,6 +478,7 @@ func _reload_unit_library() -> void:
 	_view.snapshot = _snapshot
 	_view.setup(_document)
 	_populate_palette(_palette_search.text)
+	_sync_grid_layout()
 	_validate_document()
 
 
@@ -825,9 +839,16 @@ func _redo() -> void:
 
 func _after_document_changed() -> void:
 	_view.setup(_document)
+	_sync_grid_layout()
 	_sync_document_name()
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_validate_document()
+
+
+func _sync_grid_layout() -> void:
+	_grid_layout_controls.sync(_document.map_definition if _document != null else null)
+	_view.default_grid_offset_y = _grid_layout_controls.default_offset_y
+	_view.refresh()
 
 
 func _frame_map() -> void:
@@ -934,6 +955,7 @@ func _replace_document(loaded: BattleDocument, path: String, saved: bool) -> voi
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
 	_view.setup(_document)
 	_view.select_placement(StringName())
+	_sync_grid_layout()
 	_populate_side_options()
 	_populate_ai_options()
 	_update_document_path_label()

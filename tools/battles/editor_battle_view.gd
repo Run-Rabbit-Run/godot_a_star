@@ -35,6 +35,7 @@ var snapshot: ContentSnapshot:
 var show_grid := true
 var show_units := true
 var document: BattleDocument
+var default_grid_offset_y := 0
 var selected_placement_id: StringName
 var selected_hex := Vector2i.ZERO
 var has_selected_hex := false
@@ -294,7 +295,7 @@ func _is_pointer_in_workspace(screen_position: Vector2) -> bool:
 
 func _pixel_to_hex(point: Vector2) -> Vector2i:
 	# Test the projected polygon, including the sloping shared edges.
-	var row_guess := roundi((point.y - 197.0) / 58.5)
+	var row_guess := roundi((point.y - 197.0 - _grid_offset_y()) / 58.5)
 	for row in range(row_guess - 1, row_guess + 2):
 		var column := roundi((point.x - 137.0 - posmod(row, 2) * 47.0) / 94.0)
 		var hex := HexCoordinateMapper.offset_to_axial(Vector2i(column, row))
@@ -305,7 +306,11 @@ func _pixel_to_hex(point: Vector2) -> Vector2i:
 
 
 func _hex_center(hex: Vector2i) -> Vector2:
-	return Vector2(137.0 + (hex.x + hex.y * 0.5) * 94.0, 197.0 + hex.y * 58.5)
+	return Vector2(137.0 + (hex.x + hex.y * 0.5) * 94.0, 197.0 + hex.y * 58.5 + _grid_offset_y())
+
+
+func _grid_offset_y() -> int:
+	return BattleGridLayoutSettings.resolve_offset(document.map_definition, default_grid_offset_y) if document != null else default_grid_offset_y
 
 
 func _hex_polygon(center: Vector2) -> PackedVector2Array:
