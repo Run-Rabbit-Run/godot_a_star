@@ -795,13 +795,23 @@ func _present_resolution(resolution: BattleResolution, actors: Dictionary[String
 			_unit_views.definitions[event.unit.unit_id] = event.definition
 	var presented := await _presentation_queue.present(resolution, actors, definitions, map_view, hud)
 	if not presented or not resolution.terminal_error.is_empty():
-		_hex_grid = _battle_session.get_hex_grid()
-		_known_map_revision = _battle_session.get_map_revision()
-		_map_view.render_grid(_hex_grid)
-		_unit_views.synchronize(_battle_session)
+		_synchronize_view()
 		_fail_runtime(resolution.terminal_error if not resolution.terminal_error.is_empty() else "Battle presentation failed; state was synchronized and playback stopped.")
 		return false
+	# A cut animation is optional presentation: the view snaps to the session and play goes on.
+	if _presentation_queue.interrupted_steps > 0:
+		_synchronize_view()
 	return true
+
+
+## Rebuilds the map, actors, health, statuses and bodies from the authoritative session.
+func _synchronize_view() -> void:
+	_hex_grid = _battle_session.get_hex_grid()
+	_known_map_revision = _battle_session.get_map_revision()
+	_input_router.setup(_hex_grid)
+	_movement_search_result = null
+	_map_view.render_grid(_hex_grid)
+	_unit_views.synchronize(_battle_session)
 
 
 func _fail_runtime(message: String) -> void:

@@ -3,16 +3,28 @@ extends Node
 
 
 const SPEAR_GLYPH := preload("res://features/battle/view/spear_glyph.gd")
+## Processed frames without tween progress after which a step is completed at once.
+const STALL_FRAMES := 30
+## Tween time after which an awaited step counts as endless; real steps take seconds.
+const MAX_STEP_SECONDS := 120.0
+
+signal _step_closed(id: int)
 
 var _landed_spears: Dictionary[StringName, Node2D] = {}
 var settings := BattlePlaybackSettings.new()
 var _active_tweens: Array[Tween] = []
 var _content_snapshot: ContentSnapshot
 var _unit_views: BattleUnitViewRegistry
+var _steps: Dictionary[int, Dictionary] = {}
+var _closed_steps: Dictionary[int, bool] = {}
+var _next_step_id := 0
+## Animation steps cut short during the last present(); the controller then snaps the view.
+var interrupted_steps := 0
 
 
 func _ready() -> void:
 	settings.speed_changed.connect(_on_speed_changed)
+	set_process(false)
 
 
 ## Without a snapshot every ability uses the fallback visuals.
@@ -39,6 +51,7 @@ func present(
 	if resolution == null or not resolution.accepted:
 		return false
 
+	interrupted_steps = 0
 	map_view.clear_ranged_attack_cells()
 
 	for event: BattleEvent in resolution.events:
@@ -70,7 +83,7 @@ func _present_event(
 		return _unit_views != null and _unit_views.create_summoned(event as UnitSummonedEvent)
 	if event is UnitStatusChangedEvent:
 		var status_event := event as UnitStatusChangedEvent
-		var actor := unit_actors.get(status_event.unit_id) as UnitActor
+		var actor := _actor(unit_actors, status_event.unit_id)
 		if actor != null:
 			actor.show_statuses(status_event.statuses)
 		return true
@@ -121,7 +134,7 @@ func _present_move(
 	unit_actors: Dictionary[StringName, UnitActor],
 	map_view: BattleMapView
 ) -> bool:
-	var actor := unit_actors.get(event.unit_id) as UnitActor
+	var actor := _actor(unit_actors, event.unit_id)
 
 	if actor == null:
 		push_error("UnitActor is not registered for the moved unit.")
@@ -137,7 +150,7 @@ func _present_move(
 	var tween := actor.create_movement_tween(positions)
 	if tween != null:
 		_track_tween(tween)
-		await tween.finished
+		await _finish(tween)
 
 	return true
 
@@ -149,13 +162,13 @@ func _present_damage(
 	map_view: BattleMapView,
 	hud: BattleHUD
 ) -> bool:
-	var actor := unit_actors.get(event.target_id) as UnitActor
+	var actor := _actor(unit_actors, event.target_id)
 
 	if actor == null:
 		push_error("UnitActor is not registered for the attacked unit.")
 		return false
 
-	var attacker := unit_actors.get(event.attacker_id) as UnitActor
+	var attacker := _actor(unit_actors, event.attacker_id)
 	var attacker_definition := unit_definitions.get(
 		event.attacker_id
 	) as UnitDefinition
@@ -190,15 +203,15 @@ func _present_damage(
 	else:
 		tween = UnitCombatAnimator.hit(actor, contact)
 	_track_tween(tween)
-	await tween.finished
-	if event.target_defeated:
+	await _finish(tween)
+	if event.target_defeated and is_instance_valid(actor):
 		var fall_direction := 1.0
-		if attacker != null and attacker != actor:
+		if is_instance_valid(attacker) and attacker != actor:
 			fall_direction = -1.0 if attacker.global_position.x > actor.global_position.x else 1.0
 		var death := actor.create_defeat_tween(fall_direction)
 		if death != null:
 			_track_tween(death)
-			await death.finished
+			await _finish(death)
 	return true
 
 
@@ -263,8 +276,8 @@ func _present_ability(
 	unit_actors: Dictionary[StringName, UnitActor],
 	map_view: BattleMapView
 ) -> bool:
-	var user := unit_actors.get(event.user_id) as UnitActor
-	var target := unit_actors.get(event.target_id) as UnitActor
+	var user := _actor(unit_actors, event.user_id)
+	var target := _actor(unit_actors, event.target_id)
 
 	if user == null or target == null:
 		push_error("UnitActor is not registered for the ability user or target.")
@@ -286,7 +299,7 @@ func _present_area_ability(
 	unit_actors: Dictionary[StringName, UnitActor],
 	map_view: BattleMapView
 ) -> bool:
-	var user := unit_actors.get(event.user_id) as UnitActor
+	var user := _actor(unit_actors, event.user_id)
 
 	if user == null:
 		push_error("UnitActor is not registered for the area ability user.")
@@ -340,9 +353,8 @@ func _present_area_ability(
 	impact_tween.tween_property(shockwave, "scale", Vector2(2.0, 2.0), 0.34)
 	impact_tween.tween_property(shockwave, "modulate:a", 0.0, 0.34)
 	_track_tween(impact_tween)
-	await impact_tween.finished
-	core.queue_free()
-	shockwave.queue_free()
+	await _finish(impact_tween)
+	_free_nodes([core, shockwave])
 	map_view.clear_ability_area()
 	return true
 
@@ -364,8 +376,8 @@ func _present_beam(user: UnitActor, cells: Array[Vector2i], map_view: BattleMapV
 	tween.tween_property(beam, "width", 2.0, 0.35)
 	tween.parallel().tween_property(beam, "modulate:a", 0.0, 0.35)
 	_track_tween(tween)
-	await tween.finished
-	beam.queue_free()
+	await _finish(tween)
+	_free_nodes([beam])
 	map_view.clear_ability_area()
 	return true
 
@@ -432,9 +444,8 @@ func _present_projectile(
 		tracer.points = PackedVector2Array([tail, projectile.position])
 	, 0.0, 1.0, 0.22)
 	_track_tween(tween)
-	await tween.finished
-	projectile.queue_free()
-	tracer.queue_free()
+	await _finish(tween)
+	_free_nodes([projectile, tracer])
 
 
 func _present_thrown(
@@ -469,9 +480,8 @@ func _present_thrown(
 	tween.tween_property(projectile, "rotation", TAU * 2.0, 0.28)
 	tween.tween_property(trail, "modulate:a", 0.0, 0.28)
 	_track_tween(tween)
-	await tween.finished
-	projectile.queue_free()
-	trail.queue_free()
+	await _finish(tween)
+	_free_nodes([projectile, trail])
 
 
 func _get_ability_presentation(
@@ -520,6 +530,74 @@ func _on_tween_finished(tween: Tween) -> void:
 	_active_tweens.erase(tween)
 
 
+## Waits for a tracked tween without trusting it to finish: a broken animation must not
+## block the battle. A tween that stops advancing is completed at once, so its final pose
+## and callbacks still apply; one that dies or never ends is cut. Both count as interrupted.
+## Returns false when the tween ended without reaching its end.
+func _finish(tween: Tween) -> bool:
+	var id := _next_step_id
+	_next_step_id += 1
+	_steps[id] = {"tween": tween, "elapsed": -1.0, "stalled_frames": 0}
+	tween.finished.connect(_close_step.bind(id, true), CONNECT_ONE_SHOT)
+	set_process(true)
+	while not _closed_steps.has(id):
+		await _step_closed
+	var completed := _closed_steps[id]
+	_closed_steps.erase(id)
+	return completed
+
+
+func _close_step(id: int, completed: bool) -> void:
+	if not _steps.has(id):
+		return
+	_steps.erase(id)
+	_closed_steps[id] = completed
+	_step_closed.emit(id)
+
+
+func _process(_delta: float) -> void:
+	for id: int in _steps.keys():
+		if not _steps.has(id):
+			continue
+		var step := _steps[id]
+		var tween: Tween = step.tween
+		if not tween.is_valid():
+			push_warning("Battle animation ended before finishing; the view will be synchronized.")
+			interrupted_steps += 1
+			_close_step(id, false)
+			continue
+		var elapsed := tween.get_total_elapsed_time()
+		if elapsed != step.elapsed:
+			step.elapsed = elapsed
+			step.stalled_frames = 0
+		else:
+			step.stalled_frames += 1
+		if step.stalled_frames < STALL_FRAMES and elapsed <= MAX_STEP_SECONDS:
+			continue
+		push_warning("Battle animation stopped advancing and was completed at once.")
+		interrupted_steps += 1
+		# Completing runs the remaining callbacks, restores poses and emits finished.
+		tween.custom_step(MAX_STEP_SECONDS)
+		if _steps.has(id):
+			tween.kill()
+			_close_step(id, false)
+	if _steps.is_empty():
+		set_process(false)
+
+
+## A freed actor reads as unregistered; casting a freed object would raise a script error.
+func _actor(unit_actors: Dictionary[StringName, UnitActor], unit_id: StringName) -> UnitActor:
+	var actor: Variant = unit_actors.get(unit_id)
+	return actor as UnitActor if is_instance_valid(actor) else null
+
+
+## An interrupted step may already have lost its effect nodes.
+func _free_nodes(nodes: Array) -> void:
+	for node: Variant in nodes:
+		if is_instance_valid(node):
+			(node as Node).queue_free()
+
+
 func _on_speed_changed(speed: float) -> void:
 	for tween: Tween in _active_tweens:
 		if is_instance_valid(tween):
@@ -559,7 +637,9 @@ func _present_spear(event: AreaAbilityUsedEvent, user: UnitActor, map_view: Batt
 	var flight := spear.create_tween()
 	flight.tween_property(spear, "position", finish, clampf(start.distance_to(finish) / 850.0, 0.18, 0.5))
 	_track_tween(flight)
-	await flight.finished
+	await _finish(flight)
+	if not is_instance_valid(spear):
+		return true
 	if event.is_return:
 		spear.queue_free()
 	else:

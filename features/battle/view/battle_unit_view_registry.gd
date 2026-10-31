@@ -154,8 +154,10 @@ func synchronize(session: BattleSession) -> void:
 		var state := session.get_unit(id)
 		if state == null:
 			continue
-		var actor := actors.get(id) as UnitActor
-		if not is_instance_valid(actor):
+		var existing: Variant = actors.get(id)
+		# A freed actor is rebuilt; casting it first would raise a script error.
+		var actor: UnitActor = existing as UnitActor if is_instance_valid(existing) else null
+		if actor == null:
 			var definition := definitions.get(id) as UnitDefinition
 			if definition == null:
 				definition = _content_snapshot.get_unit_definition(state.definition_id)
