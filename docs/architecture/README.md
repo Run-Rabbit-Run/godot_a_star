@@ -23,15 +23,15 @@ ECS, микросервисы, глобальный EventBus и отдельны
 
 ```text
 content/ и определения
-        ↓
+		↓
 ContentLoader → ContentSnapshot
-        ↓
+		↓
 BattleStartRequest → BattleSetupFactory → BattleSessionFactory
-        ↓
+		↓
 BattleSession → BattleEngine → BattleState
-        ↓
+		↓
 BattleResolution / BattleResult / read-only снимки
-        ↓
+		↓
 графический адаптер | редактор | симулятор | кампания
 ```
 
