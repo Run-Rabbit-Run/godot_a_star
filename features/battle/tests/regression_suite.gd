@@ -67,6 +67,8 @@ func _run() -> void:
 		_test_file_logging()
 	if only.is_empty() or only == "file_logging_ui":
 		await _test_file_logging_ui()
+	if only.is_empty() or only == "file_logging_flag":
+		_test_file_logging_flag()
 	if only.is_empty() or only == "turn_effect_order":
 		_test_turn_effect_order()
 	if only.is_empty() or only == "commands":
@@ -261,6 +263,25 @@ func _test_file_logging_ui() -> void:
 	DirAccess.remove_absolute(second_path)
 	DirAccess.remove_absolute(failed_path)
 	DirAccess.remove_absolute(directory)
+
+
+## Owner decision: production builds never compose the recorder, whatever the base flag value.
+func _test_file_logging_flag() -> void:
+	var setting := BattleLoggingController.FEATURE_SETTING
+	var project := ConfigFile.new()
+	expect(project.load("res://project.godot") == OK, "project.godot is readable")
+	expect(project.get_value("feature_flags", "battle_file_logging.release", "missing") == false, "Release builds override the logging flag to false")
+	var flag: Variant = ProjectSettings.get_setting(setting, false)
+	ProjectSettings.set_setting(setting, true)
+	expect(BattleLoggingController.is_feature_enabled() == not OS.has_feature("release"), "Release override applies only to release builds")
+	# Any feature tag of the running build must win over the base value, as the release tag does in production.
+	var override := setting + "." + ("debug" if OS.has_feature("debug") else "release")
+	var previous: Variant = ProjectSettings.get_setting(override) if ProjectSettings.has_setting(override) else null
+	ProjectSettings.set_setting(override, false)
+	expect(not BattleLoggingController.is_feature_enabled(), "Feature-tag override disables the recorder")
+	ProjectSettings.set_setting(override, previous)
+	expect(BattleLoggingController.is_feature_enabled() == not OS.has_feature("release"), "Removing the override restores the base value")
+	ProjectSettings.set_setting(setting, flag)
 
 
 func _test_geometry() -> void:

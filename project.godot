@@ -30,6 +30,7 @@ version_control/autoload_on_startup=true
 [feature_flags]
 
 battle_file_logging=true
+battle_file_logging.release=false
 
 [physics]
 

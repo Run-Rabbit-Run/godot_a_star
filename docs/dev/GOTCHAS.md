@@ -11,6 +11,7 @@
   ```
 
   Ошибки GitPlugin о заблокированной DLL при этом запуске были и раньше и не мешают.
+- **`ProjectSettings.get_setting()` не применяет переопределения по feature tag** вроде `.release` или `.windows`, их применяет только `get_setting_with_override()`. Флаги, которые должны меняться в зависимости от сборки, читать вторым способом. Проверено на Godot 4.7: `flag.debug=false` в debug-запуске через `get_setting` даёт `true`.
 - **Нельзя называть `class_name` так же, как нативный класс редактора** (например, `EditorInspector`): побеждает нативный класс, и члены не находятся с ошибкой «Cannot find member». Поэтому панель редактора поля называется `BattleEditorInspector`.
 - **`LineEdit.text_changed` от настоящего ввода приходит в конце кадра.** Тест, отправляющий `InputEventKey`, должен выполнить `await process_frame` перед проверкой документа.
 - **`BaseButton.set_pressed_no_signal(true)` не отжимает остальные кнопки `ButtonGroup`.** Состояние каждой кнопки задавать явно.

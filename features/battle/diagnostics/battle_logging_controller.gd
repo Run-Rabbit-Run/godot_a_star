@@ -14,8 +14,11 @@ var _directory := ""
 
 
 ## The flag is checked only at composition: no controls or observer when disabled.
+## Feature-tag overrides apply, so `battle_file_logging.release=false` keeps release builds off.
 static func is_feature_enabled() -> bool:
-	return bool(ProjectSettings.get_setting(FEATURE_SETTING, false))
+	if not ProjectSettings.has_setting(FEATURE_SETTING):
+		return false
+	return bool(ProjectSettings.get_setting_with_override(FEATURE_SETTING))
 
 
 func setup(session: BattleSession, hud: BattleHUD, controller: BattleController, directory := "") -> void:

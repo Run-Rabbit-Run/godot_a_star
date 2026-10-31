@@ -82,7 +82,7 @@ Presentation никогда не авторизует действие. Даже
 
 ## Диагностическое наблюдение
 
-`features/battle/diagnostics/` — внешний адаптер наблюдения. `BattleController.setup()` создаёт `BattleLoggingController` только при `feature_flags/battle_file_logging=true` (по умолчанию false). Он добавляет переключатель в настройки HUD, сохраняет предпочтение и управляет `BattleFileLogger`. Файлы UTF-8 JSONL находятся в `logs/battles` рядом с exe, при editor-запуске — в корне проекта. Ошибка диагностики отображается в HUD и отключает запись, не меняя бой.
+`features/battle/diagnostics/` — внешний адаптер наблюдения. `BattleController.setup()` создаёт `BattleLoggingController` только при `feature_flags/battle_file_logging=true` (по умолчанию false). Флаг читается через `ProjectSettings.get_setting_with_override()`, поэтому действуют переопределения по feature tag: `battle_file_logging.release=false` выключает подсистему в релизных сборках. Он добавляет переключатель в настройки HUD, сохраняет предпочтение и управляет `BattleFileLogger`. Файлы UTF-8 JSONL находятся в `logs/battles` рядом с exe, при editor-запуске — в корне проекта. Ошибка диагностики отображается в HUD и отключает запись, не меняя бой.
 
 `BattleSession.diagnostic_record` синхронно передаёт команды до исполнения, resolutions после исполнения, запросы мутаций, выбор AI и смену источника команд. Полные снимки формируются только при подключённом наблюдателе; `get_diagnostic_state()` возвращает независимые снимки всех юнитов/карты и scalar-метаданные, включая состояние RNG строкой. Сессия не знает файлов, настроек или UI. AI/EnemyBrain принимают необязательный диагностический контейнер, который фиксирует рассмотренные варианты и не участвует в выборе.
 
