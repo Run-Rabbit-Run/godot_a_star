@@ -5,6 +5,10 @@ extends RefCounted
 var _state: BattleState
 var _initial_resolution: BattleResolution
 var _terminal_error := ""
+## Prediction copies change only through commands, which advance the revisions,
+## so a stored search stays valid while its revisions match the state.
+var _caches_movement_searches := false
+var _movement_searches: Dictionary[StringName, MovementSearchResult] = {}
 
 
 func _init(p_state: BattleState, initialize := true) -> void:
@@ -49,6 +53,8 @@ func get_initial_resolution() -> BattleResolution:
 func fork_for_prediction() -> BattleEngine:
 	var copy := BattleEngine.new(_state.duplicate_for_prediction(), false)
 	copy._terminal_error = _terminal_error
+	copy._caches_movement_searches = true
+	copy._movement_searches.assign(_movement_searches)
 	return copy
 
 
@@ -205,7 +211,12 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 			_state.state_revision
 		)
 
-	return MovementService.search(
+	if _caches_movement_searches:
+		var cached := _movement_searches.get(unit_id) as MovementSearchResult
+		if cached != null and cached.map_revision == _state.map_revision and cached.state_revision == _state.state_revision:
+			return cached
+
+	var result := MovementService.search(
 		_state.hex_grid,
 		state.hex,
 		state.turn.movement_remaining,
@@ -213,6 +224,9 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 		_state.map_revision,
 		_state.state_revision
 	)
+	if _caches_movement_searches:
+		_movement_searches[unit_id] = result
+	return result
 
 
 func apply_map_mutations(

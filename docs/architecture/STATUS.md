@@ -27,7 +27,7 @@
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
 | Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
 | Трупы в состоянии боя | `BattleState.get_corpses_at()` | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
-| ИИ | `EnemyBrain`, `MovementImpactForecast`, `AILastActionPlanner`, атака мешающих препятствий | [BATTLE_AI.md](BATTLE_AI.md) |
+| ИИ | `EnemyBrain`, `MovementImpactForecast`, `AILastActionPlanner` с переиспользованием исходов и отсевом пустых действий, атака мешающих препятствий | [BATTLE_AI.md](BATTLE_AI.md), BATTLE_AI.md «Поиск без лишних прогонов» |
 
 ### Контент
 

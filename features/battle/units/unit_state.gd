@@ -60,10 +60,11 @@ func get_ability(ability_id: StringName) -> AbilityDefinition:
 	return abilities.get(ability_id) as AbilityDefinition
 
 
+## Runtime collections are detached. Ability definitions are read-only during a battle,
+## so the copy shares them instead of deep-copying every definition per forecast.
 func duplicate_state() -> UnitState:
-	var copied_abilities: Array[AbilityDefinition] = []
-	copied_abilities.assign(abilities.values())
-	var copy := UnitState.new(unit_id, definition_id, faction, hex, TurnState.new(turn.movement_max), HealthState.new(health.maximum), basic_attack_damage, basic_attack_range, copied_abilities)
+	var copy := UnitState.new(unit_id, definition_id, faction, hex, TurnState.new(turn.movement_max), HealthState.new(health.maximum), basic_attack_damage, basic_attack_range)
+	copy.abilities.assign(abilities)
 	copy.health.current = health.current
 	copy.turn.movement_remaining = turn.movement_remaining
 	copy.turn.main_action_available = turn.main_action_available

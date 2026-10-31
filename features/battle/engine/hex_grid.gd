@@ -102,6 +102,7 @@ func get_neighbors(cell: Vector2i) -> Array[Vector2i]:
 	return neighbors
 
 
+## Order is unspecified; callers that need a stable order sort the result.
 func get_cells_in_range(
 	center: Vector2i,
 	radius: int
@@ -111,6 +112,15 @@ func get_cells_in_range(
 	if radius < 0 or not has_cell(center):
 		return result
 
+	# A disc smaller than the map is cheaper to enumerate than to filter the map.
+	if 3 * radius * (radius + 1) + 1 < _cells.size():
+		for dq: int in range(-radius, radius + 1):
+			for dr: int in range(maxi(-radius, -dq - radius), mini(radius, radius - dq) + 1):
+				var cell := center + Vector2i(dq, dr)
+				if _cells.has(cell):
+					result.append(cell)
+		return result
+
 	for cell: Vector2i in _cells:
 		if get_distance(center, cell) <= radius:
 			result.append(cell)
@@ -118,15 +128,15 @@ func get_cells_in_range(
 	return result
 
 
+## Stored values are already normalized, so the copy skips the constructor's per-cell pass.
 func duplicate_grid() -> HexGrid:
-	var copy := HexGrid.new(
-		get_cells(),
-		_movement_costs,
-		_terrain_ids,
-		_traversable,
-		_hex_state_ids,
-		_hex_state_turns
-	)
+	var copy := HexGrid.new([])
+	copy._cells.assign(_cells)
+	copy._movement_costs.assign(_movement_costs)
+	copy._terrain_ids.assign(_terrain_ids)
+	copy._traversable.assign(_traversable)
+	copy._hex_state_ids.assign(_hex_state_ids)
+	copy._hex_state_turns.assign(_hex_state_turns)
 	copy._copy_obstacles(self)
 	return copy
 

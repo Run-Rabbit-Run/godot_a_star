@@ -81,6 +81,8 @@ func _run() -> void:
 		_test_ai_and_forecast()
 	if only.is_empty() or only == "doomed_ai":
 		_test_doomed_ai()
+	if only.is_empty() or only == "doomed_ai_search":
+		preload("res://features/battle/tests/doomed_ai_regressions.gd").new().run(self)
 	if only.is_empty() or only == "summon_control":
 		_test_summon_control()
 	if only.is_empty() or only == "simulation":
