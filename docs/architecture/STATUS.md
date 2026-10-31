@@ -23,6 +23,7 @@
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
 | Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
 | Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI` | BATTLE_UNITS_AND_ABILITIES.md «Способности» |
+| Описания умений | `AbilityDefinition.description`, `AbilityDescription`, подсказки HUD и редактора юнитов | BATTLE_UNITS_AND_ABILITIES.md «Описание», BATTLE_PRESENTATION.md «HUD» |
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
 | Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
 | Трупы в состоянии боя | `BattleState.get_corpses_at()` | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
@@ -60,7 +61,7 @@
 | Кампания из боёв | `CampaignSession`, `CampaignSimulationRunner`, проверка замкнутого графа сценариев | SIMULATION_AND_PLAYBACK.md, CONTENT_AND_MODS.md |
 | Редактор поля | `BattleEditorShell`, `BattleEditorInspector`, `EditCommand`, undo/redo, JSON, именованные поля, пробный бой | EDITOR.md, [../tools/BATTLES.md](../tools/BATTLES.md) |
 | Редактор юнитов | `tools/units/`, `UnitLibrary` | EDITOR.md, ../tools/UNITS.md |
-| Редактор навыков | `tools/skills/`, `SkillLibrary` | EDITOR.md, [../tools/SKILLS.md](../tools/SKILLS.md) |
+| Редактор навыков | `tools/skills/`, `SkillLibrary`: только правка существующих умений, описания с переменными | EDITOR.md «Редактор навыков», [../tools/SKILLS.md](../tools/SKILLS.md) |
 | Редактор UI боя | `tools/battle_ui/` | EDITOR.md, [../tools/BATTLE_UI.md](../tools/BATTLE_UI.md) |
 | Общий интерфейс инструментов | `tools/common/editor_ui.gd` | EDITOR.md «Интерфейс инструментов» |
 | Игровая сборка | Профиль `Windows Game` в `export_presets.cfg` без tools, docs и тестов | [../tools/README.md](../tools/README.md) |

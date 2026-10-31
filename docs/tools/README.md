@@ -4,7 +4,7 @@
 
 | Инструмент | Сцена для F6 | Руководство | Данные |
 | --- | --- | --- | --- |
-| Навыки и эффекты | `tools/skills/skill_editor.tscn` | [SKILLS.md](SKILLS.md) | `content/authored/skills` |
+| Навыки | `tools/skills/skill_editor.tscn` | [SKILLS.md](SKILLS.md) | `content/authored/skills` |
 | Юниты | `tools/units/unit_editor.tscn` | [UNITS.md](UNITS.md) | `content/authored/units`, изображения `content/authored/assets/units` |
 | Поле боя | `tools/battles/battle_editor.tscn` | [BATTLES.md](BATTLES.md) | `content/authored/battles` |
 | UI боя | `tools/battle_ui/battle_ui_editor.tscn` | [BATTLE_UI.md](BATTLE_UI.md) | `content/authored/ui`, изображения в `assets` внутри этой папки |
