@@ -120,6 +120,7 @@ Feature flag создаётся только после явного согла�
 - [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) — пакеты, IDs, snapshot, моды и внешние форматы.
 - [EDITOR.md](EDITOR.md) — инструменты разработки и `BattleDocument`.
 - [SIMULATION_AND_PLAYBACK.md](SIMULATION_AND_PLAYBACK.md) — headless-запуск, детерминизм и скорость.
-- [STATUS.md](STATUS.md) — что уже реализовано, что частично и какие решения открыты.
+- [STATUS.md](STATUS.md) — что уже реализовано, что частично и какие долги.
+- [DECISIONS.md](../DECISIONS.md) — решения владельца и открытые игровые вопросы.
 
 При изменении архитектурного контракта обновляются соответствующий тематический файл и `STATUS.md`. Внешние заметки не считаются источником истины.

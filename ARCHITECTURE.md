@@ -20,6 +20,7 @@ content/ → ContentSnapshot → BattleStartRequest
 - [Редактор](docs/architecture/EDITOR.md) — инструменты разработки.
 - [Симуляция и скорость](docs/architecture/SIMULATION_AND_PLAYBACK.md) — автобой и скорость.
 - [Текущее состояние](docs/architecture/STATUS.md) — что уже сделано и чего пока нет.
+- [Решения владельца](docs/DECISIONS.md) — что решено и какие игровые вопросы открыты.
 
 ## Какая папка за что отвечает
 
