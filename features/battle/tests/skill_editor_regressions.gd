@@ -87,6 +87,13 @@ func run(suite: Node) -> void:
 	applied = SkillLibrary.apply_to_packages(source, {custom.id: custom, passive.id: passive})
 	var loaded := ContentLoader.load_packages(applied)
 	suite.expect(loaded.is_successful and loaded.snapshot.get_ability_definition(StringName(custom.id)) != null, "Authored active skill enters shared ContentSnapshot")
+	var copied := SkillLibrary.builtin_documents()
+	copied["core:grenade"].name = "Mutated copy"
+	suite.expect(SkillLibrary.builtin_documents()["core:grenade"].name != "Mutated copy", "Built-in skill documents are independent copies of the cache")
+	var started := Time.get_ticks_usec()
+	for index in range(20):
+		SkillLibrary.validate(copied["core:electric_turret"])
+	suite.expect(Time.get_ticks_usec() - started < 200000, "Validating built-in skills does not reload content packages")
 	var root := "user://skill_editor_" + Crypto.new().generate_random_bytes(8).hex_encode()
 	suite.expect(SkillLibrary.save_document(custom, root).is_empty(), "Skill JSON saves successfully")
 	var reread := SkillLibrary.read_all(root)
@@ -114,6 +121,12 @@ func run_editor(suite: Node) -> void:
 	suite.expect(editor._document.effects[0].parameters.amount == 11, "Effect form edits owned authoring data")
 	editor._undo_edit()
 	suite.expect(editor._document.effects[0].parameters.amount == 2, "Effect edits participate in undo")
+	var turret: Dictionary = SkillLibrary.builtin_documents()["core:electric_turret"]
+	var started := Time.get_ticks_usec()
+	editor._set_document(turret)
+	for value in range(2, 12):
+		editor._change("range", value)
+	suite.expect(Time.get_ticks_usec() - started < 300000, "Opening and editing a summon skill stays interactive")
 	editor._set_document(SkillLibrary.new_document("passive"))
 	suite.expect(editor._kind == "passive" and editor._list.item_count > 0, "Passive mode has catalog and form")
 	editor._set_document(SkillLibrary.new_document("effect"))

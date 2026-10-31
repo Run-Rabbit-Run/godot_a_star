@@ -27,6 +27,8 @@ var _redo: Array[Dictionary] = []
 var _kind := "active"
 var _effect_index := 0
 var _authored: Dictionary = {}
+## Presentation IDs read once per editor: listing packages reloads them.
+var _presentations: Dictionary = {}
 var _list: ItemList
 var _search: LineEdit
 var _library_count: Label
@@ -136,6 +138,7 @@ func _build_header(root: Control) -> void:
 	header.add_child(EditorUi.separator())
 	header.add_child(EditorUi.button("Папка данных", _open_folder, "Открыть content/authored/skills в проводнике"))
 	var refresh := EditorUi.button("Обновить", func() -> void:
+		SkillLibrary.reload()
 		_refresh_list()
 		EditorUi.set_status(_status, "Библиотека навыков перечитана с диска.")
 	, "Перечитать авторские навыки с диска")
@@ -314,11 +317,12 @@ func _active_form() -> void:
 	_number(grid, "Радиус области", _document, "area_radius", 0, 8, _change, "0 — только цель; 1 — цель и соседи.")
 	_number(grid, "Перезарядка", _document, "cooldown_turns", 1, 99, _change, "1 запрещает навык на следующем собственном ходе.")
 	_number(grid, "Начальная перезарядка", _document, "initial_cooldown_turns", 0, 99, _change, "1 делает навык доступным со второго собственного хода.")
-	var presentations := {"": "Автоматическое"}
-	for package: ContentPackage in SkillLibrary.packages():
-		for definition: AbilityPresentationDefinition in package.ability_presentations:
-			presentations[String(definition.id)] = String(definition.id)
-	_choice(grid, "Отображение", _document, "presentation_id", presentations, _change, "Анимация и VFX навыка в бою.")
+	if _presentations.is_empty():
+		_presentations[""] = "Автоматическое"
+		for package: ContentPackage in SkillLibrary.packages():
+			for definition: AbilityPresentationDefinition in package.ability_presentations:
+				_presentations[String(definition.id)] = String(definition.id)
+	_choice(grid, "Отображение", _document, "presentation_id", _presentations, _change, "Анимация и VFX навыка в бою.")
 	var flags := HFlowContainer.new()
 	flags.add_theme_constant_override("h_separation", 18)
 	usage.add_child(flags)
@@ -492,10 +496,9 @@ func _effect_form(effect: Dictionary, title: String) -> VBoxContainer:
 
 func _summon_choices() -> Dictionary:
 	var choices := {}
-	for package: ContentPackage in SkillLibrary.packages():
-		for unit: UnitDefinition in package.units:
-			if unit.ability_ids.is_empty():
-				choices[String(unit.id)] = unit.display_name
+	for unit: UnitDefinition in SkillLibrary.units().values():
+		if unit.ability_ids.is_empty():
+			choices[String(unit.id)] = unit.display_name
 	return choices
 
 

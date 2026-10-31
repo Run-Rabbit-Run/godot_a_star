@@ -8,9 +8,32 @@ const KINDS := ["active", "passive", "effect"]
 const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [0, 8, "Радиус области"], "target_mode": [0, 6, "Цель"], "cooldown_turns": [1, 99, "Перезарядка"], "initial_cooldown_turns": [0, 99, "Начальная перезарядка"]}
 const DAMAGE_TYPES := {"physical": "Физический", "electric": "Электрический", "fire": "Огненный", "water": "Водный", "acid": "Кислотный", "plasma": "Плазменный"}
 
+## Built-in documents and summonable units, read once: packages() reloads every package (~0.6 s).
+static var _builtin_cache: Dictionary = {}
+static var _units_cache: Dictionary = {}
+
 static func packages() -> Array[ContentPackage]:
 	var settings := GameContentSettings.read()
 	return settings.content_packages if settings != null else []
+
+## Drops cached built-in data; tools call it when the user asks to re-read content.
+static func reload() -> void:
+	_builtin_cache.clear()
+	_units_cache.clear()
+
+static func _builtin() -> Dictionary:
+	if _builtin_cache.is_empty():
+		var source := packages()
+		for package: ContentPackage in source:
+			for unit: UnitDefinition in package.units:
+				_units_cache[unit.id] = unit
+		_builtin_cache = _build_builtin_documents(source)
+	return _builtin_cache
+
+## Package units by ID. Callers must duplicate before changing them.
+static func units() -> Dictionary:
+	_builtin()
+	return _units_cache
 
 static func new_document(kind: String) -> Dictionary:
 	var data := {"schema_version": 1, "kind": kind, "id": "custom_skills:s_" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "Новый навык"}
@@ -39,9 +62,7 @@ static func _effect_document(effect: AbilityEffectDefinition) -> Dictionary:
 	return {"type": String(effect.effect_type_id), "parameters": params}
 
 static func active_document(ability: AbilityDefinition) -> Dictionary:
-	var data := new_document("active")
-	data.id = String(ability.id)
-	data.name = ability.display_name
+	var data := {"schema_version": 1, "kind": "active", "id": String(ability.id), "name": ability.display_name}
 	for key: String in ["range", "area_radius", "target_mode", "cooldown_turns", "initial_cooldown_turns", "uses_attack_range", "returns_next_turn", "melee_attack"]:
 		data[key] = ability.get(key)
 	data.presentation_id = String(ability.presentation_id)
@@ -51,8 +72,11 @@ static func active_document(ability: AbilityDefinition) -> Dictionary:
 	return data
 
 static func builtin_documents() -> Dictionary:
+	return _builtin().duplicate(true)
+
+static func _build_builtin_documents(source: Array[ContentPackage]) -> Dictionary:
 	var documents := {}
-	for package: ContentPackage in packages():
+	for package: ContentPackage in source:
 		for ability: AbilityDefinition in package.abilities:
 			documents[String(ability.id)] = active_document(ability)
 	for id: StringName in PassiveAbilityCatalog.DEFINITIONS:
@@ -130,7 +154,7 @@ static func validate(data: Dictionary) -> String:
 	var parts := String(data.id).split(":")
 	if parts.size() != 2 or not parts[0].is_valid_identifier() or not parts[1].is_valid_identifier(): return "Некорректный ID."
 	if parts[0] != "custom_skills":
-		var builtin := builtin_documents().get(data.id, {}) as Dictionary
+		var builtin := _builtin().get(data.id, {}) as Dictionary
 		if builtin.is_empty() or builtin.kind != data.kind: return "ID не является встроенным навыком этой категории."
 	if data.kind == "effect":
 		if not data.get("effect") is Dictionary: return "Эффект должен быть объектом."
@@ -172,9 +196,8 @@ static func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 	if effect.effect_type_id == &"core:summon":
 		var id := StringName(effect.parameters.get("unit_id", ""))
 		effect.parameters.erase("unit_id")
-		for package: ContentPackage in packages():
-			for unit: UnitDefinition in package.units:
-				if unit.id == id: effect.parameters["unit"] = unit.duplicate(true)
+		var unit: UnitDefinition = units().get(id)
+		if unit != null: effect.parameters["unit"] = unit.duplicate(true)
 	return effect
 
 static func validate_effect(data: Dictionary) -> String:
