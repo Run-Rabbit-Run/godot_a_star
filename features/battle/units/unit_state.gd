@@ -79,3 +79,26 @@ func duplicate_state() -> UnitState:
 	copy.retaliation_configured = retaliation_configured
 	copy.pending_spear_return = pending_spear_return.duplicate(true)
 	return copy
+
+
+## Takes every runtime value of another state of the same unit, keeping this object.
+func copy_from(other: UnitState) -> void:
+	hex = other.hex
+	turn.movement_max = other.turn.movement_max
+	turn.movement_remaining = other.turn.movement_remaining
+	turn.main_action_available = other.turn.main_action_available
+	health.maximum = other.health.maximum
+	health.current = other.health.current
+	basic_attack_damage = other.basic_attack_damage
+	basic_attack_range = other.basic_attack_range
+	abilities.assign(other.abilities)
+	statuses.assign(other.statuses)
+	passive_ability_ids.assign(other.passive_ability_ids)
+	basic_attack_damage_type = other.basic_attack_damage_type
+	basic_attack_statuses.assign(other.basic_attack_statuses)
+	status_immunities.assign(other.status_immunities)
+	ability_cooldowns.assign(other.ability_cooldowns)
+	turns_started = other.turns_started
+	melee_retaliation = other.melee_retaliation
+	retaliation_configured = other.retaliation_configured
+	pending_spear_return = other.pending_spear_return.duplicate(true)

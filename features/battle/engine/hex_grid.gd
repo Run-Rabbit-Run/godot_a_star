@@ -146,20 +146,12 @@ func replace_with(other: HexGrid) -> bool:
 		return false
 
 	_copy_obstacles(other)
-	_cells.clear()
-	_movement_costs.clear()
-	_terrain_ids.clear()
-	_traversable.clear()
-	_hex_state_ids.clear()
-	_hex_state_turns.clear()
-
-	for cell: Vector2i in other.get_cells():
-		_cells[cell] = true
-		_movement_costs[cell] = other._movement_costs[cell]
-		_terrain_ids[cell] = other._terrain_ids[cell]
-		_traversable[cell] = other._traversable[cell]
-		_hex_state_ids[cell] = other._hex_state_ids[cell]
-		_hex_state_turns[cell] = other._hex_state_turns[cell]
+	_cells.assign(other._cells)
+	_movement_costs.assign(other._movement_costs)
+	_terrain_ids.assign(other._terrain_ids)
+	_traversable.assign(other._traversable)
+	_hex_state_ids.assign(other._hex_state_ids)
+	_hex_state_turns.assign(other._hex_state_turns)
 
 	return true
 

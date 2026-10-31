@@ -333,6 +333,9 @@ func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
 	var result := AbilityExecutor.execute(_state, command)
 
 	if not result.accepted:
+		# Only a detached forecast changes in place; after a failed effect it is unusable.
+		if result.state_changed:
+			_terminal_error = result.rejection_reason
 		return _rejected(result.rejection_reason)
 
 	_finish_action_turn(command.user_id, result.events)
@@ -343,7 +346,7 @@ func _finish_action_turn(_unit_id: StringName, events: Array[BattleEvent]) -> vo
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
 	var next_id := _end_turn(events)
-	if next_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+	if next_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
 		_terminal_error = "The next unit turn could not be started."
 
 
@@ -354,7 +357,7 @@ func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 	var events: Array[BattleEvent] = []
 	var next_unit_id := _end_turn(events)
 
-	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
 		_terminal_error = "The next unit turn could not be started."
 
 	return _accepted(events)
@@ -404,7 +407,11 @@ func _end_turn(damage_events: Array[BattleEvent], initial_skip := false) -> Stri
 		damage_events.append(ended)
 		previous_unit_id = next_unit_id
 		was_skipped = false
-		SpearReturnService.resolve(_state, get_unit(next_unit_id), damage_events)
+		var return_error := SpearReturnService.resolve(_state, get_unit(next_unit_id), damage_events)
+		if not return_error.is_empty():
+			# A turn boundary has no alternative path: a failed return stops the battle.
+			_terminal_error = return_error
+			return StringName()
 		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 			return StringName()
 		_apply_hex_state_damage(next_unit_id, damage_events)
@@ -532,7 +539,7 @@ func _advance_defeated_active(events: Array[BattleEvent], initial_turn := false)
 		return
 
 	var next_unit_id := _end_turn(events, initial_turn and active.statuses.get(&"core:paralysis", 0) > 0)
-	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
 		_terminal_error = "The next unit turn could not be started."
 
 

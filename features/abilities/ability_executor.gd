@@ -89,50 +89,37 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 		error = handler.validate(effect)
 		if not error.is_empty():
 			return AbilityExecutionResult.rejected(error)
-	if not user.turn.spend_main_action():
+	if not user.turn.main_action_available:
 		return AbilityExecutionResult.rejected("Main action unavailable.")
-	user.ability_cooldowns[ability.id] = ability.cooldown_turns + 1
-	var cells := get_affected_hexes(state.hex_grid, user.hex, ability, center)
+	# Everything below changes a transaction copy that the live battle adopts only when the
+	# whole ability succeeded. A detached forecast is already disposable and changes in place.
+	var scratch := state if state.is_detached else state.duplicate_for_prediction()
+	var actor := scratch.unit_states[user.unit_id]
+	actor.turn.spend_main_action()
+	actor.ability_cooldowns[ability.id] = ability.cooldown_turns + 1
+	var cells := get_affected_hexes(scratch.hex_grid, actor.hex, ability, center)
 	var target_ids: Array[StringName] = []
-	for target: UnitState in state.unit_states.values():
+	for target: UnitState in scratch.unit_states.values():
 		if not target.health.is_defeated() and cells.has(target.hex):
 			target_ids.append(target.unit_id)
 	target_ids.sort()
 	var events: Array[BattleEvent] = []
 	if ability.targets_hex() or ability.area_radius > 0:
-		events.append(AreaAbilityUsedEvent.new(user.unit_id, ability.id, center, cells))
+		events.append(AreaAbilityUsedEvent.new(actor.unit_id, ability.id, center, cells))
 	else:
-		events.append(AbilityUsedEvent.new(user.unit_id, command.target_id, ability.id))
-	var context := BattleEffectContext.new(state, ability.id)
+		events.append(AbilityUsedEvent.new(actor.unit_id, command.target_id, ability.id))
+	var context := BattleEffectContext.new(scratch, ability.id)
 	context.target_hex = center
-	for effect: AbilityEffectDefinition in ability.effects:
-		var handler := state.mod_api.get_effect_handler(effect.effect_type_id)
-		if handler is DamageEffectHandler and effect.parameters.get("affects_obstacles", true):
-			var hit: Dictionary[StringName, bool] = {}
-			var ordered_cells := cells.duplicate()
-			ordered_cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(center, a) < HexGrid.get_distance(center, b))
-			for hex: Vector2i in ordered_cells:
-				var obstacle := state.hex_grid.get_obstacle(hex)
-				if obstacle == null or hit.has(obstacle.id):
-					continue
-				hit[obstacle.id] = true
-				var amount := user.basic_attack_damage if effect.parameters.get("use_base_attack", false) else int(effect.parameters["amount"] if hex == center else effect.parameters.get("secondary_amount", effect.parameters["amount"]))
-				ObstacleService.damage(state, hex, amount, events)
-		if handler.affects_hexes():
-			var effect_cells: Array[Vector2i] = []
-			if effect.parameters.get("center_only", false):
-				effect_cells.append(center)
-			else:
-				effect_cells.assign(cells)
-			events.append_array(handler.execute_hexes(effect, context, user.unit_id, effect_cells))
-		else:
-			for target_id: StringName in target_ids:
-				events.append_array(handler.execute(effect, context, user.unit_id, target_id))
+	events.append_array(AbilityEffectPipeline.apply(context, scratch, ability, actor.unit_id, cells, target_ids))
+	if context.has_failed():
+		return AbilityExecutionResult.failed(context.get_failure(), scratch == state)
 	if ability.returns_next_turn:
-		user.pending_spear_return = {"hex": center, "ability_id": ability.id}
+		actor.pending_spear_return = {"hex": center, "ability_id": ability.id}
 	if ability.melee_attack:
 		for target_id: StringName in target_ids:
-			RetaliationService.respond(state, user, state.unit_states[target_id], events)
+			RetaliationService.respond(scratch, actor, scratch.unit_states[target_id], events)
+	if scratch != state:
+		state.adopt(scratch)
 	return AbilityExecutionResult.success(events)
 
 static func _occupied(state: BattleState, hex: Vector2i) -> bool:

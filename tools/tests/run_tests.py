@@ -48,16 +48,25 @@ suites = [
     ("tools/tests/check_scripts.gd", godot_script("tools/tests/check_scripts.gd"), r"Script compilation: (\d+) scripts, 0 failures", 208),
     ("features/battle/tests/hex_grid_smoke.gd", godot_script("features/battle/tests/hex_grid_smoke.gd"), r"Battle smoke passed \((\d+) checks\)", 93),
     ("tools/battles/tests/editor_smoke.gd", godot_script("tools/battles/tests/editor_smoke.gd"), r"Editor smoke passed \((\d+) checks\)", 121),
-    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1070),
+    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1103),
+    # GDScript cannot catch a runtime error, so this check raises exactly two on purpose.
+    ("features/battle/tests/handler_crash_check.gd", godot_script("features/battle/tests/handler_crash_check.gd"), r"Handler crash check passed \((\d+) checks\)", 4, {"SCRIPT ERROR: Cannot call method 'call' on a null value.": 2}),
 ]
 total = 0
 failed = False
-for name, command, success_pattern, minimum in suites:
+for name, command, success_pattern, minimum, *rest in suites:
+    # A suite may inject known errors: each must appear exactly as often as declared.
+    expected_errors: dict[str, int] = rest[0] if rest else {}
     try:
         result = subprocess.run(command, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=90)
         output = result.stdout + result.stderr
         match = re.search(success_pattern, output)
-        passed = result.returncode == 0 and match is not None and int(match[1]) >= minimum and re.search(r"SCRIPT ERROR:|(?:^|\n)ERROR:|FAIL:|leaked at exit", output) is None
+        checked = output
+        expected_seen = True
+        for line, count in expected_errors.items():
+            expected_seen = expected_seen and checked.count(line) == count
+            checked = checked.replace(line, "")
+        passed = result.returncode == 0 and match is not None and int(match[1]) >= minimum and expected_seen and re.search(r"SCRIPT ERROR:|(?:^|\n)ERROR:|FAIL:|leaked at exit", checked) is None
     except (subprocess.TimeoutExpired, OSError) as error:
         output = str(error)
         match = None

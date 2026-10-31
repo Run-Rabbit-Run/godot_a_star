@@ -42,6 +42,12 @@ func duplicate_service() -> TurnService:
 	return copy
 
 
+func copy_from(other: TurnService) -> void:
+	_turn_order.assign(other._turn_order)
+	_active_index = other._active_index
+	_round_number = other._round_number
+
+
 func get_participant_count() -> int:
 	return _turn_order.size()
 

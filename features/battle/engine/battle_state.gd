@@ -12,6 +12,8 @@ var random: RandomNumberGenerator
 var mod_api: ModAPI
 var state_revision := 0
 var map_revision := 0
+## A forecast or transaction copy: its owner discards it, so effects apply to it directly.
+var is_detached := false
 
 
 func _init(
@@ -57,4 +59,20 @@ func duplicate_for_prediction() -> BattleState:
 	copy.random.state = random.state
 	copy.state_revision = state_revision
 	copy.map_revision = map_revision
+	copy.is_detached = true
 	return copy
+
+
+## Takes over a completed transaction copy in place: holders of this state, its grid and
+## its units keep valid references. New units from the copy join the registry as they are.
+func adopt(scratch: BattleState) -> void:
+	for id: StringName in scratch.unit_states:
+		if unit_states.has(id):
+			unit_states[id].copy_from(scratch.unit_states[id])
+		else:
+			unit_states[id] = scratch.unit_states[id]
+	hex_grid.replace_with(scratch.hex_grid)
+	turn_service.copy_from(scratch.turn_service)
+	random.state = scratch.random.state
+	state_revision = scratch.state_revision
+	map_revision = scratch.map_revision

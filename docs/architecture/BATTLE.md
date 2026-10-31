@@ -56,7 +56,7 @@ MoveCommand / AttackCommand / UseAbilityCommand / EndTurnCommand
 → BattleResolution
 ```
 
-`BattleResolution` сообщает принятие или причину отказа, события, ревизию состояния, активного участника и при завершении `BattleResult`.
+`BattleResolution` сообщает принятие или причину отказа, события, ревизию состояния, активного участника и при завершении `BattleResult`. Отказ не меняет состояние; способность со сбоем эффекта тоже отклоняется целиком ([BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Атомарность»).
 
 Presentation никогда не авторизует действие. Даже если UI подсветил клетку, движок повторно проверяет команду по актуальному состоянию.
 

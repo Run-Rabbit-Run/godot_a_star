@@ -112,6 +112,8 @@ Headless-расчёт не должен требовать `PackedScene`, тек
 
 Встроенный ModAPI дополнен `core:unit_status` и `core:hex_state`; `core:damage` поддерживает необязательный `damage_type`. Обработчик может объявить `affects_hexes()` и реализовать `execute_hex()`, чтобы площадная способность действовала на пустые клетки. Старый `execute()` сохранён для эффектов по юнитам.
 
+Обработчик меняет бой только через `BattleEffectContext` и возвращает вызванные события. Если эффект нельзя завершить, он вызывает `context.fail(reason)`: движок отбрасывает всю способность, откатывать уже сделанное обработчику не нужно. Ошибка скрипта в обработчике отбрасывает способность так же ([BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Атомарность»).
+
 Площадной обработчик может переопределить `execute_hexes(effect, context, source, hexes)`, чтобы разрешить всю область одним пакетом; по умолчанию он вызывает `execute_hex()` для каждой клетки. `core:hex_state` использует `BattleEffectContext.apply_hex_states()`: все клетки меняются до распространения реакций, порядок клеток не влияет на результат.
 
 Core package регистрирует `core:spear_throw`, `core:spear_sweep`, `core:spear_pin` и физическое presentation `core:spear_presentation`; пассивный каталог — `core:melee_retaliation`. Авторский `custom_units:spear_guard` находится в `content/authored/units/spear_guard.json` и выбирается обычной палитрой редактора. Изображение/профиль — project-owned `gt_spear_guard.png` и unit_visual_profiles.json. Схема JSON юнита сохраняется.

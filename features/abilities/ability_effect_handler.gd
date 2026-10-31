@@ -1,5 +1,8 @@
 class_name AbilityEffectHandler
 extends RefCounted
+## One kind of ability effect. A handler changes the battle only through the context and
+## returns the events it caused. When it cannot finish, it calls `context.fail(reason)`
+## and returns: the engine discards the whole ability, so no partial change survives.
 
 
 func affects_hexes() -> bool:

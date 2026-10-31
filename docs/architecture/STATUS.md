@@ -22,7 +22,7 @@
 | Статусы и состояния гексов | 8 статусов с уровнями, 12 состояний гексов, матрица, распространение, срок 3 раунда | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
 | Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
-| Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI` | BATTLE_UNITS_AND_ABILITIES.md «Способности» |
+| Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI`; транзакция способности и общий `AbilityEffectPipeline`, сбой обработчика через `BattleEffectContext.fail()` | BATTLE_UNITS_AND_ABILITIES.md «Способности», BATTLE_UNITS_AND_ABILITIES.md «Атомарность» |
 | Описания умений | `AbilityDefinition.description`, `AbilityDescription`, подсказки HUD и редактора юнитов | BATTLE_UNITS_AND_ABILITIES.md «Описание», BATTLE_PRESENTATION.md «HUD» |
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
 | Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
@@ -65,7 +65,7 @@
 | Редактор UI боя | `tools/battle_ui/` | EDITOR.md, [../tools/BATTLE_UI.md](../tools/BATTLE_UI.md) |
 | Общий интерфейс инструментов | `tools/common/editor_ui.gd` | EDITOR.md «Интерфейс инструментов» |
 | Игровая сборка | Профиль `Windows Game` в `export_presets.cfg` без tools, docs и тестов | [../tools/README.md](../tools/README.md) |
-| Автотесты | `tools/tests/run_tests.py`: проверка ссылок документации, компиляция всех скриптов, battle smoke, editor smoke, regression | `AGENTS.md` «Проверка изменений» |
+| Автотесты | `tools/tests/run_tests.py`: проверка ссылок документации, компиляция всех скриптов, battle smoke, editor smoke, regression, отдельный прогон падения обработчика эффекта с точным числом ожидаемых ошибок скрипта | `AGENTS.md` «Проверка изменений» |
 
 ## Реализовано частично
 
@@ -83,7 +83,6 @@
 
 ## Ограничения и технический долг
 
-- **Команда способности не транзакционна.** `AbilityExecutor` расходует действие и КД до исполнения обработчиков; `AbilityEffectHandler` возвращает только события, без структурированной ошибки. Встроенные обработчики проверяют предусловия заранее. Сторонний обработчик, упавший после изменения состояния, оставит частичный эффект: атомарность `MapMutationService` защищает только пакет карты. До публичных модов нужен контракт: планирование эффектов с последующим commit либо результат ошибки с аварийной остановкой.
 - **Результат боя не привязан к запуску кампании.** `CampaignSession.complete_battle()` сверяет результат с текущим сценарием только по `battle_id`; `BattleResult` не содержит ID запуска. Если два сценария используют один бой, повторно переданный результат первого продвинет второй без его исполнения. Синхронный runner результат дважды не передаёт; риск появится с UI кампании, сохранениями и повтором боя. Нужны корреляция запуска с результатом и однократное потребление. Отложено решением владельца ([DECISIONS.md](../DECISIONS.md)).
 - **Стартовые настройки сохраняются без защиты записи.** `GameContentSettings._select()` записывает `content/game_content.tres` прямым `ResourceSaver.save`, без временного файла и `.bak`, в отличие от авторских JSON. Сбой записи не воспроизводился.
 - `ContentLoader` работает с доверенными Godot `Resource`; это не безопасный загрузчик внешних архивов. `ModAPI` не является песочницей для исполняемого кода.
@@ -103,7 +102,7 @@
 
 Порядок определяется конкретной следующей фичей, но безопасные границы такие:
 
-1. Для внешних модов — import/migration/validation конвейер поверх текущего `ContentSnapshot` и контракт ошибок обработчиков эффектов.
+1. Для внешних модов — import/migration/validation конвейер поверх текущего `ContentSnapshot`.
 2. Для развития редактора — расширять `BattleDocument` и `EditCommand`, не хранить данные только в UI-нодах.
 3. Для кампании — отделить постоянное `CampaignSession` от определений, привязать результат к запуску и добавить `SaveService` с `ContentLock`.
 4. Для глубины боя — вводить runtime-состояния способностей/статусов в ядре, не в `UnitActor`.
