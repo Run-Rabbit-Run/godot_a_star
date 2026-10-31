@@ -12,14 +12,26 @@
 
 ## Файлы
 
-- phobos_guard.png — союзный боец ближнего боя.
-- phobos_marksman.png — союзный стрелок.
-- ash_machine_cleaver.png — вражеская машина ближнего боя.
-- ash_machine_gunner.png — вражеская машина дальнего боя.
+В бою используются эти версии; они подключены presentation-ресурсами из
+`features/battle/units/definitions/`:
 
-Исходники имеют размер 1254×1254 и прозрачный фон. Размер фигуры на поле
-задаёт общий масштаб по видимой части рисунка: [UNITS.md](../../../../docs/tools/UNITS.md)
+| Файл | Роль | Холст | Подключён в |
+| --- | --- | --- | --- |
+| `phobos_guard_v2.png` | Союзный боец ближнего боя | 1230×1278 | `debug_player_presentation.tres` |
+| `phobos_marksman_v2.png` | Союзный стрелок | 1224×1285 | `debug_player_ranged_presentation.tres` |
+| `ash_machine_cleaver_v3.png` | Вражеская машина ближнего боя | 1157×1360 | `debug_enemy_presentation.tres` |
+| `ash_machine_gunner_v3.png` | Вражеская машина дальнего боя | 1242×1266 | `debug_enemy_ranged_presentation.tres` |
+
+Все PNG имеют прозрачный фон; используемые версии импортируются без ограничения
+размера. Размер фигуры на поле задаёт общий масштаб по видимой части рисунка,
+а не размер холста: [UNITS.md](../../../../docs/tools/UNITS.md)
 «Требования к изображениям существ».
+
+Ранние версии нигде в проекте не подключены: `phobos_guard.png`,
+`phobos_marksman.png`, `ash_machine_cleaver.png`, `ash_machine_gunner.png`
+(1254×1254, импорт ограничен 256 px), `ash_machine_cleaver_v2.png` и
+`ash_machine_gunner_v2.png`. Шейдер `unit_readability.gdshader` тоже сейчас
+не подключён.
 
 ## Prompt-инварианты
 
