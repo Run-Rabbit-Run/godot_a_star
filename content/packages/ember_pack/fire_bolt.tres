@@ -15,6 +15,7 @@ parameters = {
 script = ExtResource("1_ability")
 id = &"ember_pack:fire_bolt"
 display_name = "Огненная искра"
+description = "Огненная искра по противнику на дальности {range}: {damage} урона ({damage_type})."
 presentation_id = &"ember_pack:fire_bolt_presentation"
 range = 2
 effects = Array[ExtResource("2_effect")]([SubResource("Effect_damage")])

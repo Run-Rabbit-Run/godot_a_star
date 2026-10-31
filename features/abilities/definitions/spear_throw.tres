@@ -9,6 +9,7 @@ parameters = {"amount": 3, "damage_type": "physical", "affects_obstacles": false
 script = ExtResource("ability")
 id = &"core:spear_throw"
 display_name = "Бросок копья"
+description = "Бросок копья на дальность {range}: {damage} урона ({damage_type}) всем на пути, включая союзников. В начале следующего хода копьё возвращается и снова бьёт всех на пути."
 presentation_id = &"core:spear_presentation"
 range = 4
 area_radius = 0

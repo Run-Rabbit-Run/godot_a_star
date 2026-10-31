@@ -87,6 +87,7 @@ func run(suite: Node) -> void:
 	applied = SkillLibrary.apply_to_packages(source, {custom.id: custom, passive.id: passive})
 	var loaded := ContentLoader.load_packages(applied)
 	suite.expect(loaded.is_successful and loaded.snapshot.get_ability_definition(StringName(custom.id)) != null, "Authored active skill enters shared ContentSnapshot")
+	_run_descriptions(suite)
 	var copied := SkillLibrary.builtin_documents()
 	copied["core:grenade"].name = "Mutated copy"
 	suite.expect(SkillLibrary.builtin_documents()["core:grenade"].name != "Mutated copy", "Built-in skill documents are independent copies of the cache")
@@ -103,6 +104,49 @@ func run(suite: Node) -> void:
 	suite.expect(SkillLibrary.read_all(root).documents[custom.id].name == custom.name, "Rename preserves path and ID")
 	DirAccess.remove_absolute(root.path_join(SkillLibrary.filename_for(custom)))
 	DirAccess.remove_absolute(root)
+
+func _run_descriptions(suite: Node) -> void:
+	var builtin := SkillLibrary.builtin_documents()
+	var invalid := builtin.values().filter(func(data: Dictionary) -> bool:
+		return data.kind != "effect" and (String(data.description).is_empty() or not SkillLibrary.validate(data).is_empty())
+	)
+	suite.expect(invalid.is_empty(), "Every built-in skill has a valid description: %s" % str(invalid.map(func(data: Dictionary) -> String: return data.id)))
+	var grenade := SkillLibrary.to_ability(builtin["core:grenade"])
+	suite.expect(AbilityDescription.render(grenade).contains("2 урона (физический)"), "Description shows the fixed damage and its type: " + AbilityDescription.render(grenade))
+	var sweep := SkillLibrary.to_ability(builtin["core:spear_sweep"])
+	suite.expect(AbilityDescription.render(sweep, {"attack_damage": 7}).contains("7 урона"), "Base-attack damage takes the acting unit's final attack")
+	suite.expect(AbilityDescription.render(sweep).contains("урон атаки"), "Without a unit the base-attack damage is named instead of counted")
+	var turret := AbilityDescription.variables(SkillLibrary.to_ability(builtin["core:electric_turret"]))
+	var summon_hp := turret.filter(func(entry: Dictionary) -> bool: return entry.key == "summon_hp")
+	suite.expect(summon_hp.size() == 1 and summon_hp[0].value == "3", "Summon variables expose the summoned unit's health")
+	var twice := SkillLibrary.new_document("active")
+	twice.effects.append(SkillLibrary.new_effect())
+	twice.effects[1].parameters.amount = 9
+	twice.description = "{damage} и {damage_2}"
+	suite.expect(AbilityDescription.render(SkillLibrary.to_ability(twice)) == "2 и 9", "Repeated effects of one kind get numbered variables")
+	twice.description = "{unknown}"
+	suite.expect(SkillLibrary.validate(twice).begins_with("Описание: переменная {unknown}"), "Unknown description variables are rejected")
+	twice.description = "x".repeat(AbilityDescription.MAX_LENGTH + 1)
+	suite.expect(not SkillLibrary.validate(twice).is_empty(), "Overlong descriptions are rejected")
+	suite.expect(AbilityDescription.render_passive(PassiveAbilityCatalog.DEFINITIONS[&"core:attack_training"]).begins_with("+3 к урону"), "Passive description shows its attack bonus")
+	var passive := SkillLibrary.new_document("passive")
+	passive.description = "{status}"
+	suite.expect(SkillLibrary.validate(passive).begins_with("Описание: переменная {status}"), "Passive variables exist only for properties it sets")
+	passive.status = "core:burning"
+	passive.description = "{status} ×{levels}"
+	suite.expect(SkillLibrary.validate(passive).is_empty() and SkillLibrary.passive_definitions({passive.id: passive}).values()[0].description == passive.description, "Passive description reaches runtime definitions")
+	var round_trip := SkillLibrary.active_document(SkillLibrary.to_ability(builtin["core:laser"]))
+	suite.expect(round_trip.description == builtin["core:laser"].description, "Description survives document and ability conversion")
+	var legacy := SkillLibrary.new_document("active")
+	legacy.erase("description")
+	suite.expect(SkillLibrary.validate(legacy).is_empty(), "Skill JSON without a description stays valid")
+	var root := "user://skill_descriptions_" + Crypto.new().generate_random_bytes(8).hex_encode()
+	SkillLibrary.save_document(legacy, root)
+	var reread: Dictionary = SkillLibrary.read_all(root).documents.get(legacy.id, {})
+	suite.expect(reread.get("description") == "", "Reading old skill JSON adds an empty description")
+	DirAccess.remove_absolute(root.path_join(SkillLibrary.filename_for(legacy)))
+	DirAccess.remove_absolute(root)
+
 
 func run_editor(suite: Node) -> void:
 	var editor := preload("res://tools/skills/skill_editor.tscn").instantiate() as SkillEditor

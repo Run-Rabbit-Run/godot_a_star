@@ -24,6 +24,7 @@ parameters = {
 script = ExtResource("ability")
 id = &"core:electromagnetic_shot"
 display_name = "Электромагнитный выстрел"
+description = "Выстрел по противнику на дальности {range}: {damage} урона ({damage_type}) цели и {damage_area} — всем её соседям, включая союзников. Все задетые получают {status} ×{levels}."
 presentation_id = &"core:electric_ability_actor"
 range = 1
 area_radius = 1

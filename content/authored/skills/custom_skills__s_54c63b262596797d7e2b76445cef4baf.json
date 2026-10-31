@@ -1,6 +1,7 @@
 {
 	"attack_bonus": 0,
 	"damage_type": "",
+	"description": "Невосприимчивость: {immunity} не накладывается на юнита.",
 	"id": "custom_skills:s_54c63b262596797d7e2b76445cef4baf",
 	"immunity": "core:wet",
 	"kind": "passive",

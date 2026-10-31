@@ -12,6 +12,7 @@ parameters = {"state_id": "core:electricity"}
 script = ExtResource("1")
 id = &"core:create_electricity"
 display_name = "Электрическое поле"
+description = "Создаёт «{hex_state}» на гексах в радиусе {radius} вокруг выбранной точки. Дальность {range}."
 range = 3
 area_radius = 1
 effects = Array[ExtResource("2")]([SubResource("Effect")])

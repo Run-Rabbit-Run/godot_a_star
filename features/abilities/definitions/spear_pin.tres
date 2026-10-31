@@ -13,6 +13,7 @@ parameters = {"status_id": "core:paralysis", "levels": 1}
 script = ExtResource("ability")
 id = &"core:spear_pin"
 display_name = "Пригвоздить"
+description = "Удар по противнику на дальности {range}: {damage} урона ({damage_type}) и {status} ×{levels}. Считается ближней атакой: цель с ответным ударом отвечает."
 presentation_id = &"core:spear_presentation"
 range = 2
 area_radius = 0

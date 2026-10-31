@@ -14,6 +14,7 @@ parameters = {
 script = ExtResource("1_ability")
 id = &"core:grenade"
 display_name = "Граната"
+description = "Граната на дальность {range}: {damage} урона ({damage_type}) в точке падения и {damage_area} — всем в радиусе {radius}."
 presentation_id = &"core:grenade_presentation"
 range = 3
 area_radius = 1

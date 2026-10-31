@@ -31,6 +31,7 @@ parameters = {
 script = ExtResource("ability")
 id = &"core:emp_grenade"
 display_name = "ЭМИ граната"
+description = "Граната на дальность {range}: в центре возникает «{hex_state}», все в радиусе {radius} получают {damage} урона ({damage_type}) и {status} ×{levels}, включая союзников."
 presentation_id = &"core:electric_ability_actor"
 range = 3
 area_radius = 1

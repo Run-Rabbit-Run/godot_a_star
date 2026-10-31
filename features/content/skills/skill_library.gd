@@ -36,7 +36,7 @@ static func units() -> Dictionary:
 	return _units_cache
 
 static func new_document(kind: String) -> Dictionary:
-	var data := {"schema_version": 1, "kind": kind, "id": "custom_skills:s_" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "Новый навык"}
+	var data := {"schema_version": 1, "kind": kind, "id": "custom_skills:s_" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "Новый навык", "description": ""}
 	match kind:
 		"active":
 			data.merge({"range": 3, "area_radius": 0, "target_mode": 1, "cooldown_turns": 1, "initial_cooldown_turns": 0, "uses_attack_range": false, "returns_next_turn": false, "melee_attack": false, "presentation_id": "", "effects": [new_effect()]})
@@ -62,7 +62,7 @@ static func _effect_document(effect: AbilityEffectDefinition) -> Dictionary:
 	return {"type": String(effect.effect_type_id), "parameters": params}
 
 static func active_document(ability: AbilityDefinition) -> Dictionary:
-	var data := {"schema_version": 1, "kind": "active", "id": String(ability.id), "name": ability.display_name}
+	var data := {"schema_version": 1, "kind": "active", "id": String(ability.id), "name": ability.display_name, "description": ability.description}
 	for key: String in ["range", "area_radius", "target_mode", "cooldown_turns", "initial_cooldown_turns", "uses_attack_range", "returns_next_turn", "melee_attack"]:
 		data[key] = ability.get(key)
 	data.presentation_id = String(ability.presentation_id)
@@ -84,6 +84,7 @@ static func _build_builtin_documents(source: Array[ContentPackage]) -> Dictionar
 		data.id = String(id)
 		data.name = PassiveAbilityCatalog.DEFINITIONS[id].name
 		data.merge(PassiveAbilityCatalog.DEFINITIONS[id], true)
+		data.description = String(data.get("description", ""))
 		for key: String in ["damage_type", "status", "immunity"]:
 			data[key] = String(data[key])
 		data.retaliation = id == &"core:melee_retaliation"
@@ -118,6 +119,7 @@ static func read_all(root := ROOT) -> Dictionary:
 		if not error.is_empty():
 			errors.append(path + ": " + error)
 		else:
+			if data.kind in ["active", "passive"] and not data.has("description"): data["description"] = ""
 			documents[data.id] = data
 	return {"documents": documents, "errors": errors}
 
@@ -136,7 +138,7 @@ static func passive_definitions(documents: Dictionary) -> Dictionary:
 	var result := {}
 	for data: Dictionary in documents.values():
 		if data.kind != "passive": continue
-		var passive := {"name": data.name, "attack_bonus": int(data.attack_bonus), "levels": int(data.levels), "retaliation": data.retaliation}
+		var passive := {"name": data.name, "description": String(data.get("description", "")), "attack_bonus": int(data.attack_bonus), "levels": int(data.levels), "retaliation": data.retaliation}
 		for key: String in ["damage_type", "status", "immunity"]:
 			if not String(data[key]).is_empty(): passive[key] = StringName(data[key])
 		result[StringName(data.id)] = passive
@@ -167,7 +169,7 @@ static func validate(data: Dictionary) -> String:
 		if data.damage_type != "" and not DAMAGE_TYPES.has(data.damage_type): return "Неизвестный тип урона."
 		for key: String in ["status", "immunity"]:
 			if data[key] != "" and not UnitStatusCatalog.has_status(StringName(data[key])): return "Неизвестное состояние."
-		return ""
+		return _description_error(data, AbilityDescription.passive_variables(passive_definitions({data.id: data}).values()[0]))
 	for key: String in ACTIVE_LIMITS:
 		var limit: Array = ACTIVE_LIMITS[key]
 		if not _integer(data, key, limit[0], limit[1]): return "%s: целое число %d–%d." % [limit[2], limit[0], limit[1]]
@@ -185,7 +187,18 @@ static func validate(data: Dictionary) -> String:
 	if types.has("core:summon") and (int(data.target_mode) != AbilityDefinition.TargetMode.EMPTY_HEX or int(data.area_radius) != 0 or types.size() != 1):
 		return "Призыв: цель «Пустой гекс», радиус 0 и единственный эффект."
 	# Core rules stay the final authority for anything the form does not phrase itself.
-	return to_ability(data).validate()
+	var ability := to_ability(data)
+	var core_error := ability.validate()
+	if not core_error.is_empty(): return core_error
+	return _description_error(data, AbilityDescription.variables(ability))
+
+static func _description_error(data: Dictionary, variables: Array[Dictionary]) -> String:
+	var description: Variant = data.get("description", "")
+	if not description is String: return "Описание должно быть текстом."
+	if String(description).length() > AbilityDescription.MAX_LENGTH: return "Описание: до %d символов." % AbilityDescription.MAX_LENGTH
+	var unknown := AbilityDescription.unknown_tokens(String(description), variables)
+	if not unknown.is_empty(): return "Описание: переменная {%s} не относится к этому умению." % unknown[0]
+	return ""
 
 static func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 	var effect := AbilityEffectDefinition.new()
@@ -227,6 +240,7 @@ static func to_ability(data: Dictionary) -> AbilityDefinition:
 	var ability := AbilityDefinition.new()
 	ability.id = StringName(data.id)
 	ability.display_name = data.name
+	ability.description = String(data.get("description", ""))
 	ability.presentation_id = StringName(data.presentation_id)
 	for key: String in ["range", "area_radius", "target_mode", "cooldown_turns", "initial_cooldown_turns", "uses_attack_range", "returns_next_turn", "melee_attack"]:
 		ability.set(key, data[key])

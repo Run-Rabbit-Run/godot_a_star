@@ -12,6 +12,7 @@ parameters = {"state_id": "core:oil"}
 script = ExtResource("1")
 id = &"core:create_oil"
 display_name = "Разлить масло"
+description = "Создаёт «{hex_state}» на гексах в радиусе {radius} вокруг выбранной точки. Дальность {range}."
 range = 3
 area_radius = 1
 effects = Array[ExtResource("2")]([SubResource("Effect")])

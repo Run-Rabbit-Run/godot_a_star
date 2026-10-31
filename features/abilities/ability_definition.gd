@@ -4,6 +4,8 @@ extends Resource
 
 @export var id: StringName
 @export var display_name: String
+## Player-facing template; {variables} are filled by AbilityDescription.
+@export_multiline var description := ""
 @export var presentation_id: StringName
 @export var range := 1
 @export_range(0, 8) var area_radius := 0

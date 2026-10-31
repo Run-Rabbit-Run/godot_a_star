@@ -16,6 +16,7 @@ parameters = {
 script = ExtResource("ability")
 id = &"core:electric_turret"
 display_name = "Электро турель"
+description = "Призывает «{summon}» на свободный гекс на дальности {range}: ОЗ {summon_hp}, атака {summon_damage} на дальность {summon_range}. Перезарядка {cooldown}."
 presentation_id = &"core:electric_ability_actor"
 range = 4
 area_radius = 0

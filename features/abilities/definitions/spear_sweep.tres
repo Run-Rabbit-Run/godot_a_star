@@ -9,6 +9,7 @@ parameters = {"amount": 3, "damage_type": "physical", "affects_obstacles": false
 script = ExtResource("ability")
 id = &"core:spear_sweep"
 display_name = "Взмах копьём"
+description = "Взмах вокруг себя: все соседи получают {damage} урона ({damage_type}), включая союзников. Считается ближней атакой."
 presentation_id = &"core:spear_presentation"
 range = 1
 area_radius = 1
