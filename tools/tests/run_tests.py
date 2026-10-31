@@ -48,7 +48,7 @@ suites = [
     ("tools/tests/check_scripts.gd", godot_script("tools/tests/check_scripts.gd"), r"Script compilation: (\d+) scripts, 0 failures", 208),
     ("features/battle/tests/hex_grid_smoke.gd", godot_script("features/battle/tests/hex_grid_smoke.gd"), r"Battle smoke passed \((\d+) checks\)", 93),
     ("tools/battles/tests/editor_smoke.gd", godot_script("tools/battles/tests/editor_smoke.gd"), r"Editor smoke passed \((\d+) checks\)", 121),
-    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1056),
+    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1070),
 ]
 total = 0
 failed = False

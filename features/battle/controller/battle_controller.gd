@@ -5,9 +5,9 @@ extends Node
 signal battle_finished(result: BattleResult)
 signal battle_started
 signal battle_failed(message: String)
+signal _frame_passed
 
 
-const MAX_AUTOMATIC_STEPS_PER_HANDOFF := 128
 const HEALTH_DISPLAY_CONTROLLER := preload("res://features/battle/view/battle_health_display_controller.gd")
 
 
@@ -40,6 +40,9 @@ var _unit_actors: Dictionary[StringName, UnitActor]:
 	get:
 		return _unit_views.actors
 
+
+func _ready() -> void:
+	set_process(false)
 
 
 func setup(
@@ -536,14 +539,15 @@ func _run_ai_turns() -> void:
 
 
 func _execute_ai_turns() -> void:
-	var automatic_steps := 0
+	var guard := AutomaticRunGuard.new()
 
 	while (
 		not _battle_session.is_finished()
 		and _battle_session.is_active_unit_ai_controlled()
 	):
-		if automatic_steps >= MAX_AUTOMATIC_STEPS_PER_HANDOFF:
-			_fail_runtime("Automatic turn step limit was reached.")
+		# Commands without animation still hand the frame back instead of spinning.
+		await _next_frame()
+		if _runtime_failed:
 			return
 
 		var active := _battle_session.get_unit(
@@ -552,6 +556,11 @@ func _execute_ai_turns() -> void:
 
 		if active == null:
 			_fail_runtime("AI-controlled active unit is not registered.")
+			return
+
+		var limit_error := guard.check(active, _battle_session.get_round_number())
+		if not limit_error.is_empty():
+			_fail_runtime(limit_error)
 			return
 
 		_show_unit_movement(active)
@@ -567,6 +576,7 @@ func _execute_ai_turns() -> void:
 			_fail_runtime("AI command was rejected: %s" % resolution.rejection_reason)
 			return
 
+		guard.record(resolution, _battle_session.get_round_number())
 		if not await _present_resolution(
 			resolution,
 			_unit_views.actors,
@@ -578,7 +588,6 @@ func _execute_ai_turns() -> void:
 			return
 
 		_refresh_map_revision()
-		automatic_steps += 1
 
 		if _finish_battle_if_needed(resolution):
 			return
@@ -591,6 +600,17 @@ func _execute_ai_turns() -> void:
 		_show_unit_movement(active)
 
 	_set_presenting(false)
+
+
+## Awaits a signal of this node, so a freed battle drops the waiting loop silently.
+func _next_frame() -> void:
+	set_process(true)
+	await _frame_passed
+
+
+func _process(_delta: float) -> void:
+	set_process(false)
+	_frame_passed.emit()
 
 
 func _refresh_map_revision() -> void:

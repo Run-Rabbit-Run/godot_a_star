@@ -91,6 +91,8 @@ func _run() -> void:
 		await _test_presentation()
 	if only.is_empty() or only == "presentation_recovery":
 		await preload("res://features/battle/tests/presentation_recovery_regressions.gd").new().run(self)
+	if only.is_empty() or only == "automatic_run":
+		await preload("res://features/battle/tests/automatic_run_regressions.gd").new().run(self)
 	if only.is_empty() or only == "editor":
 		await _test_editor()
 	if only.is_empty() or only == "review_fixes":
