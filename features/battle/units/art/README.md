@@ -27,12 +27,6 @@
 а не размер холста: [UNITS.md](../../../../docs/tools/UNITS.md)
 «Требования к изображениям существ».
 
-Ранние версии нигде в проекте не подключены: `phobos_guard.png`,
-`phobos_marksman.png`, `ash_machine_cleaver.png`, `ash_machine_gunner.png`
-(1254×1254, импорт ограничен 256 px), `ash_machine_cleaver_v2.png` и
-`ash_machine_gunner_v2.png`. Шейдер `unit_readability.gdshader` тоже сейчас
-не подключён.
-
 ## Prompt-инварианты
 
 - стилизованный hand-painted 2D;
