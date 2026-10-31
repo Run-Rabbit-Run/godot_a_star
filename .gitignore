@@ -13,3 +13,6 @@ content/authored/**/*.bak
 
 # Runtime battle diagnostics (beside the game/project)
 logs/
+
+# Personal Claude Code overrides (project settings live in .claude/settings.json)
+.claude/settings.local.json

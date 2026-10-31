@@ -64,7 +64,7 @@
 | Редактор UI боя | `tools/battle_ui/` | EDITOR.md, [../tools/BATTLE_UI.md](../tools/BATTLE_UI.md) |
 | Общий интерфейс инструментов | `tools/common/editor_ui.gd` | EDITOR.md «Интерфейс инструментов» |
 | Игровая сборка | Профиль `Windows Game` в `export_presets.cfg` без tools, docs и тестов | [../tools/README.md](../tools/README.md) |
-| Автотесты | `tools/tests/run_tests.py`: battle smoke, editor smoke, regression | `AGENTS.md` «Проверка изменений» |
+| Автотесты | `tools/tests/run_tests.py`: проверка ссылок документации, battle smoke, editor smoke, regression | `AGENTS.md` «Проверка изменений» |
 
 ## Реализовано частично
 
@@ -111,7 +111,7 @@
 
 ## Граница проверки
 
-Автоматический набор: `python tools/tests/run_tests.py --godot <путь-к-Godot-4.7>`. Runner проверяет код завершения, итог, минимальное число проверок каждого набора и отсутствие ошибок в журнале; журналы сохраняются во временной папке, таймаут прерывает зависший набор. Компиляция всех скриптов: `--headless --path . --script tools/tests/check_scripts.gd`.
+Автоматический набор: `python tools/tests/run_tests.py --godot <путь-к-Godot-4.7>`. Runner сначала проверяет ссылки документации и при необходимости пересканирует кэш классов Godot, затем проверяет код завершения, итог, минимальное число проверок каждого набора и отсутствие ошибок в журнале; журналы сохраняются во временной папке, таймаут прерывает зависший набор. Компиляция всех скриптов: `--headless --path . --script tools/tests/check_scripts.gd`.
 
 Автотесты и рендеры, выполненные агентами, не подтверждают:
 

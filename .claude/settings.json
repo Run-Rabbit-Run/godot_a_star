@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tools/tests/run_tests.py *)",
+      "PowerShell(python tools/tests/run_tests.py *)",
+      "Bash(Z:/Godot/Godot_v4.7-stable_win64_console.exe --headless *)",
+      "PowerShell(Z:/Godot/Godot_v4.7-stable_win64_console.exe --headless *)",
+      "PowerShell(& Z:/Godot/Godot_v4.7-stable_win64_console.exe --headless *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)",
+      "PowerShell(git show *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/normalize_eol.py\" 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
