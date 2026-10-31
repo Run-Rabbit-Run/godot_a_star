@@ -116,6 +116,8 @@ func _run_descriptions(suite: Node) -> void:
 	var sweep := SkillLibrary.to_ability(builtin["core:spear_sweep"])
 	suite.expect(AbilityDescription.render(sweep, {"attack_damage": 7}).contains("7 урона"), "Base-attack damage takes the acting unit's final attack")
 	suite.expect(AbilityDescription.render(sweep).contains("урон атаки"), "Without a unit the base-attack damage is named instead of counted")
+	var tooltip := BattleHUD.ability_tooltip(sweep, {"attack_damage": 6})
+	suite.expect(tooltip.begins_with(sweep.display_name) and tooltip.contains("6 урона") and tooltip.contains("КД: 1"), "Battle tooltip joins name, rendered description and cooldown")
 	var turret := AbilityDescription.variables(SkillLibrary.to_ability(builtin["core:electric_turret"]))
 	var summon_hp := turret.filter(func(entry: Dictionary) -> bool: return entry.key == "summon_hp")
 	suite.expect(summon_hp.size() == 1 and summon_hp[0].value == "3", "Summon variables expose the summoned unit's health")

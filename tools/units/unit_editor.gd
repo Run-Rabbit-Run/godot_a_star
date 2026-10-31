@@ -249,6 +249,8 @@ func _ability_menu(grid: GridContainer, title: String, key: String) -> MenuButto
 	menu.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var popup := menu.get_popup()
 	popup.hide_on_checkable_item_selection = false
+	# Descriptions depend on the unit's attack, so they are filled when the list opens.
+	popup.about_to_popup.connect(_refresh_skill_tooltips.bind(popup))
 	popup.index_pressed.connect(func(index: int) -> void:
 		_toggle(key, popup.get_item_metadata(index), not popup.is_item_checked(index))
 	)
@@ -277,11 +279,35 @@ func _fill_ability_menus() -> void:
 
 
 func _skill_tooltip(data: Dictionary) -> String:
-	if data.kind != "active":
-		return String(data.id)
-	return "Дальность %s · радиус %s · перезарядка %s\n%s" % [
-		"атаки" if data.uses_attack_range else str(data.range), data.area_radius, data.cooldown_turns, data.id
-	]
+	var lines := PackedStringArray()
+	var description := ""
+	if data.kind == "active":
+		description = AbilityDescription.render(SkillLibrary.to_ability(data), _unit_context())
+	else:
+		description = AbilityDescription.render_passive(SkillLibrary.passive_definitions({data.id: data}).values()[0])
+	if not description.strip_edges().is_empty():
+		lines.append(description.strip_edges())
+	if data.kind == "active":
+		lines.append("Дальность %s · радиус %s · перезарядка %s" % ["атаки" if data.uses_attack_range else str(data.range), data.area_radius, data.cooldown_turns])
+	lines.append(String(data.id))
+	return "\n".join(lines)
+
+
+## Attack of the edited unit as battle will see it, for unit-dependent skill description variables.
+func _unit_context() -> Dictionary:
+	if _document.is_empty():
+		return {}
+	var ids: Array[StringName] = []
+	ids.assign(_document.passives)
+	var bonus := PassiveAbilityCatalog.attack_bonus(ids, SkillLibrary.passive_definitions(_skills))
+	return {"attack_damage": int(_document.damage) + bonus, "attack_range": int(_document.attack_range) if _document.attack_type == "ranged" else 1}
+
+
+func _refresh_skill_tooltips(popup: PopupMenu) -> void:
+	for index in range(popup.item_count):
+		var data: Dictionary = _skills.get(String(popup.get_item_metadata(index)), {})
+		if not data.is_empty():
+			popup.set_item_tooltip(index, _skill_tooltip(data))
 
 
 func _new_document() -> void:

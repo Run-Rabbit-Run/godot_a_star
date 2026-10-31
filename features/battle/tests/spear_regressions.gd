@@ -214,6 +214,10 @@ func run_presentation(suite: Node) -> void:
 	queue.set_speed(4.0)
 	var session: BattleSession = controller.get("_battle_session")
 	var owner_id := session.get_active_unit_id()
+	var hud := screen.get_node("BattleMap/BattleUI") as BattleHUD
+	var sweep_button := hud.find_child(BattleHUD.get_ability_button_name(&"core:spear_sweep"), true, false) as Button
+	var attack := session.get_unit(owner_id).basic_attack_damage
+	suite.expect(sweep_button != null and sweep_button.tooltip_text.contains("%d урона (физический)" % attack), "Battle ability tooltip shows the description with the acting unit's attack")
 	controller.call("_on_ability_requested", &"core:spear_throw")
 	await controller.call("_on_hex_selected", Vector2i(4, 6))
 	var landed: Dictionary = queue.get("_landed_spears")

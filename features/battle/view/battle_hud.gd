@@ -199,7 +199,8 @@ func show_basic_attack_button(attack_range: int, available: bool) -> void:
 	_refresh_action_button_states()
 
 
-func show_abilities(abilities: Array[AbilityDefinition], available: bool, cooldowns: Dictionary = {}) -> void:
+## unit_context fills unit-dependent description variables: attack_damage and attack_range of the acting unit.
+func show_abilities(abilities: Array[AbilityDefinition], available: bool, cooldowns: Dictionary = {}, unit_context: Dictionary = {}) -> void:
 	var ability_ids: Array[StringName] = []
 	var valid_abilities: Array[AbilityDefinition] = []
 
@@ -220,8 +221,17 @@ func show_abilities(abilities: Array[AbilityDefinition], available: bool, cooldo
 		var button := _ability_buttons[index]
 		button.set_meta("cooldown", remaining)
 		button.text = valid_abilities[index].display_name + (" · КД %d" % remaining if remaining > 0 else "")
-		button.tooltip_text = "%s\nКД: %d собственных ходов. Начальный КД: %d.\nЗавершает ход." % [valid_abilities[index].display_name, valid_abilities[index].cooldown_turns, valid_abilities[index].initial_cooldown_turns]
+		button.tooltip_text = ability_tooltip(valid_abilities[index], unit_context)
 	_refresh_action_button_states()
+
+
+static func ability_tooltip(ability: AbilityDefinition, unit_context: Dictionary = {}) -> String:
+	var lines := PackedStringArray([ability.display_name])
+	var description := AbilityDescription.render(ability, unit_context).strip_edges()
+	if not description.is_empty():
+		lines.append(description)
+	lines.append("КД: %d собственных ходов. Начальный КД: %d. Завершает ход." % [ability.cooldown_turns, ability.initial_cooldown_turns])
+	return "\n".join(lines)
 
 
 ## Ability IDs contain ':', which node names do not allow.

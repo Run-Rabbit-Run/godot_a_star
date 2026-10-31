@@ -71,6 +71,12 @@ func run_editor(suite: Node) -> void:
 	if listed >= 0:
 		popup.index_pressed.emit(listed)
 	suite.expect(editor._document.abilities.is_empty() and UnitLibrary.validate(editor._document).is_empty(), "Unchecking the missing skill repairs the unit")
+	var trained := UnitLibrary.new_document()
+	trained.damage = 5
+	trained.passives = ["core:attack_training"]
+	editor._set_document(trained)
+	suite.expect(editor._skill_tooltip(editor._skills["core:spear_sweep"]).contains("8 урона"), "Unit editor skill tooltip uses the unit's attack with passive bonus")
+	suite.expect(editor._skill_tooltip(editor._skills["core:attack_training"]).begins_with("+3 к урону"), "Unit editor passive tooltip shows its description")
 	editor.queue_free()
 	await suite.get_tree().process_frame
 

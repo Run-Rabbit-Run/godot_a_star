@@ -722,7 +722,8 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 	_hud.show_abilities(
 		abilities,
 		state.turn.main_action_available and not state.health.is_defeated(),
-		state.ability_cooldowns
+		state.ability_cooldowns,
+		{"attack_damage": state.basic_attack_damage, "attack_range": state.basic_attack_range}
 	)
 
 	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition
