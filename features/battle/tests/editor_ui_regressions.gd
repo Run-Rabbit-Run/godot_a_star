@@ -78,24 +78,16 @@ func run_editor(suite: Node) -> void:
 	skills.embedded = true
 	suite.add_child(skills)
 	await suite.get_tree().process_frame
-	var skill := SkillLibrary.new_document("active")
+	var skill: Dictionary = SkillLibrary.builtin_documents()["core:laser"]
 	skills._set_document(skill)
 	for text: String in ["Л", "Лу", "Луч"]:
 		skills._change("name", text)
 	skills._undo_edit()
 	suite.expect(skills._document.name == skill.name, "Typing a skill name is undone in one step")
-	skills._effect_change("amount", 9)
-	var type_option := _find_option(skills._effect_holder, "Урон")
-	suite.expect(type_option != null, "Effect card exposes its type selector")
-	if type_option != null:
-		type_option.item_selected.emit(type_option.selected)
-		suite.expect(skills._document.effects[0].parameters.amount == 9, "Re-selecting the same effect type keeps its parameters")
-	var effects: Array = skills._document.effects.duplicate(true)
-	effects.append(SkillLibrary.new_effect("core:unit_status"))
-	skills._change("effects", effects)
-	skills._fill_effects_list()
-	skills._effects_list.item_selected.emit(1)
-	suite.expect(skills._effect_index == 1 and skills._effects_list.item_count == 2 and _find_option(skills._effect_holder, "Урон").selected == 1, "Selecting an effect opens its parameters without rebuilding the list")
+	for text: String in ["Б", "Бь", "Бьёт"]:
+		skills._change("description", text)
+	skills._undo_edit()
+	suite.expect(skills._document.description == skill.description, "Typing a skill description is undone in one step")
 	skills.queue_free()
 	await suite.get_tree().process_frame
 

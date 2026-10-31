@@ -221,7 +221,7 @@ func _build_top_bar(root: Control) -> void:
 	bar.add_child(redo)
 	bar.add_child(EditorUi.separator())
 	bar.add_child(EditorUi.button("Юниты…", _open_unit_editor, "Открыть редактор юнитов; при возврате палитра обновится"))
-	bar.add_child(EditorUi.button("Навыки…", _open_skill_editor, "Открыть редактор навыков и эффектов"))
+	bar.add_child(EditorUi.button("Навыки…", _open_skill_editor, "Открыть редактор навыков: правка активных и пассивных умений"))
 	bar.add_child(EditorUi.separator())
 	bar.add_child(EditorUi.button("Сохранить", _save, "Сохранить поле (Ctrl+S)"))
 	bar.add_child(EditorUi.button("▶ Пробный бой", _start_trial, "Запустить текущий черновик в обычном бою без записи результата", &"PrimaryButton"))

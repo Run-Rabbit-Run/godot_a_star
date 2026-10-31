@@ -108,7 +108,7 @@ func run(suite: Node) -> void:
 func _run_descriptions(suite: Node) -> void:
 	var builtin := SkillLibrary.builtin_documents()
 	var invalid := builtin.values().filter(func(data: Dictionary) -> bool:
-		return data.kind != "effect" and (String(data.description).is_empty() or not SkillLibrary.validate(data).is_empty())
+		return String(data.description).is_empty() or not SkillLibrary.validate(data).is_empty()
 	)
 	suite.expect(invalid.is_empty(), "Every built-in skill has a valid description: %s" % str(invalid.map(func(data: Dictionary) -> String: return data.id)))
 	var grenade := SkillLibrary.to_ability(builtin["core:grenade"])
@@ -146,6 +146,49 @@ func _run_descriptions(suite: Node) -> void:
 	suite.expect(reread.get("description") == "", "Reading old skill JSON adds an empty description")
 	DirAccess.remove_absolute(root.path_join(SkillLibrary.filename_for(legacy)))
 	DirAccess.remove_absolute(root)
+	_run_overrides(suite)
+
+
+## Owner decision: built-in skills are edited, never restructured; original values need no override file.
+func _run_overrides(suite: Node) -> void:
+	var builtin := SkillLibrary.builtin_documents()
+	suite.expect(not SkillLibrary.KINDS.has("effect") and builtin.values().all(func(data: Dictionary) -> bool: return data.kind in ["active", "passive"]), "Effect templates are no longer a skill category")
+	var root := "user://skill_overrides_" + Crypto.new().generate_random_bytes(8).hex_encode()
+	var laser: Dictionary = builtin["core:laser"].duplicate(true)
+	var path := root.path_join(SkillLibrary.filename_for(laser))
+	laser.cooldown_turns = 3
+	laser.effects[0].parameters.amount = 5
+	suite.expect(SkillLibrary.save_document(laser, root).is_empty() and FileAccess.file_exists(path), "Changed built-in skill saves an override")
+	suite.expect(SkillLibrary.read_all(root).documents.get(laser.id) == laser, "Override JSON reads back with integer numbers equal to the draft")
+	laser.cooldown_turns = builtin["core:laser"].cooldown_turns
+	laser.effects[0].parameters.amount = builtin["core:laser"].effects[0].parameters.amount
+	suite.expect(SkillLibrary.is_builtin_default(laser) and SkillLibrary.save_document(laser, root).is_empty() and not FileAccess.file_exists(path), "Saving original values removes the override file")
+	DirAccess.remove_absolute(root)
+	var shorter: Dictionary = builtin["core:emp_grenade"].duplicate(true)
+	shorter.effects.pop_back()
+	suite.expect(SkillLibrary.validate(shorter).begins_with("Встроенное умение: состав"), "Built-in effect list cannot change")
+	var retyped: Dictionary = builtin["core:laser"].duplicate(true)
+	retyped.effects[1] = SkillLibrary.new_effect("core:hex_state")
+	suite.expect(SkillLibrary.validate(retyped).begins_with("Встроенное умение: тип эффекта 2"), "Built-in effect type cannot change")
+	var retargeted: Dictionary = builtin["core:grenade"].duplicate(true)
+	retargeted.target_mode = AbilityDefinition.TargetMode.ENEMY
+	suite.expect(SkillLibrary.validate(retargeted).begins_with("Встроенное умение: цель"), "Built-in target mode cannot change")
+	var spread: Dictionary = builtin["core:emp_grenade"].duplicate(true)
+	for effect: Dictionary in spread.effects:
+		if effect.type == "core:hex_state":
+			effect.parameters.center_only = false
+	suite.expect(SkillLibrary.validate(spread).contains("center_only"), "Fixed effect parameters of built-in skills cannot change")
+	var tuned: Dictionary = builtin["core:emp_grenade"].duplicate(true)
+	for effect: Dictionary in tuned.effects:
+		match effect.type:
+			"core:damage": effect.parameters.merge({"amount": 7, "damage_type": "fire", "use_base_attack": true}, true)
+			"core:unit_status": effect.parameters.merge({"status_id": "core:burning", "levels": 5}, true)
+			"core:hex_state": effect.parameters.state_id = "core:fire"
+	tuned.area_radius = 2
+	suite.expect(SkillLibrary.validate(tuned).is_empty(), "Damage, statuses, hex state and numbers of built-in skills stay editable: " + SkillLibrary.validate(tuned))
+	var retaliation: Dictionary = builtin["core:melee_retaliation"].duplicate(true)
+	retaliation.retaliation = false
+	suite.expect(SkillLibrary.validate(retaliation).begins_with("Встроенное умение: ответный удар"), "Built-in passive keeps its retaliation property")
 
 
 func run_editor(suite: Node) -> void:
@@ -153,28 +196,48 @@ func run_editor(suite: Node) -> void:
 	editor.embedded = true
 	suite.add_child(editor)
 	await suite.get_tree().process_frame
-	suite.expect(editor._list.item_count > 0 and editor._kind == "active", "Editor opens with active catalog and property form")
-	var data := SkillLibrary.new_document("active")
-	editor._set_document(data)
+	suite.expect(editor._list.item_count > 0 and editor._kind == "active" and not editor._document.is_empty(), "Editor opens the first active skill")
+	suite.expect(editor._category.tab_count == 2, "Editor lists only active and passive skills")
+	var captions := editor.find_children("*", "BaseButton", true, false).map(func(button: Node) -> String: return String(button.get("text")))
+	suite.expect(not captions.has("Новый") and not captions.has("Копия") and not captions.has("Добавить ▾"), "Editor offers no way to create skills or effects")
+	var builtin := SkillLibrary.builtin_documents()
+	editor._set_document(builtin["core:grenade"])
+	var type_selectors := editor._form.find_children("*", "OptionButton", true, false).filter(func(option: OptionButton) -> bool:
+		return option.item_count > 0 and option.get_item_text(0) == "Урон"
+	)
+	suite.expect(type_selectors.is_empty(), "Effect cards have no effect type selector")
 	editor._change("range", 8)
 	editor._undo_edit()
 	suite.expect(editor._document.range == 3, "Undo restores document value")
 	editor._redo_edit()
 	suite.expect(editor._document.range == 8, "Redo restores edited value")
-	editor._effect_change("amount", 11)
-	suite.expect(editor._document.effects[0].parameters.amount == 11, "Effect form edits owned authoring data")
+	editor._effect_change(0, "amount", 11)
+	suite.expect(editor._document.effects[0].parameters.amount == 11, "Effect card edits owned authoring data")
 	editor._undo_edit()
 	suite.expect(editor._document.effects[0].parameters.amount == 2, "Effect edits participate in undo")
-	var turret: Dictionary = SkillLibrary.builtin_documents()["core:electric_turret"]
+	editor._description.text = "Взрыв: "
+	editor._description.set_caret_column(editor._description.text.length())
+	editor._insert_variable("damage")
+	suite.expect(editor._document.description == "Взрыв: {damage}", "Inserted variable lands in the description")
+	suite.expect(editor._preview.text.contains("Взрыв: 2"), "Preview fills description variables: " + editor._preview.text)
+	editor._change("description", "{nonexistent}")
+	suite.expect(editor._validation.text.begins_with("✗ Описание"), "Unknown description variable is reported in the status bar")
+	suite.expect(not editor._reset.disabled, "A changed built-in skill can be reset")
+	editor._reset_to_builtin()
+	suite.expect(SkillLibrary.is_builtin_default(editor._document) and editor._reset.disabled, "Reset restores the built-in values")
+	editor._undo_edit()
+	suite.expect(editor._document.description == "{nonexistent}", "Reset is one undo step")
+	editor._set_document(builtin["core:spear_sweep"])
+	editor._preview_attack.value = 9
+	suite.expect(editor._preview_context.visible and editor._preview.text.contains("9 урона"), "Preview uses the example unit attack for base-attack damage")
+	var turret: Dictionary = builtin["core:electric_turret"]
 	var started := Time.get_ticks_usec()
 	editor._set_document(turret)
 	for value in range(2, 12):
 		editor._change("range", value)
 	suite.expect(Time.get_ticks_usec() - started < 300000, "Opening and editing a summon skill stays interactive")
-	editor._set_document(SkillLibrary.new_document("passive"))
-	suite.expect(editor._kind == "passive" and editor._list.item_count > 0, "Passive mode has catalog and form")
-	editor._set_document(SkillLibrary.new_document("effect"))
-	suite.expect(editor._kind == "effect" and editor._list.item_count >= 4, "Effect mode opens built-in templates")
+	editor._set_document(builtin["core:attack_training"])
+	suite.expect(editor._kind == "passive" and editor._list.item_count > 0 and editor._preview.text.contains("+3 к урону"), "Passive skill opens with its description preview")
 	editor._change("name", "Changed")
 	editor.request_close(func() -> void: pass)
 	suite.expect(editor._confirm.visible, "Closing a modified draft requests discard confirmation")

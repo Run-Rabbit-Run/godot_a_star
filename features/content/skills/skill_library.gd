@@ -1,12 +1,16 @@
 class_name SkillLibrary
 extends RefCounted
-## Project-authored definitions. Built-in resources are copied before applying overrides.
+## Project-authored skill definitions and overrides of built-in ones. Built-in resources are copied before applying overrides.
 
 const ROOT := "res://content/authored/skills"
-const KINDS := ["active", "passive", "effect"]
+const KINDS := ["active", "passive"]
 ## Form limits of active skills: key -> [minimum, maximum, caption].
 const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [0, 8, "Радиус области"], "target_mode": [0, 6, "Цель"], "cooldown_turns": [1, 99, "Перезарядка"], "initial_cooldown_turns": [0, 99, "Начальная перезарядка"]}
 const DAMAGE_TYPES := {"physical": "Физический", "electric": "Электрический", "fire": "Огненный", "water": "Водный", "acid": "Кислотный", "plasma": "Плазменный"}
+
+## Effect parameters that keep a built-in skill's structure: the editor shows them read-only.
+const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"]}
+const FIXED_ACTIVE_KEYS := ["target_mode", "uses_attack_range", "returns_next_turn", "melee_attack", "presentation_id"]
 
 ## Built-in documents and summonable units, read once: packages() reloads every package (~0.6 s).
 static var _builtin_cache: Dictionary = {}
@@ -42,9 +46,6 @@ static func new_document(kind: String) -> Dictionary:
 			data.merge({"range": 3, "area_radius": 0, "target_mode": 1, "cooldown_turns": 1, "initial_cooldown_turns": 0, "uses_attack_range": false, "returns_next_turn": false, "melee_attack": false, "presentation_id": "", "effects": [new_effect()]})
 		"passive":
 			data.merge({"attack_bonus": 0, "damage_type": "", "status": "", "levels": 2, "immunity": "", "retaliation": false})
-		"effect":
-			data.name = "Новый эффект"
-			data["effect"] = new_effect()
 	return data
 
 static func new_effect(type := "core:damage") -> Dictionary:
@@ -89,12 +90,6 @@ static func _build_builtin_documents(source: Array[ContentPackage]) -> Dictionar
 			data[key] = String(data[key])
 		data.retaliation = id == &"core:melee_retaliation"
 		documents[String(id)] = data
-	for type: String in ["core:damage", "core:unit_status", "core:hex_state", "core:summon"]:
-		var data := new_document("effect")
-		data.id = "core:effect_" + type.get_slice(":", 1)
-		data.name = {"core:damage": "Урон", "core:unit_status": "Состояние юнита", "core:hex_state": "Состояние гекса", "core:summon": "Призыв"}[type]
-		data.effect = new_effect(type)
-		documents[data.id] = data
 	return documents
 
 static func read_all(root := ROOT) -> Dictionary:
@@ -113,13 +108,13 @@ static func read_all(root := ROOT) -> Dictionary:
 		if parser.parse(file.get_as_text()) != OK or not parser.data is Dictionary:
 			errors.append("Некорректный JSON: " + path)
 			continue
-		var data: Dictionary = parser.data
+		var data: Dictionary = normalized(parser.data)
 		var error := validate(data)
 		if error.is_empty() and filename != filename_for(data): error = "Имя файла не совпадает с ID."
 		if not error.is_empty():
 			errors.append(path + ": " + error)
 		else:
-			if data.kind in ["active", "passive"] and not data.has("description"): data["description"] = ""
+			if not data.has("description"): data["description"] = ""
 			documents[data.id] = data
 	return {"documents": documents, "errors": errors}
 
@@ -128,11 +123,23 @@ static func catalog() -> Dictionary:
 	documents.merge(read_all().documents, true)
 	return documents
 
-static func names(kind: String) -> Dictionary:
-	var result := {}
-	for data: Dictionary in catalog().values():
-		if data.kind == kind: result[data.id] = data.name
-	return result
+## JSON stores every number as float; integral values become int so drafts compare equal to built-in documents.
+static func normalized(value: Variant) -> Variant:
+	if value is float and is_finite(value) and value == floor(value):
+		return int(value)
+	if value is Dictionary:
+		var result := {}
+		for key: Variant in value:
+			result[key] = normalized(value[key])
+		return result
+	if value is Array:
+		return value.map(func(item: Variant) -> Variant: return normalized(item))
+	return value
+
+## True when the document repeats a built-in skill exactly, so it needs no override file.
+static func is_builtin_default(data: Dictionary) -> bool:
+	var builtin: Dictionary = _builtin().get(data.get("id", ""), {})
+	return not builtin.is_empty() and normalized(data) == builtin
 
 static func passive_definitions(documents: Dictionary) -> Dictionary:
 	var result := {}
@@ -155,12 +162,10 @@ static func validate(data: Dictionary) -> String:
 	if String(data.name).length() > 120: return "Имя: до 120 символов."
 	var parts := String(data.id).split(":")
 	if parts.size() != 2 or not parts[0].is_valid_identifier() or not parts[1].is_valid_identifier(): return "Некорректный ID."
+	var builtin: Dictionary = {}
 	if parts[0] != "custom_skills":
-		var builtin := _builtin().get(data.id, {}) as Dictionary
+		builtin = _builtin().get(data.id, {})
 		if builtin.is_empty() or builtin.kind != data.kind: return "ID не является встроенным навыком этой категории."
-	if data.kind == "effect":
-		if not data.get("effect") is Dictionary: return "Эффект должен быть объектом."
-		return validate_effect(data.effect)
 	if data.kind == "passive":
 		if not _integer(data, "attack_bonus", 0, 9999) or not _integer(data, "levels", 1, 99): return "Бонус урона: 0–9999; уровни: 1–99."
 		if not data.get("retaliation") is bool: return "Ответный удар должен быть переключателем."
@@ -169,6 +174,7 @@ static func validate(data: Dictionary) -> String:
 		if data.damage_type != "" and not DAMAGE_TYPES.has(data.damage_type): return "Неизвестный тип урона."
 		for key: String in ["status", "immunity"]:
 			if data[key] != "" and not UnitStatusCatalog.has_status(StringName(data[key])): return "Неизвестное состояние."
+		if not builtin.is_empty() and data.retaliation != builtin.retaliation: return "Встроенное умение: ответный удар не меняется."
 		return _description_error(data, AbilityDescription.passive_variables(passive_definitions({data.id: data}).values()[0]))
 	for key: String in ACTIVE_LIMITS:
 		var limit: Array = ACTIVE_LIMITS[key]
@@ -186,11 +192,27 @@ static func validate(data: Dictionary) -> String:
 		return "Возврат оружия: цель «Путь», радиус 0 и только эффекты урона."
 	if types.has("core:summon") and (int(data.target_mode) != AbilityDefinition.TargetMode.EMPTY_HEX or int(data.area_radius) != 0 or types.size() != 1):
 		return "Призыв: цель «Пустой гекс», радиус 0 и единственный эффект."
+	if not builtin.is_empty():
+		var structure := _structure_error(data, builtin)
+		if not structure.is_empty(): return structure
 	# Core rules stay the final authority for anything the form does not phrase itself.
 	var ability := to_ability(data)
 	var core_error := ability.validate()
 	if not core_error.is_empty(): return core_error
 	return _description_error(data, AbilityDescription.variables(ability))
+
+## Built-in skills keep their target, flags, presentation and effect list; only parameters change.
+static func _structure_error(data: Dictionary, builtin: Dictionary) -> String:
+	for key: String in FIXED_ACTIVE_KEYS:
+		if normalized(data[key]) != builtin[key]: return "Встроенное умение: цель, флаги и отображение не меняются."
+	if data.effects.size() != builtin.effects.size(): return "Встроенное умение: состав эффектов не меняется."
+	for index: int in range(data.effects.size()):
+		var effect: Dictionary = data.effects[index]
+		var original: Dictionary = builtin.effects[index]
+		if effect.type != original.type: return "Встроенное умение: тип эффекта %d не меняется." % (index + 1)
+		for key: String in FIXED_PARAMETERS.get(effect.type, []):
+			if normalized(effect.parameters.get(key)) != original.parameters.get(key): return "Встроенное умение: эффект %d сохраняет %s." % [index + 1, key]
+	return ""
 
 static func _description_error(data: Dictionary, variables: Array[Dictionary]) -> String:
 	var description: Variant = data.get("description", "")
@@ -250,12 +272,18 @@ static func to_ability(data: Dictionary) -> AbilityDefinition:
 static func filename_for(data: Dictionary) -> String:
 	return String(data.id).replace(":", "__") + ".json"
 
+## A built-in skill saved with its original values removes the override file instead of writing a copy.
 static func save_document(data: Dictionary, root := ROOT) -> String:
 	var error := validate(data)
 	if not error.is_empty(): return error
+	var path := root.path_join(filename_for(data))
+	if is_builtin_default(data):
+		if FileAccess.file_exists(path):
+			var remove_error := DirAccess.remove_absolute(path)
+			if remove_error != OK: return "Не удалось удалить переопределение: " + error_string(remove_error)
+		return ""
 	var mkdir := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(root))
 	if mkdir != OK: return "Не удалось создать папку: " + error_string(mkdir)
-	var path := root.path_join(filename_for(data))
 	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
 	if file == null: return "Не удалось записать файл."
 	file.store_string(JSON.stringify(data, "\t") + "\n")
