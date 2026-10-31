@@ -15,42 +15,42 @@
 | Read-only граница | `UnitSnapshot`, копия `HexGrid`, глубокая копия setup | BATTLE.md «Владение состоянием» |
 | Общий путь игрока и ИИ | `BattleCommand` → `BattleSession.step()` | BATTLE.md «Команды и результат шага» |
 | Порядок границ хода | `BattleEngine._end_turn()`, `TurnEndedEvent.was_skipped` | BATTLE.md «Порядок границ хода» |
-| Аварийная остановка | `BattleResolution.terminal_error`, однократные `battle_failed`/`battle_finished`, восстановление отображения | BATTLE.md «Уточнения после регрессионной проверки» |
-| Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | BATTLE.md «Карта» |
-| Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE.md «Изменение карты» |
-| Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE.md, EDITOR.md «Препятствия местности» |
+| Аварийная остановка | `BattleResolution.terminal_error`, однократные `battle_failed`/`battle_finished`, восстановление отображения | BATTLE.md «Аварийная остановка» |
+| Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | [BATTLE_MAP.md](BATTLE_MAP.md) «Определение карты» |
+| Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE_MAP.md «Изменение карты» |
+| Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE_MAP.md «Препятствия местности», EDITOR.md «Препятствия» |
 | Статусы и состояния гексов | 8 статусов с уровнями, 12 состояний гексов, матрица, распространение, срок 3 раунда | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
-| Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | BATTLE.md «Боевой лог», HEX_AND_UNIT_STATES.md |
-| Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Завершение действий, кулдауны и призыв» |
-| Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI` | BATTLE.md «Способности» |
-| Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE.md «Копьё и ответный удар» |
-| Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE.md «Юниты», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
-| Трупы в состоянии боя | `BattleState.get_corpses_at()` | BATTLE.md «Смерть и трупы» |
-| ИИ | `EnemyBrain`, `MovementImpactForecast`, `AILastActionPlanner`, атака мешающих препятствий | BATTLE.md «Команды и результат шага» |
+| Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
+| Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
+| Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI` | BATTLE_UNITS_AND_ABILITIES.md «Способности» |
+| Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
+| Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
+| Трупы в состоянии боя | `BattleState.get_corpses_at()` | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
+| ИИ | `EnemyBrain`, `MovementImpactForecast`, `AILastActionPlanner`, атака мешающих препятствий | [BATTLE_AI.md](BATTLE_AI.md) |
 
 ### Контент
 
 | Возможность | Основные классы | Контракт |
 | --- | --- | --- |
 | Пакеты контента | `ContentPackage`, manifests, зависимости, `ContentLoader`, `ContentSnapshot`, `ContentLock` | CONTENT_AND_MODS.md |
-| Изоляция snapshot | Копии определений и setup, замороженный реестр `ModAPI` | CONTENT_AND_MODS.md «Изоляция и проверка ссылок» |
+| Изоляция snapshot | Копии определений и setup, замороженный реестр `ModAPI` | CONTENT_AND_MODS.md «ContentSnapshot», «Способности и ModAPI» |
 | Авторский контент проекта | `content/authored/`, `UnitLibrary`, `SkillLibrary`, `ProjectBattleLoader`, `content/game_content.tres` | CONTENT_AND_MODS.md, [EDITOR.md](EDITOR.md) |
-| Разделение логики и визуала | `presentation_id` у юнитов и способностей, `UnitPresentationDefinition`, `AbilityPresentationDefinition`, fallback | BATTLE.md «Юниты», «Способности» |
+| Разделение логики и визуала | `presentation_id` у юнитов и способностей, `UnitPresentationDefinition`, `AbilityPresentationDefinition`, fallback | [BATTLE_PRESENTATION.md](BATTLE_PRESENTATION.md) «Компоненты», CONTENT_AND_MODS.md «Логика и presentation» |
 
 ### Графический бой
 
 | Возможность | Основные классы | Контракт |
 | --- | --- | --- |
-| Адаптер боя | `BattleScreen`, `BattleController`, `BattlePresentationQueue`, `BattleUnitViewRegistry` | BATTLE.md «Представление» |
-| Анимации | `UnitMovementAnimator`, `UnitCombatAnimator`, `UnitDeathAnimator`, доставка способностей из данных | BATTLE.md |
-| Масштаб фигур и погибшие пары | `texture_scale()`, `unit_visual_profiles.json`, `content/authored/assets/corpses/` по basename | BATTLE.md «Масштаб фигур», [../tools/UNITS.md](../tools/UNITS.md) |
-| HP юнитов и раскрытие по Alt | `battle_health_display_controller.gd`, `user://battle_ui_settings.cfg` | BATTLE.md «Представление» |
-| Подсветки | Радиус дальней атаки, маркеры непроходимости/поверхности/стоимости | BATTLE.md |
-| Боевой лог | `BattleLogFormatter`, панель HUD | BATTLE.md «Боевой лог» |
-| Варианты HUD | `UILayoutDocument`, `UILayoutStore`, `UILayoutPresenter` | BATTLE.md «Сохраняемые варианты HUD» |
-| Фоны и высота поля | `BattleBackdrops`, `HexStateArt`, `grid_offset_y`, `battle_grid_layout.cfg` | BATTLE.md, EDITOR.md |
+| Адаптер боя | `BattleScreen`, `BattleController`, `BattlePresentationQueue`, `BattleUnitViewRegistry` | BATTLE_PRESENTATION.md «Компоненты» |
+| Анимации | `UnitMovementAnimator`, `UnitCombatAnimator`, `UnitDeathAnimator`, доставка способностей из данных | BATTLE_PRESENTATION.md «Анимации» |
+| Масштаб фигур и погибшие пары | `texture_scale()`, `unit_visual_profiles.json`, `content/authored/assets/corpses/` по basename | BATTLE_PRESENTATION.md «Масштаб фигур», [../tools/UNITS.md](../tools/UNITS.md) |
+| HP юнитов и раскрытие по Alt | `battle_health_display_controller.gd`, `user://battle_ui_settings.cfg` | BATTLE_PRESENTATION.md «Акторы и здоровье» |
+| Подсветки | Радиус дальней атаки, маркеры непроходимости/поверхности/стоимости | BATTLE_PRESENTATION.md «Подсветки», «Состояния гексов и маркеры» |
+| Боевой лог | `BattleLogFormatter`, панель HUD | BATTLE_PRESENTATION.md «Боевой лог» |
+| Варианты HUD | `UILayoutDocument`, `UILayoutStore`, `UILayoutPresenter` | BATTLE_PRESENTATION.md «Сохраняемые варианты HUD» |
+| Фоны и высота поля | `BattleBackdrops`, `HexStateArt`, `grid_offset_y`, `battle_grid_layout.cfg` | BATTLE_PRESENTATION.md «Фон и положение поля», EDITOR.md «Визуальный workflow» |
 | Скорость показа | `BattlePlaybackSettings`, активные Tween | [SIMULATION_AND_PLAYBACK.md](SIMULATION_AND_PLAYBACK.md) |
-| Файловая диагностика | `features/battle/diagnostics/`, JSONL за флагом `feature_flags/battle_file_logging` (в коде по умолчанию выключен, в `project.godot` сейчас включён) | BATTLE.md, [../tools/BATTLE_FILE_LOGGING.md](../tools/BATTLE_FILE_LOGGING.md) |
+| Файловая диагностика | `features/battle/diagnostics/`, JSONL за флагом `feature_flags/battle_file_logging` (в коде по умолчанию выключен, в продовых сборках всегда выключен, в `project.godot` сейчас включён) | BATTLE.md «Диагностическое наблюдение», [../tools/BATTLE_FILE_LOGGING.md](../tools/BATTLE_FILE_LOGGING.md) |
 
 ### Без графики и инструменты
 
@@ -112,7 +112,7 @@
 
 ## Граница проверки
 
-Автоматический набор: `python tools/tests/run_tests.py --godot <путь-к-Godot-4.7>`. Runner проверяет код завершения, итог, минимальное число проверок каждого набора и отсутствие ошибок в журнале. Компиляция всех скриптов: `--headless --path . --script tools/tests/check_scripts.gd`.
+Автоматический набор: `python tools/tests/run_tests.py --godot <путь-к-Godot-4.7>`. Runner проверяет код завершения, итог, минимальное число проверок каждого набора и отсутствие ошибок в журнале; журналы сохраняются во временной папке, таймаут прерывает зависший набор. Компиляция всех скриптов: `--headless --path . --script tools/tests/check_scripts.gd`.
 
 Автотесты и рендеры, выполненные агентами, не подтверждают:
 

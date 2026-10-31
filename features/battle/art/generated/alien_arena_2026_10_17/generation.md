@@ -6,7 +6,7 @@
 - Reduced preview: `preview_640x360.png`.
 - Generated source: 1672 x 941; final dimensions prepared with proportional bicubic resizing and a subpixel centered crop. This is resampling, not additional generated detail.
 - Additional first-generation variant: `alien_crystal_arena_2560x1440.png`, resized with the same method from the original generated image before the revision. Crystals and rocks are decorative border art, not runtime obstacles.
-- Both variants are registered in the shared `BattleBackdrops` catalog and available from the battle editor background selector. Reduced open-field preview and both backgrounds in rendered editor scenes checked visually. Selection signals, save/reload and undo/redo covered by editor smoke checks; physical mouse input not exercised.
+- Both variants are registered in the shared `BattleBackdrops` catalog and available from the battle editor background selector.
 
 ## Initial generation prompt
 

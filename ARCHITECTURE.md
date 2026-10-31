@@ -15,7 +15,7 @@ content/ → ContentSnapshot → BattleStartRequest
 ## Где лежит полная архитектура
 
 - [Общая архитектура](docs/architecture/README.md) — общая схема и обязательные принципы.
-- [Бой](docs/architecture/BATTLE.md) — бой, карта, юниты, способности и визуал.
+- [Бой](docs/architecture/BATTLE.md) — ядро боя и оглавление: [карта](docs/architecture/BATTLE_MAP.md), [юниты и способности](docs/architecture/BATTLE_UNITS_AND_ABILITIES.md), [ИИ](docs/architecture/BATTLE_AI.md), [визуал](docs/architecture/BATTLE_PRESENTATION.md), [статусы и гексы](docs/architecture/HEX_AND_UNIT_STATES.md).
 - [Контент и моды](docs/architecture/CONTENT_AND_MODS.md) — контент и моды.
 - [Редактор](docs/architecture/EDITOR.md) — инструменты разработки.
 - [Симуляция и скорость](docs/architecture/SIMULATION_AND_PLAYBACK.md) — автобой и скорость.
@@ -54,7 +54,7 @@ content/ → ContentSnapshot → BattleStartRequest
 - `features/abilities/` — применение эффектов способностей через правила боя.
 - `features/content/` — загрузка, сортировка и проверка содержимого `content/`.
 - `features/campaign/` — прогресс кампании и переходы между сценариями.
-- `tools/` — редакторы юнитов, поля и HUD; исключены из игровой сборки.
+- `tools/` — редакторы юнитов, навыков, поля и HUD; исключены из игровой сборки.
 - `features/simulation/` — запуск боя без графики для автобоя и массовых прогонов.
 
 ## Куда класть новую функцию
@@ -69,7 +69,7 @@ content/ → ContentSnapshot → BattleStartRequest
 | Новые характеристики юнита | `UnitDefinition`; текущее здоровье и позиция — только runtime-состояние |
 | Новая способность | `features/abilities/` и её данные в `content/` |
 | Загрузка или проверка игровых данных | `features/content/` |
-| Функция редактора | `tools/battles/` |
+| Функция редактора | папка инструмента в `tools/` (`battles/`, `units/`, `skills/`, `battle_ui/`); общий интерфейс — `tools/common/` |
 | Правило кампании | `features/campaign/` |
 
 ## Пять правил, которые нельзя нарушать

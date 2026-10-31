@@ -52,7 +52,7 @@ BattleResolution / BattleResult / read-only снимки
 | `features/battle/controller/` | Координация графического боя |
 | `features/battle/view/` | Отображение событий, карты, акторов и HUD |
 | `features/abilities/` | Композиция и исполнение эффектов способностей |
-| `tools/` | Инструменты разработки юнитов, поля и HUD; не входят в игру |
+| `tools/` | Инструменты разработки юнитов, навыков, поля и HUD; не входят в игру |
 | `features/game/` | Основной запуск выбранного документа боя |
 | `features/content/battles/`, `features/content/units/` | Общие форматы и загрузка авторского контента |
 | `features/simulation/` | Бой без графики с лимитами и отменой |
@@ -116,7 +116,12 @@ Feature flag создаётся только после явного согла�
 
 ## Где читать подробности
 
-- [BATTLE.md](BATTLE.md) — бой, карта, юниты, способности и presentation.
+- [BATTLE.md](BATTLE.md) — ядро боя: запуск, владение состоянием, команды, ход, аварийная остановка.
+- [BATTLE_MAP.md](BATTLE_MAP.md) — логическая карта, мутации и препятствия.
+- [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) — юниты, способности, урон, призыв и трупы.
+- [BATTLE_AI.md](BATTLE_AI.md) — встроенный ИИ и прогноз.
+- [BATTLE_PRESENTATION.md](BATTLE_PRESENTATION.md) — показ боя: поле, акторы, HUD, анимации, боевой лог.
+- [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) — статусы юнитов, состояния и реакции гексов.
 - [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) — пакеты, IDs, snapshot, моды и внешние форматы.
 - [EDITOR.md](EDITOR.md) — инструменты разработки и `BattleDocument`.
 - [SIMULATION_AND_PLAYBACK.md](SIMULATION_AND_PLAYBACK.md) — headless-запуск, детерминизм и скорость.
