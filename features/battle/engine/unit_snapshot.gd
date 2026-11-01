@@ -11,14 +11,11 @@ var health: HealthSnapshot
 var basic_attack_damage: int
 var basic_attack_range: int
 var ability_ids: Array[StringName] = []
-var ability_ranges: Dictionary[StringName, int] = {}
-var ability_area_radii: Dictionary[StringName, int] = {}
+var abilities: Dictionary[StringName, AbilitySnapshot] = {}
 var statuses: Dictionary[StringName, int] = {}
 var basic_attack_damage_type: StringName
 var status_immunities: Array[StringName] = []
 var ability_cooldowns: Dictionary[StringName, int] = {}
-var ability_hex_targets: Dictionary[StringName, bool] = {}
-var ability_target_modes: Dictionary[StringName, int] = {}
 var passive_ability_ids: Array[StringName] = []
 var basic_attack_statuses: Dictionary[StringName, int] = {}
 var turns_started := 0
@@ -53,8 +50,4 @@ func _init(state: UnitState) -> void:
 	ability_ids.sort()
 
 	for ability_id: StringName in ability_ids:
-		var ability := state.get_ability(ability_id)
-		ability_ranges[ability_id] = ability.get_range(state)
-		ability_hex_targets[ability_id] = ability.targets_hex()
-		ability_target_modes[ability_id] = ability.target_mode
-		ability_area_radii[ability_id] = ability.area_radius
+		abilities[ability_id] = AbilitySnapshot.new(state.get_ability(ability_id), state)

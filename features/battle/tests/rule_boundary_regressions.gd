@@ -19,6 +19,7 @@ class Demolish extends AbilityEffectHandler:
 func run(suite: Node) -> void:
 	var fixture: Fixtures = suite.fixture
 	_check_obstacle_damage_belongs_to_handlers(suite, fixture)
+	_check_session_answers_rule_questions(suite, fixture)
 
 
 func _check_obstacle_damage_belongs_to_handlers(suite: Node, fixture: Fixtures) -> void:
@@ -48,6 +49,54 @@ func _check_obstacle_damage_belongs_to_handlers(suite: Node, fixture: Fixtures) 
 	state.turn_service.start()
 	var resolution := BattleEngine.new(state, false).execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(2, 1), ability.id))
 	suite.expect(resolution.accepted and _hp(state, Vector2i(2, 1)) == 9 and _hp(state, Vector2i(2, 0)) == 10, "The effect pipeline lets any handler strike obstacles, not only core damage")
+
+
+func _check_session_answers_rule_questions(suite: Node, fixture: Fixtures) -> void:
+	var state := _walled_state(fixture)
+	var user: UnitState = state.unit_states[&"user"]
+	user.basic_attack_range = 3
+	var modes := {&"core:line": [AbilityDefinition.TargetMode.LINE, 0], &"core:path": [AbilityDefinition.TargetMode.PATH, 0], &"core:ring": [AbilityDefinition.TargetMode.SELF, 1], &"core:blast": [AbilityDefinition.TargetMode.HEX, 1]}
+	for id: StringName in modes:
+		var ability: AbilityDefinition = fixture.ability(id, modes[id][0], modes[id][1])
+		ability.uses_attack_range = id == &"core:blast"
+		user.abilities[id] = ability
+		user.ability_cooldowns[id] = 0
+	state.turn_service.start()
+	var session := _session(state)
+	var snapshot := session.get_unit(user.unit_id)
+	var blast := snapshot.abilities.get(&"core:blast") as AbilitySnapshot
+	suite.expect(snapshot.abilities.keys().size() == snapshot.ability_ids.size() and blast != null and blast.range == 3 and blast.area_radius == 1 and blast.targets_hex and blast.target_mode == AbilityDefinition.TargetMode.HEX, "A unit snapshot carries one read-only snapshot per ability with its effective range")
+	var same := true
+	for id: StringName in modes:
+		for center: Vector2i in [Vector2i(3, 0), Vector2i(2, 1), user.hex]:
+			var expected := AbilityExecutor.get_affected_hexes(state.hex_grid, user.hex, user.get_ability(id), center)
+			same = same and session.get_ability_affected_hexes(user.unit_id, id, center) == expected
+	suite.expect(same, "The session reports affected cells with the geometry execution uses")
+	suite.expect(session.get_ability_affected_hexes(user.unit_id, &"core:unknown", Vector2i.ZERO).is_empty() and session.get_ability_affected_hexes(&"nobody", &"core:line", Vector2i.ZERO).is_empty(), "Unknown units and abilities affect nothing")
+
+	var granite := BattleObstacleDefinition.new()
+	granite.id = &"granite"
+	granite.hexes.assign([Vector2i(1, 1)])
+	state.hex_grid.add_obstacle(granite)
+	var far := BattleObstacleDefinition.new()
+	far.id = &"far"
+	far.hexes.assign([Vector2i(5, 0)])
+	far.destructible = true
+	state.hex_grid.add_obstacle(far)
+	var attackable := session.get_attackable_obstacle_hexes(user.unit_id)
+	suite.expect(attackable == [Vector2i(2, 0), Vector2i(2, 1), Vector2i(3, 0)], "Attackable obstacles are destructible hexes within basic range: %s" % str(attackable))
+	var engine: BattleEngine = session.get("_engine")
+	var agrees := true
+	for hex: Vector2i in state.hex_grid.get_cells():
+		if state.hex_grid.has_obstacle(hex):
+			agrees = agrees and engine.fork_for_prediction().execute(AttackObstacleCommand.new(user.unit_id, hex)).accepted == attackable.has(hex)
+	suite.expect(agrees, "The engine accepts an obstacle attack exactly on the hexes the session reports")
+	suite.expect(session.get_attackable_obstacle_hexes(&"enemy").is_empty(), "A unit that is not active can attack no obstacle")
+
+
+func _session(state: BattleState) -> BattleSession:
+	var setup := BattleSetup.new(state.battle_id, state.hex_grid, [], [], BattleObjectiveDefinition.new(), BattleFaction.Value.PLAYER, state.deterministic_seed)
+	return BattleSession.new(setup, state, BattleEngine.new(state, false), null)
 
 
 ## A two-hex wall through the center, a rock beside it and a distant enemy.

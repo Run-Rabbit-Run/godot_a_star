@@ -770,13 +770,11 @@ func _test_ai_and_forecast() -> void:
 	var ability := fixture.ability(&"core:hex_only", AbilityDefinition.TargetMode.HEX)
 	ability.range = 99
 	# Synthetic query snapshot isolates the previously wrong command constructor.
-	active.ability_ids = [ability.id]
-	active.ability_area_radii[ability.id] = 0
-	active.ability_target_modes[ability.id] = AbilityDefinition.TargetMode.HEX
-	active.ability_hex_targets[ability.id] = true
-	var source := AICommandSource.new(load("res://features/battle/definitions/debug_basic_enemy_ai.tres"))
 	var state: BattleState = session.get("_state")
 	state.unit_states[active.unit_id].abilities[ability.id] = ability
+	active.ability_ids = [ability.id]
+	active.abilities[ability.id] = AbilitySnapshot.new(ability, state.unit_states[active.unit_id])
+	var source := AICommandSource.new(load("res://features/battle/definitions/debug_basic_enemy_ai.tres"))
 	var command := source._choose_ability_command(session, active, [opponent])
 	expect(command is UseAbilityCommand and command.targets_hex, "AI emits hex command for zero-radius HEX ability")
 	if command != null:

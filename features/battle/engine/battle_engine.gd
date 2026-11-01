@@ -145,6 +145,29 @@ func get_ability_target_hexes(
 	return AbilityExecutor.get_target_hexes(_state, unit_id, ability_id)
 
 
+## Cells this unit's ability would affect from its current hex, by the geometry execution uses.
+func get_ability_affected_hexes(unit_id: StringName, ability_id: StringName, center: Vector2i) -> Array[Vector2i]:
+	var unit := get_unit(unit_id)
+	var ability := unit.get_ability(ability_id) if unit != null else null
+	if ability == null:
+		var none: Array[Vector2i] = []
+		return none
+	return AbilityExecutor.get_affected_hexes(_state.hex_grid, unit.hex, ability, center)
+
+
+## Obstacle hexes this unit may attack now; AttackObstacleCommand accepts exactly these.
+func get_attackable_obstacle_hexes(unit_id: StringName) -> Array[Vector2i]:
+	var hexes: Array[Vector2i] = []
+	var attacker := get_unit(unit_id)
+	if attacker == null or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return hexes
+	for hex: Vector2i in _state.hex_grid.get_cells_in_range(attacker.hex, attacker.basic_attack_range):
+		if _state.hex_grid.has_obstacle(hex) and _obstacle_attack_error(attacker, hex).is_empty():
+			hexes.append(hex)
+	hexes.sort()
+	return hexes
+
+
 func get_deterministic_seed() -> int:
 	return _state.deterministic_seed
 
@@ -595,15 +618,23 @@ func _get_blocked_cells(
 
 func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolution:
 	var attacker := get_unit(command.attacker_id)
-	var obstacle := _state.hex_grid.get_obstacle(command.target_hex)
-	if attacker == null or obstacle == null or not obstacle.destructible:
-		return _rejected("Уничтожаемое препятствие не найдено.")
-	if attacker.unit_id != get_active_unit_id() or attacker.health.is_defeated() or not attacker.turn.main_action_available:
-		return _rejected("Атака препятствия недоступна.")
-	if HexGrid.get_distance(attacker.hex, command.target_hex) > attacker.basic_attack_range:
-		return _rejected("Препятствие вне дальности атаки.")
+	var error := _obstacle_attack_error(attacker, command.target_hex)
+	if not error.is_empty():
+		return _rejected(error)
 	attacker.turn.spend_main_action()
 	var events: Array[BattleEvent] = []
 	ObstacleService.damage(_state, command.target_hex, attacker.basic_attack_damage, events)
 	_finish_action_turn(attacker.unit_id, events)
 	return _accepted(events)
+
+
+## Why this unit cannot attack the obstacle at the hex now, or "".
+func _obstacle_attack_error(attacker: UnitState, hex: Vector2i) -> String:
+	var obstacle := _state.hex_grid.get_obstacle(hex)
+	if attacker == null or obstacle == null or not obstacle.destructible:
+		return "Уничтожаемое препятствие не найдено."
+	if attacker.unit_id != get_active_unit_id() or attacker.health.is_defeated() or not attacker.turn.main_action_available:
+		return "Атака препятствия недоступна."
+	if HexGrid.get_distance(attacker.hex, hex) > attacker.basic_attack_range:
+		return "Препятствие вне дальности атаки."
+	return ""

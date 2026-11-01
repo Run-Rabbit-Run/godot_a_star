@@ -102,12 +102,10 @@ func next_command(session: BattleSession) -> BattleCommand:
 
 
 func _choose_obstacle_command(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot) -> AttackObstacleCommand:
-	var grid := session.get_hex_grid()
-	var candidates := grid.get_cells_in_range(active.hex, active.basic_attack_range)
+	var candidates := session.get_attackable_obstacle_hexes(active.unit_id)
 	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(a, target.hex) < HexGrid.get_distance(b, target.hex) if HexGrid.get_distance(a, target.hex) != HexGrid.get_distance(b, target.hex) else a < b)
 	for hex: Vector2i in candidates:
-		var obstacle := grid.get_obstacle(hex)
-		if obstacle != null and obstacle.destructible and HexGrid.get_distance(hex, target.hex) < HexGrid.get_distance(active.hex, target.hex):
+		if HexGrid.get_distance(hex, target.hex) < HexGrid.get_distance(active.hex, target.hex):
 			_trace("reason", "clear_destructible_obstacle")
 			return AttackObstacleCommand.new(active.unit_id, hex)
 	return null
@@ -128,8 +126,9 @@ func _choose_ability_command(
 			active.unit_id,
 			ability_id
 		)
-		var radius: int = active.ability_area_radii.get(ability_id, 0)
-		var mode: int = active.ability_target_modes.get(ability_id, AbilityDefinition.TargetMode.AUTO)
+		var ability: AbilitySnapshot = active.abilities[ability_id]
+		var radius := ability.area_radius
+		var mode: int = ability.target_mode
 		var evaluations: Array = []
 		if decision_trace != null:
 			decision_trace["ability_candidates"].append({"ability_id": ability_id, "legal_hexes": target_hexes, "radius": radius, "target_mode": mode, "cooldown": active.ability_cooldowns.get(ability_id, 0), "evaluations": evaluations})
@@ -138,11 +137,8 @@ func _choose_ability_command(
 				return UseAbilityCommand.at_hex(active.unit_id, target_hexes[0], ability_id)
 			continue
 		if mode in [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]:
-			var ability := AbilityDefinition.new()
-			ability.target_mode = mode as AbilityDefinition.TargetMode
-			ability.area_radius = radius
 			for center: Vector2i in target_hexes:
-				var cells := AbilityExecutor.get_affected_hexes(session.get_hex_grid(), active.hex, ability, center)
+				var cells := session.get_ability_affected_hexes(active.unit_id, ability_id, center)
 				var hits := 0
 				var friendly := false
 				for ally: UnitSnapshot in allies:
@@ -155,7 +151,7 @@ func _choose_ability_command(
 				if hits > 0 and not friendly:
 					return UseAbilityCommand.at_hex(active.unit_id, center, ability_id)
 			continue
-		if not active.ability_hex_targets.get(ability_id, false):
+		if not ability.targets_hex:
 			for opponent: UnitSnapshot in opponents:
 				if decision_trace != null:
 					evaluations.append({"target_id": opponent.unit_id, "legal": target_hexes.has(opponent.hex), "allies_in_radius": _count_units_in_radius(opponent.hex, radius, allies) if radius > 0 else 0})

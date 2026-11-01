@@ -453,8 +453,8 @@ func _check_grenade_ability() -> void:
 	var player := session.get_unit(player_id)
 	_expect(
 		player.ability_ids.has(&"core:grenade")
-		and player.ability_ranges[&"core:grenade"] == 3
-		and player.ability_area_radii[&"core:grenade"] == 1,
+		and player.abilities[&"core:grenade"].range == 3
+		and player.abilities[&"core:grenade"].area_radius == 1,
 		"Melee unit snapshot must expose grenade range and area radius."
 	)
 

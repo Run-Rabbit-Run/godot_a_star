@@ -39,7 +39,7 @@ BattleStartRequest(battle_id, ContentSnapshot, seed)
 | `BattlePresentationQueue` | Последовательный показ уже рассчитанных событий |
 | `BattleUnitViewRegistry` | Соответствие `unit_id` графическому актору и presentation-данным |
 
-`BattleSession` не возвращает наружу изменяемый `UnitState`: UI и ИИ получают `UnitSnapshot`, копию `HexGrid` и результаты запросов.
+`BattleSession` не возвращает наружу изменяемый `UnitState`: UI и ИИ получают `UnitSnapshot`, копию `HexGrid` и результаты запросов. Параметры умений юнита лежат в `UnitSnapshot.abilities` (`AbilitySnapshot`: эффективная дальность, радиус, режим цели). Вопросы о правилах задаются сессии, а не пересчитываются адаптерами: `get_attackable_targets()`, `get_ability_target_hexes()`, `get_ability_affected_hexes()`, `get_attackable_obstacle_hexes()`, `get_movement_search()`.
 
 `BattleState` получает собственную копию сетки из `BattleSetup`. `session.setup.hex_grid` описывает начальную карту и не является ссылкой на изменяемую сетку боя.
 

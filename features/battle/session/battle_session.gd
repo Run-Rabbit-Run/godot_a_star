@@ -98,6 +98,14 @@ func get_ability_target_hexes(unit_id: StringName, ability_id: StringName) -> Ar
 	return _engine.get_ability_target_hexes(unit_id, ability_id)
 
 
+func get_ability_affected_hexes(unit_id: StringName, ability_id: StringName, center: Vector2i) -> Array[Vector2i]:
+	return _engine.get_ability_affected_hexes(unit_id, ability_id, center)
+
+
+func get_attackable_obstacle_hexes(unit_id: StringName) -> Array[Vector2i]:
+	return _engine.get_attackable_obstacle_hexes(unit_id)
+
+
 func get_active_unit_id() -> StringName:
 	return _engine.get_active_unit_id()
 
