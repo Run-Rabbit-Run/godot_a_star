@@ -191,13 +191,18 @@ func get_result() -> BattleResult:
 		outcome == BattleOutcome.Value.VICTORY
 	)
 
-	return BattleResult.new(
+	var result := BattleResult.new(
 		get_battle_id(),
 		get_deterministic_seed(),
 		outcome,
 		get_round_number(),
 		objective_result
 	)
+	for unit: UnitState in _state.unit_states.values():
+		result.participants[unit.faction] = result.participants.get(unit.faction, 0) + 1
+		if unit.health.is_defeated():
+			result.defeated[unit.faction] = result.defeated.get(unit.faction, 0) + 1
+	return result
 
 
 func get_movement_search(unit_id: StringName) -> MovementSearchResult:

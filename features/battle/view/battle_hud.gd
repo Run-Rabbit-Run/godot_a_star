@@ -448,6 +448,23 @@ func _on_settings_button_pressed() -> void:
 	_speed_panel.visible = not _speed_panel.visible
 
 
+## Adds an action of the screen's owner, such as restarting or leaving the game, to the
+## settings menu. It stays available during presentation and after the battle ends.
+func add_menu_action(text: String, action: Callable) -> Button:
+	var actions := _speed_panel.get_node_or_null("Content/MenuActions") as VBoxContainer
+	if actions == null:
+		actions = VBoxContainer.new()
+		actions.name = "MenuActions"
+		_speed_panel.get_node("Content").add_child(actions)
+	var button := Button.new()
+	button.name = "MenuAction%d" % actions.get_child_count()
+	button.text = text
+	BattleVisualTheme.style_button(button)
+	button.pressed.connect(action)
+	actions.add_child(button)
+	return button
+
+
 func _on_speed_requested(speed: float) -> void:
 	var speed_text := String.num(speed, 1).trim_suffix("0").trim_suffix(".")
 	speed_text = speed_text.replace(".", ",")

@@ -85,6 +85,11 @@ func _on_battle_started() -> void:
 	battle_started.emit()
 
 
+## Adds an owner action to the battle's settings menu; call after the screen entered the tree.
+func add_menu_action(text: String, action: Callable) -> Button:
+	return ($BattleMap/BattleUI as BattleHUD).add_menu_action(text, action)
+
+
 ## True after `battle_started`; a later `battle_failed` then means a stopped battle, not a failed start.
 func has_started() -> bool:
 	return _has_started

@@ -32,6 +32,14 @@ func is_completed() -> bool:
 	return status == SimulationRunStatus.Value.COMPLETED
 
 
+## Faction name -> {"participants", "defeated"}.
+static func _losses(result: BattleResult) -> Dictionary:
+	var losses := {}
+	for faction: BattleFaction.Value in result.participants:
+		losses[BattleFaction.Value.keys()[faction]] = {"participants": result.participants[faction], "defeated": result.defeated.get(faction, 0)}
+	return losses
+
+
 func to_report() -> Dictionary:
 	var result_data: Dictionary = {}
 
@@ -44,6 +52,7 @@ func to_report() -> Dictionary:
 				"description": battle_result.objective_result.description,
 				"is_completed": battle_result.objective_result.is_completed,
 			},
+			"losses": _losses(battle_result),
 		}
 
 	return {

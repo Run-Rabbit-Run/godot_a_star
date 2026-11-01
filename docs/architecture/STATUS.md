@@ -51,6 +51,7 @@
 | Варианты HUD | `UILayoutDocument`, `UILayoutStore`, `UILayoutPresenter` | BATTLE_PRESENTATION.md «Сохраняемые варианты HUD» |
 | Фоны и высота поля | `BattleBackdrops`, `HexStateArt`, `grid_offset_y`, `battle_grid_layout.cfg` | BATTLE_PRESENTATION.md «Фон и положение поля», EDITOR.md «Визуальный workflow» |
 | Скорость показа | `BattlePlaybackSettings`, активные Tween | [SIMULATION_AND_PLAYBACK.md](SIMULATION_AND_PLAYBACK.md) |
+| Итог и выход в игре | `game_launcher.gd`, `BattleResultPanel`, `BattleScreen.add_menu_action`, потери в `BattleResult` | BATTLE_PRESENTATION.md «Итог и выход в игре» |
 | Файловая диагностика | `features/battle/diagnostics/`, JSONL за флагом `feature_flags/battle_file_logging` (в коде по умолчанию выключен; в `project.godot` включён для разработки и выключен для релизных сборок через `battle_file_logging.release=false`) | BATTLE.md «Диагностическое наблюдение», [../tools/BATTLE_FILE_LOGGING.md](../tools/BATTLE_FILE_LOGGING.md) |
 
 ### Без графики и инструменты

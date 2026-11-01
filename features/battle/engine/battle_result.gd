@@ -7,6 +7,10 @@ var deterministic_seed: int
 var outcome: BattleOutcome.Value
 var round_number: int
 var objective_result: ObjectiveResult
+## Participants per faction when the battle ended, summoned units included.
+var participants: Dictionary[BattleFaction.Value, int] = {}
+## Defeated participants per faction.
+var defeated: Dictionary[BattleFaction.Value, int] = {}
 
 
 func _init(
