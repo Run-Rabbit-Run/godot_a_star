@@ -1,6 +1,12 @@
 class_name UILayoutPresenter
 extends Node
 ## Applies presentation overrides to existing controls without replacing HUD bindings.
+## Overrides are re-asserted after a change of an overridden control or its ancestors,
+## not every frame: an idle HUD costs nothing.
+
+## Changes that may undo an override: HUD writes (text, texture, style cause a redraw),
+## visibility toggles and geometry of the control itself.
+const WATCHED_SIGNALS: Array[StringName] = [&"draw", &"visibility_changed", &"item_rect_changed", &"theme_changed"]
 
 var root: Control
 var document: UILayoutDocument
@@ -11,6 +17,13 @@ var _source_text: Dictionary = {}
 var _backgrounds: Dictionary = {}
 var _textures: Dictionary = {}
 var _label_styles: Dictionary = {}
+## IDs with overrides, parents before children like `controls`.
+var _overridden: Array[String] = []
+var _refreshing := false
+
+
+func _ready() -> void:
+	set_process(false)
 
 
 func setup(p_root: Control, p_document: UILayoutDocument) -> void:
@@ -22,6 +35,8 @@ func setup(p_root: Control, p_document: UILayoutDocument) -> void:
 			diagnostics.append("Элемент отсутствует: %s" % id)
 			continue
 		apply_element(id)
+	# The HUD rescales its root to the viewport; detached controls follow on the next refresh.
+	_watch(root.get_viewport(), &"size_changed")
 	refresh()
 
 
@@ -107,17 +122,50 @@ func apply_element(id: String) -> void:
 		node.top_level = true
 		if node is Label:
 			node.clip_text = true
+	_track(id)
+
+
+## Starts re-asserting the element's overrides when it or an ancestor changes.
+func _track(id: String) -> void:
+	if _overridden.has(id):
+		return
+	_overridden.append(id)
+	var order := controls.keys()
+	_overridden.sort_custom(func(a: String, b: String) -> bool: return order.find(a) < order.find(b))
+	var node: Control = controls[id]
+	for signal_name: StringName in WATCHED_SIGNALS:
+		_watch(node, signal_name)
+	# A detached control is placed relative to its parent, which a container may move.
+	var ancestor := node.get_parent()
+	while ancestor != null and ancestor != root.get_parent():
+		if ancestor is Control:
+			_watch(ancestor, &"item_rect_changed")
+		ancestor = ancestor.get_parent()
+
+
+func _watch(source: Object, signal_name: StringName) -> void:
+	if not source.is_connected(signal_name, queue_refresh):
+		source.connect(signal_name, queue_refresh)
+
+
+## Coalesces changes into one refresh on the next frame.
+func queue_refresh() -> void:
+	if not _refreshing:
+		set_process(true)
 
 
 func _process(_delta: float) -> void:
+	set_process(false)
 	refresh()
 
 
 func refresh() -> void:
 	if root == null or document == null:
 		return
+	# Signals caused by the refresh's own writes must not schedule another one.
+	_refreshing = true
 	# Parent-first order preserves group movement and scaling for detached children.
-	for id: String in controls:
+	for id: String in _overridden:
 		var node: Control = controls[id]
 		var entry: Dictionary = document.elements.get(id, {})
 		if entry.has("rect"):
@@ -150,6 +198,7 @@ func refresh() -> void:
 				backdrop.global_position = node.global_position
 				backdrop.scale = node.get_global_transform().get_scale()
 				backdrop.size = node.size
+	_refreshing = false
 
 
 func local_rect(id: String) -> Rect2:

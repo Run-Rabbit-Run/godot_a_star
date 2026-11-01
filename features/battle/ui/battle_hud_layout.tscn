@@ -26,6 +26,7 @@ mouse_filter = 2
 script = ExtResource("7_shading")
 
 [node name="BattleLogButton" type="Button" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -38,6 +39,7 @@ toggle_mode = true
 tooltip_text = "Показать или скрыть историю боя"
 
 [node name="BattleLogPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchor_left = 1.0
@@ -57,6 +59,7 @@ text = "БОЕВОЙ ЛОГ"
 theme_override_font_sizes/font_size = 14
 
 [node name="Entries" type="RichTextLabel" parent="BattleLogPanel/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 14
@@ -65,6 +68,7 @@ scroll_following = true
 selection_enabled = true
 
 [node name="StrategistPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 offset_left = -378.0
 offset_top = 16.0
@@ -106,12 +110,14 @@ layout_mode = 2
 text = "МАРК ВЕЙЛ"
 
 [node name="RoundLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "ХОД 00"
 horizontal_alignment = 2
 
 [node name="ObjectiveLabel" type="Label" parent="StrategistPanel/Margin/Content/Info"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "ЦЕЛЬ: —"
@@ -133,6 +139,7 @@ text = "Нет активных эффектов"
 visible = false
 
 [node name="TurnQueuePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_left = 0.0
@@ -156,11 +163,13 @@ text = "ОЧЕРЁДНОСТЬ ХОДА"
 horizontal_alignment = 1
 
 [node name="TurnOrderContainer" type="HBoxContainer" parent="TurnQueuePanel/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
 theme_override_constants/separation = 13
 
 [node name="SystemPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -182,6 +191,7 @@ text = "БОЕВОЙ ЦИКЛ"
 visible = false
 
 [node name="SettingsButton" type="Button" parent="SystemPanel/Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(42, 42)
 layout_mode = 2
 icon = ExtResource("6_settings")
@@ -192,6 +202,7 @@ expand_icon = true
 theme_override_constants/icon_max_width = 24
 
 [node name="TargetPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 1
@@ -214,6 +225,7 @@ theme_override_font_sizes/font_size = 9
 text = "ТАКТИЧЕСКИЙ АНАЛИЗ"
 
 [node name="TargetPlaceholder" type="Label" parent="TargetPanel/Content"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 96)
 layout_mode = 2
 size_flags_vertical = 3
@@ -224,11 +236,13 @@ vertical_alignment = 1
 autowrap_mode = 2
 
 [node name="TargetContent" type="HBoxContainer" parent="TargetPanel/Content"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 9
 
 [node name="TargetPortrait" type="TextureRect" parent="TargetPanel/Content/TargetContent"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(72, 72)
 layout_mode = 2
 expand_mode = 1
@@ -240,22 +254,26 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 2
 
 [node name="TargetNameLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "—"
 autowrap_mode = 2
 
 [node name="TargetFactionLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "—"
 
 [node name="TargetHealthLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "ОЗ 0/0"
 
 [node name="TargetStatsLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 10
 text = "УРОН 0 · ДАЛЬНОСТЬ 0\nОД 0/0 · ДЕЙСТВИЕ НЕТ"
@@ -264,6 +282,7 @@ text = "УРОН 0 · ДАЛЬНОСТЬ 0\nОД 0/0 · ДЕЙСТВИЕ НЕТ"
 layout_mode = 2
 
 [node name="TargetEffectsLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.68, 0.62, 0.49, 1)
 theme_override_font_sizes/font_size = 9
@@ -271,6 +290,7 @@ text = "ЭФФЕКТЫ · НЕТ"
 autowrap_mode = 2
 
 [node name="ActiveUnitPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 0.0
@@ -298,6 +318,7 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="ActivePortrait" type="TextureRect" parent="ActiveUnitPanel/Content/UnitHeader"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(86, 102)
 layout_mode = 2
 expand_mode = 1
@@ -310,28 +331,33 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 2
 
 [node name="ActiveUnitLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "—"
 autowrap_mode = 2
 
 [node name="HealthLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "ОЗ 0/0"
 
 [node name="MovementLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+unique_name_in_owner = true
 visible = false
 layout_mode = 2
 text = "ОД 0/0"
 theme_override_font_sizes/font_size = 11
 
 [node name="MainActionLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "ДЕЙСТВИЕ ГОТОВО"
 visible = false
 
 [node name="CombatStatsLabel" type="Label" parent="ActiveUnitPanel/Content/UnitHeader/Stats"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.63, 0.35, 1)
 text = "УРОН 0 · ДАЛЬНОСТЬ 0"
@@ -345,6 +371,7 @@ text = "УКРЫТИЕ 0% · СОСТОЯНИЕ НОРМА"
 visible = false
 
 [node name="ActionPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -363,6 +390,7 @@ layout_mode = 2
 theme_override_constants/separation = 4
 
 [node name="ActionLabel" type="Label" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -382,6 +410,7 @@ theme_override_constants/h_separation = 6
 theme_override_constants/v_separation = 6
 
 [node name="MovementButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+unique_name_in_owner = true
 autowrap_mode = 3
 custom_minimum_size = Vector2(190, 64)
 layout_mode = 2
@@ -392,6 +421,7 @@ expand_icon = true
 tooltip_text = "Движение"
 
 [node name="BasicAttackButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+unique_name_in_owner = true
 autowrap_mode = 3
 custom_minimum_size = Vector2(190, 64)
 layout_mode = 2
@@ -402,6 +432,7 @@ expand_icon = true
 tooltip_text = "Выстрел"
 
 [node name="AbilityButtonTemplate" type="Button" parent="ActionPanel/Content/SkillButtons"]
+unique_name_in_owner = true
 autowrap_mode = 3
 visible = false
 custom_minimum_size = Vector2(190, 64)
@@ -412,6 +443,7 @@ expand_icon = true
 tooltip_text = "Способность"
 
 [node name="EndTurnButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
+unique_name_in_owner = true
 autowrap_mode = 3
 custom_minimum_size = Vector2(190, 64)
 layout_mode = 2
@@ -422,6 +454,7 @@ expand_icon = true
 tooltip_text = "Завершает ход"
 
 [node name="SpeedPanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 visible = false
 layout_mode = 1
 anchors_preset = 1
@@ -434,34 +467,38 @@ offset_bottom = 304.0
 grow_horizontal = 0
 z_index = 10
 
-[node name="Content" type="VBoxContainer" parent="SpeedPanel"]
+[node name="SettingsContent" type="VBoxContainer" parent="SpeedPanel"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="SettingsTitle" type="Label" parent="SpeedPanel/Content"]
+[node name="SettingsTitle" type="Label" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "НАСТРОЙКИ ИЗОБРАЖЕНИЯ"
 horizontal_alignment = 1
 
-[node name="ResolutionRow" type="HBoxContainer" parent="SpeedPanel/Content"]
+[node name="ResolutionRow" type="HBoxContainer" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ResolutionLabel" type="Label" parent="SpeedPanel/Content/ResolutionRow"]
+[node name="ResolutionLabel" type="Label" parent="SpeedPanel/SettingsContent/ResolutionRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "РАЗРЕШЕНИЕ"
 
-[node name="ResolutionOption" type="OptionButton" parent="SpeedPanel/Content/ResolutionRow"]
+[node name="ResolutionOption" type="OptionButton" parent="SpeedPanel/SettingsContent/ResolutionRow"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 32)
 layout_mode = 2
 
-[node name="FullscreenCheck" type="CheckButton" parent="SpeedPanel/Content"]
+[node name="FullscreenCheck" type="CheckButton" parent="SpeedPanel/SettingsContent"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "НА ВЕСЬ ЭКРАН"
 
-[node name="DisplayStatusLabel" type="Label" parent="SpeedPanel/Content"]
+[node name="DisplayStatusLabel" type="Label" parent="SpeedPanel/SettingsContent"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.63, 0.35, 1)
 theme_override_font_sizes/font_size = 9
@@ -469,62 +506,69 @@ text = "ТЕКУЩИЙ РЕЖИМ: —"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="SettingsSeparator" type="HSeparator" parent="SpeedPanel/Content"]
+[node name="SettingsSeparator" type="HSeparator" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 
-[node name="HealthSectionTitle" type="Label" parent="SpeedPanel/Content"]
+[node name="HealthSectionTitle" type="Label" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "ЗДОРОВЬЕ ПЕРСОНАЖЕЙ"
 horizontal_alignment = 1
 
-[node name="HealthAltCheck" type="CheckButton" parent="SpeedPanel/Content"]
+[node name="HealthAltCheck" type="CheckButton" parent="SpeedPanel/SettingsContent"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
 button_pressed = true
 text = "КОМПАКТНАЯ ПОЛОСКА HP"
 tooltip_text = "Без Alt — тонкая полоска без цифр. Удерживайте левый или правый Alt для обычной плашки с числами. Отключите для постоянного показа обычных плашек."
 
-[node name="HealthSectionHint" type="Label" parent="SpeedPanel/Content"]
+[node name="HealthSectionHint" type="Label" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.78, 0.63, 0.35, 1)
 theme_override_font_sizes/font_size = 10
 text = "Alt — HP с цифрами · выключено — всегда"
 horizontal_alignment = 1
 
-[node name="HealthSeparator" type="HSeparator" parent="SpeedPanel/Content"]
+[node name="HealthSeparator" type="HSeparator" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 
-[node name="SpeedLabel" type="Label" parent="SpeedPanel/Content"]
+[node name="SpeedLabel" type="Label" parent="SpeedPanel/SettingsContent"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "СКОРОСТЬ АНИМАЦИИ: 1x"
 horizontal_alignment = 1
 
-[node name="Buttons" type="HBoxContainer" parent="SpeedPanel/Content"]
+[node name="Buttons" type="HBoxContainer" parent="SpeedPanel/SettingsContent"]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="SpeedHalfButton" type="Button" parent="SpeedPanel/Content/Buttons"]
+[node name="SpeedHalfButton" type="Button" parent="SpeedPanel/SettingsContent/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "0,5x"
 
-[node name="Speed1Button" type="Button" parent="SpeedPanel/Content/Buttons"]
+[node name="Speed1Button" type="Button" parent="SpeedPanel/SettingsContent/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "1x"
 
-[node name="Speed2Button" type="Button" parent="SpeedPanel/Content/Buttons"]
+[node name="Speed2Button" type="Button" parent="SpeedPanel/SettingsContent/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "2x"
 
-[node name="Speed4Button" type="Button" parent="SpeedPanel/Content/Buttons"]
+[node name="Speed4Button" type="Button" parent="SpeedPanel/SettingsContent/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "4x"
 
 [node name="SkillsCaption" type="Label" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchor_top = 1.0
 anchor_bottom = 1.0

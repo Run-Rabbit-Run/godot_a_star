@@ -24,17 +24,18 @@ static func apply_to(root: Control) -> void:
 	theme.set_color("font_color", "TooltipLabel", IVORY)
 	theme.set_font_size("font_size", "TooltipLabel", 15)
 	root.theme = theme
-	for path: String in ["StrategistPanel", "ActiveUnitPanel", "ActionPanel", "TargetPanel", "SpeedPanel", "BattleLogPanel", "SystemPanel"]:
-		var container := root.get_node(path) as PanelContainer
+	# Parts are found by their unique names in the HUD scene, wherever the layout places them.
+	for part: String in ["%StrategistPanel", "%ActiveUnitPanel", "%ActionPanel", "%TargetPanel", "%SpeedPanel", "%BattleLogPanel", "%SystemPanel"]:
+		var container := root.get_node(part) as PanelContainer
 		container.add_theme_stylebox_override("panel", panel())
 	# Individual queue cards carry the frame, leaving unused queue space clear.
-	(root.get_node("TurnQueuePanel") as PanelContainer).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	(root.get_node("%TurnQueuePanel") as PanelContainer).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	for button: BaseButton in root.find_children("*", "BaseButton", true, false):
 		style_button(button)
-	for path: String in ["ActiveUnitPanel/Content/UnitHeader/Stats/ActiveUnitLabel", "StrategistPanel/Margin/Content/Info/RoundLabel", "TargetPanel/Content/TargetContent/TargetInfo/TargetNameLabel"]:
-		var label := root.get_node(path) as Label
+	for part: String in ["%ActiveUnitLabel", "%RoundLabel", "%TargetNameLabel"]:
+		var label := root.get_node(part) as Label
 		label.add_theme_color_override("font_color", Color("f4dfac"))
-	var action_label := root.get_node("ActionLabel") as Label
+	var action_label := root.get_node("%ActionLabel") as Label
 	action_label.add_theme_color_override("font_outline_color", Color("201a16"))
 	action_label.add_theme_constant_override("outline_size", 3)
 	action_label.add_theme_color_override("font_color", IVORY)

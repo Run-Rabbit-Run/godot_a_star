@@ -70,7 +70,7 @@ func display(document: UILayoutDocument) -> void:
 	], &"a")
 	if show_target:
 		_hud.show_target("Страж", load("res://features/battle/art/plateau_units/1.png"), "Противник", 60, 100, 12, 1, 3, 5, true)
-	(_hud.get_node("HUDRoot/SpeedPanel") as Control).visible = show_settings
+	_hud.set_settings_visible(show_settings)
 	await get_tree().process_frame
 	if not is_inside_tree() or revision != _revision:
 		return

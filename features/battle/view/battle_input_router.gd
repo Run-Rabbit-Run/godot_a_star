@@ -8,7 +8,7 @@ signal hex_selected(axial_cell: Vector2i)
 
 
 @onready var _terrain_layer: TileMapLayer = %TerrainLayer
-@onready var _hud_root: Control = get_node_or_null("../BattleUI/HUDRoot") as Control
+@onready var _hud := get_node_or_null("%BattleUI") as BattleHUD
 
 var _hex_grid: HexGrid
 var _hovered_hex := Vector2i.ZERO
@@ -37,14 +37,7 @@ func _process(_delta: float) -> void:
 
 	var hovered_control := get_viewport().gui_get_hovered_control()
 
-	if (
-		_hud_root != null
-		and hovered_control != null
-		and (
-			hovered_control == _hud_root
-			or _hud_root.is_ancestor_of(hovered_control)
-		)
-	):
+	if _hud != null and _hud.contains_control(hovered_control):
 		_clear_hover()
 		return
 

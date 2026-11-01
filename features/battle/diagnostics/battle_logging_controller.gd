@@ -27,7 +27,7 @@ func setup(session: BattleSession, hud: BattleHUD, controller: BattleController,
 	_logger.recording_failed.connect(_on_recording_failed)
 	var section := VBoxContainer.new()
 	section.name = "BattleFileLogging"
-	hud.get_node("HUDRoot/SpeedPanel/Content").add_child(section)
+	hud.add_settings_section(section)
 	_check = CheckButton.new()
 	_check.text = "ЗАПИСЫВАТЬ ЛОГ БОЯ В ФАЙЛ"
 	_check.add_theme_font_size_override("font_size", 11)

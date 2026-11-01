@@ -87,6 +87,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/ability_transaction_regressions.gd").new().run(self)
 	if only.is_empty() or only == "hex_propagation":
 		preload("res://features/battle/tests/hex_propagation_regressions.gd").new().run(self)
+	if only.is_empty() or only == "hud_layout":
+		await preload("res://features/battle/tests/hud_layout_regressions.gd").new().run(self)
 	if only.is_empty() or only == "atomic_files":
 		preload("res://features/battle/tests/atomic_file_regressions.gd").new().run(self)
 	if only.is_empty() or only == "rule_boundaries":
@@ -213,7 +215,7 @@ func _test_file_logging_ui() -> void:
 	var controller := screen.get_node("BattleMap/BattleController") as BattleController
 	var hud := screen.get_node("BattleMap/BattleUI") as BattleHUD
 	expect(controller.get_node_or_null("BattleLoggingController") == null, "Disabled flag creates no recorder subsystem")
-	expect(hud.get_node_or_null("HUDRoot/SpeedPanel/Content/BattleFileLogging") == null, "Disabled flag hides recording controls")
+	expect(hud.find_child("BattleFileLogging", true, false) == null, "Disabled flag hides recording controls")
 	var config_existed := FileAccess.file_exists(BattleLoggingController.CONFIG_PATH)
 	var original_config := FileAccess.get_file_as_string(BattleLoggingController.CONFIG_PATH) if config_existed else ""
 	var config := ConfigFile.new()
@@ -226,7 +228,7 @@ func _test_file_logging_ui() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	expect(flagged_screen.get_node_or_null("BattleMap/BattleController/BattleLoggingController") != null, "Enabled flag composes recorder subsystem")
-	expect(flagged_screen.get_node_or_null("BattleMap/BattleUI/HUDRoot/SpeedPanel/Content/BattleFileLogging") != null, "Enabled flag shows settings toggle")
+	expect(flagged_screen.find_child("BattleFileLogging", true, false) != null, "Enabled flag shows settings toggle")
 	flagged_screen.queue_free()
 	await get_tree().process_frame
 	ProjectSettings.set_setting(BattleLoggingController.FEATURE_SETTING, false)
@@ -234,7 +236,7 @@ func _test_file_logging_ui() -> void:
 	var logging := BattleLoggingController.new()
 	controller.add_child(logging)
 	logging.setup(controller.get("_battle_session"), hud, controller, directory)
-	var section := hud.get_node("HUDRoot/SpeedPanel/Content/BattleFileLogging")
+	var section := hud.find_child("BattleFileLogging", true, false)
 	var check := section.get_child(0) as CheckButton
 	expect(not check.button_pressed, "Recording initially off")
 	check.button_pressed = true

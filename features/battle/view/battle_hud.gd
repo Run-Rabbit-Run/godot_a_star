@@ -26,45 +26,47 @@ const COLOR_WOUNDED := Color(0.604, 0.451, 0.278, 1.0)
 const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 
 
-@onready var _strategist_panel: PanelContainer = $HUDRoot/StrategistPanel
-@onready var _active_unit_panel: PanelContainer = $HUDRoot/ActiveUnitPanel
-@onready var _turn_queue_panel: PanelContainer = $HUDRoot/TurnQueuePanel
-@onready var _target_panel: PanelContainer = $HUDRoot/TargetPanel
-@onready var _action_panel: PanelContainer = $HUDRoot/ActionPanel
-@onready var _system_panel: PanelContainer = $HUDRoot/SystemPanel
-@onready var _round_label: Label = $HUDRoot/StrategistPanel/Margin/Content/Info/RoundLabel
-@onready var _objective_label: Label = $HUDRoot/StrategistPanel/Margin/Content/Info/ObjectiveLabel
-@onready var _active_unit_label: Label = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/Stats/ActiveUnitLabel
-@onready var _active_portrait: TextureRect = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/ActivePortrait
-@onready var _health_label: Label = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/Stats/HealthLabel
-@onready var _movement_label: Label = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/Stats/MovementLabel
-@onready var _main_action_label: Label = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/Stats/MainActionLabel
-@onready var _combat_stats_label: Label = $HUDRoot/ActiveUnitPanel/Content/UnitHeader/Stats/CombatStatsLabel
-@onready var _target_placeholder: Label = $HUDRoot/TargetPanel/Content/TargetPlaceholder
-@onready var _target_content: HBoxContainer = $HUDRoot/TargetPanel/Content/TargetContent
-@onready var _target_portrait: TextureRect = $HUDRoot/TargetPanel/Content/TargetContent/TargetPortrait
-@onready var _target_name_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetNameLabel
-@onready var _target_faction_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetFactionLabel
-@onready var _target_health_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetHealthLabel
-@onready var _target_stats_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetStatsLabel
-@onready var _target_effects_label: Label = $HUDRoot/TargetPanel/Content/TargetContent/TargetInfo/TargetEffectsLabel
-@onready var _action_label: Label = $HUDRoot/ActionLabel
-@onready var _turn_order_container: HBoxContainer = $HUDRoot/TurnQueuePanel/Content/TurnOrderContainer
-@onready var _speed_panel: PanelContainer = $HUDRoot/SpeedPanel
-@onready var _speed_label: Label = $HUDRoot/SpeedPanel/Content/SpeedLabel
-@onready var _movement_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/MovementButton
-@onready var _basic_attack_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/BasicAttackButton
-@onready var _ability_button_template: Button = $HUDRoot/ActionPanel/Content/SkillButtons/AbilityButtonTemplate
-@onready var _settings_button: Button = $HUDRoot/SystemPanel/Content/SettingsButton
-@onready var _end_turn_button: Button = $HUDRoot/ActionPanel/Content/SkillButtons/EndTurnButton
-@onready var _speed_half_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/SpeedHalfButton
-@onready var _speed_1_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed1Button
-@onready var _speed_2_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed2Button
-@onready var _speed_4_button: Button = $HUDRoot/SpeedPanel/Content/Buttons/Speed4Button
-@onready var _resolution_option: OptionButton = $HUDRoot/SpeedPanel/Content/ResolutionRow/ResolutionOption
-@onready var _fullscreen_check: CheckButton = $HUDRoot/SpeedPanel/Content/FullscreenCheck
-@onready var _health_alt_check: CheckButton = $HUDRoot/SpeedPanel/Content/HealthAltCheck
-@onready var _display_status_label: Label = $HUDRoot/SpeedPanel/Content/DisplayStatusLabel
+@onready var _strategist_panel: PanelContainer = $"HUDRoot/%StrategistPanel"
+@onready var _active_unit_panel: PanelContainer = $"HUDRoot/%ActiveUnitPanel"
+@onready var _turn_queue_panel: PanelContainer = $"HUDRoot/%TurnQueuePanel"
+@onready var _target_panel: PanelContainer = $"HUDRoot/%TargetPanel"
+@onready var _action_panel: PanelContainer = $"HUDRoot/%ActionPanel"
+@onready var _system_panel: PanelContainer = $"HUDRoot/%SystemPanel"
+@onready var _round_label: Label = $"HUDRoot/%RoundLabel"
+@onready var _objective_label: Label = $"HUDRoot/%ObjectiveLabel"
+@onready var _active_unit_label: Label = $"HUDRoot/%ActiveUnitLabel"
+@onready var _active_portrait: TextureRect = $"HUDRoot/%ActivePortrait"
+@onready var _health_label: Label = $"HUDRoot/%HealthLabel"
+@onready var _movement_label: Label = $"HUDRoot/%MovementLabel"
+@onready var _main_action_label: Label = $"HUDRoot/%MainActionLabel"
+@onready var _combat_stats_label: Label = $"HUDRoot/%CombatStatsLabel"
+@onready var _target_placeholder: Label = $"HUDRoot/%TargetPlaceholder"
+@onready var _target_content: HBoxContainer = $"HUDRoot/%TargetContent"
+@onready var _target_portrait: TextureRect = $"HUDRoot/%TargetPortrait"
+@onready var _target_name_label: Label = $"HUDRoot/%TargetNameLabel"
+@onready var _target_faction_label: Label = $"HUDRoot/%TargetFactionLabel"
+@onready var _target_health_label: Label = $"HUDRoot/%TargetHealthLabel"
+@onready var _target_stats_label: Label = $"HUDRoot/%TargetStatsLabel"
+@onready var _target_effects_label: Label = $"HUDRoot/%TargetEffectsLabel"
+@onready var _action_label: Label = $"HUDRoot/%ActionLabel"
+@onready var _turn_order_container: HBoxContainer = $"HUDRoot/%TurnOrderContainer"
+@onready var _speed_panel: PanelContainer = $"HUDRoot/%SpeedPanel"
+@onready var _speed_label: Label = $"HUDRoot/%SpeedLabel"
+@onready var _movement_button: Button = $"HUDRoot/%MovementButton"
+@onready var _basic_attack_button: Button = $"HUDRoot/%BasicAttackButton"
+@onready var _ability_button_template: Button = $"HUDRoot/%AbilityButtonTemplate"
+@onready var _settings_button: Button = $"HUDRoot/%SettingsButton"
+@onready var _end_turn_button: Button = $"HUDRoot/%EndTurnButton"
+@onready var _speed_half_button: Button = $"HUDRoot/%SpeedHalfButton"
+@onready var _speed_1_button: Button = $"HUDRoot/%Speed1Button"
+@onready var _speed_2_button: Button = $"HUDRoot/%Speed2Button"
+@onready var _speed_4_button: Button = $"HUDRoot/%Speed4Button"
+@onready var _resolution_option: OptionButton = $"HUDRoot/%ResolutionOption"
+@onready var _fullscreen_check: CheckButton = $"HUDRoot/%FullscreenCheck"
+@onready var _health_alt_check: CheckButton = $"HUDRoot/%HealthAltCheck"
+@onready var _display_status_label: Label = $"HUDRoot/%DisplayStatusLabel"
+@onready var _settings_content: VBoxContainer = $"HUDRoot/%SettingsContent"
+@onready var _skills_caption: Label = $"HUDRoot/%SkillsCaption"
 var _objective_description := ""
 var _health_text := ""
 var _interaction_enabled := true
@@ -74,9 +76,9 @@ var _ability_action_available := false
 var _ability_buttons: Array[Button] = []
 var _ability_button_ids: Array[StringName] = []
 var _display_settings: BattleDisplaySettingsController
-@onready var _battle_log_button: Button = $HUDRoot/BattleLogButton
-@onready var _battle_log_panel: PanelContainer = $HUDRoot/BattleLogPanel
-@onready var _battle_log_entries: RichTextLabel = $HUDRoot/BattleLogPanel/Content/Entries
+@onready var _battle_log_button: Button = $"HUDRoot/%BattleLogButton"
+@onready var _battle_log_panel: PanelContainer = $"HUDRoot/%BattleLogPanel"
+@onready var _battle_log_entries: RichTextLabel = $"HUDRoot/%Entries"
 var _logged_round := 0
 
 
@@ -289,7 +291,7 @@ func show_objective(description: String) -> void:
 
 func show_active_unit(display_name: String) -> void:
 	_active_unit_label.text = display_name.to_upper()
-	$HUDRoot/SkillsCaption.text = "УМЕНИЯ · %s" % display_name.to_upper()
+	_skills_caption.text = "УМЕНИЯ · %s" % display_name.to_upper()
 
 
 func show_health(current: int, maximum: int) -> void:
@@ -443,17 +445,32 @@ func get_health_alt_check() -> CheckButton:
 
 
 func _on_settings_button_pressed() -> void:
-	_speed_panel.visible = not _speed_panel.visible
+	set_settings_visible(not _speed_panel.visible)
+
+
+func set_settings_visible(settings_visible: bool) -> void:
+	_speed_panel.visible = settings_visible
+
+
+## Whether the control belongs to the HUD, so the map should not react to the pointer over it.
+func contains_control(control: Control) -> bool:
+	return control != null and is_ancestor_of(control)
+
+
+## Adds controls of another screen part, such as file logging, to the settings menu.
+## Other parts never reach into the layout tree: its structure belongs to the HUD scene.
+func add_settings_section(section: Control) -> void:
+	_settings_content.add_child(section)
 
 
 ## Adds an action of the screen's owner, such as restarting or leaving the game, to the
 ## settings menu. It stays available during presentation and after the battle ends.
 func add_menu_action(text: String, action: Callable) -> Button:
-	var actions := _speed_panel.get_node_or_null("Content/MenuActions") as VBoxContainer
+	var actions := _settings_content.get_node_or_null("MenuActions") as VBoxContainer
 	if actions == null:
 		actions = VBoxContainer.new()
 		actions.name = "MenuActions"
-		_speed_panel.get_node("Content").add_child(actions)
+		add_settings_section(actions)
 	var button := Button.new()
 	button.name = "MenuAction%d" % actions.get_child_count()
 	button.text = text
