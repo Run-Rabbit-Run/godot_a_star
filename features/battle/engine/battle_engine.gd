@@ -17,11 +17,17 @@ func _init(p_state: BattleState, initialize := true) -> void:
 		return
 	_state.turn_service.start()
 	var initial_events: Array[BattleEvent] = []
-	HexStateService.propagate(_state.hex_grid, _state.hex_grid.get_cells(), initial_events)
+	# Starting terrain settles on a copy, so rules that never settle leave the map untouched.
+	var settled := _state.hex_grid.duplicate_grid()
+	_terminal_error = HexStateService.propagate(settled, settled.get_cells(), initial_events, _state.hex_propagation)
+	if _terminal_error.is_empty():
+		_state.hex_grid.replace_with(settled)
+	else:
+		initial_events.clear()
 	if not initial_events.is_empty():
 		_state.map_revision += 1
 
-	if get_outcome() == BattleOutcome.Value.IN_PROGRESS:
+	if _terminal_error.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		# Every starting occupant is already touching its terrain; expose each once.
 		var initial_ids := _state.unit_states.keys()
 		initial_ids.sort()
@@ -325,7 +331,8 @@ func _resolve_attack(command: AttackCommand) -> BattleResolution:
 	var result := _execute_attack(command, events)
 	if not result.is_successful:
 		return _rejected("Attack command was rejected.")
-	_finish_action_turn(command.attacker_id, events)
+	if _terminal_error.is_empty():
+		_finish_action_turn(command.attacker_id, events)
 	return _accepted(events)
 
 
@@ -504,10 +511,11 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction, &"", protection_hex_state)
 	for status: StringName in attacker.basic_attack_statuses:
 		UnitStatusService.apply(target, status, attacker.basic_attack_statuses[status], events)
-	events.append_array(DamageType.react(_state, target.hex, attacker.basic_attack_damage_type))
+	# The hit itself has landed: a reaction that cannot settle stops the battle.
+	_terminal_error = DamageType.react(_state, target.hex, attacker.basic_attack_damage_type, events)
 	var damage := health_before - target.health.current
-	if attacker.basic_attack_range == 1:
-		RetaliationService.respond(_state, attacker, target, events)
+	if attacker.basic_attack_range == 1 and _terminal_error.is_empty():
+		_terminal_error = RetaliationService.respond(_state, attacker, target, events)
 	return AttackResult.success(
 		attacker.unit_id,
 		target.unit_id,
@@ -517,7 +525,9 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 
 
 func _accepted(events: Array[BattleEvent]) -> BattleResolution:
-	_advance_defeated_active(events)
+	# After a terminal error no further rules run, not even skipping a defeated active unit.
+	if _terminal_error.is_empty():
+		_advance_defeated_active(events)
 	_state.state_revision += 1
 	var resolution := BattleResolution.success(
 		events,

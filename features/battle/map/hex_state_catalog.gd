@@ -98,17 +98,19 @@ static func combine(existing: StringName, incoming: StringName) -> StringName:
 	# No reactions of compound states are specified; the last applied state wins.
 	return incoming
 
+## State -> {neighbor state -> converted state}. The table must be acyclic: a conversion
+## never leads back to a state that converts its source again.
+const PROPAGATION := {
+	&"core:electrified_water": {&"core:water": &"core:electrified_water"},
+	&"core:plasma": {&"core:electricity": &"core:plasma", &"core:fire": &"core:plasma"},
+	&"core:electrified_acid": {&"core:acid": &"core:electrified_acid"},
+	&"core:boiling_acid": {&"core:water": &"core:boiling_acid", &"core:acid": &"core:boiling_acid"},
+	&"core:burning_oil": {&"core:water": &"core:boiling_acid", &"core:acid": &"core:boiling_acid"},
+}
+
+
 static func propagation(id: StringName) -> Dictionary:
-	match id:
-		&"core:electrified_water":
-			return {&"core:water": &"core:electrified_water"}
-		&"core:plasma":
-			return {&"core:electricity": &"core:plasma", &"core:fire": &"core:plasma"}
-		&"core:electrified_acid":
-			return {&"core:acid": &"core:electrified_acid"}
-		&"core:boiling_acid", &"core:burning_oil":
-			return {&"core:water": &"core:boiling_acid", &"core:acid": &"core:boiling_acid"}
-	return {}
+	return PROPAGATION.get(id, {})
 
 
 static func description(id: StringName) -> String:

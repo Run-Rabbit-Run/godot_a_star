@@ -14,6 +14,8 @@ var state_revision := 0
 var map_revision := 0
 ## A forecast or transaction copy: its owner discards it, so effects apply to it directly.
 var is_detached := false
+## Read-only propagation rules of this battle; the built-in catalog unless a test sets others.
+var hex_propagation: Dictionary = HexStateCatalog.PROPAGATION
 
 
 func _init(
@@ -60,6 +62,7 @@ func duplicate_for_prediction() -> BattleState:
 	copy.state_revision = state_revision
 	copy.map_revision = map_revision
 	copy.is_detached = true
+	copy.hex_propagation = hex_propagation
 	return copy
 
 

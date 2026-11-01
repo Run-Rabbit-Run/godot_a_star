@@ -56,7 +56,10 @@ static func apply(
 			var neighbor := hex + direction
 			if candidate.has_cell(neighbor) and not seeds.has(neighbor):
 				seeds.append(neighbor)
-	HexStateService.propagate(candidate, seeds, events)
+	# A batch whose reactions cannot settle is rejected whole: the candidate is discarded.
+	var propagation_error := HexStateService.propagate(candidate, seeds, events, state.hex_propagation)
+	if not propagation_error.is_empty():
+		return MapMutationApplicationResult.rejected(propagation_error)
 
 	# No-op batches keep revisions stable; duration refreshes publish an update.
 	if events.is_empty():

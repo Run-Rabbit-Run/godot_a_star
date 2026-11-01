@@ -8,12 +8,14 @@ const HEX_STATES := {
 }
 
 ## Hits react with existing terrain; only explicit terrain effects create new terrain.
-static func react(state: BattleState, hex: Vector2i, type: StringName) -> Array[BattleEvent]:
-	var events: Array[BattleEvent] = []
+## Appends the reaction's events; returns "" or why the map could not react.
+static func react(state: BattleState, hex: Vector2i, type: StringName, events: Array[BattleEvent]) -> String:
 	var existing := state.hex_grid.get_hex_state_id(hex)
 	# The damage-triggered matrix defines only base states. Repeated electric hits
 	# must not erase electrified water/acid or plasma produced by the first hit.
 	if not HEX_STATES.has(type) or existing not in [&"core:electricity", &"core:water", &"core:fire", &"core:oil", &"core:acid"]:
-		return events
+		return ""
 	var mutations: Array[MapMutation] = [MapMutation.apply_hex_state(hex, HEX_STATES[type])]
-	return MapMutationService.apply(state, mutations).events
+	var result := MapMutationService.apply(state, mutations)
+	events.append_array(result.events)
+	return result.rejection_reason

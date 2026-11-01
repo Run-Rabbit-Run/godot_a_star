@@ -26,17 +26,19 @@ static func apply_to_grid(grid: HexGrid, hex: Vector2i, incoming: StringName, ev
 		if previous in [&"core:fire", &"core:oil", &"core:acid"] and incoming in [&"core:fire", &"core:oil", &"core:acid"]:
 			explosions.append({"hex": hex, "state_id": result})
 
-static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[BattleEvent]) -> void:
+## Returns "" or the defect. Without cycles in the table a cell changes at most once per
+## state, so exceeding that bound means the rules cannot settle; the caller must then
+## discard the grid it propagated on.
+static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[BattleEvent], table: Dictionary = HexStateCatalog.PROPAGATION) -> String:
 	var pending: Array[Vector2i] = []
 	pending.assign(seeds)
 	pending.sort()
-	# Without cycles in the catalog a cell changes at most once per state; a cycle is a rules bug.
 	var conversions_left := grid.get_cells().size() * HexStateCatalog.RULES.size()
 	var index := 0
 	while index < pending.size():
 		var hex := pending[index]
 		index += 1
-		var rules := HexStateCatalog.propagation(grid.get_hex_state_id(hex))
+		var rules: Dictionary = table.get(grid.get_hex_state_id(hex), {})
 		for direction: Vector2i in HexGrid.DIRECTIONS:
 			var neighbor := hex + direction
 			if not grid.has_cell(neighbor) or grid.has_obstacle(neighbor):
@@ -44,11 +46,11 @@ static func propagate(grid: HexGrid, seeds: Array[Vector2i], events: Array[Battl
 			var previous := grid.get_hex_state_id(neighbor)
 			if rules.has(previous):
 				if conversions_left <= 0:
-					push_error("Hex state propagation exceeded its limit; the propagation rules contain a cycle.")
-					return
+					return "Hex state propagation did not settle: the propagation rules contain a cycle."
 				conversions_left -= 1
 				_set_state(grid, neighbor, rules[previous], events)
 				pending.append(neighbor)
+	return ""
 
 ## One tick per completed round, before any exposure in the next round.
 static func end_round(state: BattleState, events: Array[BattleEvent]) -> void:

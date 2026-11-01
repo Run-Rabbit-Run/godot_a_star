@@ -117,7 +117,9 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 		actor.pending_spear_return = {"hex": center, "ability_id": ability.id}
 	if ability.melee_attack:
 		for target_id: StringName in target_ids:
-			RetaliationService.respond(scratch, actor, scratch.unit_states[target_id], events)
+			var reaction_error := RetaliationService.respond(scratch, actor, scratch.unit_states[target_id], events)
+			if not reaction_error.is_empty():
+				return AbilityExecutionResult.failed(reaction_error, scratch == state)
 	if scratch != state:
 		state.adopt(scratch)
 	return AbilityExecutionResult.success(events)
