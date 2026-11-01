@@ -1,7 +1,7 @@
 extends Node
 
-const HexStatusPreview := preload("res://features/battle/view/hex_status_preview.gd")
-const DamageAbilityPreview := preload("res://features/battle/view/damage_ability_preview.gd")
+const HexStatusPreview := preload("res://tools/previews/hex_status_preview.gd")
+const DamageAbilityPreview := preload("res://tools/previews/damage_ability_preview.gd")
 
 var fixture = preload("res://features/battle/tests/regression_fixtures.gd").new()
 var checks := 0

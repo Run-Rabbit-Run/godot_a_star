@@ -1,8 +1,14 @@
 extends Node2D
 
 ## F6 visual authoring scene. Bodies stay until Replay, as in a battle.
+## One scene per source: the plateau package units or every image of the unit library.
+enum Source { PLATEAU_PACKAGE, UNIT_LIBRARY }
+
 const ACTOR := preload("res://features/battle/units/unit_actor.tscn")
-var _assets := UnitLibrary.asset_names()
+const PLATEAU_UNITS := ["sorokin", "ranger", "bastion", "guide", "carapace", "reaper", "spore", "sentry"]
+
+@export var source := Source.PLATEAU_PACKAGE
+var _ids: Array[String] = []
 var _bodies: Array[UnitActor] = []
 var _living: Array[UnitActor] = []
 var _tweens: Array[Tween] = []
@@ -12,10 +18,11 @@ var _running := false
 
 
 func _ready() -> void:
+	_ids.assign(PLATEAU_UNITS if source == Source.PLATEAU_PACKAGE else Array(UnitLibrary.asset_names()))
 	_fit()
 	get_viewport().size_changed.connect(_fit)
 	var background := Sprite2D.new()
-	background.texture = preload("res://features/battle/art/classic/plateau.png")
+	background.texture = preload("res://features/battle/art/plateau.png") if source == Source.PLATEAU_PACKAGE else preload("res://features/battle/art/classic/plateau.png")
 	background.centered = false
 	background.scale = ReferenceCanvas.SIZE / Vector2(1672, 941)
 	background.z_index = -1
@@ -45,25 +52,25 @@ func _ready() -> void:
 	living.button_pressed = true
 	living.toggled.connect(_toggle_living)
 	bar.add_child(living)
-	for index in range(_assets.size()):
+	for index in range(_ids.size()):
 		var actor := _create_actor(index, _origin(index) + Vector2(-94, 0))
 		_living.append(actor)
-		var label := Label.new()
-		label.text = String(_assets[index]).get_basename().trim_prefix("gt_")
-		label.position = _origin(index) + Vector2(-140, 52)
-		label.size = Vector2(280, 30)
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size", 16)
-		add_child(label)
+		add_child(_caption(index))
 	_replay()
 	_capture_if_requested()
 
 
 func _create_actor(index: int, at: Vector2) -> UnitActor:
-	var id: String = _assets[index]
-	var definition := UnitDefinition.new()
-	definition.display_name = id
-	var presentation := UnitLibrary.presentation_for(id)
+	var id := _ids[index]
+	var definition: UnitDefinition
+	var presentation: UnitPresentationDefinition
+	if source == Source.PLATEAU_PACKAGE:
+		definition = load("res://content/packages/plateau/%s.tres" % id) as UnitDefinition
+		presentation = load("res://content/packages/plateau/%s_presentation.tres" % id) as UnitPresentationDefinition
+	else:
+		definition = UnitDefinition.new()
+		definition.display_name = id
+		presentation = UnitLibrary.presentation_for(id)
 	var actor := ACTOR.instantiate() as UnitActor
 	add_child(actor)
 	actor.setup(StringName(id), definition, presentation, BattleFaction.Value.PLAYER, 100, 100)
@@ -71,7 +78,24 @@ func _create_actor(index: int, at: Vector2) -> UnitActor:
 	return actor
 
 
+func _caption(index: int) -> Label:
+	var label := Label.new()
+	if source == Source.PLATEAU_PACKAGE:
+		label.text = (load("res://content/packages/plateau/%s.tres" % _ids[index]) as UnitDefinition).display_name
+		label.position = _origin(index) + Vector2(-85, 75)
+	else:
+		label.text = _ids[index].get_basename().trim_prefix("gt_")
+		label.position = _origin(index) + Vector2(-140, 52)
+		label.size = Vector2(280, 30)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 16)
+	return label
+
+
+## The eight plateau units get roomy rows; the whole library is packed five per row.
 func _origin(index: int) -> Vector2:
+	if source == Source.PLATEAU_PACKAGE:
+		return Vector2(395 + (index % 4) * 376, 360 + (index / 4) * 390)
 	return Vector2(286 + (index % 5) * 355, 190 + (index / 5) * 175)
 
 
@@ -82,7 +106,7 @@ func _fit() -> void:
 func _draw() -> void:
 	if not _grid:
 		return
-	for index in range(_assets.size()):
+	for index in range(_ids.size()):
 		for offset: float in [-94.0, 0.0, 94.0]:
 			var polygon := PackedVector2Array()
 			for corner in range(7):
@@ -111,7 +135,7 @@ func _replay() -> void:
 		actor.queue_free()
 	_bodies.clear()
 	_tweens.clear()
-	for index in range(_assets.size()):
+	for index in range(_ids.size()):
 		_bodies.append(_create_actor(index, _origin(index)))
 	await get_tree().create_timer(0.65).timeout
 	for index in range(_bodies.size()):

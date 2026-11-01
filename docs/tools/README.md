@@ -9,6 +9,8 @@
 | Поле боя | `tools/battles/battle_editor.tscn` | [BATTLES.md](BATTLES.md) | `content/authored/battles` |
 | UI боя | `tools/battle_ui/battle_ui_editor.tscn` | [BATTLE_UI.md](BATTLE_UI.md) | `content/authored/ui`, изображения в `assets` внутри этой папки |
 
+Визуальные стенды для F6 лежат в `tools/previews/`: атаки (`combat_preview`), движение, смерть, состояния гексов и умения с типами урона. Они тоже не входят в сборку игры.
+
 `res://` обозначает корень проекта с `project.godot`. Полные пути показываются после сохранения; редактор юнитов также умеет открывать обе папки в проводнике. Данные предназначены для Git вместе с кодом игры.
 
 ## Создать и запустить свой бой
