@@ -175,36 +175,9 @@ func run(suite: Node) -> void:
 	var encoded: Dictionary = BattleLogSerializer.encode(UnitSnapshot.new(user))
 	suite.expect(encoded.has("pending_spear_return"), "Diagnostics include pending return state")
 
-func run_editor(suite: Node) -> void:
-	var skills: SkillLibrary = suite.fixture.skills()
-	var editor := preload("res://tools/units/unit_editor.tscn").instantiate() as UnitEditor
-	suite.add_child(editor)
-	await suite.get_tree().process_frame
-	var active: MenuButton = editor.get("_active_menu")
-	var passive: MenuButton = editor.get("_passive_menu")
-	suite.expect(active != null and passive != null, "Two ability dropdowns exist")
-	var popup := active.get_popup()
-	suite.expect(not popup.hide_on_checkable_item_selection, "Multiple selection leaves dropdown open")
-	for index in range(popup.item_count):
-		if popup.get_item_metadata(index) in ["core:spear_throw", "core:spear_sweep"]:
-			popup.index_pressed.emit(index)
-	var data: Dictionary = editor.get("_document")
-	suite.expect(data.abilities.has("core:spear_throw") and data.abilities.has("core:spear_sweep"), "Dropdown selects multiple active abilities")
-	editor.call("_undo_edit")
-	suite.expect((editor.get("_document") as Dictionary).abilities.size() == 1, "Dropdown selection supports undo")
-	editor.call("_redo_edit")
-	suite.expect((editor.get("_document") as Dictionary).abilities.size() == 2, "Dropdown selection supports redo")
-	for index in range(passive.get_popup().item_count):
-		if passive.get_popup().get_item_metadata(index) == "core:melee_retaliation":
-			passive.get_popup().index_pressed.emit(index)
-	suite.expect((editor.get("_document") as Dictionary).passives.has("core:melee_retaliation"), "Passive dropdown selects retaliation")
-	suite.expect(UnitLibrary.validate(editor.get("_document"), skills.catalog()).is_empty(), "Selected active and passive IDs validate")
-	editor.queue_free()
-	await suite.get_tree().process_frame
-
 
 func run_presentation(suite: Node) -> void:
-	var request := preload("res://tools/units/spear_preview.gd").create_request()
+	var request: BattleStartRequest = suite.fixture.spear_request()
 	var screen := preload("res://features/battle/battle_screen.tscn").instantiate() as BattleScreen
 	suite.expect(screen.setup(request), "Spear visual battle setup accepted")
 	suite.add_child(screen)

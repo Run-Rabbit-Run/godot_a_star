@@ -165,7 +165,8 @@ python tools/tests/run_tests.py --godot Z:/Godot/Godot_v4.7-stable_win64_console
 
 Как писать тесты:
 
-- новая группа регистрируется в существующем suite (`features/battle/tests/regression_suite.gd` или smoke), а минимальное число проверок в `run_tests.py` увеличивается вместе с ней;
+- новая группа регистрируется в существующем suite, а минимальное число проверок в `run_tests.py` увеличивается вместе с ней: игровая — в `features/battle/tests/regression_suite.gd` или smoke, проверка инструмента — в `tools/tests/tool_regression_suite.gd`;
+- тесты в `features/` не загружают `tools/`; группа живёт в отдельном файле `<тема>_regressions.gd` рядом с suite и запускается отдельно: `--script features/battle/tests/run_regressions.gd -- --only=<группа>` (для инструментов добавить `--suite=res://tools/tests/tool_regression_suite.gd`);
 - ядро тестировать без SceneTree; данные брать из фиксированных фикстур, а не из текущего выбора в `content/game_content.tres`;
 - проверять наблюдаемое поведение (события, состояние, результат), а не приватные детали, когда это возможно;
 - временные файлы создавать только в `user://` с уникальным именем и удалять после проверки.

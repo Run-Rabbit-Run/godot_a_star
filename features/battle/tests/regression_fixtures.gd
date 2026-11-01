@@ -41,3 +41,28 @@ func content() -> ContentLoadResult:
 
 func request(include_presentation := false) -> BattleStartRequest:
 	return ProjectBattleLoader.load_battle(GameContentSettings.read().content_packages, BATTLE_PATH, 7, include_presentation).request
+
+## The regression battle with the authored spear guard first, all sides under the player.
+## Shared with tools/units/spear_preview.tscn, so the regression and the manual stand agree.
+func spear_request() -> BattleStartRequest:
+	var loaded := ProjectBattleLoader.load_battle(GameContentSettings.read().content_packages, BATTLE_PATH, 7)
+	if loaded.request == null:
+		push_error(loaded.error_message)
+		return null
+	var snapshot := loaded.request.content_snapshot
+	var battle := snapshot.get_battle_definition(loaded.request.battle_id)
+	var positions: Array[Vector2i] = [Vector2i(1, 6), Vector2i(2, 6), Vector2i(1, 8), Vector2i(3, 6), Vector2i(4, 6), Vector2i(3, 5)]
+	battle.unit_placements[0].definition_id = &"custom_units:spear_guard"
+	var units: Array[UnitDefinition] = []
+	for index in range(battle.unit_placements.size()):
+		var placement := battle.unit_placements[index]
+		placement.start_hex = positions[index % positions.size()]
+		placement.ai_profile_override_id = &""
+		var unit := snapshot.get_unit_definition(placement.definition_id)
+		unit.base_stats.max_health = 100
+		units.append(unit)
+	for side: BattleSideDefinition in battle.sides:
+		side.control_source = BattleControlSource.Value.PLAYER
+		side.ai_profile_id = &""
+	loaded.request.content_snapshot = snapshot.with_battle_document(snapshot.get_map_definition(battle.map_id), battle, units)
+	return loaded.request

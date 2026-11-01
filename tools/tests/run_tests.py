@@ -15,8 +15,9 @@ root = Path(__file__).resolve().parents[2]
 logs = Path(tempfile.mkdtemp(prefix="a_star_tests_"))
 
 
-def godot_script(script: str) -> list[str]:
-    return [args.godot, "--headless", "--path", str(root), "--script", script]
+def godot_script(script: str, *user_args: str) -> list[str]:
+    command = [args.godot, "--headless", "--path", str(root), "--script", script]
+    return command + ["--", *user_args] if user_args else command
 
 
 def uncached_classes() -> list[str]:
@@ -48,7 +49,8 @@ suites = [
     ("tools/tests/check_scripts.gd", godot_script("tools/tests/check_scripts.gd"), r"Script compilation: (\d+) scripts, 0 failures", 208),
     ("features/battle/tests/hex_grid_smoke.gd", godot_script("features/battle/tests/hex_grid_smoke.gd"), r"Battle smoke passed \((\d+) checks\)", 93),
     ("tools/battles/tests/editor_smoke.gd", godot_script("tools/battles/tests/editor_smoke.gd"), r"Editor smoke passed \((\d+) checks\)", 121),
-    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1183),
+    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1110),
+    ("tools/tests/tool_regression_suite.gd", godot_script("features/battle/tests/run_regressions.gd", "--suite=res://tools/tests/tool_regression_suite.gd"), r"A_star tool regressions: (\d+) checks, 0 failures", 74),
     # GDScript cannot catch a runtime error, so this check raises exactly two on purpose.
     ("features/battle/tests/handler_crash_check.gd", godot_script("features/battle/tests/handler_crash_check.gd"), r"Handler crash check passed \((\d+) checks\)", 4, {"SCRIPT ERROR: Cannot call method 'call' on a null value.": 2}),
 ]

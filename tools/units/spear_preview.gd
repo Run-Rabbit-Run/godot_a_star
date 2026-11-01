@@ -52,28 +52,7 @@ func _ready() -> void:
 		get_tree().quit(error)
 
 static func create_request() -> BattleStartRequest:
-	var settings := GameContentSettings.read()
-	var loaded := ProjectBattleLoader.load_battle(settings.content_packages, "res://features/battle/tests/fixtures/regression_battle.json", 7)
-	if loaded.request == null:
-		push_error(loaded.error_message)
-		return null
-	var snapshot := loaded.request.content_snapshot
-	var battle := snapshot.get_battle_definition(loaded.request.battle_id)
-	var positions: Array[Vector2i] = [Vector2i(1, 6), Vector2i(2, 6), Vector2i(1, 8), Vector2i(3, 6), Vector2i(4, 6), Vector2i(3, 5)]
-	battle.unit_placements[0].definition_id = &"custom_units:spear_guard"
-	var units: Array[UnitDefinition] = []
-	for index in range(battle.unit_placements.size()):
-		var placement := battle.unit_placements[index]
-		placement.start_hex = positions[index % positions.size()]
-		placement.ai_profile_override_id = &""
-		var unit := snapshot.get_unit_definition(placement.definition_id)
-		unit.base_stats.max_health = 100
-		units.append(unit)
-	for side: BattleSideDefinition in battle.sides:
-		side.control_source = BattleControlSource.Value.PLAYER
-		side.ai_profile_id = &""
-	loaded.request.content_snapshot = snapshot.with_battle_document(snapshot.get_map_definition(battle.map_id), battle, units)
-	return loaded.request
+	return preload("res://features/battle/tests/regression_fixtures.gd").new().spear_request()
 
 ## Script-driven checks through the controller's ordinary ability/hex/end-turn handlers.
 func _exercise_battle() -> void:

@@ -1,12 +1,5 @@
-extends Node
-
-const HexStatusPreview := preload("res://tools/previews/hex_status_preview.gd")
-const DamageAbilityPreview := preload("res://tools/previews/damage_ability_preview.gd")
-
-var fixture = preload("res://features/battle/tests/regression_fixtures.gd").new()
-var checks := 0
-var failures: Array[String] = []
-var only := ""
+extends "res://features/battle/tests/check_suite.gd"
+## Game regressions. They never load tools/: tool checks live in tools/tests/tool_regression_suite.gd.
 
 
 ## Records how often the default area batch falls back to per-cell execution.
@@ -24,32 +17,18 @@ class CountingHexHandler extends AbilityEffectHandler:
 		var events: Array[BattleEvent] = []
 		return events
 
-func _ready() -> void:
-	for argument: String in OS.get_cmdline_user_args():
-		if argument.begins_with("--only="):
-			only = argument.trim_prefix("--only=")
-	call_deferred("_run")
-
-func expect(value: bool, message: String) -> void:
-	checks += 1
-	if not value:
-		failures.append(message)
-
 func _run() -> void:
-	if only.is_empty() or only == "skill_editor":
-		preload("res://features/battle/tests/skill_editor_regressions.gd").new().run(self)
-		await preload("res://features/battle/tests/skill_editor_regressions.gd").new().run_editor(self)
-	if only.is_empty() or only == "editor_ui":
-		preload("res://features/battle/tests/editor_ui_regressions.gd").new().run(self)
-		await preload("res://features/battle/tests/editor_ui_regressions.gd").new().run_editor(self)
+	if only.is_empty() or only == "skill_library":
+		preload("res://features/battle/tests/skill_library_regressions.gd").new().run(self)
+	if only.is_empty() or only == "authored_validation":
+		preload("res://features/battle/tests/authored_validation_regressions.gd").new().run(self)
 	if only.is_empty() or only == "spear":
 		preload("res://features/battle/tests/spear_regressions.gd").new().run(self)
-		await preload("res://features/battle/tests/spear_regressions.gd").new().run_editor(self)
 		await preload("res://features/battle/tests/spear_regressions.gd").new().run_presentation(self)
 	if only.is_empty() or only == "obstacles":
 		_test_obstacles()
-	if only.is_empty() or only == "obstacle_ui":
-		await _test_obstacle_ui()
+	if only.is_empty() or only == "obstacle_view":
+		await _test_obstacle_view()
 	if only.is_empty() or only == "geometry":
 		_test_geometry()
 	if only.is_empty() or only == "terrain_reactions":
@@ -105,20 +84,9 @@ func _run() -> void:
 		await preload("res://features/battle/tests/automatic_run_regressions.gd").new().run(self)
 	if only.is_empty() or only == "game_flow":
 		await preload("res://features/battle/tests/game_flow_regressions.gd").new().run(self)
-	if only.is_empty() or only == "editor":
-		await _test_editor()
 	if only.is_empty() or only == "review_fixes":
 		_test_review_fixes()
-	if only.is_empty() or only == "review_fixes_ui":
-		await _test_review_fixes_ui()
-	await get_tree().process_frame
-	await get_tree().process_frame
-	expect(checks > 0, "Requested test group exists and completed checks")
-	for failure: String in failures:
-		printerr("FAIL: ", failure)
-	print("A_star regressions: %d checks, %d failures" % [checks, failures.size()])
-	get_tree().create_timer(0.1).timeout.connect(get_tree().quit.bind(0 if failures.is_empty() else 1))
-	queue_free()
+	await _report("A_star regressions")
 
 func _test_file_logging() -> void:
 	var session := BattleSessionFactory.create(fixture.request()).session
@@ -1168,39 +1136,6 @@ func _test_presentation() -> void:
 	screen.queue_free()
 	await get_tree().process_frame
 
-func _test_editor() -> void:
-	var editor := (load("res://tools/battles/battle_editor.tscn") as PackedScene).instantiate() as BattleEditorShell
-	get_tree().root.add_child(editor)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var document: BattleDocument = editor.get("_document")
-	expect(document != null, "Editor loads configured document")
-	if document != null:
-		expect(not editor.has_unsaved_changes(), "Loaded editor document is clean")
-		var original_name := document.battle_definition.primary_objective.description
-		document.battle_definition.primary_objective.description = "Unsaved change"
-		var called := [false]
-		editor.call("_guard_discard", func() -> void: called[0] = true)
-		expect(not called[0] and editor.has_unsaved_changes(), "Unsaved document is not replaced before confirmation")
-		editor.call("_confirm_discard")
-		expect(called[0], "Confirmed discard executes pending action")
-		document.battle_definition.primary_objective.description = original_name
-		var occupied := document.battle_definition.unit_placements[0].start_hex
-		editor.call("_select_hex", occupied)
-		(editor.get("_traversable_check") as CheckButton).button_pressed = false
-		editor.call("_apply_selected_hex")
-		expect((editor.call("_find_cell", occupied) as BattleMapCellDefinition).traversable, "Editor cannot block occupied cell")
-		editor.set("_document", null)
-		(editor.get("_side_option") as OptionButton).clear()
-		editor.call("_reload_unit_library")
-		expect((editor.get("_side_option") as OptionButton).item_count > 0, "Recovery populates sides")
-		var settings := GameContentSettings.read()
-		var expected := BattleDocumentSerializer.load_result(settings.battle_document_path).document
-		expect((editor.get("_document") as BattleDocument).document_id == expected.document_id, "Recovery loads configured document rather than debug battle")
-	editor.queue_free()
-	await get_tree().process_frame
-
-
 func _test_properties() -> void:
 	for seed in range(30):
 		var rng := RandomNumberGenerator.new()
@@ -1295,31 +1230,6 @@ func _test_review_fixes() -> void:
 		expect(first_copy != second_copy and first_copy.actor_texture == second_copy.actor_texture, "Presentation copies share imported textures")
 		expect(second_copy.visible_rect() == bounds and UnitPresentationDefinition._alpha_bounds_by_texture.size() == cached, "Presentation copies reuse texture alpha bounds")
 
-	var hex_preview := HexStatusPreview.create_request()
-	expect(hex_preview != null, "Hex status preview request builds")
-	if hex_preview != null:
-		var snapshot := hex_preview.content_snapshot
-		var battle := snapshot.get_battle_definition(hex_preview.battle_id)
-		var map := snapshot.get_map_definition(battle.map_id)
-		var states_on_starts := 0
-		for placement: UnitPlacementDefinition in battle.unit_placements:
-			for cell: BattleMapCellDefinition in map.cells:
-				if cell.hex == placement.start_hex and not cell.hex_state_id.is_empty():
-					states_on_starts += 1
-		var first_unit := snapshot.get_unit_definition(battle.unit_placements[0].definition_id)
-		expect(states_on_starts == battle.unit_placements.size(), "Hex status preview puts a state under every unit")
-		expect(first_unit.base_stats.armor_levels == 3 and first_unit.ability_ids.has(&"core:create_fire"), "Hex status preview applies armor and creation abilities")
-		expect(BattleSessionFactory.create(hex_preview).is_successful, "Hex status preview battle starts")
-
-	var damage_preview := DamageAbilityPreview.create_request()
-	expect(damage_preview != null, "Damage preview request builds")
-	if damage_preview != null:
-		var snapshot := damage_preview.content_snapshot
-		var battle := snapshot.get_battle_definition(damage_preview.battle_id)
-		var unit := snapshot.get_unit_definition(battle.unit_placements[0].definition_id)
-		expect(snapshot.get_ability_definition(&"core:laser").initial_cooldown_turns == 1 and unit.ability_ids.has(&"core:laser") and battle.unit_placements.back().placement_id == &"preview:turret", "Damage preview applies its overrides")
-		expect(BattleSessionFactory.create(damage_preview).is_successful, "Damage preview battle starts")
-
 
 func _review_campaign_package(broken: bool) -> ContentPackage:
 	var package := ContentPackage.new()
@@ -1363,57 +1273,6 @@ func _review_transition(outcome: ScenarioTransitionDefinition.Outcome, target: S
 
 
 ## Editor regressions: drawing cache, window closing with an embedded unit editor, stopped trials.
-func _test_review_fixes_ui() -> void:
-	var editor := (load("res://tools/battles/battle_editor.tscn") as PackedScene).instantiate() as BattleEditorShell
-	get_tree().root.add_child(editor)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var document: BattleDocument = editor.get("_document")
-	expect(document != null, "Editor loads configured document for review checks")
-	if document == null:
-		editor.queue_free()
-		await get_tree().process_frame
-		return
-
-	var view := editor.get("_view") as EditorBattleView
-	var definition_id := document.battle_definition.unit_placements[0].definition_id
-	var presentation: UnitPresentationDefinition = view.call("_presentation_for", definition_id)
-	expect(presentation != null and view.call("_presentation_for", definition_id) == presentation, "Editor drawing resolves presentations once per snapshot")
-
-	editor.call("_open_unit_editor")
-	await get_tree().process_frame
-	var unit_editor := editor.get("_unit_editor") as UnitEditor
-	expect(unit_editor != null, "Battle editor tracks the embedded unit editor")
-	if unit_editor != null:
-		var draft: Dictionary = unit_editor.get("_document")
-		draft["name"] = "Unsaved review draft"
-		var unit_confirm := unit_editor.get("_confirm") as ConfirmationDialog
-		unit_editor.notification(NOTIFICATION_WM_CLOSE_REQUEST)
-		expect(not unit_confirm.visible, "Embedded unit editor leaves window closing to its host")
-		editor.request_quit()
-		expect(unit_confirm.visible and not (editor.get("_discard_dialog") as ConfirmationDialog).visible, "Closing the window asks the embedded unit editor first")
-		unit_confirm.hide()
-		unit_editor.set("_pending", Callable())
-		unit_editor.set("_document", (unit_editor.get("_saved") as Dictionary).duplicate(true))
-		unit_editor.call("_leave")
-		await get_tree().process_frame
-		expect(editor.get("_unit_editor") == null, "Closed unit editor is released")
-
-	editor.call("_start_trial")
-	var trial := editor.get("_trial_screen") as BattleScreen
-	expect(trial != null, "Trial starts from the configured document")
-	if trial != null:
-		if not trial.has_started():
-			await trial.battle_started
-		trial.battle_failed.emit("Injected runtime failure")
-		var layer := editor.get("_trial_return_layer") as CanvasLayer
-		expect(editor.get("_trial_screen") == trial and layer != null and layer.has_node("TrialError"), "Stopped trial stays visible with its error")
-		editor.call("_return_from_trial")
-		expect((editor.get("_status") as Label).text.contains("остановлен ошибкой"), "Editor status reports the stopped trial")
-	editor.queue_free()
-	await get_tree().process_frame
-
-
 func _test_obstacles() -> void:
 	var cells: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0), Vector2i(4, 0), Vector2i(5, 0)]
 	var obstacle := BattleObstacleDefinition.new()
@@ -1467,7 +1326,7 @@ func _test_obstacles() -> void:
 	var propagation: Array[BattleEvent] = []
 	HexStateService.propagate(grid, [Vector2i.ZERO], propagation)
 	expect(grid.get_hex_state_id(Vector2i(1, 0)).is_empty(), "Propagation cannot give obstacle a state")
-	# Document round trip and undo/redo use exactly the same resource definition.
+	# A document with an obstacle survives its JSON round trip with the same resource definition.
 	var map := BattleMapDefinition.new()
 	map.id = &"test:map"
 	for hex: Vector2i in cells:
@@ -1476,9 +1335,8 @@ func _test_obstacles() -> void:
 	battle.id = &"test:battle"
 	battle.map_id = map.id
 	var document := BattleDocument.new(&"test:document", map, battle)
-	var history := EditorCommandHistory.new()
 	obstacle.destructible = true
-	expect(history.execute(EditCommand.put_obstacle(obstacle), document), "Place obstacle through editor command")
+	document.map_definition.obstacles.append(obstacle.duplicate(true))
 	var encoded := BattleDocumentSerializer.to_dictionary(document)
 	var loaded := BattleDocumentSerializer.from_dictionary(encoded)
 	expect(loaded != null and loaded.map_definition.obstacles.size() == 1, "Obstacle JSON round trip")
@@ -1486,17 +1344,6 @@ func _test_obstacles() -> void:
 	expect(BattleMapFactory.create_hex_grid(loaded.map_definition).has_obstacle(Vector2i(2, 0)), "Saved document builds obstacle in ordinary map factory")
 	encoded.map.obstacles[0].hexes = [["bad", 0]]
 	expect(BattleDocumentSerializer.from_dictionary(encoded) == null, "Malformed obstacle coordinate rejected structurally")
-	expect(history.undo(document) and document.map_definition.obstacles.is_empty(), "Undo obstacle placement")
-	expect(history.redo(document) and document.map_definition.obstacles.size() == 1, "Redo obstacle placement")
-	var baseline := BattleDocumentSerializer.to_dictionary(document)
-	expect(not history.execute(EditCommand.put_obstacle(overlap), document) and baseline == BattleDocumentSerializer.to_dictionary(document), "Rejected overlap leaves entire document unchanged")
-	expect(not history.execute(EditCommand.remove_hex(Vector2i(1, 0)), document), "Editor cannot delete part of obstacle")
-	var changed := document.map_definition.cells[1].duplicate(true) as BattleMapCellDefinition
-	changed.hex_state_id = &"core:fire"
-	changed.movement_cost = HexStateCatalog.get_movement_cost(changed.hex_state_id)
-	expect(not history.execute(EditCommand.update_hex(changed), document), "Editor cannot paint state over obstacle")
-	expect(history.execute(EditCommand.remove_obstacle(obstacle.id), document), "Delete obstacle as one command")
-	expect(history.undo(document) and document.map_definition.obstacles.size() == 1, "Undo restores whole obstacle")
 	# Attack consumes one action, rejects invalid attempts, frees all cells after destruction.
 	var player := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	var enemy := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(5, 0))
@@ -1538,35 +1385,8 @@ func _test_obstacles() -> void:
 	expect(command is AttackObstacleCommand and session.step(command).accepted, "AI attacks a blocking barrier even after movement is exhausted")
 
 
-func _test_obstacle_ui() -> void:
-	var editor := (load("res://tools/battles/battle_editor.tscn") as PackedScene).instantiate() as BattleEditorShell
-	get_tree().root.add_child(editor)
-	await get_tree().process_frame
-	editor.call("_create_new_document")
+func _test_obstacle_view() -> void:
 	var origin := HexCoordinateMapper.offset_to_axial(Vector2i(4, 4))
-	var document: BattleDocument = editor.get("_document")
-	editor.call("_paint_state", origin, &"core:fire")
-	(editor.get("_obstacle_size") as SpinBox).value = 4
-	(editor.get("_obstacle_destructible") as CheckButton).button_pressed = true
-	(editor.get("_obstacle_hp") as SpinBox).value = 12
-	editor.call("_select_tool", EditorBattleView.Tool.PAINT_OBSTACLE)
-	editor.call("_on_hex_activated", origin)
-	expect(document.map_definition.obstacles.size() == 1 and document.map_definition.obstacles[0].hexes.size() == 4, "Editor obstacle brush places whole configured footprint")
-	expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Obstacle placement clears painted state")
-	editor.call("_undo")
-	expect(document.map_definition.obstacles.is_empty() and (editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id == &"core:fire", "Undo restores state under removed obstacle")
-	editor.call("_redo")
-	editor.call("_select_hex", origin + Vector2i(2, 0))
-	expect((editor.get("_obstacle_size") as SpinBox).value == 4 and (editor.get("_obstacle_hp") as SpinBox).value == 12, "Selecting any occupied hex loads shared obstacle properties")
-	(editor.get("_obstacle_size") as SpinBox).value = 2
-	editor.call("_apply_selected_obstacle")
-	expect(document.map_definition.obstacles[0].hexes.size() == 2 and document.map_definition.obstacles[0].hexes[0] == origin, "Updating obstacle from middle hex preserves its anchor")
-	editor.call("_paint_state", origin, &"core:water")
-	expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Editor state brush skips obstacles")
-	editor.call("_on_hex_erased", origin + Vector2i(1, 0))
-	expect(document.map_definition.obstacles.is_empty(), "Right click deletes whole footprint")
-	editor.queue_free()
-	await get_tree().process_frame
 	var request := fixture.request(true)
 	var screen := (load("res://features/battle/battle_screen.tscn") as PackedScene).instantiate() as BattleScreen
 	screen.setup(request)
