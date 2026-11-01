@@ -79,16 +79,22 @@ func _check_embedded_editors(suite: Node) -> void:
 		suite.expect(editor.get("_unit_editor") == null, "Closed unit editor is released")
 
 	editor.call("_start_trial")
-	var trial := editor.get("_trial_screen") as BattleScreen
+	var runner := editor.get("_trial") as EditorTrialRunner
+	var trial := runner.screen
 	suite.expect(trial != null, "Trial starts from the configured document")
 	if trial != null:
 		if not trial.has_started():
 			await trial.battle_started
 		trial.battle_failed.emit("Injected runtime failure")
-		var layer := editor.get("_trial_return_layer") as CanvasLayer
-		suite.expect(editor.get("_trial_screen") == trial and layer != null and layer.has_node("TrialError"), "Stopped trial stays visible with its error")
+		var layer := runner.return_layer
+		suite.expect(runner.screen == trial and layer != null and layer.has_node("TrialError"), "Stopped trial stays visible with its error")
 		editor.call("_return_from_trial")
 		suite.expect((editor.get("_status") as Label).text.contains("остановлен ошибкой"), "Editor status reports the stopped trial")
+	var editor_ui := editor.get("_ui") as Control
+	editor.call("_start_trial")
+	suite.expect(runner.is_running() and not editor_ui.visible, "A running trial covers the editor")
+	editor.call("_return_from_trial")
+	suite.expect(not runner.is_running() and editor_ui.visible and (editor.get("_status") as Label).text.begins_with("Пробный бой завершён"), "Returning from a trial shows the editor and reports the end")
 	editor.queue_free()
 	await suite.get_tree().process_frame
 

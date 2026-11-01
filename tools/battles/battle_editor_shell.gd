@@ -4,6 +4,8 @@ extends Control
 
 
 const DEFAULT_DRAFT_FILENAME := "battle_editor_draft.json"
+## Loaded with the editor: loading the battle classes this early keeps scripts from leaking at exit
+## (docs/dev/GOTCHAS.md «Godot 4.7»).
 const BATTLE_SCREEN_SCENE := preload("res://features/battle/battle_screen.tscn")
 const NO_HEX := Vector2i(999999, 999999)
 
@@ -61,15 +63,12 @@ var _has_selected_hex := false
 var _next_placement_number := 1
 var _current_document_path := ""
 var _activate_after_save := false
-var _trial_return_layer: CanvasLayer
-var _trial_screen: BattleScreen
+var _trial := EditorTrialRunner.new()
 var _unit_editor: UnitEditor
 var _skill_editor: SkillEditor
 var _discard_dialog: ConfirmationDialog
 var _pending_discard_action: Callable
 var _saved_document: Dictionary = {}
-var _trial_result: BattleResult
-var _trial_error := ""
 ## Names and portraits by definition ID for one snapshot; snapshot getters return deep copies.
 var _unit_info: Dictionary[StringName, Dictionary] = {}
 var _unit_info_snapshot: ContentSnapshot
@@ -80,6 +79,8 @@ var battles_directory := GameContentSettings.BATTLES
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
+	_trial.setup(self, _ui, BATTLE_SCREEN_SCENE)
+	_trial.returned.connect(_set_status)
 	get_tree().auto_accept_quit = false
 	_discard_dialog = EditorUi.confirm_discard(self, "Есть несохранённые изменения поля боя. Отбросить их?", _confirm_discard)
 	_discard_dialog.theme = EditorUi.theme()
@@ -721,7 +722,7 @@ func _clear_selection() -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not _ui.visible or _trial_screen != null:
+	if not _ui.visible or _trial.is_running():
 		return
 	if event.is_action_pressed("ui_cancel"):
 		_clear_selection()
@@ -1245,7 +1246,7 @@ func _start_trial() -> void:
 	if _document == null or _snapshot == null:
 		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
 		return
-	if _trial_screen != null:
+	if _trial.is_running():
 		return
 	var request := _document.create_start_request(_snapshot, trial_seed)
 
@@ -1255,78 +1256,13 @@ func _start_trial() -> void:
 		_set_status("Пробный запуск заблокирован ошибками документа.", EditorUi.Severity.ERROR)
 		return
 
-	_trial_screen = BATTLE_SCREEN_SCENE.instantiate() as BattleScreen
-
-	_trial_screen.show_failure_message = false
-	if not _trial_screen.setup(request):
-		var error := _trial_screen.initialization_error
-		_trial_screen.free()
-		_trial_screen = null
-		_set_status("Пробный запуск отклонён: %s" % error, EditorUi.Severity.ERROR)
-		return
-
-	_trial_screen.battle_finished.connect(_on_trial_finished)
-	_trial_screen.battle_failed.connect(_on_trial_failed)
-	_ui.visible = false
-	add_child(_trial_screen)
-	_trial_return_layer = CanvasLayer.new()
-	_trial_return_layer.layer = 100
-	add_child(_trial_return_layer)
-	var back := EditorUi.button("← Вернуться в редактор", _return_from_trial)
-	back.theme = EditorUi.theme()
-	back.position = Vector2(20, 12)
-	_trial_return_layer.add_child(back)
-
-
-func _on_trial_finished(result: BattleResult) -> void:
-	# The battle screen keeps showing the outcome until the author returns.
-	# The editor status is hidden meanwhile, so the outcome is reported on return.
-	_trial_result = result
-
-
-func _on_trial_failed(message: String) -> void:
-	if _trial_screen == null or not _trial_screen.has_started():
-		_return_from_trial()
-		_set_status("Пробный бой не запущен: %s" % message, EditorUi.Severity.ERROR)
-		return
-	# A battle that stopped mid-play stays visible for diagnosis until the author returns.
-	_trial_error = message
-	var label := Label.new()
-	label.name = "TrialError"
-	label.text = "Бой остановлен из-за ошибки:\n%s" % message
-	label.position = Vector2(20, 60)
-	label.custom_minimum_size.x = 850
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_color_override("font_color", EditorUi.ERROR)
-	_trial_return_layer.add_child(label)
+	var error := _trial.start(request)
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.ERROR)
 
 
 func _return_from_trial() -> void:
-	if _trial_screen == null:
-		return
-
-	if is_instance_valid(_trial_return_layer):
-		_trial_return_layer.queue_free()
-
-	_trial_return_layer = null
-	_trial_screen.queue_free()
-	_trial_screen = null
-	_ui.visible = true
-	var outcome := ""
-
-	if _trial_result != null:
-		outcome = " (%s)" % (
-			"победа"
-			if _trial_result.outcome == BattleOutcome.Value.VICTORY
-			else "поражение"
-		)
-
-	_trial_result = null
-	if not _trial_error.is_empty():
-		_set_status("Пробный бой остановлен ошибкой: %s; BattleDocument не изменён." % _trial_error, EditorUi.Severity.ERROR)
-		_trial_error = ""
-		return
-	_set_status("Пробный бой завершён%s; BattleDocument не изменён." % outcome)
+	_trial.return_to_editor()
 
 
 func _find_cell(hex: Vector2i) -> BattleMapCellDefinition:

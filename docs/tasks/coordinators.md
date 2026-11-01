@@ -27,7 +27,7 @@
 - [x] `BattleController`: выбор действия игрока (режим, выбранное умение, цели, поиск движения, подсветки, курсор, сборка команды по клику) → `PlayerActionSelection`.
 - [x] `BattleController`: панель активного юнита и очередь ходов из снимков сессии → отдельный presenter HUD.
 - [ ] `BattleEditorShell`: файловый workflow документа (новый, открыть, сохранить, сохранить как, библиотека боёв, назначение стартовым, экспорт, защита несохранённого) → отдельный модуль.
-- [ ] `BattleEditorShell`: пробный бой (запуск, ошибка, возврат) → отдельный модуль.
+- [x] `BattleEditorShell`: пробный бой (запуск, ошибка, возврат) → `EditorTrialRunner`.
 - [ ] `BattleEditorShell`: операции карты (гексы, состояния, препятствия, расстановки) → отдельный модуль, если после предыдущих шагов shell остаётся смешанным.
 - [ ] Обновить «Компоненты», «Редактор поля» и строки STATUS.md о размерах координаторов; удалить этот файл.
 
@@ -37,4 +37,4 @@
 
 ## Передача
 
-Сессия 1: `BattleController` разделён (842 → около 550 строк): `PlayerActionSelection`, `ActiveUnitHudPresenter`, регрессия `player_selection`. Следующий шаг — файловый workflow `BattleEditorShell`.
+Сессия 1: `BattleController` разделён (842 → около 550 строк): `PlayerActionSelection`, `ActiveUnitHudPresenter`, регрессия `player_selection`. Пробный бой редактора вынесен в `EditorTrialRunner` (shell ≈1450 строк); `preload` сцены боя оставлен в shell из-за утечки скриптов (GOTCHAS.md). Следующий шаг — правила правки карты и файловый workflow `BattleEditorShell`.
