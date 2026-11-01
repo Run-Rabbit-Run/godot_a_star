@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://features/battle/battle_screen.gd" id="1_screen"]
-[ext_resource type="PackedScene" path="res://battle_map.tscn" id="2_map"]
+[ext_resource type="PackedScene" path="res://features/battle/battle_map.tscn" id="2_map"]
 
 [node name="BattleScreen" type="Node"]
 script = ExtResource("1_screen")
