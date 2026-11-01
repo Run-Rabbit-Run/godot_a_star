@@ -20,6 +20,7 @@ func run(suite: Node) -> void:
 	var fixture: Fixtures = suite.fixture
 	_check_obstacle_damage_belongs_to_handlers(suite, fixture)
 	_check_session_answers_rule_questions(suite, fixture)
+	await _check_delivery_comes_from_presentation(suite, fixture)
 
 
 func _check_obstacle_damage_belongs_to_handlers(suite: Node, fixture: Fixtures) -> void:
@@ -92,6 +93,70 @@ func _check_session_answers_rule_questions(suite: Node, fixture: Fixtures) -> vo
 			agrees = agrees and engine.fork_for_prediction().execute(AttackObstacleCommand.new(user.unit_id, hex)).accepted == attackable.has(hex)
 	suite.expect(agrees, "The engine accepts an obstacle attack exactly on the hexes the session reports")
 	suite.expect(session.get_attackable_obstacle_hexes(&"enemy").is_empty(), "A unit that is not active can attack no obstacle")
+
+
+## The queue picks the landing spear and the beam from presentation data, never from rules:
+## a line ability may be a projectile, a hex ability may be a beam or a landing weapon.
+func _check_delivery_comes_from_presentation(suite: Node, fixture: Fixtures) -> void:
+	var packages: Array[ContentPackage] = [load("res://content/packages/core/core_package.tres")]
+	var core := ContentLoader.load_packages(packages).snapshot
+	var deliveries := {}
+	for id: StringName in [&"core:spear_throw", &"core:laser", &"core:spear_sweep", &"core:spear_pin"]:
+		var presentation := core.get_ability_presentation_definition(core.get_ability_definition(id).presentation_id)
+		deliveries[id] = presentation.delivery if presentation != null else -1
+	var kinds := AbilityPresentationDefinition.Delivery
+	suite.expect(deliveries == {&"core:spear_throw": kinds.RETURNING, &"core:laser": kinds.BEAM, &"core:spear_sweep": kinds.PROJECTILE, &"core:spear_pin": kinds.PROJECTILE}, "Core skills keep their look through presentation data: %s" % str(deliveries))
+
+	var screen := preload("res://features/battle/battle_screen.tscn").instantiate() as BattleScreen
+	suite.expect(screen.setup(fixture.request(true)), "Presentation fixture battle starts")
+	suite.add_child(screen)
+	var controller: BattleController = screen.get("_battle_controller")
+	for _frame in range(240):
+		await suite.get_tree().process_frame
+		if controller.get("_is_initialized") and not controller.get("_is_presenting"):
+			break
+	var queue: BattlePresentationQueue = controller.get("_presentation_queue")
+	var views: BattleUnitViewRegistry = controller.get("_unit_views")
+	var map: BattleMapView = controller.get("_map_view")
+	queue.set_speed(4.0)
+	var abilities: Array[AbilityDefinition] = []
+	var presentations: Array[AbilityPresentationDefinition] = []
+	var cases := {&"test:line_shot": [AbilityDefinition.TargetMode.LINE, kinds.PROJECTILE], &"test:hex_beam": [AbilityDefinition.TargetMode.HEX, kinds.BEAM], &"test:hex_lob": [AbilityDefinition.TargetMode.HEX, kinds.RETURNING]}
+	for id: StringName in cases:
+		var ability: AbilityDefinition = fixture.ability(id, cases[id][0])
+		ability.presentation_id = StringName("%s_look" % id)
+		abilities.append(ability)
+		var look := AbilityPresentationDefinition.new()
+		look.id = ability.presentation_id
+		look.delivery = cases[id][1]
+		presentations.append(look)
+	var battles: Array[BattleDefinition] = []
+	var maps: Array[BattleMapDefinition] = []
+	var units: Array[UnitDefinition] = []
+	var profiles: Array[AIProfileDefinition] = []
+	var races: Array[RaceDefinition] = []
+	var scenarios: Array[ScenarioDefinition] = []
+	var campaigns: Array[CampaignDefinition] = []
+	var unit_looks: Array[UnitPresentationDefinition] = []
+	queue.configure(ContentSnapshot.new(battles, maps, units, profiles, races, abilities, scenarios, campaigns, null, null, unit_looks, presentations), views)
+	var user_id: StringName = views.actors.keys()[0]
+	var user: UnitActor = views.actors[user_id]
+	var session: BattleSession = controller.get("_battle_session")
+	var center := session.get_unit(user_id).hex + Vector2i(1, 0)
+	var cells: Array[Vector2i] = [center]
+	var drawn := {}
+	for id: StringName in cases:
+		await queue.call("_present_area_ability", AreaAbilityUsedEvent.new(user_id, id, center, cells), views.actors, map)
+		drawn[id] = [map.get_node_or_null("PiercingBeam") != null, (queue.get("_landed_spears") as Dictionary).has(user_id)]
+		for child: Node in map.get_children():
+			if child.name in ["PiercingBeam", "AbilityImpactCore", "AbilityImpactRing"]:
+				map.remove_child(child)
+				child.free()
+	suite.expect(drawn[&"test:line_shot"] == [false, false], "A line ability with a projectile look draws no beam")
+	suite.expect(drawn[&"test:hex_beam"][0], "A hex ability with a beam look draws a beam")
+	suite.expect(drawn[&"test:hex_lob"][1] and is_instance_valid(user), "An ordinary hex ability with a returning look leaves its weapon on the landing hex")
+	screen.queue_free()
+	await suite.get_tree().process_frame
 
 
 func _session(state: BattleState) -> BattleSession:

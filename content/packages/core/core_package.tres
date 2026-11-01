@@ -26,6 +26,8 @@
 [ext_resource type="Resource" path="res://features/battle/units/definitions/debug_enemy_ranged_presentation.tres" id="20_enemy_ranged_presentation"]
 [ext_resource type="Script" uid="uid://bp2dt31ma2s27" path="res://features/battle/view/ability_presentation_definition.gd" id="21_ability_presentation_type"]
 [ext_resource type="Resource" path="res://content/packages/core/grenade_presentation.tres" id="22_grenade_presentation"]
+[ext_resource type="Resource" path="res://content/packages/core/spear_throw_presentation.tres" id="spear_throw_actor"]
+[ext_resource type="Resource" path="res://content/packages/core/laser_presentation.tres" id="laser_actor"]
 
 [ext_resource type="Resource" path="res://features/abilities/definitions/create_electricity.tres" id="create_electricity"]
 [ext_resource type="Resource" path="res://features/abilities/definitions/create_water.tres" id="create_water"]
@@ -60,4 +62,4 @@ units = Array[ExtResource("7_unit_type")]([ExtResource("8_player"), ExtResource(
 unit_presentations = Array[ExtResource("16_presentation_type")]([ExtResource("17_player_presentation"), ExtResource("18_enemy_presentation"), ExtResource("19_player_ranged_presentation"), ExtResource("20_enemy_ranged_presentation"), ExtResource("turret_actor")])
 ai_profiles = Array[ExtResource("10_ai_type")]([ExtResource("11_ai")])
 abilities = Array[ExtResource("14_ability_type")]([ExtResource("15_grenade"), ExtResource("create_electricity"), ExtResource("create_water"), ExtResource("create_fire"), ExtResource("create_oil"), ExtResource("create_acid"), ExtResource("electromagnetic_shot"), ExtResource("emp_grenade"), ExtResource("laser"), ExtResource("electric_turret"), ExtResource("spear_throw"), ExtResource("spear_sweep"), ExtResource("spear_pin")])
-ability_presentations = Array[ExtResource("21_ability_presentation_type")]([ExtResource("22_grenade_presentation"), ExtResource("electric_actor"), ExtResource("spear_actor")])
+ability_presentations = Array[ExtResource("21_ability_presentation_type")]([ExtResource("22_grenade_presentation"), ExtResource("electric_actor"), ExtResource("spear_actor"), ExtResource("spear_throw_actor"), ExtResource("laser_actor")])

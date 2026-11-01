@@ -2,11 +2,16 @@ class_name AbilityPresentationDefinition
 extends Resource
 
 
-## How the ability visibly travels to its target. Battle rules never read this.
+## How the ability visibly travels to its target. Battle rules never read this, and the
+## presentation never infers it from battle rules.
 enum Delivery {
 	INSTANT,
 	PROJECTILE,
 	THROWN,
+	## Area only: the weapon stays on the landing hex until its return event flies it back.
+	RETURNING,
+	## Area only: a straight beam along the affected cells.
+	BEAM,
 }
 
 

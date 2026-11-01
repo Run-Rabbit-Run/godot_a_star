@@ -306,10 +306,10 @@ func _present_area_ability(
 		return false
 
 	var presentation := _get_ability_presentation(event.ability_id, true)
-	var ability := _content_snapshot.get_ability_definition(event.ability_id) if _content_snapshot != null else null
-	if event.is_return or (ability != null and ability.returns_next_turn):
+	# A return event flies the weapon back even when its ability has no presentation.
+	if event.is_return or presentation.delivery == AbilityPresentationDefinition.Delivery.RETURNING:
 		return await _present_spear(event, user, map_view)
-	if ability != null and ability.target_mode == AbilityDefinition.TargetMode.LINE:
+	if presentation.delivery == AbilityPresentationDefinition.Delivery.BEAM:
 		return await _present_beam(user, event.affected_hexes, map_view, presentation.impact_color)
 	var finish := map_view.to_local(
 		map_view.hex_to_global_position(event.target_hex)
