@@ -49,7 +49,7 @@ suites = [
     ("tools/tests/check_scripts.gd", godot_script("tools/tests/check_scripts.gd"), r"Script compilation: (\d+) scripts, 0 failures", 208),
     ("features/battle/tests/hex_grid_smoke.gd", godot_script("features/battle/tests/hex_grid_smoke.gd"), r"Battle smoke passed \((\d+) checks\)", 93),
     ("tools/battles/tests/editor_smoke.gd", godot_script("tools/battles/tests/editor_smoke.gd"), r"Editor smoke passed \((\d+) checks\)", 121),
-    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1110),
+    ("features/battle/tests/run_regressions.gd", godot_script("features/battle/tests/run_regressions.gd"), r"A_star regressions: (\d+) checks, 0 failures", 1123),
     ("tools/tests/tool_regression_suite.gd", godot_script("features/battle/tests/run_regressions.gd", "--suite=res://tools/tests/tool_regression_suite.gd"), r"A_star tool regressions: (\d+) checks, 0 failures", 74),
     # GDScript cannot catch a runtime error, so this check raises exactly two on purpose.
     ("features/battle/tests/handler_crash_check.gd", godot_script("features/battle/tests/handler_crash_check.gd"), r"Handler crash check passed \((\d+) checks\)", 4, {"SCRIPT ERROR: Cannot call method 'call' on a null value.": 2}),

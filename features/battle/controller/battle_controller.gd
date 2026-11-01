@@ -25,10 +25,8 @@ var _start_request: BattleStartRequest
 var _is_initialization_requested := false
 var _is_initialized := false
 var initialization_error := ""
-var _movement_search_result: MovementSearchResult
-var _attackable_target_hexes: Array[Vector2i] = []
-var _ability_target_hexes: Array[Vector2i] = []
-var _selected_ability_id := StringName()
+var _selection := PlayerActionSelection.new()
+var _active_unit_hud := ActiveUnitHudPresenter.new()
 var _is_presenting := false
 var _runtime_failed := false
 var _completion_emitted := false
@@ -139,6 +137,9 @@ func _initialize_battle() -> void:
 	_map_view.render_grid(_hex_grid)
 	_input_router.setup(_hex_grid)
 	_unit_views.setup(_start_request.content_snapshot, _units, _map_view)
+	_selection.setup(_battle_session, _map_view, _hud, _unit_views, _start_request.content_snapshot)
+	_selection.set_grid(_hex_grid)
+	_active_unit_hud.setup(_battle_session, _hud, _unit_views, _start_request.content_snapshot)
 
 	if not _unit_views.create_units(
 		_battle_setup.unit_spawns,
@@ -218,39 +219,10 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _battle_session.is_unit_ai_controlled(active.unit_id):
 		return
 
-	var command: BattleCommand
+	var command := _selection.command_at(active, axial_cell)
 
-	if not _selected_ability_id.is_empty():
-		if not _ability_target_hexes.has(axial_cell):
-			return
-
-		var selected := active.abilities.get(_selected_ability_id) as AbilitySnapshot
-		if selected != null and selected.targets_hex:
-			command = UseAbilityCommand.at_hex(
-				active_unit_id,
-				axial_cell,
-				_selected_ability_id
-			)
-		else:
-			var ability_target := _battle_session.get_unit_at(axial_cell)
-
-			if ability_target == null:
-				return
-
-			command = UseAbilityCommand.new(
-				active_unit_id,
-				ability_target.unit_id,
-				_selected_ability_id
-			)
-	else:
-		var target := _battle_session.get_unit_at(axial_cell)
-
-		if target != null and target.unit_id != active_unit_id:
-			command = AttackCommand.new(active_unit_id, target.unit_id)
-		elif _hex_grid.has_obstacle(axial_cell):
-			command = AttackObstacleCommand.new(active_unit_id, axial_cell)
-		else:
-			command = MoveCommand.new(active_unit_id, axial_cell)
+	if command == null:
+		return
 
 	var resolution := _battle_session.step(command)
 
@@ -286,119 +258,11 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 
 
 func _on_hex_hovered(axial_cell: Vector2i) -> void:
-	if not _selected_ability_id.is_empty():
-		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-		_map_view.clear_path()
-
-		if not _ability_target_hexes.has(axial_cell):
-			_map_view.clear_ability_area()
-			_hud.clear_target()
-			return
-
-		var active := _battle_session.get_unit(
-			_battle_session.get_active_unit_id()
-		)
-		var selected := active.abilities.get(_selected_ability_id) as AbilitySnapshot
-		if selected == null or (selected.area_radius <= 0 and not selected.targets_hex):
-			_map_view.clear_ability_area()
-			_show_hovered_target(axial_cell)
-			return
-
-		var area := _battle_session.get_ability_affected_hexes(active.unit_id, _selected_ability_id, axial_cell)
-		_map_view.show_ability_area(area)
-		_hud.show_area_target(area.size())
-		return
-
-	_show_hovered_target(axial_cell)
-	_update_attack_cursor(axial_cell)
-
-	if (
-		_battle_session != null
-		and _battle_session.get_unit_at(axial_cell) != null
-	):
-		_map_view.clear_path()
-		return
-
-	if (
-		_movement_search_result == null
-		or _movement_search_result.map_revision != _known_map_revision
-	):
-		_map_view.clear_path()
-		return
-
-	_map_view.show_path(
-		_movement_search_result.build_path(axial_cell)
-	)
-
-
-func _update_attack_cursor(axial_cell: Vector2i) -> void:
-	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-
-	if (
-		_battle_session == null
-		or _is_presenting
-		or not _attackable_target_hexes.has(axial_cell)
-	):
-		return
-
-	var active_unit_id := _battle_session.get_active_unit_id()
-	var active := _battle_session.get_unit(active_unit_id)
-	var target := _battle_session.get_unit_at(axial_cell)
-	# Attackable hexes come from the session, so an obstacle hex among them is a legal target.
-	if active != null and _hex_grid.has_obstacle(axial_cell) and not _battle_session.is_unit_ai_controlled(active_unit_id):
-		_map_view.set_cursor_mode(BattleMapView.CursorMode.RANGED if active.basic_attack_range > 1 else BattleMapView.CursorMode.MELEE)
-		return
-
-	if (
-		active == null
-		or target == null
-		or _battle_session.is_unit_ai_controlled(active_unit_id)
-		or not active.turn.main_action_available
-		or target.faction == active.faction
-	):
-		return
-
-	_map_view.set_cursor_mode(
-		BattleMapView.CursorMode.RANGED
-		if active.basic_attack_range > 1
-		else BattleMapView.CursorMode.MELEE
-	)
-
-
-func _show_hovered_target(axial_cell: Vector2i) -> void:
-	if _battle_session == null:
-		_hud.clear_target()
-		return
-
-	var target := _battle_session.get_unit_at(axial_cell)
-
-	if target == null:
-		_hud.clear_target()
-		return
-
-	var presentation := _unit_views.presentations.get(
-		target.unit_id
-	) as UnitPresentationDefinition
-	_hud.show_target(
-		_unit_views.get_display_name(target.unit_id),
-		presentation.actor_texture if presentation != null else null,
-		"Союзник" if target.faction == BattleFaction.Value.PLAYER else "Противник",
-		target.health.current,
-		target.health.maximum,
-		target.basic_attack_damage,
-		target.basic_attack_range,
-		target.turn.movement_remaining,
-		target.turn.movement_max,
-		target.turn.main_action_available,
-		target.statuses
-	)
+	_selection.hover(axial_cell)
 
 
 func _on_hex_hover_exited() -> void:
-	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-	_map_view.clear_path()
-	_map_view.clear_ability_area()
-	_hud.clear_target()
+	_selection.hover_exited()
 
 
 func _on_ability_requested(ability_id: StringName) -> void:
@@ -409,32 +273,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 		_battle_session.get_active_unit_id()
 	)
 
-	if (
-		active == null
-		or _battle_session.is_unit_ai_controlled(active.unit_id)
-		or active.health.is_defeated()
-		or not active.turn.main_action_available
-		or not active.ability_ids.has(ability_id)
-		or active.ability_cooldowns.get(ability_id, 0) > 0
-	):
-		return
-
-	_selected_ability_id = ability_id
-	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-	_ability_target_hexes = _battle_session.get_ability_target_hexes(
-		active.unit_id,
-		ability_id
-	)
-	var empty_cells: Array[Vector2i] = []
-	_map_view.clear_ranged_attack_cells()
-	_map_view.show_reachable_cells(empty_cells)
-	_map_view.show_targetable_cells(_ability_target_hexes)
-	_map_view.show_ability_targets(_ability_target_hexes)
-	_map_view.clear_ability_area()
-	var ability := _start_request.content_snapshot.get_ability_definition(
-		ability_id
-	)
-	_hud.show_ability_targeting(ability.display_name, ability.area_radius, ability.target_mode)
+	_selection.select_ability(active, ability_id)
 
 
 func _on_movement_requested() -> void:
@@ -618,7 +457,7 @@ func _refresh_map_revision() -> void:
 	_known_map_revision = revision
 	_hex_grid = _battle_session.get_hex_grid()
 	_input_router.setup(_hex_grid)
-	_movement_search_result = null
+	_selection.set_grid(_hex_grid)
 	_map_view.clear_overlays()
 
 	var active := _battle_session.get_unit(
@@ -635,15 +474,10 @@ func _set_presenting(is_presenting: bool) -> void:
 	_input_router.set_interaction_enabled(not is_presenting)
 	_hud.set_interaction_enabled(not is_presenting)
 
+	_selection.enabled = not is_presenting
+
 	if is_presenting:
-		_map_view.clear_ranged_attack_cells()
-		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-		_selected_ability_id = StringName()
-		_ability_target_hexes.clear()
-		_attackable_target_hexes.clear()
-		_map_view.show_targetable_cells(_attackable_target_hexes)
-		_map_view.clear_ability_area()
-		_hud.clear_target()
+		_selection.clear()
 
 
 func _finish_battle_if_needed(
@@ -662,7 +496,7 @@ func _finish_battle_if_needed(
 	if result == null:
 		return false
 
-	_movement_search_result = null
+	_selection.forget_movement()
 	_map_view.clear_overlays()
 	_hud.show_outcome(result.outcome)
 	_set_presenting(true)
@@ -671,133 +505,10 @@ func _finish_battle_if_needed(
 	return true
 
 
-func _refresh_attack_targets(state: UnitSnapshot) -> void:
-	_attackable_target_hexes.clear()
-	_map_view.show_targetable_cells(_attackable_target_hexes)
-	_map_view.clear_ranged_attack_cells()
-
-	if state == null or state.health.is_defeated():
-		return
-
-	if state.basic_attack_range > 1:
-		var range_cells := _hex_grid.get_cells_in_range(state.hex, state.basic_attack_range)
-		var enemy_cells: Array[Vector2i] = []
-		for opponent: UnitSnapshot in _battle_session.get_living_opponents(state.faction):
-			if range_cells.has(opponent.hex):
-				enemy_cells.append(opponent.hex)
-		_map_view.show_ranged_attack_cells(range_cells, enemy_cells)
-
-	if _battle_session.is_unit_ai_controlled(state.unit_id):
-		return
-
-	var targets := _battle_session.get_attackable_targets(state.unit_id)
-
-	for target: UnitSnapshot in targets:
-		_attackable_target_hexes.append(target.hex)
-
-	_attackable_target_hexes.append_array(_battle_session.get_attackable_obstacle_hexes(state.unit_id))
-	if state.basic_attack_range <= 1:
-		_map_view.show_targetable_cells(_attackable_target_hexes)
-
-
+## The active unit's options on the map and its panels in the HUD.
 func _show_unit_movement(state: UnitSnapshot) -> void:
-	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
-	_selected_ability_id = StringName()
-	_ability_target_hexes.clear()
-	_map_view.clear_ability_area()
-	_map_view.clear_path()
-	_movement_search_result = _battle_session.get_movement_search(
-		state.unit_id
-	)
-	_map_view.show_selected_hex(state.hex)
-	var reachable := _movement_search_result.get_reachable_cells()
-	reachable.erase(state.hex)
-	if _battle_session.is_unit_ai_controlled(state.unit_id):
-		reachable.clear()
-	_map_view.show_reachable_cells(reachable)
-	_refresh_attack_targets(state)
-	_hud.show_round(_battle_session.get_round_number())
-	_hud.show_health(state.health.current, state.health.maximum)
-	_hud.show_movement(
-		state.turn.movement_remaining,
-		state.turn.movement_max
-	)
-	_hud.show_main_action(state.turn.main_action_available)
-	var abilities: Array[AbilityDefinition] = []
-
-	if not _battle_session.is_unit_ai_controlled(state.unit_id):
-		for ability_id: StringName in state.ability_ids:
-			abilities.append(
-				_start_request.content_snapshot.get_ability_definition(ability_id)
-			)
-
-	_hud.show_abilities(
-		abilities,
-		state.turn.main_action_available and not state.health.is_defeated(),
-		state.ability_cooldowns,
-		{"attack_damage": state.basic_attack_damage, "attack_range": state.basic_attack_range}
-	)
-
-	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition
-
-	if definition == null:
-		push_error("Active unit definition is not registered.")
-		return
-
-	_hud.show_active_unit(
-		definition.display_name
-	)
-	var presentation := _unit_views.presentations.get(
-		state.unit_id
-	) as UnitPresentationDefinition
-	_hud.show_active_portrait(
-		presentation.actor_texture if presentation != null else null
-	)
-	_hud.show_combat_stats(
-		state.basic_attack_damage,
-		state.basic_attack_range
-	)
-	_hud.show_basic_attack_button(
-		state.basic_attack_range,
-		state.turn.main_action_available
-	)
-	_refresh_turn_order()
-
-
-func _refresh_turn_order() -> void:
-	var entries: Array[Dictionary] = []
-
-	for unit_id: StringName in _battle_session.get_turn_order():
-		var state := _battle_session.get_unit(unit_id)
-
-		if state == null:
-			continue
-
-		var definition := _unit_views.definitions.get(unit_id) as UnitDefinition
-		var presentation := _unit_views.presentations.get(
-			unit_id
-		) as UnitPresentationDefinition
-		var display_name := String(unit_id)
-		var texture: Texture2D
-
-		if definition != null:
-			display_name = definition.display_name
-
-		if presentation != null:
-			texture = presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture
-
-		entries.append({
-			"unit_id": unit_id,
-			"short_name": display_name.left(7).to_upper(),
-			"texture": texture,
-			"faction": state.faction,
-			"defeated": state.health.is_defeated(),
-		})
-
-	_hud.show_turn_order(
-		entries,
-		_battle_session.get_active_unit_id()
-	)
+	_selection.show_movement_and_attacks(state)
+	_active_unit_hud.show(state)
 
 
 func _present_resolution(resolution: BattleResolution, actors: Dictionary[StringName, UnitActor], definitions: Dictionary[StringName, UnitDefinition], map_view: BattleMapView, hud: BattleHUD) -> bool:
@@ -821,7 +532,7 @@ func _synchronize_view() -> void:
 	_hex_grid = _battle_session.get_hex_grid()
 	_known_map_revision = _battle_session.get_map_revision()
 	_input_router.setup(_hex_grid)
-	_movement_search_result = null
+	_selection.set_grid(_hex_grid)
 	_map_view.render_grid(_hex_grid)
 	_unit_views.synchronize(_battle_session)
 

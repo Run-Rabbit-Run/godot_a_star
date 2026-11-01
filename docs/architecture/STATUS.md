@@ -42,7 +42,7 @@
 
 | Возможность | Основные классы | Контракт |
 | --- | --- | --- |
-| Адаптер боя | `BattleScreen`, `BattleController`, `BattlePresentationQueue`, `BattleUnitViewRegistry` | BATTLE_PRESENTATION.md «Компоненты» |
+| Адаптер боя | `BattleScreen`, `BattleController`, `PlayerActionSelection`, `ActiveUnitHudPresenter`, `BattlePresentationQueue`, `BattleUnitViewRegistry` | BATTLE_PRESENTATION.md «Компоненты» |
 | Анимации | `UnitMovementAnimator`, `UnitCombatAnimator`, `UnitDeathAnimator`, доставка способностей из данных | BATTLE_PRESENTATION.md «Анимации» |
 | Масштаб фигур и погибшие пары | `texture_scale()`, `unit_visual_profiles.json`, `content/authored/assets/corpses/` по basename | BATTLE_PRESENTATION.md «Масштаб фигур», [../tools/UNITS.md](../tools/UNITS.md) |
 | HP юнитов и раскрытие по Alt | `battle_health_display_controller.gd`, `user://battle_ui_settings.cfg` | BATTLE_PRESENTATION.md «Акторы и здоровье» |
@@ -87,7 +87,6 @@
 - **Результат боя не привязан к запуску кампании.** `CampaignSession.complete_battle()` сверяет результат с текущим сценарием только по `battle_id`; `BattleResult` не содержит ID запуска. Если два сценария используют один бой, повторно переданный результат первого продвинет второй без его исполнения. Синхронный runner результат дважды не передаёт; риск появится с UI кампании, сохранениями и повтором боя. Нужны корреляция запуска с результатом и однократное потребление. Отложено решением владельца ([DECISIONS.md](../DECISIONS.md)).
 - `ContentLoader` работает с доверенными Godot `Resource`; это не безопасный загрузчик внешних архивов. `ModAPI` не является песочницей для исполняемого кода.
 - `HexStateCatalog` (`features/battle/map/hex_state_catalog.gd`) — встроенный каталог; таблица распространения уже данные (`PROPAGATION`, `BattleState.hex_propagation`) с проверкой ацикличности. Перенос в content packages и формула совмещения стоимости местности/состояния не выполнены.
-- `BattleController` (около 820 строк) — графический координатор выбора действия и цикла ИИ. Правила в нём не размещать; первым кандидатом на выделение является выбор действия.
 - `BattleEditorShell` (около 1500 строк) координирует workflow; правая панель вынесена в `BattleEditorInspector`, тема — в `EditorUi`, инструменты — в `EditorToolBar`. Файловые сервисы, renderers и новые доменные правила выносить, а не наращивать shell.
 - Presentation-определения входят в общий `ContentSnapshot`, но логика боя их не читает. Headless-запуск обязан оставаться корректным без графических ресурсов.
 - ИИ `basic_melee` выбирает цель по расстоянию, прогнозирует одно перемещение и одно основное действие, берёт первое подходящее умение по порядку, а призыв ставит на первый допустимый гекс. Атаки противников, будущие изменения поля и групповая тактика не учитываются.
