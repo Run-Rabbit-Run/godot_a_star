@@ -66,3 +66,9 @@ func spear_request() -> BattleStartRequest:
 		side.ai_profile_id = &""
 	loaded.request.content_snapshot = snapshot.with_battle_document(snapshot.get_map_definition(battle.map_id), battle, units)
 	return loaded.request
+
+## A session around a hand-built state, for AI decisions and engine checks without a battle setup.
+func ai_session(state: BattleState) -> BattleSession:
+	state.turn_service.start()
+	var setup := BattleSetup.new(state.battle_id, state.hex_grid, [], [], BattleObjectiveDefinition.new(), BattleFaction.Value.PLAYER, state.deterministic_seed)
+	return BattleSession.new(setup, state, BattleEngine.new(state, false), null)
