@@ -118,7 +118,7 @@ Headless-расчёт не должен требовать `PackedScene`, тек
 
 Core package регистрирует `core:spear_throw`, `core:spear_sweep`, `core:spear_pin` и физическое presentation `core:spear_presentation`; пассивный каталог — `core:melee_retaliation`. Авторский `custom_units:spear_guard` находится в `content/authored/units/spear_guard.json` и выбирается обычной палитрой редактора. Изображение/профиль — project-owned `gt_spear_guard.png` и unit_visual_profiles.json. Схема JSON юнита сохраняется.
 
-AbilityDefinition расширен добавленными в конец `TargetMode.PATH/SELF`, флагами `returns_next_turn/melee_attack`; возврат допускается только для PATH, radius 0 и damage effects. DamageEffectHandler принимает boolean `use_base_attack` (по умолчанию false) и `affects_obstacles` (по умолчанию true). У копья препятствия не повреждаются. Новые поля имеют совместимые значения по умолчанию.
+AbilityDefinition расширен добавленными в конец `TargetMode.PATH/SELF`, флагами `returns_next_turn/melee_attack`; возврат допускается только для PATH, radius 0 и damage effects. DamageEffectHandler принимает boolean `use_base_attack` (по умолчанию false) и `affects_obstacles` (по умолчанию true). У копья препятствия не повреждаются. Обработчик, который бьёт препятствия, переопределяет `execute_obstacles()` и наносит урон через `BattleEffectContext.damage_obstacle()`; базовый обработчик препятствия не трогает. Новые поля имеют совместимые значения по умолчанию.
 
 Пять умений создания состояний находятся в пакете core и каталоге UnitLibrary. JSON юнита дополнен необязательным `armor` (по умолчанию 0). Схемы и порядок исполнения — [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md).
 

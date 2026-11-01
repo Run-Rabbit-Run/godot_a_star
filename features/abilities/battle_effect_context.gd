@@ -59,6 +59,17 @@ func summon(source_id: StringName, hex: Vector2i, definition: UnitDefinition) ->
 	return events
 
 
+## A detached copy of the obstacle at the hex, or null.
+func get_obstacle(hex: Vector2i) -> BattleObstacleDefinition:
+	return _state.hex_grid.get_obstacle(hex)
+
+
+func damage_obstacle(hex: Vector2i, amount: int) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	ObstacleService.damage(_state, hex, amount, events)
+	return events
+
+
 func get_base_attack_damage(id: StringName) -> int:
 	var unit := _state.unit_states.get(id) as UnitState
 	return unit.basic_attack_damage if unit != null else 0

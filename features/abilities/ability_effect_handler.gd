@@ -23,6 +23,13 @@ func execute_hexes(effect: AbilityEffectDefinition, context: BattleEffectContext
 	return events
 
 
+## Strikes obstacles in the affected area before units and cells are resolved. Only effects
+## that damage obstacles override it; the default leaves them untouched.
+func execute_obstacles(_effect: AbilityEffectDefinition, _context: BattleEffectContext, _source_unit_id: StringName, _hexes: Array[Vector2i]) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	return events
+
+
 func validate(_effect: AbilityEffectDefinition) -> String:
 	return "Ability effect handler does not implement validation."
 

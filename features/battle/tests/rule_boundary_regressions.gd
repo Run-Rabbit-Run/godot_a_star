@@ -1,0 +1,74 @@
+extends RefCounted
+## Rules live in the core: handlers own their effects, the session answers rule questions,
+## and adapters (AI, controller, presentation) ask instead of re-deriving the rules.
+const Fixtures := preload("res://features/battle/tests/regression_fixtures.gd")
+
+
+## Damages every affected hex by one, to prove any handler can strike obstacles.
+class Demolish extends AbilityEffectHandler:
+	func validate(_effect: AbilityEffectDefinition) -> String:
+		return ""
+
+	func execute_obstacles(_effect: AbilityEffectDefinition, context: BattleEffectContext, _source: StringName, hexes: Array[Vector2i]) -> Array[BattleEvent]:
+		var events: Array[BattleEvent] = []
+		for hex: Vector2i in hexes:
+			events.append_array(context.damage_obstacle(hex, 1))
+		return events
+
+
+func run(suite: Node) -> void:
+	var fixture: Fixtures = suite.fixture
+	_check_obstacle_damage_belongs_to_handlers(suite, fixture)
+
+
+func _check_obstacle_damage_belongs_to_handlers(suite: Node, fixture: Fixtures) -> void:
+	var state := _walled_state(fixture)
+	var context := BattleEffectContext.new(state, &"core:test")
+	context.target_hex = Vector2i(2, 0)
+	var effect := AbilityEffectDefinition.new()
+	effect.effect_type_id = &"core:damage"
+	effect.parameters = {"amount": 4, "secondary_amount": 1}
+	var area: Array[Vector2i] = [Vector2i(1, 0), Vector2i(3, 0), Vector2i(2, 1), Vector2i(2, 0)]
+	DamageEffectHandler.new().execute_obstacles(effect, context, &"user", area)
+	suite.expect(_hp(state, Vector2i(2, 0)) == 6 and _hp(state, Vector2i(2, 1)) == 9, "Damage strikes each obstacle once: full at the center, secondary elsewhere")
+	effect.parameters["affects_obstacles"] = false
+	suite.expect(DamageEffectHandler.new().execute_obstacles(effect, context, &"user", area).is_empty() and _hp(state, Vector2i(2, 0)) == 6, "Damage with affects_obstacles off leaves obstacles")
+	suite.expect(UnitStatusEffectHandler.new().execute_obstacles(effect, context, &"user", area).is_empty(), "Effects that do not strike obstacles leave them by default")
+
+	state = _walled_state(fixture)
+	var api := ModAPI.create_default()
+	api.register_effect_handler(&"test:demolish", Demolish.new())
+	state.mod_api = api
+	var user: UnitState = state.unit_states[&"user"]
+	var ability: AbilityDefinition = fixture.ability(&"core:demolish", AbilityDefinition.TargetMode.HEX)
+	ability.range = 4
+	ability.effects[0].effect_type_id = &"test:demolish"
+	user.abilities[ability.id] = ability
+	user.ability_cooldowns[ability.id] = 0
+	state.turn_service.start()
+	var resolution := BattleEngine.new(state, false).execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(2, 1), ability.id))
+	suite.expect(resolution.accepted and _hp(state, Vector2i(2, 1)) == 9 and _hp(state, Vector2i(2, 0)) == 10, "The effect pipeline lets any handler strike obstacles, not only core damage")
+
+
+## A two-hex wall through the center, a rock beside it and a distant enemy.
+func _walled_state(fixture: Fixtures) -> BattleState:
+	var cells: Array[Vector2i] = []
+	for q in range(0, 6):
+		for r in range(0, 2):
+			cells.append(Vector2i(q, r))
+	var user: UnitState = fixture.unit(&"user", BattleFaction.Value.PLAYER, Vector2i.ZERO, 20, 3)
+	var enemy: UnitState = fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(5, 1), 20)
+	var units: Array[UnitState] = [user, enemy]
+	var state: BattleState = fixture.state(cells, units)
+	for entry: Array in [[&"wall", [Vector2i(2, 0), Vector2i(3, 0)]], [&"rock", [Vector2i(2, 1)]]]:
+		var obstacle := BattleObstacleDefinition.new()
+		obstacle.id = entry[0]
+		obstacle.hexes.assign(entry[1])
+		obstacle.destructible = true
+		state.hex_grid.add_obstacle(obstacle)
+	return state
+
+
+func _hp(state: BattleState, hex: Vector2i) -> int:
+	var obstacle := state.hex_grid.get_obstacle(hex)
+	return obstacle.current_hp if obstacle != null else 0

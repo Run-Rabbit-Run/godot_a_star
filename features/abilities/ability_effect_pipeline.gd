@@ -18,14 +18,13 @@ static func apply(context: BattleEffectContext, state: BattleState, ability: Abi
 
 static func _run(context: BattleEffectContext, state: BattleState, ability: AbilityDefinition, user_id: StringName, cells: Array[Vector2i], target_ids: Array[StringName], skip_defeated: bool, watch: ScriptErrorWatch) -> Array[BattleEvent]:
 	var events: Array[BattleEvent] = []
-	var user := state.unit_states.get(user_id) as UnitState
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id) if effect != null else null
 		if handler == null:
 			context.fail("Missing ability effect handler: %s." % (effect.effect_type_id if effect != null else &""))
 			return events
-		if handler is DamageEffectHandler and effect.parameters.get("affects_obstacles", true):
-			_damage_obstacles(state, effect, user, cells, context.target_hex, events)
+		if not _collect(handler.execute_obstacles(effect, context, user_id, cells), effect, context, events, watch):
+			return events
 		if handler.affects_hexes():
 			var effect_cells: Array[Vector2i] = []
 			if effect.parameters.get("center_only", false):
@@ -41,20 +40,6 @@ static func _run(context: BattleEffectContext, state: BattleState, ability: Abil
 				if not _collect(handler.execute(effect, context, user_id, target_id), effect, context, events, watch):
 					return events
 	return events
-
-
-## Each struck obstacle takes damage once per effect: full at the center, secondary elsewhere.
-static func _damage_obstacles(state: BattleState, effect: AbilityEffectDefinition, user: UnitState, cells: Array[Vector2i], center: Vector2i, events: Array[BattleEvent]) -> void:
-	var hit: Dictionary[StringName, bool] = {}
-	var ordered_cells := cells.duplicate()
-	ordered_cells.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(center, a) < HexGrid.get_distance(center, b))
-	for hex: Vector2i in ordered_cells:
-		var obstacle := state.hex_grid.get_obstacle(hex)
-		if obstacle == null or hit.has(obstacle.id):
-			continue
-		hit[obstacle.id] = true
-		var amount := user.basic_attack_damage if effect.parameters.get("use_base_attack", false) else int(effect.parameters["amount"] if hex == center else effect.parameters.get("secondary_amount", effect.parameters["amount"]))
-		ObstacleService.damage(state, hex, amount, events)
 
 
 ## A handler result must be a list of events; anything else, a script error or a reported

@@ -33,6 +33,30 @@ func execute(
 	return context.apply_damage_events(
 		source_unit_id,
 		target_unit_id,
-		context.get_base_attack_damage(source_unit_id) if effect.parameters.get("use_base_attack", false) else int(effect.parameters["amount"] if context.get_unit_hex(target_unit_id) == context.target_hex else effect.parameters.get("secondary_amount", effect.parameters["amount"])),
+		_amount(effect, context, source_unit_id, context.get_unit_hex(target_unit_id)),
 		StringName(effect.parameters.get("damage_type", "physical"))
 	)
+
+
+## Each struck obstacle takes damage once per effect, measured at its hex nearest the center.
+func execute_obstacles(effect: AbilityEffectDefinition, context: BattleEffectContext, source_unit_id: StringName, hexes: Array[Vector2i]) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	if not effect.parameters.get("affects_obstacles", true):
+		return events
+	var ordered := hexes.duplicate()
+	ordered.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(context.target_hex, a) < HexGrid.get_distance(context.target_hex, b))
+	var struck: Dictionary[StringName, bool] = {}
+	for hex: Vector2i in ordered:
+		var obstacle := context.get_obstacle(hex)
+		if obstacle == null or struck.has(obstacle.id):
+			continue
+		struck[obstacle.id] = true
+		events.append_array(context.damage_obstacle(hex, _amount(effect, context, source_unit_id, hex)))
+	return events
+
+
+## Full amount at the center, the secondary amount elsewhere, or the source's base attack.
+func _amount(effect: AbilityEffectDefinition, context: BattleEffectContext, source_unit_id: StringName, hex: Vector2i) -> int:
+	if effect.parameters.get("use_base_attack", false):
+		return context.get_base_attack_damage(source_unit_id)
+	return int(effect.parameters["amount"] if hex == context.target_hex else effect.parameters.get("secondary_amount", effect.parameters["amount"]))

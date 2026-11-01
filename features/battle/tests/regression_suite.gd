@@ -87,6 +87,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/ability_transaction_regressions.gd").new().run(self)
 	if only.is_empty() or only == "hex_propagation":
 		preload("res://features/battle/tests/hex_propagation_regressions.gd").new().run(self)
+	if only.is_empty() or only == "rule_boundaries":
+		preload("res://features/battle/tests/rule_boundary_regressions.gd").new().run(self)
 	if only.is_empty() or only == "summon_control":
 		_test_summon_control()
 	if only.is_empty() or only == "simulation":
