@@ -87,6 +87,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/ability_transaction_regressions.gd").new().run(self)
 	if only.is_empty() or only == "hex_propagation":
 		preload("res://features/battle/tests/hex_propagation_regressions.gd").new().run(self)
+	if only.is_empty() or only == "atomic_files":
+		preload("res://features/battle/tests/atomic_file_regressions.gd").new().run(self)
 	if only.is_empty() or only == "rule_boundaries":
 		await preload("res://features/battle/tests/rule_boundary_regressions.gd").new().run(self)
 	if only.is_empty() or only == "summon_control":
@@ -1065,7 +1067,7 @@ func _test_presentation() -> void:
 	var initial_hex := map.hex_to_global_position(Vector2i.ZERO)
 	layout_map.grid_offset_y = 96
 	map.set_map_presentation(layout_map)
-	var pixel_scale := minf(get_viewport().get_visible_rect().size.x / 1920.0, get_viewport().get_visible_rect().size.y / 1080.0)
+	var pixel_scale := ReferenceCanvas.fit_scale(get_viewport().get_visible_rect().size)
 	expect(map.position.is_equal_approx(initial_position + Vector2(0, 96 * pixel_scale)), "Runtime board uses the authored vertical offset at viewport scale")
 	expect(map.hex_to_global_position(Vector2i.ZERO).is_equal_approx(initial_hex + Vector2(0, 96 * pixel_scale)), "Runtime hex projection follows the shifted board")
 	expect(backdrop.global_position == backdrop_position, "Grid shifting leaves the backdrop fixed")

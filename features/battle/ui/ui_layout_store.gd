@@ -81,28 +81,7 @@ static func save_document(path: String, document: UILayoutDocument) -> String:
 	var directory := ProjectSettings.globalize_path(path.get_base_dir())
 	if DirAccess.make_dir_recursive_absolute(directory) != OK:
 		return "Не удалось создать папку: %s" % directory
-	var temporary := path + ".tmp"
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return "Не удалось записать UI: %s" % path
-	file.store_string(JSON.stringify(document.to_data(), "\t"))
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK:
-		return "Ошибка записи UI: %s" % error_string(write_error)
-	# Keep the previous file recoverable until the new file has been renamed.
-	var backup := path + ".bak"
-	var existed := FileAccess.file_exists(path)
-	if existed and DirAccess.rename_absolute(path, backup) != OK:
-		return "Не удалось сохранить предыдущую версию UI."
-	if DirAccess.rename_absolute(temporary, path) != OK:
-		if existed:
-			DirAccess.rename_absolute(backup, path)
-		return "Не удалось заменить файл UI."
-	if existed:
-		DirAccess.remove_absolute(backup)
-	return ""
+	return AtomicFileWriter.write_text(path, JSON.stringify(document.to_data(), "\t"))
 
 
 static func selected_path() -> String:

@@ -23,28 +23,10 @@ static func resolve_offset(map: BattleMapDefinition, default_offset: int) -> int
 	return map.grid_offset_y if map.has_custom_grid_offset else default_offset
 
 
-static func save_default(value: int, path: String = DEFAULT_PATH) -> Error:
+## Returns "" or why the default height was not saved.
+static func save_default(value: int, path: String = DEFAULT_PATH) -> String:
 	if value < BattleMapDefinition.MIN_GRID_OFFSET_Y or value > BattleMapDefinition.MAX_GRID_OFFSET_Y:
-		return ERR_INVALID_PARAMETER
+		return "Высота %d вне диапазона %d…%d." % [value, BattleMapDefinition.MIN_GRID_OFFSET_Y, BattleMapDefinition.MAX_GRID_OFFSET_Y]
 	var config := ConfigFile.new()
 	config.set_value("grid", "offset_y", value)
-	var temporary := path + ".tmp"
-	var error := config.save(temporary)
-	if error != OK:
-		return error
-	var existed := FileAccess.file_exists(path)
-	var backup := path + ".bak"
-	if existed:
-		error = DirAccess.rename_absolute(path, backup)
-		if error != OK:
-			DirAccess.remove_absolute(temporary)
-			return error
-	error = DirAccess.rename_absolute(temporary, path)
-	if error != OK:
-		if existed:
-			DirAccess.rename_absolute(backup, path)
-		DirAccess.remove_absolute(temporary)
-		return error
-	if existed:
-		DirAccess.remove_absolute(backup)
-	return OK
+	return AtomicFileWriter.write_text(path, config.encode_to_text())

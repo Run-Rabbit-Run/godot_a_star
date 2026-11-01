@@ -42,4 +42,4 @@ static func _select(path: String, ui: bool) -> Error:
 		settings.ui_profile_path = local
 	else:
 		settings.battle_document_path = local
-	return ResourceSaver.save(settings, PATH)
+	return OK if AtomicFileWriter.save_resource(settings, PATH).is_empty() else ERR_FILE_CANT_WRITE

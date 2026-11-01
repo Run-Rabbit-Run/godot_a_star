@@ -229,7 +229,7 @@ func _fit_battlefield_to_viewport() -> void:
 
 	var viewport_size := get_viewport().get_visible_rect().size
 	# Match the reference's 94 x 78 projected hexes at 1920 x 1080.
-	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+	var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
 	var available_size := Vector2(1739.0, 721.5) * screen_scale
 	scale = available_size / _grid_local_bounds.size
 	position = viewport_size * 0.5 + Vector2(0, -21.25 + _grid_offset_y) * screen_scale - _grid_local_bounds.get_center() * scale
@@ -763,7 +763,7 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 ## The board is scaled unevenly for perspective; marker text keeps upright screen proportions.
 func _create_marker_label(text: String, font_size: int, center: Vector2) -> Label:
 	var viewport_size := get_viewport().get_visible_rect().size
-	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+	var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)

@@ -62,8 +62,8 @@ func sync(map: BattleMapDefinition) -> void:
 func _save_default() -> void:
 	var value := int(_height.value)
 	var error := BattleGridLayoutSettings.save_default(value, settings_path)
-	if error != OK:
-		save_failed.emit("Не удалось сохранить высоту по умолчанию: %s" % error_string(error))
+	if not error.is_empty():
+		save_failed.emit("Не удалось сохранить высоту по умолчанию: %s" % error)
 		return
 	sync(_map)
 	default_saved.emit(value)

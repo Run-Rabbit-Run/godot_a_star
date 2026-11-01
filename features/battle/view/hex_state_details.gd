@@ -80,7 +80,7 @@ func _process(delta: float) -> void:
 		return
 	_alt_visible = get_window().has_focus() and Input.is_key_pressed(KEY_ALT)
 	var viewport_size := get_viewport().get_visible_rect().size
-	var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+	var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
 	for hex: Vector2i in _labels:
 		var label := _labels[hex]
 		label.visible = _alt_visible

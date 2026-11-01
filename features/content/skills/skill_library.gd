@@ -276,22 +276,7 @@ func save_document(data: Dictionary, root := ROOT) -> String:
 		return ""
 	var mkdir := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(root))
 	if mkdir != OK: return "Не удалось создать папку: " + error_string(mkdir)
-	var file := FileAccess.open(path + ".tmp", FileAccess.WRITE)
-	if file == null: return "Не удалось записать файл."
-	file.store_string(JSON.stringify(data, "\t") + "\n")
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK: return "Ошибка записи: " + error_string(write_error)
-	if FileAccess.file_exists(path):
-		var backup_error := DirAccess.rename_absolute(path, path + ".bak")
-		if backup_error != OK: return "Ошибка резервного сохранения: " + error_string(backup_error)
-	var rename_error := DirAccess.rename_absolute(path + ".tmp", path)
-	if rename_error != OK:
-		if FileAccess.file_exists(path + ".bak"): DirAccess.rename_absolute(path + ".bak", path)
-		return "Ошибка завершения сохранения: " + error_string(rename_error)
-	if FileAccess.file_exists(path + ".bak"): DirAccess.remove_absolute(path + ".bak")
-	return ""
+	return AtomicFileWriter.write_text(path, JSON.stringify(data, "\t") + "\n")
 
 ## This library's packages with the documents applied, plus a `custom_skills` package.
 func apply_to_packages(documents: Dictionary) -> Array[ContentPackage]:

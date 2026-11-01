@@ -17,7 +17,7 @@ func _ready() -> void:
 	var background := Sprite2D.new()
 	background.texture = preload("res://features/battle/art/classic/plateau.png")
 	background.centered = false
-	background.scale = Vector2(1920.0 / 1672.0, 1080.0 / 941.0)
+	background.scale = ReferenceCanvas.SIZE / Vector2(1672, 941)
 	background.z_index = -1
 	add_child(background)
 	var bar := HBoxContainer.new()
@@ -76,7 +76,7 @@ func _origin(index: int) -> Vector2:
 
 
 func _fit() -> void:
-	scale = Vector2.ONE * minf(get_viewport_rect().size.x / 1920.0, get_viewport_rect().size.y / 1080.0)
+	scale = Vector2.ONE * ReferenceCanvas.fit_scale(get_viewport_rect().size)
 
 
 func _draw() -> void:

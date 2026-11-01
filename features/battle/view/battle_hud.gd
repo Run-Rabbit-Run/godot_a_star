@@ -108,10 +108,10 @@ func _fit_hud_to_viewport() -> void:
 	hud_root.position = Vector2.ZERO
 	var viewport_size := get_viewport().get_visible_rect().size
 	if layout_presenter != null:
-		hud_root.size = Vector2(1920, 1080)
+		hud_root.size = ReferenceCanvas.SIZE
 		hud_root.scale = viewport_size / hud_root.size
 	else:
-		var ui_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+		var ui_scale := ReferenceCanvas.fit_scale(viewport_size)
 		hud_root.size = viewport_size / maxf(ui_scale, 0.01)
 		hud_root.scale = Vector2.ONE * ui_scale
 

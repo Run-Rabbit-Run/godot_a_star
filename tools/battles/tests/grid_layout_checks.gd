@@ -7,7 +7,7 @@ func run(editor: BattleEditorShell, expect: Callable) -> void:
 	var path := "user://grid_layout_%d.cfg" % OS.get_process_id()
 	var json_path := "user://grid_layout_%d.json" % OS.get_process_id()
 	expect.call(BattleGridLayoutSettings.load_default(path) == 0, "Missing grid defaults keep the original height")
-	expect.call(BattleGridLayoutSettings.save_default(0, path) == OK, "Grid defaults can be written to a test-only path")
+	expect.call(BattleGridLayoutSettings.save_default(0, path).is_empty(), "Grid defaults can be written to a test-only path")
 	var controls: EditorGridLayoutControls = editor.get("_grid_layout_controls")
 	controls.settings_path = path
 	var document := BattleDocumentSerializer.load(FIXTURE)
@@ -71,10 +71,10 @@ func run(editor: BattleEditorShell, expect: Callable) -> void:
 		expect.call(BattleDocumentSerializer.from_dictionary(bad) == null, "Invalid grid height is rejected by JSON validation: %s" % str(invalid))
 	var previous := BattleDocumentSerializer.to_dictionary(reopened)
 	expect.call(not EditCommand.set_grid_offset(541).apply(reopened) and BattleDocumentSerializer.to_dictionary(reopened) == previous, "An invalid height command is rejected atomically")
-	expect.call(BattleGridLayoutSettings.save_default(541, path) == ERR_INVALID_PARAMETER and BattleGridLayoutSettings.load_default(path) == 96, "Invalid defaults preserve the previous saved value")
+	expect.call(not BattleGridLayoutSettings.save_default(541, path).is_empty() and BattleGridLayoutSettings.load_default(path) == 96, "Invalid defaults preserve the previous saved value")
 	var missing_directory := "user://missing_grid_directory_%d/default.cfg" % OS.get_process_id()
-	expect.call(BattleGridLayoutSettings.save_default(12, missing_directory) != OK, "Default save reports an unwritable destination")
-	expect.call(BattleGridLayoutSettings.save_default(-20, path) == OK and BattleGridLayoutSettings.load_default(path) == -20, "Existing defaults are replaced and read back")
+	expect.call(not BattleGridLayoutSettings.save_default(12, missing_directory).is_empty() and not DirAccess.dir_exists_absolute(missing_directory.get_base_dir()), "Default save reports an unwritable destination")
+	expect.call(BattleGridLayoutSettings.save_default(-20, path).is_empty() and BattleGridLayoutSettings.load_default(path) == -20, "Existing defaults are replaced and read back")
 	expect.call(not FileAccess.file_exists(path + ".tmp") and not FileAccess.file_exists(path + ".bak"), "Successful default replacement leaves no temporary files")
 	controls.settings_path = BattleGridLayoutSettings.DEFAULT_PATH
 	editor.call("_replace_document", BattleDocumentSerializer.load(FIXTURE), "", true)

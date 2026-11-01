@@ -13,27 +13,7 @@ static func save(document: BattleDocument, path: String) -> String:
 	var directory := ProjectSettings.globalize_path(path.get_base_dir())
 	if DirAccess.make_dir_recursive_absolute(directory) != OK:
 		return "Could not create document directory: %s." % directory
-	var temporary := path + ".tmp"
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return "Could not open document for writing: %s." % path
-	file.store_string(JSON.stringify(to_dictionary(document), "  "))
-	file.flush()
-	var error := file.get_error()
-	file.close()
-	if error != OK:
-		return "Could not write document: %s." % error_string(error)
-	var backup := path + ".bak"
-	var existed := FileAccess.file_exists(path)
-	if existed and DirAccess.rename_absolute(path, backup) != OK:
-		return "Could not preserve previous document: %s." % path
-	if DirAccess.rename_absolute(temporary, path) != OK:
-		if existed:
-			DirAccess.rename_absolute(backup, path)
-		return "Could not replace document: %s." % path
-	if existed:
-		DirAccess.remove_absolute(backup)
-	return ""
+	return AtomicFileWriter.write_text(path, JSON.stringify(to_dictionary(document), "  "))
 
 
 static func load(path: String) -> BattleDocument:

@@ -60,7 +60,7 @@ func create_units(
 			return false
 
 		var viewport_size := _map_view.get_viewport_rect().size
-		var screen_scale := minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0)
+		var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
 		actor.scale = Vector2.ONE * screen_scale / _map_view.scale
 		actor.global_position = _map_view.hex_to_global_position(state.hex)
 		actors[state.unit_id] = actor
@@ -119,7 +119,7 @@ func create_summoned(event: UnitSummonedEvent) -> bool:
 	if actor == null:
 		return false
 	var viewport_size := _map_view.get_viewport_rect().size
-	actor.scale = Vector2.ONE * minf(viewport_size.x / 1920.0, viewport_size.y / 1080.0) / _map_view.scale
+	actor.scale = Vector2.ONE * ReferenceCanvas.fit_scale(viewport_size) / _map_view.scale
 	actor.global_position = _map_view.hex_to_global_position(event.unit.hex)
 	actors[event.unit.unit_id] = actor
 	definitions[event.unit.unit_id] = event.definition
@@ -172,7 +172,7 @@ func synchronize(session: BattleSession) -> void:
 			if presentation != null:
 				presentations[id] = presentation
 		var viewport := _map_view.get_viewport_rect().size
-		actor.scale = Vector2.ONE * minf(viewport.x / 1920.0, viewport.y / 1080.0) / _map_view.scale
+		actor.scale = Vector2.ONE * ReferenceCanvas.fit_scale(viewport) / _map_view.scale
 		actor.global_position = _map_view.hex_to_global_position(state.hex)
 		actor.show_health(state.health.current, state.health.maximum)
 		actor.show_statuses(state.statuses)

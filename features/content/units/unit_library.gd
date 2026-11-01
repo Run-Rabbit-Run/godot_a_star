@@ -148,29 +148,7 @@ static func save_document(data: Dictionary, skills: Dictionary) -> String:
 	if texture_for(data.image) == null:
 		return "Изображение не удалось прочитать."
 	var path := UNITS.path_join(String(data.id).trim_prefix("custom_units:") + ".json")
-	var temporary := path + ".tmp"
-	var file := FileAccess.open(temporary, FileAccess.WRITE)
-	if file == null:
-		return "Не удалось записать %s" % temporary
-	file.store_string(JSON.stringify(data, "\t") + "\n")
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK:
-		return "Ошибка записи: %s" % error_string(write_error)
-	var backup := path + ".bak"
-	if FileAccess.file_exists(path):
-		var move_error := DirAccess.rename_absolute(path, backup)
-		if move_error != OK:
-			return "Не удалось сохранить предыдущую версию: %s" % error_string(move_error)
-	var rename_error := DirAccess.rename_absolute(temporary, path)
-	if rename_error != OK:
-		if FileAccess.file_exists(backup):
-			DirAccess.rename_absolute(backup, path)
-		return "Не удалось завершить сохранение: %s" % error_string(rename_error)
-	if FileAccess.file_exists(backup):
-		DirAccess.remove_absolute(backup)
-	return ""
+	return AtomicFileWriter.write_text(path, JSON.stringify(data, "\t") + "\n")
 
 static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
 	var result := ContentLoadResult.new()

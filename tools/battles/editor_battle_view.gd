@@ -84,9 +84,9 @@ func select_hex(hex: Vector2i, selected: bool = true) -> void:
 
 
 func frame_document(view_size: Vector2) -> void:
-	_zoom = clampf(minf(view_size.x / 1920.0, view_size.y / 1080.0), MIN_ZOOM, MAX_ZOOM)
+	_zoom = clampf(ReferenceCanvas.fit_scale(view_size), MIN_ZOOM, MAX_ZOOM)
 	scale = Vector2.ONE * _zoom
-	position = (view_size - Vector2(1920, 1080) * _zoom) * 0.5
+	position = (view_size - ReferenceCanvas.SIZE * _zoom) * 0.5
 
 
 ## Scales the view around the centre of the workspace; the document is unchanged.
@@ -113,7 +113,7 @@ func screen_position_to_hex(screen_position: Vector2) -> Vector2i:
 func _draw() -> void:
 	if document == null:
 		return
-	draw_texture_rect(BattleBackdrops.texture(document.map_definition.background_id), Rect2(0, 0, 1920, 1080), false)
+	draw_texture_rect(BattleBackdrops.texture(document.map_definition.background_id), Rect2(Vector2.ZERO, ReferenceCanvas.SIZE), false)
 	var existing: Dictionary[Vector2i, bool] = {}
 	var occupancy: Dictionary[Vector2i, int] = {}
 	for cell: BattleMapCellDefinition in document.map_definition.cells:

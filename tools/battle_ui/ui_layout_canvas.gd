@@ -31,7 +31,7 @@ func _ready() -> void:
 	custom_minimum_size = Vector2(320, 240)
 	mouse_default_cursor_shape = Control.CURSOR_ARROW
 	_viewport = SubViewport.new()
-	_viewport.size = Vector2i(1920, 1080)
+	_viewport.size = Vector2i(ReferenceCanvas.SIZE)
 	_viewport.disable_3d = true
 	_viewport.transparent_bg = true
 	_viewport.gui_disable_input = true
@@ -85,8 +85,8 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("171b22"))
-	var ratio := minf(size.x / 1920.0, size.y / 1080.0) * _zoom
-	_frame = Rect2((size - Vector2(1920, 1080) * ratio) / 2.0 + _pan, Vector2(1920, 1080) * ratio)
+	var ratio := ReferenceCanvas.fit_scale(size) * _zoom
+	_frame = Rect2((size - ReferenceCanvas.SIZE * ratio) / 2.0 + _pan, ReferenceCanvas.SIZE * ratio)
 	draw_texture_rect(_background, _frame, false)
 	if _viewport == null:
 		return
@@ -100,7 +100,7 @@ func _draw() -> void:
 
 
 func _screen_rect(rect: Rect2) -> Rect2:
-	var ratio := _frame.size.x / 1920.0
+	var ratio := _frame.size.x / ReferenceCanvas.SIZE.x
 	return Rect2(_frame.position + rect.position * ratio, rect.size * ratio)
 
 
@@ -161,7 +161,7 @@ func _begin_drag(point: Vector2) -> void:
 
 
 func _drag(point: Vector2) -> void:
-	var delta := (point - _start_mouse) / (_frame.size.x / 1920.0)
+	var delta := (point - _start_mouse) / (_frame.size.x / ReferenceCanvas.SIZE.x)
 	var rect := _start_rect
 	if _edge == Vector2i.ZERO:
 		rect.position += delta
@@ -235,5 +235,5 @@ func fit() -> void:
 
 
 func actual_size() -> void:
-	_zoom = 1.0 / minf(size.x / 1920.0, size.y / 1080.0)
+	_zoom = 1.0 / ReferenceCanvas.fit_scale(size)
 	_pan = Vector2.ZERO
