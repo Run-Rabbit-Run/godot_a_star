@@ -218,10 +218,6 @@ func step(command: BattleCommand) -> BattleResolution:
 	return resolution
 
 
-func execute_command(command: BattleCommand) -> BattleResolution:
-	return step(command)
-
-
 func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:

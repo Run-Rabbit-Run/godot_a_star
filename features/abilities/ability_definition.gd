@@ -9,7 +9,6 @@ extends Resource
 @export var presentation_id: StringName
 @export var range := 1
 @export_range(0, 8) var area_radius := 0
-@export var ends_main_action := true
 @export var effects: Array[AbilityEffectDefinition] = []
 
 enum TargetMode { AUTO, ENEMY, HEX, EMPTY_HEX, LINE, PATH, SELF }
@@ -33,8 +32,6 @@ func validate() -> String:
 		return "Unknown ability target mode."
 	if returns_next_turn and (target_mode != TargetMode.PATH or area_radius != 0):
 		return "Returning weapons require a finite path and zero area radius."
-	if not ends_main_action:
-		return "Every active ability must spend the main action and end the turn."
 	if effects.is_empty():
 		return "Ability must have effects."
 	for effect: AbilityEffectDefinition in effects:

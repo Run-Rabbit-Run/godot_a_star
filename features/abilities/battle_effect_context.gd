@@ -125,12 +125,3 @@ func apply_damage_events(source_unit_id: StringName, target_unit_id: StringName,
 	if not reaction_error.is_empty():
 		fail(reaction_error)
 	return events
-
-
-# Compatibility for existing external handlers. Use apply_damage_events for compound effects.
-func apply_damage(source_unit_id: StringName, target_unit_id: StringName, amount: int) -> UnitDamagedEvent:
-	var events := apply_damage_events(source_unit_id, target_unit_id, amount)
-	for event: BattleEvent in events:
-		if event is UnitDamagedEvent:
-			return event as UnitDamagedEvent
-	return null

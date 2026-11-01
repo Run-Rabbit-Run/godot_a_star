@@ -46,7 +46,3 @@ static func success(
 		p_damage,
 		p_target_health_remaining
 	)
-
-
-func is_target_defeated() -> bool:
-	return is_successful and target_health_remaining == 0

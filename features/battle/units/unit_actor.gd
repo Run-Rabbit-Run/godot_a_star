@@ -8,9 +8,6 @@ const CUSTOM_TEXTURE_SIZE := 82.0
 @export_range(0.01, 1.0, 0.01)
 var movement_step_duration := 0.28
 
-@export_range(0.01, 1.0, 0.01)
-var damage_flash_duration := 0.18
-
 var unit_id: StringName
 var _faction_color := Color(0.51, 0.66, 0.75)
 var _show_base := true
@@ -169,34 +166,6 @@ func show_statuses(statuses: Dictionary) -> void:
 	_status_row.size = Vector2.ZERO
 	_status_row.visible = not _defeated and not statuses.is_empty()
 
-func present_damage() -> void:
-	if not visible:
-		return
-
-	var base_color := modulate
-	var hit_color := base_color.lerp(Color.RED, 0.7)
-	var tween := create_tween()
-	tween.tween_property(
-		self,
-		"modulate",
-		hit_color,
-		damage_flash_duration * 0.5
-	)
-	tween.tween_property(
-		self,
-		"modulate",
-		base_color,
-		damage_flash_duration * 0.5
-	)
-	await tween.finished
-
-
-func present_defeat() -> void:
-	var tween := create_defeat_tween()
-	if tween != null:
-		await tween.finished
-
-
 func create_defeat_tween(direction: float = 1.0) -> Tween:
 	if _defeated:
 		return _defeat_tween if _defeat_tween != null and _defeat_tween.is_running() else null
@@ -266,18 +235,6 @@ func finish_defeat() -> void:
 	_corpse.modulate.a = 1.0
 	# Below living units (20) and tactical overlays (8+), above terrain effects (5).
 	z_index = 6
-
-
-func is_presented_as_corpse() -> bool:
-	return _defeated
-
-
-func move_along_global_positions(
-	positions: Array[Vector2]
-) -> void:
-	var tween := create_movement_tween(positions)
-	if tween != null:
-		await tween.finished
 
 
 func create_movement_tween(positions: Array[Vector2]) -> Tween:

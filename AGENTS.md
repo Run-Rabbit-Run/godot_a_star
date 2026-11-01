@@ -106,8 +106,6 @@ ContentPackage → ContentLoader → ContentSnapshot
 | Headless-прогон | `features/simulation/` |
 | Переходы кампании | `features/campaign/` |
 
-`BattleMapAssembler` — legacy-адаптер старого `TileMapLayer`. Основной запуск использует определения из packages; новые зависимости на assembler не добавлять.
-
 ## Ошибки и fallback
 
 - Ошибка обязательных правил, карты, определения, расстановки, цели или зависимости останавливает запуск/операцию.

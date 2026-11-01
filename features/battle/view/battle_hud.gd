@@ -16,12 +16,10 @@ var layout_presenter: UILayoutPresenter
 
 
 const HUD_LAYOUT := preload("res://features/battle/ui/battle_hud_layout.tscn")
-const COLOR_PANEL := Color("241717")
 const COLOR_PANEL_INNER := Color("30201a")
 const COLOR_IVORY := Color("eadbb9")
 const COLOR_BRONZE := Color("d0ab61")
 const COLOR_ENEMY := Color(0.565, 0.215, 0.185, 1.0)
-const COLOR_SIGNAL := Color(0.635, 0.225, 0.175, 1.0)
 const COLOR_MUTED := Color(0.515, 0.510, 0.455, 1.0)
 const COLOR_HEALTHY := Color(0.400, 0.447, 0.357, 1.0)
 const COLOR_WOUNDED := Color(0.604, 0.451, 0.278, 1.0)

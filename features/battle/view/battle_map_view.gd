@@ -351,18 +351,6 @@ func render_grid(grid: HexGrid) -> void:
 	_fit_battlefield_to_viewport()
 
 
-func get_grid_global_bounds() -> Rect2:
-	if _grid_local_bounds.size == Vector2.ZERO:
-		_grid_local_bounds = _calculate_grid_local_bounds()
-
-	if _grid_local_bounds.size == Vector2.ZERO:
-		return Rect2()
-
-	var top_left := _terrain_layer.to_global(_grid_local_bounds.position)
-	var bottom_right := _terrain_layer.to_global(_grid_local_bounds.end)
-	return Rect2(top_left, bottom_right - top_left)
-
-
 func hex_to_global_position(axial_cell: Vector2i) -> Vector2:
 	var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
 	var local_position := _terrain_layer.map_to_local(map_cell)
