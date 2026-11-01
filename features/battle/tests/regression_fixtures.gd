@@ -28,6 +28,14 @@ func ability(id: StringName, mode: AbilityDefinition.TargetMode, radius := 0) ->
 ## must not change what the regressions exercise.
 const BATTLE_PATH := "res://features/battle/tests/fixtures/regression_battle.json"
 
+var _skills: SkillLibrary
+
+## Skill library of the project's packages, built once per test run.
+func skills() -> SkillLibrary:
+	if _skills == null:
+		_skills = SkillLibrary.new(GameContentSettings.read().content_packages)
+	return _skills
+
 func content() -> ContentLoadResult:
 	return UnitLibrary.load_content(GameContentSettings.read().content_packages, false)
 

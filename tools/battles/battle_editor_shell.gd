@@ -426,6 +426,7 @@ func _update_inspector() -> void:
 func _open_skill_editor() -> void:
 	var editor := preload("res://tools/skills/skill_editor.tscn").instantiate() as SkillEditor
 	editor.embedded = true
+	editor.content_packages = content_packages
 	_skill_editor = editor
 	_ui.hide()
 	editor.closed.connect(func() -> void:
@@ -439,6 +440,7 @@ func _open_skill_editor() -> void:
 func _open_unit_editor() -> void:
 	var editor := preload("res://tools/units/unit_editor.tscn").instantiate() as UnitEditor
 	editor.embedded = true
+	editor.content_packages = content_packages
 	_unit_editor = editor
 	_ui.hide()
 	editor.closed.connect(func() -> void:

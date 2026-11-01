@@ -23,6 +23,10 @@ const SPREADING_TARGETS := [AbilityDefinition.TargetMode.LINE, AbilityDefinition
 const TYPED_KEYS := ["name", "description"]
 
 var embedded := false
+## Content whose built-in skills are edited; the hosting editor passes its own packages,
+## a standalone editor reads them from the project settings.
+var content_packages: Array[ContentPackage] = []
+var _library: SkillLibrary
 var _document: Dictionary = {}
 var _saved: Dictionary = {}
 var _undo: Array[Dictionary] = []
@@ -62,6 +66,11 @@ func _ready() -> void:
 	_build_ui()
 	_previous_auto_accept = get_tree().auto_accept_quit
 	get_tree().auto_accept_quit = false
+	if content_packages.is_empty():
+		var settings := GameContentSettings.read()
+		if settings != null:
+			content_packages = settings.content_packages
+	_library = SkillLibrary.new(content_packages)
 	_reload_catalog()
 	_open_first()
 
@@ -258,8 +267,8 @@ func _apply_conditions() -> void:
 
 
 func _reload_catalog() -> void:
-	_builtin = SkillLibrary.builtin_documents()
-	var authored := SkillLibrary.read_all()
+	_builtin = _library.builtin_documents()
+	var authored := _library.read_all()
 	_authored = authored.documents
 	_catalog = _builtin.duplicate(true)
 	_catalog.merge(_authored, true)
@@ -433,7 +442,7 @@ func _effect_card(index: int) -> void:
 
 
 func _summon_text(params: Dictionary) -> String:
-	var unit: UnitDefinition = SkillLibrary.units().get(StringName(String(params.get("unit_id", ""))))
+	var unit: UnitDefinition = _library.units().get(StringName(String(params.get("unit_id", ""))))
 	if unit == null:
 		return "Призываемый юнит %s не найден." % params.get("unit_id", "")
 	return "Призывает «%s»: ОЗ %d, атака %d на дальность %d. Призываемый юнит меняется в своих данных, не здесь." % [unit.display_name, unit.base_stats.max_health, unit.base_stats.basic_attack_damage, unit.base_stats.basic_attack_range]
@@ -475,7 +484,7 @@ func _context() -> Dictionary:
 
 func _variable_entries() -> Array[Dictionary]:
 	if _kind == "active":
-		return AbilityDescription.variables(SkillLibrary.to_ability(_document), _context())
+		return AbilityDescription.variables(_library.to_ability(_document), _context())
 	return AbilityDescription.passive_variables(_passive_definition())
 
 
@@ -502,13 +511,13 @@ func _insert_variable(key: String) -> void:
 func _update_status() -> void:
 	var id := String(_document.get("id", ""))
 	EditorUi.set_dirty(_dirty, _document != _saved, _builtin.has(id) or _authored.has(id))
-	var error := SkillLibrary.validate(_document)
+	var error := _library.validate(_document)
 	if error.is_empty():
 		EditorUi.set_status(_validation, "✓ Данные корректны", EditorUi.Severity.OK)
 	else:
 		EditorUi.set_status(_validation, "✗ " + error, EditorUi.Severity.ERROR)
 	_validation.tooltip_text = error
-	_reset.disabled = not _builtin.has(id) or SkillLibrary.is_builtin_default(_document)
+	_reset.disabled = not _builtin.has(id) or _library.is_builtin_default(_document)
 	_apply_conditions()
 	_update_preview()
 	_update_help()
@@ -517,7 +526,7 @@ func _update_status() -> void:
 func _update_preview() -> void:
 	if _document.is_empty():
 		return
-	var text := AbilityDescription.render(SkillLibrary.to_ability(_document), _context()) if _kind == "active" else AbilityDescription.render_passive(_passive_definition())
+	var text := AbilityDescription.render(_library.to_ability(_document), _context()) if _kind == "active" else AbilityDescription.render_passive(_passive_definition())
 	_preview.text = "%s\n\n%s" % [_document.name, text if not text.strip_edges().is_empty() else "Описание не задано: в игре видны только название и параметры."]
 
 
@@ -596,7 +605,7 @@ func _select(index: int) -> void:
 
 func _reset_to_builtin() -> void:
 	var original: Dictionary = _builtin.get(String(_document.get("id", "")), {})
-	if original.is_empty() or SkillLibrary.is_builtin_default(_document):
+	if original.is_empty() or _library.is_builtin_default(_document):
 		return
 	_push_undo()
 	_last_change = ""
@@ -606,11 +615,11 @@ func _reset_to_builtin() -> void:
 
 
 func _save() -> void:
-	var error := SkillLibrary.save_document(_document)
+	var error := _library.save_document(_document)
 	if not error.is_empty():
 		EditorUi.set_status(_status, "Не сохранено: " + error, EditorUi.Severity.ERROR)
 		return
-	var restored := SkillLibrary.is_builtin_default(_document)
+	var restored := _library.is_builtin_default(_document)
 	_saved = _document.duplicate(true)
 	_reload_catalog()
 	_render()
@@ -622,7 +631,7 @@ func _save() -> void:
 
 
 func _refresh() -> void:
-	SkillLibrary.reload()
+	_library = SkillLibrary.new(content_packages)
 	_reload_catalog()
 	var id := String(_document.get("id", ""))
 	if _document == _saved and _catalog.has(id):

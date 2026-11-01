@@ -716,12 +716,12 @@ func _test_content() -> void:
 	var data := UnitLibrary.new_document()
 	data.attack_range = 1
 	data.image = "missing.png"
-	expect(UnitLibrary.validate(data).is_empty(), "Melee range one and missing optional image allowed")
+	expect(UnitLibrary.validate(data, fixture.skills().catalog()).is_empty(), "Melee range one and missing optional image allowed")
 	data.image = "../outside.png"
-	expect(not UnitLibrary.validate(data).is_empty(), "Unit image cannot leave asset folder")
+	expect(not UnitLibrary.validate(data, fixture.skills().catalog()).is_empty(), "Unit image cannot leave asset folder")
 	data = UnitLibrary.new_document()
 	data.passives = ["core:fire_attack", "core:water_attack"]
-	expect(not UnitLibrary.validate(data).is_empty(), "Conflicting basic damage types rejected")
+	expect(not UnitLibrary.validate(data, fixture.skills().catalog()).is_empty(), "Conflicting basic damage types rejected")
 
 func _test_documents() -> void:
 	var request := fixture.request()

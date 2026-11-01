@@ -1,6 +1,8 @@
 class_name SkillLibrary
 extends RefCounted
-## Project-authored skill definitions and overrides of built-in ones. Built-in resources are copied before applying overrides.
+## Project-authored skill definitions and overrides of the built-in skills of one package
+## set. The caller passes the packages: the library never reads the project settings itself.
+## Built-in resources are copied before applying overrides.
 
 const ROOT := "res://content/authored/skills"
 const KINDS := ["active", "passive"]
@@ -12,32 +14,21 @@ const DAMAGE_TYPES := {"physical": "Физический", "electric": "Элек
 const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"]}
 const FIXED_ACTIVE_KEYS := ["target_mode", "uses_attack_range", "returns_next_turn", "melee_attack", "presentation_id"]
 
-## Built-in documents and summonable units, read once: packages() reloads every package (~0.6 s).
-static var _builtin_cache: Dictionary = {}
-static var _units_cache: Dictionary = {}
+var _packages: Array[ContentPackage] = []
+var _builtin: Dictionary = {}
+var _units: Dictionary = {}
 
-static func packages() -> Array[ContentPackage]:
-	var settings := GameContentSettings.read()
-	return settings.content_packages if settings != null else []
 
-## Drops cached built-in data; tools call it when the user asks to re-read content.
-static func reload() -> void:
-	_builtin_cache.clear()
-	_units_cache.clear()
-
-static func _builtin() -> Dictionary:
-	if _builtin_cache.is_empty():
-		var source := packages()
-		for package: ContentPackage in source:
-			for unit: UnitDefinition in package.units:
-				_units_cache[unit.id] = unit
-		_builtin_cache = _build_builtin_documents(source)
-	return _builtin_cache
+func _init(packages: Array[ContentPackage]) -> void:
+	_packages.assign(packages)
+	for package: ContentPackage in packages:
+		for unit: UnitDefinition in package.units:
+			_units[unit.id] = unit
+	_builtin = _build_builtin_documents(packages)
 
 ## Package units by ID. Callers must duplicate before changing them.
-static func units() -> Dictionary:
-	_builtin()
-	return _units_cache
+func units() -> Dictionary:
+	return _units
 
 static func new_document(kind: String) -> Dictionary:
 	var data := {"schema_version": 1, "kind": kind, "id": "custom_skills:s_" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "Новый навык", "description": ""}
@@ -72,8 +63,8 @@ static func active_document(ability: AbilityDefinition) -> Dictionary:
 		data.effects.append(_effect_document(effect))
 	return data
 
-static func builtin_documents() -> Dictionary:
-	return _builtin().duplicate(true)
+func builtin_documents() -> Dictionary:
+	return _builtin.duplicate(true)
 
 static func _build_builtin_documents(source: Array[ContentPackage]) -> Dictionary:
 	var documents := {}
@@ -92,7 +83,7 @@ static func _build_builtin_documents(source: Array[ContentPackage]) -> Dictionar
 		documents[String(id)] = data
 	return documents
 
-static func read_all(root := ROOT) -> Dictionary:
+func read_all(root := ROOT) -> Dictionary:
 	var documents := {}
 	var errors: Array[String] = []
 	if not DirAccess.dir_exists_absolute(root):
@@ -118,7 +109,8 @@ static func read_all(root := ROOT) -> Dictionary:
 			documents[data.id] = data
 	return {"documents": documents, "errors": errors}
 
-static func catalog() -> Dictionary:
+## Built-in documents with the project's overrides and own skills read from `ROOT`.
+func catalog() -> Dictionary:
 	var documents := builtin_documents()
 	documents.merge(read_all().documents, true)
 	return documents
@@ -137,8 +129,8 @@ static func normalized(value: Variant) -> Variant:
 	return value
 
 ## True when the document repeats a built-in skill exactly, so it needs no override file.
-static func is_builtin_default(data: Dictionary) -> bool:
-	var builtin: Dictionary = _builtin().get(data.get("id", ""), {})
+func is_builtin_default(data: Dictionary) -> bool:
+	var builtin: Dictionary = _builtin.get(data.get("id", ""), {})
 	return not builtin.is_empty() and normalized(data) == builtin
 
 static func passive_definitions(documents: Dictionary) -> Dictionary:
@@ -155,7 +147,7 @@ static func _integer(data: Dictionary, key: String, minimum: int, maximum: int) 
 	var value: Variant = data.get(key)
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floor(float(value)) and value >= minimum and value <= maximum
 
-static func validate(data: Dictionary) -> String:
+func validate(data: Dictionary) -> String:
 	if data.get("schema_version") != 1 or data.get("kind") not in KINDS: return "Неизвестная схема или категория."
 	for key: String in ["id", "name"]:
 		if not data.get(key) is String or String(data[key]).strip_edges().is_empty(): return "Заполните %s." % ("ID" if key == "id" else "название")
@@ -164,7 +156,7 @@ static func validate(data: Dictionary) -> String:
 	if parts.size() != 2 or not parts[0].is_valid_identifier() or not parts[1].is_valid_identifier(): return "Некорректный ID."
 	var builtin: Dictionary = {}
 	if parts[0] != "custom_skills":
-		builtin = _builtin().get(data.id, {})
+		builtin = _builtin.get(data.id, {})
 		if builtin.is_empty() or builtin.kind != data.kind: return "ID не является встроенным навыком этой категории."
 	if data.kind == "passive":
 		if not _integer(data, "attack_bonus", 0, 9999) or not _integer(data, "levels", 1, 99): return "Бонус урона: 0–9999; уровни: 1–99."
@@ -222,7 +214,7 @@ static func _description_error(data: Dictionary, variables: Array[Dictionary]) -
 	if not unknown.is_empty(): return "Описание: переменная {%s} не относится к этому умению." % unknown[0]
 	return ""
 
-static func to_effect(data: Dictionary) -> AbilityEffectDefinition:
+func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 	var effect := AbilityEffectDefinition.new()
 	effect.effect_type_id = StringName(data.type)
 	effect.parameters = data.parameters.duplicate(true)
@@ -235,7 +227,7 @@ static func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 		if unit != null: effect.parameters["unit"] = unit.duplicate(true)
 	return effect
 
-static func validate_effect(data: Dictionary) -> String:
+func validate_effect(data: Dictionary) -> String:
 	if not data.get("type") is String or not data.get("parameters") is Dictionary: return "Некорректный формат эффекта."
 	var params: Dictionary = data.parameters
 	for key: String in ["amount", "secondary_amount", "levels"]:
@@ -258,7 +250,7 @@ static func validate_effect(data: Dictionary) -> String:
 		_: return "Неизвестный обработчик эффекта."
 	return handler.validate(to_effect(data))
 
-static func to_ability(data: Dictionary) -> AbilityDefinition:
+func to_ability(data: Dictionary) -> AbilityDefinition:
 	var ability := AbilityDefinition.new()
 	ability.id = StringName(data.id)
 	ability.display_name = data.name
@@ -273,7 +265,7 @@ static func filename_for(data: Dictionary) -> String:
 	return String(data.id).replace(":", "__") + ".json"
 
 ## A built-in skill saved with its original values removes the override file instead of writing a copy.
-static func save_document(data: Dictionary, root := ROOT) -> String:
+func save_document(data: Dictionary, root := ROOT) -> String:
 	var error := validate(data)
 	if not error.is_empty(): return error
 	var path := root.path_join(filename_for(data))
@@ -301,10 +293,11 @@ static func save_document(data: Dictionary, root := ROOT) -> String:
 	if FileAccess.file_exists(path + ".bak"): DirAccess.remove_absolute(path + ".bak")
 	return ""
 
-static func apply_to_packages(source: Array[ContentPackage], documents: Dictionary) -> Array[ContentPackage]:
+## This library's packages with the documents applied, plus a `custom_skills` package.
+func apply_to_packages(documents: Dictionary) -> Array[ContentPackage]:
 	var result: Array[ContentPackage] = []
 	var passives := passive_definitions(documents)
-	for original: ContentPackage in source:
+	for original: ContentPackage in _packages:
 		var package := original.duplicate(true) as ContentPackage
 		for index: int in range(package.abilities.size()):
 			var id := String(package.abilities[index].id)
@@ -315,7 +308,7 @@ static func apply_to_packages(source: Array[ContentPackage], documents: Dictiona
 	var custom := ContentPackage.new()
 	custom.manifest = ContentPackageManifest.new()
 	custom.manifest.package_id = &"custom_skills"
-	for package: ContentPackage in source:
+	for package: ContentPackage in _packages:
 		var dependency := ContentPackageDependency.new()
 		dependency.package_id = package.manifest.package_id
 		custom.manifest.dependencies.append(dependency)

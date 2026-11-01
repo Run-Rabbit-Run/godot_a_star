@@ -26,7 +26,8 @@ func _ready() -> void:
 	elif mode == "unit":
 		var editor := preload("res://tools/units/unit_editor.tscn").instantiate() as UnitEditor
 		add_child(editor)
-		var loaded := UnitLibrary.read_document("res://content/authored/units/spear_guard.json")
+		var skills := SkillLibrary.new(GameContentSettings.read().content_packages).catalog()
+		var loaded := UnitLibrary.read_document("res://content/authored/units/spear_guard.json", skills)
 		editor.call("_set_document", loaded.document)
 		(editor.get("_status") as Label).text = "Открыт копейщик из библиотеки проекта."
 	else:

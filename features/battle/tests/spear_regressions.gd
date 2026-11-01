@@ -176,6 +176,7 @@ func run(suite: Node) -> void:
 	suite.expect(encoded.has("pending_spear_return"), "Diagnostics include pending return state")
 
 func run_editor(suite: Node) -> void:
+	var skills: SkillLibrary = suite.fixture.skills()
 	var editor := preload("res://tools/units/unit_editor.tscn").instantiate() as UnitEditor
 	suite.add_child(editor)
 	await suite.get_tree().process_frame
@@ -197,7 +198,7 @@ func run_editor(suite: Node) -> void:
 		if passive.get_popup().get_item_metadata(index) == "core:melee_retaliation":
 			passive.get_popup().index_pressed.emit(index)
 	suite.expect((editor.get("_document") as Dictionary).passives.has("core:melee_retaliation"), "Passive dropdown selects retaliation")
-	suite.expect(UnitLibrary.validate(editor.get("_document")).is_empty(), "Selected active and passive IDs validate")
+	suite.expect(UnitLibrary.validate(editor.get("_document"), skills.catalog()).is_empty(), "Selected active and passive IDs validate")
 	editor.queue_free()
 	await suite.get_tree().process_frame
 

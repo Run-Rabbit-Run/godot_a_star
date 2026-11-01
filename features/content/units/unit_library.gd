@@ -56,7 +56,8 @@ static func new_document() -> Dictionary:
 		"abilities": [], "passives": [], "armor": 0,
 	}
 
-static func validate(data: Dictionary, skills: Dictionary = {}) -> String:
+## `skills` is the catalog of the content the unit belongs to, from its SkillLibrary.
+static func validate(data: Dictionary, skills: Dictionary) -> String:
 	var error := validate_structure(data)
 	return error if not error.is_empty() else validate_references(data, skills)
 
@@ -104,8 +105,7 @@ static func validate_structure(data: Dictionary) -> String:
 
 
 ## Skill references of a structurally valid document; such documents remain repairable in the editor.
-static func validate_references(data: Dictionary, skills: Dictionary = {}) -> String:
-	if skills.is_empty(): skills = SkillLibrary.catalog()
+static func validate_references(data: Dictionary, skills: Dictionary) -> String:
 	for key: String in ["abilities", "passives"]:
 		for value: String in data[key]:
 			if key == "abilities" and skills.get(value, {}).get("kind", "") != "active":
@@ -117,7 +117,7 @@ static func validate_references(data: Dictionary, skills: Dictionary = {}) -> St
 		passives.append(StringName(passive_id))
 	return PassiveAbilityCatalog.validate(passives, SkillLibrary.passive_definitions(skills))
 
-static func read_document(path: String, skills: Dictionary = {}) -> Dictionary:
+static func read_document(path: String, skills: Dictionary) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return {"error": "Не удалось прочитать %s" % path}
@@ -142,8 +142,8 @@ static func read_document(path: String, skills: Dictionary = {}) -> Dictionary:
 		return {"error": "%s: %s" % [path, references], "document": data}
 	return {"error": "", "document": data}
 
-static func save_document(data: Dictionary) -> String:
-	var error := validate(data)
+static func save_document(data: Dictionary, skills: Dictionary) -> String:
+	var error := validate(data, skills)
 	if not error.is_empty():
 		return error
 	if texture_for(data.image) == null:
@@ -175,12 +175,13 @@ static func save_document(data: Dictionary) -> String:
 
 static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
 	var result := ContentLoadResult.new()
-	var authored := SkillLibrary.read_all()
+	var library := SkillLibrary.new(packages)
+	var authored := library.read_all()
 	if not authored.errors.is_empty():
 		result.errors.append_array(authored.errors)
 		return result
 	var definitions := SkillLibrary.passive_definitions(authored.documents)
-	var available := SkillLibrary.builtin_documents()
+	var available := library.builtin_documents()
 	available.merge(authored.documents, true)
 	if not DirAccess.dir_exists_absolute(UNITS):
 		result.add_error("Не найдена библиотека юнитов проекта: %s" % UNITS)
@@ -223,7 +224,7 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 		package.unit_presentations.append(presentation)
 	if not result.errors.is_empty():
 		return result
-	var combined := SkillLibrary.apply_to_packages(packages, authored.documents)
+	var combined := library.apply_to_packages(authored.documents)
 	combined.append(package)
 	var loaded := ContentLoader.load_packages(combined)
 	loaded.warnings.append_array(result.warnings)

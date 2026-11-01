@@ -14,6 +14,10 @@ const STATS := [
 ]
 
 var embedded := false
+## Content the units belong to; the hosting editor passes its own packages, a standalone
+## editor reads them from the project settings.
+var content_packages: Array[ContentPackage] = []
+var _library: SkillLibrary
 var _document: Dictionary = {}
 var _saved: Dictionary = {}
 var _undo: Array[Dictionary] = []
@@ -52,7 +56,12 @@ var _preview_asset := ""
 func _ready() -> void:
 	_build_ui()
 	var error := UnitLibrary.ensure_folders()
-	_skills = SkillLibrary.catalog()
+	if content_packages.is_empty():
+		var settings := GameContentSettings.read()
+		if settings != null:
+			content_packages = settings.content_packages
+	_library = SkillLibrary.new(content_packages)
+	_skills = _library.catalog()
 	_refresh_assets()
 	_fill_ability_menus()
 	_new_document()
@@ -282,7 +291,7 @@ func _skill_tooltip(data: Dictionary) -> String:
 	var lines := PackedStringArray()
 	var description := ""
 	if data.kind == "active":
-		description = AbilityDescription.render(SkillLibrary.to_ability(data), _unit_context())
+		description = AbilityDescription.render(_library.to_ability(data), _unit_context())
 	else:
 		description = AbilityDescription.render_passive(SkillLibrary.passive_definitions({data.id: data}).values()[0])
 	if not description.strip_edges().is_empty():
@@ -460,7 +469,7 @@ func _redo_edit() -> void:
 
 
 func _save() -> void:
-	var error := UnitLibrary.save_document(_document)
+	var error := UnitLibrary.save_document(_document, _skills)
 	if not error.is_empty():
 		EditorUi.set_status(_status, "Не сохранено: " + error, EditorUi.Severity.ERROR)
 		return
@@ -544,7 +553,8 @@ func _refresh_assets() -> void:
 
 
 func _refresh() -> void:
-	_skills = SkillLibrary.catalog()
+	_library = SkillLibrary.new(content_packages)
+	_skills = _library.catalog()
 	_preview_asset = ""
 	_refresh_assets()
 	_fill_ability_menus()
