@@ -168,7 +168,7 @@ func _check_first_save(editor: BattleEditorShell, expect: Callable) -> void:
 	var snapshot: ContentSnapshot = editor.get("_snapshot")
 	var fresh := BattleLibrary.create_document(snapshot, editor.initial_battle_id)
 	editor.call("_replace_document", fresh, "", false)
-	var path := folder.path_join(editor.call("_suggested_document_filename"))
+	var path := folder.path_join(BattleLibrary.filename_for(editor.get("_document")))
 	var stranger := BattleLibrary.create_document(snapshot, editor.initial_battle_id)
 	stranger.display_name = "Чужое поле"
 	BattleDocumentSerializer.save(stranger, path)

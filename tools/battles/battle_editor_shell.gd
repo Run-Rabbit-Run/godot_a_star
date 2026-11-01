@@ -3,11 +3,9 @@ extends Control
 ## Coordinates the battle map editor: document workflow, edit commands, panels and trial battles.
 
 
-const DEFAULT_DRAFT_FILENAME := "battle_editor_draft.json"
 ## Loaded with the editor: loading the battle classes this early keeps scripts from leaking at exit
 ## (docs/dev/GOTCHAS.md «Godot 4.7»).
 const BATTLE_SCREEN_SCENE := preload("res://features/battle/battle_screen.tscn")
-const NO_HEX := Vector2i(999999, 999999)
 
 enum FileAction { NEW, OPEN, SAVE, SAVE_AS, REFRESH_LIST, RELOAD_LIBRARY, EXPORT, USE_IN_GAME }
 
@@ -745,14 +743,11 @@ func _add_hex(hex: Vector2i) -> void:
 
 
 func _remove_hex(hex: Vector2i) -> void:
-	if _obstacle_at(hex) != null:
-		_set_status("Сначала удалите препятствие целиком.", EditorUi.Severity.WARN)
+	if _obstacle_at(hex) == null and _find_cell(hex) == null:
 		return
-	if _find_cell(hex) == null:
-		return
-
-	if _hex_is_occupied(hex):
-		_set_status("Сначала переместите или удалите юнита с этого гекса.", EditorUi.Severity.WARN)
+	var error := EditorMapRules.remove_hex_error(_document, hex)
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.WARN)
 		return
 	_execute(EditCommand.remove_hex(hex))
 
@@ -823,25 +818,12 @@ func _selected_coordinate() -> Vector2i:
 	return Vector2i(int(_q_spin.value), int(_r_spin.value))
 
 
-## Empty when a unit (other than the ignored one) may start on the hex.
-func _placement_target_error(hex: Vector2i, ignored_placement_id: StringName) -> String:
-	for existing: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		if existing.start_hex == hex and existing.placement_id != ignored_placement_id:
-			return "Гекс уже занят юнитом."
-	var cell := _find_cell(hex)
-	if cell == null:
-		return "Юнита можно поставить только на существующий гекс."
-	if not cell.traversable or _obstacle_at(hex) != null:
-		return "Нельзя поставить юнита на непроходимый гекс."
-	return ""
-
-
 func _place_or_move_unit(hex: Vector2i) -> void:
 	if not _selected_placement_id.is_empty():
 		if _move_placement(_selected_placement_id, hex):
 			_select_tool(EditorBattleView.Tool.SELECT)
 		return
-	var error := _placement_target_error(hex, StringName())
+	var error := EditorMapRules.placement_target_error(_document, hex, StringName())
 	if not error.is_empty():
 		_set_status(error, EditorUi.Severity.WARN)
 		return
@@ -863,7 +845,7 @@ func _place_or_move_unit(hex: Vector2i) -> void:
 func _move_placement(placement_id: StringName, hex: Vector2i) -> bool:
 	if _find_placement(placement_id) == null:
 		return false
-	var error := _placement_target_error(hex, placement_id)
+	var error := EditorMapRules.placement_target_error(_document, hex, placement_id)
 	if not error.is_empty():
 		_set_status(error, EditorUi.Severity.WARN)
 		return false
@@ -903,7 +885,7 @@ func _duplicate_selected() -> void:
 		return
 
 	var destination := _free_hex_near(placement.start_hex)
-	if destination == NO_HEX:
+	if destination == EditorMapRules.NO_HEX:
 		_set_status("Нет свободного проходимого гекса для копии.", EditorUi.Severity.WARN)
 		return
 	var new_id := _new_placement_id()
@@ -1031,21 +1013,16 @@ func _save() -> void:
 	if not _current_document_path.is_empty():
 		_save_to_path(_current_document_path)
 		return
-	var path := battles_directory.path_join(_suggested_document_filename())
-	if FileAccess.file_exists(path) and not _is_same_document(path):
+	var path := battles_directory.path_join(BattleLibrary.filename_for(_document))
+	if FileAccess.file_exists(path) and not BattleLibrary.holds_document(path, _document):
 		_set_status("Файл %s принадлежит другому полю: выберите имя файла." % path.get_file(), EditorUi.Severity.WARN)
 		_save_as()
 		return
 	_save_to_path(path)
 
 
-func _is_same_document(path: String) -> bool:
-	var existing := BattleDocumentSerializer.load_result(path).document
-	return existing != null and existing.document_id == _document.document_id
-
-
 func _save_as() -> void:
-	_save_dialog.current_file = _suggested_document_filename()
+	_save_dialog.current_file = BattleLibrary.filename_for(_document)
 	_save_dialog.popup_centered_ratio(0.78)
 
 
@@ -1054,7 +1031,7 @@ func _open_dialog_requested() -> void:
 
 
 func _on_save_path_selected(path: String) -> void:
-	var saved := _save_to_path(_ensure_json_extension(path))
+	var saved := _save_to_path(BattleLibrary.with_json_extension(path))
 	if _activate_after_save:
 		_activate_after_save = false
 		if saved:
@@ -1174,18 +1151,6 @@ func _on_battle_selected(index: int) -> void:
 		_guard_discard(_load_document_path.bind(path))
 
 
-func _suggested_document_filename() -> String:
-	if _document == null or _document.battle_definition.id.is_empty():
-		return DEFAULT_DRAFT_FILENAME
-
-	var safe_name := String(_document.battle_definition.id).replace(":", "_")
-	return "%s.json" % safe_name
-
-
-func _ensure_json_extension(path: String) -> String:
-	return path if path.get_extension().to_lower() == "json" else "%s.json" % path
-
-
 func _update_document_path_label() -> void:
 	_sync_document_name()
 	_refresh_battle_library()
@@ -1266,25 +1231,11 @@ func _return_from_trial() -> void:
 
 
 func _find_cell(hex: Vector2i) -> BattleMapCellDefinition:
-	if _document == null:
-		return null
-
-	for cell: BattleMapCellDefinition in _document.map_definition.cells:
-		if cell.hex == hex:
-			return cell
-
-	return null
+	return EditorMapRules.find_cell(_document, hex)
 
 
 func _find_placement(placement_id: StringName) -> UnitPlacementDefinition:
-	if _document == null or placement_id.is_empty():
-		return null
-
-	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		if placement.placement_id == placement_id:
-			return placement
-
-	return null
+	return EditorMapRules.find_placement(_document, placement_id)
 
 
 func _select_option_by_metadata(option: OptionButton, value: Variant) -> void:
@@ -1340,20 +1291,7 @@ func _new_placement_id() -> StringName:
 
 
 func _free_hex_near(origin: Vector2i) -> Vector2i:
-	var occupied: Dictionary[Vector2i, bool] = {}
-	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		occupied[placement.start_hex] = true
-	var best := NO_HEX
-	var best_distance := 999999
-	for cell: BattleMapCellDefinition in _document.map_definition.cells:
-		if not cell.traversable or _obstacle_at(cell.hex) != null or occupied.has(cell.hex) or not EditorBattleView.is_in_frame(cell.hex):
-			continue
-		var delta := cell.hex - origin
-		var distance := maxi(absi(delta.x), maxi(absi(delta.y), absi(delta.x + delta.y)))
-		if distance < best_distance:
-			best_distance = distance
-			best = cell.hex
-	return best
+	return EditorMapRules.free_hex_near(_document, origin)
 
 
 func has_unsaved_changes() -> bool:
@@ -1392,21 +1330,12 @@ func _exit_tree() -> void:
 		get_tree().auto_accept_quit = true
 
 func _hex_is_occupied(hex: Vector2i) -> bool:
-	if _document == null:
-		return false
-	for placement: UnitPlacementDefinition in _document.battle_definition.unit_placements:
-		if placement.start_hex == hex:
-			return true
-	return false
+	return EditorMapRules.is_occupied(_document, hex)
 
 
 func _obstacle_at(hex: Vector2i) -> BattleObstacleDefinition:
-	if _document == null:
-		return null
-	for obstacle: BattleObstacleDefinition in _document.map_definition.obstacles:
-		if obstacle.hexes.has(hex):
-			return obstacle
-	return null
+	return EditorMapRules.obstacle_at(_document, hex)
+
 
 func _apply_selected_obstacle() -> void:
 	if _has_selected_hex:
@@ -1421,31 +1350,20 @@ func _remove_selected_obstacle() -> void:
 	if obstacle != null:
 		_execute(EditCommand.remove_obstacle(obstacle.id))
 
-## Obstacle IDs stay unique inside the document across editor sessions.
-func _new_obstacle_id() -> StringName:
-	var id := StringName()
-	while id.is_empty() or _document.map_definition.obstacles.any(func(obstacle: BattleObstacleDefinition) -> bool: return obstacle.id == id):
-		id = StringName("obstacle:%s" % Crypto.new().generate_random_bytes(8).hex_encode())
-	return id
-
 func _put_obstacle(hex: Vector2i) -> void:
 	var previous := _obstacle_at(hex)
 	var value := BattleObstacleDefinition.new()
-	value.id = previous.id if previous != null else _new_obstacle_id()
+	value.id = previous.id if previous != null else EditorMapRules.new_obstacle_id(_document)
 	value.terrain_type = BattleObstacleDefinition.TYPES[_obstacle_type.selected]
 	value.destructible = _obstacle_destructible.button_pressed
 	value.max_hp = int(_obstacle_hp.value)
 	value.current_hp = value.max_hp
 	var origin := previous.hexes[0] if previous != null else hex
 	for index in range(int(_obstacle_size.value)):
-		var occupied := origin + HexGrid.DIRECTIONS[_obstacle_direction.selected] * index
-		if not EditorBattleView.is_in_frame(occupied) or _find_cell(occupied) == null or not _find_cell(occupied).traversable or _hex_is_occupied(occupied):
-			_set_status("Препятствие требует свободные существующие гексы внутри поля.", EditorUi.Severity.WARN)
-			return
-		var other := _obstacle_at(occupied)
-		if other != null and other != previous:
-			_set_status("Препятствия не могут пересекаться.", EditorUi.Severity.WARN)
-			return
-		value.hexes.append(occupied)
+		value.hexes.append(origin + HexGrid.DIRECTIONS[_obstacle_direction.selected] * index)
+	var error := EditorMapRules.obstacle_footprint_error(_document, value.hexes, previous)
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.WARN)
+		return
 	if _execute(EditCommand.put_obstacle(value, previous.id if previous != null else &"")):
 		_select_hex(origin)

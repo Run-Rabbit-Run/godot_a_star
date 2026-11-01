@@ -6,6 +6,8 @@ extends "res://features/battle/tests/check_suite.gd"
 func _run() -> void:
 	if runs("battle_editor"):
 		await preload("res://tools/battles/tests/battle_editor_regressions.gd").new().run(self)
+	if runs("map_rules"):
+		preload("res://tools/battles/tests/map_rule_regressions.gd").new().run(self)
 	if runs("unit_editor"):
 		await preload("res://tools/units/tests/unit_editor_regressions.gd").new().run(self)
 	if runs("skill_editor"):

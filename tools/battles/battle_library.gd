@@ -1,5 +1,25 @@
 class_name BattleLibrary
 extends RefCounted
+## Battle documents of the project library: listing, new fields and their file names.
+
+const DRAFT_FILENAME := "battle_editor_draft.json"
+
+
+## File name of the document in the library: its battle ID with ':' replaced.
+static func filename_for(document: BattleDocument) -> String:
+	if document == null or document.battle_definition.id.is_empty():
+		return DRAFT_FILENAME
+	return "%s.json" % String(document.battle_definition.id).replace(":", "_")
+
+
+static func with_json_extension(path: String) -> String:
+	return path if path.get_extension().to_lower() == "json" else "%s.json" % path
+
+
+## Whether the file holds this same field, so an ordinary save may replace it.
+static func holds_document(path: String, document: BattleDocument) -> bool:
+	var existing := BattleDocumentSerializer.load_result(path).document
+	return existing != null and existing.document_id == document.document_id
 
 
 static func list_documents(directory: String = GameContentSettings.BATTLES) -> Array[Dictionary]:
