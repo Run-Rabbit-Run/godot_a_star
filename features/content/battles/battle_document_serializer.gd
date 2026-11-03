@@ -66,7 +66,8 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 			"movement_cost": cell.movement_cost,
 			"terrain_id": String(cell.terrain_id),
 			"traversable": cell.traversable,
-			"hex_state_id": String(cell.hex_state_id),
+			"liquid_id": String(cell.liquid_id),
+			"energy_id": String(cell.energy_id),
 		})
 
 	for side: BattleSideDefinition in document.battle_definition.sides:
@@ -158,12 +159,19 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 		map.presentation_frame = Vector2i(int(frame[0]), int(frame[1]))
 
 	for cell_data: Dictionary in map_data.get("cells", []):
+		# Files written before the two layers store one hex_state_id instead.
+		var layers: Array[StringName] = HexStateCatalog.split(StringName(cell_data.get("hex_state_id", "")))
+		var movement_cost := int(cell_data.get("movement_cost", 1))
+		# A former state set the cost itself; the liquid it became sets it now.
+		if not cell_data.has("liquid_id") and not layers[0].is_empty():
+			movement_cost = HexStateCatalog.get_movement_cost(layers[0])
 		map.cells.append(BattleMapCellDefinition.new(
 			Vector2i(int(cell_data.get("q", 0)), int(cell_data.get("r", 0))),
-			int(cell_data.get("movement_cost", 1)),
+			movement_cost,
 			StringName(cell_data.get("terrain_id", "core:default")),
 			bool(cell_data.get("traversable", true)),
-			StringName(cell_data.get("hex_state_id", ""))
+			StringName(cell_data.get("liquid_id", layers[0])),
+			StringName(cell_data.get("energy_id", layers[1]))
 		))
 
 	for obstacle_data: Dictionary in map_data.get("obstacles", []):
@@ -267,7 +275,7 @@ static func _validate_structure(data: Dictionary) -> String:
 	var arrays: Array[Dictionary] = [
 		{"path": "map.cells", "items": map.get("cells", []), "fields": {
 			"q": TYPE_INT, "r": TYPE_INT, "movement_cost": TYPE_INT,
-			"terrain_id": TYPE_STRING, "hex_state_id": TYPE_STRING, "traversable": TYPE_BOOL,
+			"terrain_id": TYPE_STRING, "hex_state_id": TYPE_STRING, "liquid_id": TYPE_STRING, "energy_id": TYPE_STRING, "traversable": TYPE_BOOL,
 		}},
 		{"path": "battle.sides", "items": battle.get("sides", []), "fields": {
 			"side_id": TYPE_STRING, "faction": TYPE_INT, "control_source": TYPE_INT,

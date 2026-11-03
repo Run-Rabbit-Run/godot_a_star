@@ -19,8 +19,11 @@ var _cells: Dictionary[Vector2i, bool] = {}
 var _movement_costs: Dictionary[Vector2i, int] = {}
 var _terrain_ids: Dictionary[Vector2i, StringName] = {}
 var _traversable: Dictionary[Vector2i, bool] = {}
-var _hex_state_ids: Dictionary[Vector2i, StringName] = {}
-var _hex_state_turns: Dictionary[Vector2i, int] = {}
+## Two independent layers per hex, each with its own remaining rounds.
+var _liquids: Dictionary[Vector2i, StringName] = {}
+var _energies: Dictionary[Vector2i, StringName] = {}
+var _liquid_turns: Dictionary[Vector2i, int] = {}
+var _energy_turns: Dictionary[Vector2i, int] = {}
 
 
 func _init(
@@ -28,16 +31,18 @@ func _init(
 	movement_costs: Dictionary[Vector2i, int] = {},
 	terrain_ids: Dictionary[Vector2i, StringName] = {},
 	traversal: Dictionary[Vector2i, bool] = {},
-	hex_state_ids: Dictionary[Vector2i, StringName] = {},
-	hex_state_turns: Dictionary[Vector2i, int] = {}
+	liquids: Dictionary[Vector2i, StringName] = {},
+	energies: Dictionary[Vector2i, StringName] = {}
 ) -> void:
 	for cell: Vector2i in cells:
 		_cells[cell] = true
 		_movement_costs[cell] = maxi(movement_costs.get(cell, 1), 1)
 		_terrain_ids[cell] = terrain_ids.get(cell, &"core:default")
 		_traversable[cell] = traversal.get(cell, true)
-		_hex_state_ids[cell] = hex_state_ids.get(cell, StringName())
-		_hex_state_turns[cell] = hex_state_turns.get(cell, HexStateCatalog.LIFETIME) if not _hex_state_ids[cell].is_empty() else 0
+		_liquids[cell] = liquids.get(cell, StringName())
+		_energies[cell] = energies.get(cell, StringName())
+		_liquid_turns[cell] = HexStateCatalog.LIFETIME if not _liquids[cell].is_empty() else 0
+		_energy_turns[cell] = HexStateCatalog.LIFETIME if not _energies[cell].is_empty() else 0
 
 
 func has_cell(cell: Vector2i) -> bool:
@@ -66,18 +71,37 @@ func get_terrain_id(cell: Vector2i) -> StringName:
 	return _terrain_ids.get(cell, StringName())
 
 
-func get_hex_state_id(cell: Vector2i) -> StringName:
-	return _hex_state_ids.get(cell, StringName())
+func get_liquid(cell: Vector2i) -> StringName:
+	return _liquids.get(cell, StringName())
 
 
-func get_hex_state_turns(cell: Vector2i) -> int:
-	return _hex_state_turns.get(cell, 0)
+func get_energy(cell: Vector2i) -> StringName:
+	return _energies.get(cell, StringName())
 
 
-func set_hex_state_turns(cell: Vector2i, turns: int) -> bool:
-	if not has_cell(cell) or get_hex_state_id(cell).is_empty() or turns < 1 or turns > HexStateCatalog.LIFETIME:
+func get_liquid_turns(cell: Vector2i) -> int:
+	return _liquid_turns.get(cell, 0)
+
+
+func get_energy_turns(cell: Vector2i) -> int:
+	return _energy_turns.get(cell, 0)
+
+
+func has_layers(cell: Vector2i) -> bool:
+	return not get_liquid(cell).is_empty() or not get_energy(cell).is_empty()
+
+
+func set_liquid_turns(cell: Vector2i, turns: int) -> bool:
+	if not has_cell(cell) or get_liquid(cell).is_empty() or turns < 1 or turns > HexStateCatalog.LIFETIME:
 		return false
-	_hex_state_turns[cell] = turns
+	_liquid_turns[cell] = turns
+	return true
+
+
+func set_energy_turns(cell: Vector2i, turns: int) -> bool:
+	if not has_cell(cell) or get_energy(cell).is_empty() or turns < 1 or turns > HexStateCatalog.LIFETIME:
+		return false
+	_energy_turns[cell] = turns
 	return true
 
 
@@ -135,8 +159,10 @@ func duplicate_grid() -> HexGrid:
 	copy._movement_costs.assign(_movement_costs)
 	copy._terrain_ids.assign(_terrain_ids)
 	copy._traversable.assign(_traversable)
-	copy._hex_state_ids.assign(_hex_state_ids)
-	copy._hex_state_turns.assign(_hex_state_turns)
+	copy._liquids.assign(_liquids)
+	copy._energies.assign(_energies)
+	copy._liquid_turns.assign(_liquid_turns)
+	copy._energy_turns.assign(_energy_turns)
 	copy._copy_obstacles(self)
 	return copy
 
@@ -150,8 +176,10 @@ func replace_with(other: HexGrid) -> bool:
 	_movement_costs.assign(other._movement_costs)
 	_terrain_ids.assign(other._terrain_ids)
 	_traversable.assign(other._traversable)
-	_hex_state_ids.assign(other._hex_state_ids)
-	_hex_state_turns.assign(other._hex_state_turns)
+	_liquids.assign(other._liquids)
+	_energies.assign(other._energies)
+	_liquid_turns.assign(other._liquid_turns)
+	_energy_turns.assign(other._energy_turns)
 
 	return true
 
@@ -160,24 +188,19 @@ func add_cell(
 	cell: Vector2i,
 	terrain_id: StringName,
 	movement_cost: int,
-	traversable: bool,
-	hex_state_id: StringName = StringName()
+	traversable: bool
 ) -> bool:
 	if has_cell(cell) or terrain_id.is_empty() or movement_cost < 1:
-		return false
-
-	if not hex_state_id.is_empty() and (
-		not HexStateCatalog.has_state(hex_state_id)
-		or movement_cost != HexStateCatalog.get_movement_cost(hex_state_id)
-	):
 		return false
 
 	_cells[cell] = true
 	_movement_costs[cell] = movement_cost
 	_terrain_ids[cell] = terrain_id
 	_traversable[cell] = traversable
-	_hex_state_ids[cell] = hex_state_id
-	_hex_state_turns[cell] = HexStateCatalog.LIFETIME if not hex_state_id.is_empty() else 0
+	_liquids[cell] = StringName()
+	_energies[cell] = StringName()
+	_liquid_turns[cell] = 0
+	_energy_turns[cell] = 0
 	return true
 
 
@@ -189,8 +212,10 @@ func remove_cell(cell: Vector2i) -> bool:
 	_movement_costs.erase(cell)
 	_terrain_ids.erase(cell)
 	_traversable.erase(cell)
-	_hex_state_ids.erase(cell)
-	_hex_state_turns.erase(cell)
+	_liquids.erase(cell)
+	_energies.erase(cell)
+	_liquid_turns.erase(cell)
+	_energy_turns.erase(cell)
 	return true
 
 
@@ -210,9 +235,9 @@ func set_traversal(
 	if not has_cell(cell) or movement_cost < 1:
 		return false
 
-	var state_id := get_hex_state_id(cell)
+	var liquid := get_liquid(cell)
 
-	if not state_id.is_empty() and movement_cost != HexStateCatalog.get_movement_cost(state_id):
+	if not liquid.is_empty() and movement_cost != HexStateCatalog.get_movement_cost(liquid):
 		return false
 
 	_traversable[cell] = traversable
@@ -220,12 +245,38 @@ func set_traversal(
 	return true
 
 
-func set_hex_state(cell: Vector2i, id: StringName) -> bool:
-	if not has_cell(cell) or has_obstacle(cell) or (not id.is_empty() and not HexStateCatalog.has_state(id)):
+## Sets the liquid layer with a full lifetime; "" clears it. The liquid sets the movement cost.
+func set_liquid(cell: Vector2i, id: StringName) -> bool:
+	if not has_cell(cell) or has_obstacle(cell) or (not id.is_empty() and not HexStateCatalog.is_liquid(id)):
 		return false
-	_hex_state_ids[cell] = id
-	_hex_state_turns[cell] = HexStateCatalog.LIFETIME if not id.is_empty() else 0
+	_liquids[cell] = id
+	_liquid_turns[cell] = HexStateCatalog.LIFETIME if not id.is_empty() else 0
 	_movement_costs[cell] = HexStateCatalog.get_movement_cost(id)
+	return true
+
+
+## Places a layer value, or a single state of the former model, into its layers with a full
+## lifetime; the other layer stays. "" clears both layers.
+func set_hex_state(cell: Vector2i, id: StringName) -> bool:
+	if id.is_empty():
+		return set_liquid(cell, &"") and set_energy(cell, &"")
+	if not HexStateCatalog.has_state(id) and not HexStateCatalog.LEGACY.has(id):
+		return false
+	var layers := HexStateCatalog.split(id)
+	var placed := true
+	if not layers[0].is_empty():
+		placed = set_liquid(cell, layers[0])
+	if placed and not layers[1].is_empty():
+		placed = set_energy(cell, layers[1])
+	return placed
+
+
+## Sets the energy layer with a full lifetime; "" clears it.
+func set_energy(cell: Vector2i, id: StringName) -> bool:
+	if not has_cell(cell) or has_obstacle(cell) or (not id.is_empty() and not HexStateCatalog.is_energy(id)):
+		return false
+	_energies[cell] = id
+	_energy_turns[cell] = HexStateCatalog.LIFETIME if not id.is_empty() else 0
 	return true
 
 
@@ -250,7 +301,7 @@ func add_obstacle(value: BattleObstacleDefinition) -> bool:
 	if value == null or not value.validate().is_empty() or _obstacles.has(value.id):
 		return false
 	for hex: Vector2i in value.hexes:
-		if not is_traversable(hex) or has_obstacle(hex) or not get_hex_state_id(hex).is_empty():
+		if not is_traversable(hex) or has_obstacle(hex) or has_layers(hex):
 			return false
 	var copy := value.duplicate(true) as BattleObstacleDefinition
 	copy.current_hp = copy.max_hp

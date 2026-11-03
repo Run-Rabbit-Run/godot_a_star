@@ -176,8 +176,9 @@ func apply(document: BattleDocument) -> bool:
 						return _restore_failed(document)
 			for hex: Vector2i in obstacle.hexes:
 				var cell := document.map_definition.cells[_find_cell_index(document, hex)]
-				if not cell.hex_state_id.is_empty():
-					cell.hex_state_id = &""
+				if cell.has_layers():
+					cell.liquid_id = &""
+					cell.energy_id = &""
 					cell.movement_cost = 1
 			document.map_definition.obstacles.append(obstacle.duplicate(true) as BattleObstacleDefinition)
 		Kind.REMOVE_OBSTACLE:
@@ -231,7 +232,7 @@ func apply(document: BattleDocument) -> bool:
 
 		Kind.UPDATE_HEX:
 			for existing: BattleObstacleDefinition in document.map_definition.obstacles:
-				if existing.hexes.has(target_hex) and (not map_cell.hex_state_id.is_empty() or not map_cell.traversable):
+				if existing.hexes.has(target_hex) and (map_cell.has_layers() or not map_cell.traversable):
 					return _restore_failed(document)
 			var index := _find_cell_index(document, target_hex)
 			if index < 0:

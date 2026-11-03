@@ -125,8 +125,8 @@ func _check_obstacle_commands(suite: Node) -> void:
 	suite.expect(not history.execute(EditCommand.put_obstacle(overlap), document) and baseline == BattleDocumentSerializer.to_dictionary(document), "Rejected overlap leaves entire document unchanged")
 	suite.expect(not history.execute(EditCommand.remove_hex(Vector2i(1, 0)), document), "Editor cannot delete part of obstacle")
 	var changed := document.map_definition.cells[1].duplicate(true) as BattleMapCellDefinition
-	changed.hex_state_id = &"core:fire"
-	changed.movement_cost = HexStateCatalog.get_movement_cost(changed.hex_state_id)
+	changed.energy_id = &"core:fire"
+	changed.movement_cost = HexStateCatalog.get_movement_cost(changed.liquid_id)
 	suite.expect(not history.execute(EditCommand.update_hex(changed), document), "Editor cannot paint state over obstacle")
 	suite.expect(history.execute(EditCommand.remove_obstacle(obstacle.id), document), "Delete obstacle as one command")
 	suite.expect(history.undo(document) and document.map_definition.obstacles.size() == 1, "Undo restores whole obstacle")
@@ -146,9 +146,9 @@ func _check_obstacle_brush(suite: Node) -> void:
 	editor.call("_select_tool", EditorBattleView.Tool.PAINT_OBSTACLE)
 	editor.call("_on_hex_activated", origin)
 	suite.expect(document.map_definition.obstacles.size() == 1 and document.map_definition.obstacles[0].hexes.size() == 4, "Editor obstacle brush places whole configured footprint")
-	suite.expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Obstacle placement clears painted state")
+	suite.expect(not (editor.call("_find_cell", origin) as BattleMapCellDefinition).has_layers(), "Obstacle placement clears painted state")
 	editor.call("_undo")
-	suite.expect(document.map_definition.obstacles.is_empty() and (editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id == &"core:fire", "Undo restores state under removed obstacle")
+	suite.expect(document.map_definition.obstacles.is_empty() and (editor.call("_find_cell", origin) as BattleMapCellDefinition).energy_id == &"core:fire", "Undo restores state under removed obstacle")
 	editor.call("_redo")
 	editor.call("_select_hex", origin + Vector2i(2, 0))
 	suite.expect((editor.get("_obstacle_size") as SpinBox).value == 4 and (editor.get("_obstacle_hp") as SpinBox).value == 12, "Selecting any occupied hex loads shared obstacle properties")
@@ -156,7 +156,7 @@ func _check_obstacle_brush(suite: Node) -> void:
 	editor.call("_apply_selected_obstacle")
 	suite.expect(document.map_definition.obstacles[0].hexes.size() == 2 and document.map_definition.obstacles[0].hexes[0] == origin, "Updating obstacle from middle hex preserves its anchor")
 	editor.call("_paint_state", origin, &"core:water")
-	suite.expect((editor.call("_find_cell", origin) as BattleMapCellDefinition).hex_state_id.is_empty(), "Editor state brush skips obstacles")
+	suite.expect(not (editor.call("_find_cell", origin) as BattleMapCellDefinition).has_layers(), "Editor state brush skips obstacles")
 	editor.call("_on_hex_erased", origin + Vector2i(1, 0))
 	suite.expect(document.map_definition.obstacles.is_empty(), "Right click deletes whole footprint")
 	editor.queue_free()

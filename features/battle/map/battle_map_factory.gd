@@ -13,7 +13,8 @@ static func create_hex_grid(
 	var movement_costs: Dictionary[Vector2i, int] = {}
 	var terrain_ids: Dictionary[Vector2i, StringName] = {}
 	var traversal: Dictionary[Vector2i, bool] = {}
-	var hex_state_ids: Dictionary[Vector2i, StringName] = {}
+	var liquids: Dictionary[Vector2i, StringName] = {}
+	var energies: Dictionary[Vector2i, StringName] = {}
 
 	for cell_definition: BattleMapCellDefinition in definition.cells:
 		if cell_definition == null:
@@ -41,32 +42,30 @@ static func create_hex_grid(
 			)
 			return null
 
-		if not cell_definition.hex_state_id.is_empty():
-			if not HexStateCatalog.has_state(cell_definition.hex_state_id):
-				push_error("Unknown hex state %s at %s." % [
-					cell_definition.hex_state_id,
-					cell_definition.hex,
-				])
-				return null
+		var liquid := cell_definition.liquid_id
+		var energy := cell_definition.energy_id
+		if (not liquid.is_empty() and not HexStateCatalog.is_liquid(liquid)) or (not energy.is_empty() and not HexStateCatalog.is_energy(energy)):
+			push_error("Unknown hex layer %s / %s at %s." % [liquid, energy, cell_definition.hex])
+			return null
 
-			if cell_definition.movement_cost != HexStateCatalog.get_movement_cost(
-				cell_definition.hex_state_id
-			):
-				push_error("Hex state movement cost mismatch at %s." % cell_definition.hex)
-				return null
+		if not liquid.is_empty() and cell_definition.movement_cost != HexStateCatalog.get_movement_cost(liquid):
+			push_error("Hex state movement cost mismatch at %s." % cell_definition.hex)
+			return null
 
 		axial_cells.append(cell_definition.hex)
 		movement_costs[cell_definition.hex] = cell_definition.movement_cost
 		terrain_ids[cell_definition.hex] = cell_definition.terrain_id
 		traversal[cell_definition.hex] = cell_definition.traversable
-		hex_state_ids[cell_definition.hex] = cell_definition.hex_state_id
+		liquids[cell_definition.hex] = liquid
+		energies[cell_definition.hex] = energy
 
 	var grid := HexGrid.new(
 		axial_cells,
 		movement_costs,
 		terrain_ids,
 		traversal,
-		hex_state_ids
+		liquids,
+		energies
 	)
 	for obstacle: BattleObstacleDefinition in definition.obstacles:
 		if not grid.add_obstacle(obstacle):

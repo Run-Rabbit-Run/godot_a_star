@@ -32,6 +32,28 @@ const REGIONS := {
 }
 
 
+## Pairs of layers drawn with one artwork of their own; other pairs stack both layers.
+const PAIRS := {
+	"core:water+core:electricity": &"core:electrified_water",
+	"core:acid+core:electricity": &"core:electrified_acid",
+	"core:oil+core:fire": &"core:burning_oil",
+	"core:acid+core:fire": &"core:boiling_acid",
+}
+
+
+## Artwork ids for a hex, bottom first: its pair artwork, or the liquid and the energy.
+static func art_ids(liquid: StringName, energy: StringName) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	var pair: StringName = PAIRS.get("%s+%s" % [liquid, energy], &"")
+	if not pair.is_empty():
+		ids.append(pair)
+		return ids
+	for id: StringName in [liquid, energy]:
+		if not id.is_empty():
+			ids.append(id)
+	return ids
+
+
 static func texture(state_id: StringName) -> AtlasTexture:
 	if not TEXTURES.has(state_id):
 		return null

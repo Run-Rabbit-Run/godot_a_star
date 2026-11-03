@@ -119,9 +119,10 @@ func _draw() -> void:
 	for cell: BattleMapCellDefinition in document.map_definition.cells:
 		existing[cell.hex] = true
 		var center := _hex_center(cell.hex)
-		var texture := HexStateArt.texture(cell.hex_state_id)
-		if texture != null:
-			draw_texture_rect(texture, Rect2(center - Vector2(45, 30), Vector2(90, 58)), false, BattleVisualPalette.STATE_TINT)
+		for art_id: StringName in HexStateArt.art_ids(cell.liquid_id, cell.energy_id):
+			var texture := HexStateArt.texture(art_id)
+			if texture != null:
+				draw_texture_rect(texture, Rect2(center - Vector2(45, 30), Vector2(90, 58)), false, BattleVisualPalette.STATE_TINT)
 		if show_grid:
 			draw_polyline(_closed_hex_polygon(center), Color(0.85, 0.84, 0.72, 0.5), 1.2, true)
 		if not cell.traversable:

@@ -1,11 +1,12 @@
 class_name HexStateRenderer
 extends Node2D
+## Artwork of both hex layers; electricity adds sparks tinted by the liquid it runs through.
 
 
 const ELECTRIC_SPARK_COLORS := {
-	&"core:electricity": Color(0.52, 0.87, 1.0),
-	&"core:electrified_water": Color(0.46, 0.82, 1.0),
-	&"core:electrified_acid": Color(0.70, 1.0, 0.54),
+	&"": Color(0.52, 0.87, 1.0),
+	&"core:water": Color(0.46, 0.82, 1.0),
+	&"core:acid": Color(0.70, 1.0, 0.54),
 }
 
 
@@ -23,17 +24,14 @@ func render(grid: HexGrid) -> void:
 		return
 
 	for hex: Vector2i in grid.get_cells():
-		var state_id := grid.get_hex_state_id(hex)
-
-		if state_id.is_empty():
-			continue
-
-		_render_state(hex, state_id)
+		if grid.has_layers(hex):
+			_render_layers(hex, grid.get_liquid(hex), grid.get_energy(hex))
 
 
 func remove_hex(hex: Vector2i) -> void:
 	for node_name in [
-		"HexState_%d_%d" % [hex.x, hex.y],
+		"HexState_%d_%d_0" % [hex.x, hex.y],
+		"HexState_%d_%d_1" % [hex.x, hex.y],
 		"ElectricSparks_%d_%d" % [hex.x, hex.y],
 	]:
 		var visual := get_node_or_null(node_name)
@@ -43,10 +41,9 @@ func remove_hex(hex: Vector2i) -> void:
 			visual.queue_free()
 
 
-func set_hex_state(hex: Vector2i, id: StringName) -> void:
+func set_hex_layers(hex: Vector2i, liquid: StringName, energy: StringName) -> void:
 	remove_hex(hex)
-	if not id.is_empty():
-		_render_state(hex, id)
+	_render_layers(hex, liquid, energy)
 
 
 func clear() -> void:
@@ -55,26 +52,28 @@ func clear() -> void:
 		child.queue_free()
 
 
-func _render_state(hex: Vector2i, state_id: StringName) -> void:
-	var texture := HexStateArt.texture(state_id)
-	if texture == null:
-		return
+func _render_layers(hex: Vector2i, liquid: StringName, energy: StringName) -> void:
 	var center := to_local(_terrain_layer.to_global(
 		_terrain_layer.map_to_local(HexCoordinateMapper.axial_to_offset(hex))
 	))
-	var sprite := Sprite2D.new()
-	sprite.name = "HexState_%d_%d" % [hex.x, hex.y]
-	sprite.texture = texture
-	sprite.modulate = BattleVisualPalette.STATE_TINT
-	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	# Reference rim: 90 x 58 inside a projected 94 x 78 hex.
-	sprite.scale = Vector2(56.0 * 90.0 / 94.0, 64.0 * 58.0 / 78.0) / texture.get_size()
-	sprite.position = center + Vector2(0, -64.0 / 78.0)
-	add_child(sprite)
-	if ELECTRIC_SPARK_COLORS.has(state_id):
+	var art_ids := HexStateArt.art_ids(liquid, energy)
+	for index in range(art_ids.size()):
+		var texture := HexStateArt.texture(art_ids[index])
+		if texture == null:
+			continue
+		var sprite := Sprite2D.new()
+		sprite.name = "HexState_%d_%d_%d" % [hex.x, hex.y, index]
+		sprite.texture = texture
+		sprite.modulate = BattleVisualPalette.STATE_TINT
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		# Reference rim: 90 x 58 inside a projected 94 x 78 hex.
+		sprite.scale = Vector2(56.0 * 90.0 / 94.0, 64.0 * 58.0 / 78.0) / texture.get_size()
+		sprite.position = center + Vector2(0, -64.0 / 78.0)
+		add_child(sprite)
+	if energy == &"core:electricity":
 		var sparks := ElectricHexParticles.new()
 		sparks.name = "ElectricSparks_%d_%d" % [hex.x, hex.y]
 		sparks.position = center
 		sparks.z_index = 1
-		sparks.configure(hex, ELECTRIC_SPARK_COLORS[state_id])
+		sparks.configure(hex, ELECTRIC_SPARK_COLORS.get(liquid, ELECTRIC_SPARK_COLORS[&""]))
 		add_child(sparks)

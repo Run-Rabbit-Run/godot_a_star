@@ -134,7 +134,7 @@ func _check_battle_library(editor: BattleEditorShell) -> void:
 	_expect(first.map_definition.cells.size() == 216, "New fields must have a complete 18x12 grid.")
 	var clean := true
 	for cell: BattleMapCellDefinition in first.map_definition.cells:
-		clean = clean and EditorBattleView.is_in_frame(cell.hex) and cell.traversable and cell.hex_state_id.is_empty() and cell.movement_cost == 1
+		clean = clean and EditorBattleView.is_in_frame(cell.hex) and cell.traversable and not cell.has_layers() and cell.movement_cost == 1
 	_expect(clean, "Every new cell must be clean and within the editable frame.")
 	editor.call("_replace_document", first, "", false)
 	_expect(editor.has_unsaved_changes(), "New fields must be unsaved drafts.")

@@ -625,8 +625,8 @@ func _on_hovered_hex_changed(hex: Vector2i, is_inside: bool) -> void:
 	if cell == null:
 		parts.append("клетки нет")
 	else:
-		if not cell.hex_state_id.is_empty():
-			parts.append(HexStateCatalog.get_display_name(cell.hex_state_id))
+		if cell.has_layers():
+			parts.append(_layers_text(cell))
 		parts.append("ход %d" % cell.movement_cost)
 		if not cell.traversable:
 			parts.append("непроходим")
@@ -702,7 +702,7 @@ func _select_hex(hex: Vector2i) -> void:
 		if obstacle.hexes.size() > 1:
 			_obstacle_direction.select(HexGrid.DIRECTIONS.find(obstacle.hexes[1] - obstacle.hexes[0]))
 		_view.obstacle_direction = _obstacle_direction.selected
-	_selected_hex_label.text = "Выбран гекс q=%d, r=%d%s" % [hex.x, hex.y, " · " + HexStateCatalog.get_display_name(cell.hex_state_id) if not cell.hex_state_id.is_empty() else ""]
+	_selected_hex_label.text = "Выбран гекс q=%d, r=%d%s" % [hex.x, hex.y, " · " + _layers_text(cell) if cell.has_layers() else ""]
 	_update_inspector()
 	_set_status("Свойства гекса загружены в инспектор.")
 
@@ -768,8 +768,8 @@ func _update_hex(
 		updated.terrain_id = _brush_terrain_id()
 	if change_cost:
 		updated.movement_cost = int(_movement_cost_spin.value)
-		if not updated.hex_state_id.is_empty():
-			updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
+		if not updated.liquid_id.is_empty():
+			updated.movement_cost = HexStateCatalog.get_movement_cost(updated.liquid_id)
 
 	_execute(EditCommand.update_hex(updated))
 
@@ -791,8 +791,8 @@ func _apply_selected_hex() -> void:
 	var updated := cell.duplicate(true) as BattleMapCellDefinition
 	updated.terrain_id = _brush_terrain_id()
 	updated.movement_cost = int(_movement_cost_spin.value)
-	if not updated.hex_state_id.is_empty():
-		updated.movement_cost = HexStateCatalog.get_movement_cost(updated.hex_state_id)
+	if not updated.liquid_id.is_empty():
+		updated.movement_cost = HexStateCatalog.get_movement_cost(updated.liquid_id)
 	if not _traversable_check.button_pressed and _hex_is_occupied(_selected_hex):
 		_set_status("Нельзя сделать занятый гекс непроходимым.", EditorUi.Severity.WARN)
 		return
@@ -1260,12 +1260,29 @@ func _paint_state(hex: Vector2i, state_id: StringName) -> void:
 	if _obstacle_at(hex) != null:
 		_set_status("К препятствиям состояния не применяются.", EditorUi.Severity.WARN)
 		return
-	if cell == null or cell.hex_state_id == state_id:
+	if cell == null:
+		return
+	# The battle's own layer rules decide the result, so the editor shows what the battle starts with.
+	var probe := HexGrid.new([hex])
+	probe.set_liquid(hex, cell.liquid_id)
+	probe.set_energy(hex, cell.energy_id)
+	var events: Array[BattleEvent] = []
+	HexStateService.apply_to_grid(probe, hex, state_id, events)
+	if probe.get_liquid(hex) == cell.liquid_id and probe.get_energy(hex) == cell.energy_id:
 		return
 	var updated := cell.duplicate(true) as BattleMapCellDefinition
-	updated.hex_state_id = state_id
-	updated.movement_cost = HexStateCatalog.get_movement_cost(state_id)
+	updated.liquid_id = probe.get_liquid(hex)
+	updated.energy_id = probe.get_energy(hex)
+	updated.movement_cost = HexStateCatalog.get_movement_cost(updated.liquid_id)
 	_execute(EditCommand.update_hex(updated))
+
+
+static func _layers_text(cell: BattleMapCellDefinition) -> String:
+	var names: PackedStringArray = []
+	for id: StringName in [cell.liquid_id, cell.energy_id]:
+		if not id.is_empty():
+			names.append(HexStateCatalog.get_display_name(id))
+	return " + ".join(names)
 
 
 func _on_hex_erased(hex: Vector2i) -> void:

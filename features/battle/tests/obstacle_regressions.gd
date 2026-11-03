@@ -19,9 +19,8 @@ func run_obstacles(suite: Node) -> void:
 		suite.expect(not grid.is_traversable(obstacle.hexes.back()), "Every obstacle hex blocks movement")
 		suite.expect(not grid.set_hex_state(obstacle.hexes[0], &"core:fire"), "Obstacle rejects direct hex states")
 		var events: Array[BattleEvent] = []
-		var explosions: Array[Dictionary] = []
-		HexStateService.apply_to_grid(grid, obstacle.hexes[0], &"core:water", events, explosions)
-		suite.expect(events.is_empty() and grid.get_hex_state_id(obstacle.hexes[0]).is_empty(), "Hex state effect skips obstacle without events")
+		HexStateService.apply_to_grid(grid, obstacle.hexes[0], &"core:water", events)
+		suite.expect(events.is_empty() and not grid.has_layers(obstacle.hexes[0]), "Hex state effect skips obstacle without events")
 		var snapshot := grid.get_obstacle(obstacle.hexes[0])
 		snapshot.current_hp = 1
 		suite.expect(grid.get_obstacle(obstacle.hexes[0]).current_hp == 5, "Obstacle query is detached")
@@ -56,7 +55,7 @@ func run_obstacles(suite: Node) -> void:
 	grid.set_hex_state(Vector2i.ZERO, &"core:fire")
 	var propagation: Array[BattleEvent] = []
 	HexStateService.propagate(grid, [Vector2i.ZERO], propagation)
-	suite.expect(grid.get_hex_state_id(Vector2i(1, 0)).is_empty(), "Propagation cannot give obstacle a state")
+	suite.expect(not grid.has_layers(Vector2i(1, 0)), "Propagation cannot give obstacle a state")
 	# A document with an obstacle survives its JSON round trip with the same resource definition.
 	var map := BattleMapDefinition.new()
 	map.id = &"test:map"

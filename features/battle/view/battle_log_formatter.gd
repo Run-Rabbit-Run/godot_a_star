@@ -46,7 +46,11 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
 			if not event.hex_state_changed:
 				return ""
-			return "Гекс %s: %s." % [_hex(event.hex), HexStateCatalog.get_display_name(event.hex_state_id) if not event.hex_state_id.is_empty() else "состояние снято"]
+			var layers: PackedStringArray = []
+			for id: StringName in [event.liquid_id, event.energy_id]:
+				if not id.is_empty():
+					layers.append(HexStateCatalog.get_display_name(id))
+			return "Гекс %s: %s." % [_hex(event.hex), " + ".join(layers) if not layers.is_empty() else "состояние снято"]
 		var actions := ["добавлен", "удалён", "местность изменена", "проходимость изменена"]
 		return "Гекс %s: %s." % [_hex(event.hex), actions[event.kind]]
 	return ""

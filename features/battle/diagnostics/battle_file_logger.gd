@@ -3,7 +3,8 @@ extends RefCounted
 
 signal recording_failed(message: String)
 
-const SCHEMA_VERSION := 1
+## 2: map cells carry the liquid and energy layers; a turn end names one unit.
+const SCHEMA_VERSION := 2
 var path := ""
 var error_message := ""
 var _file: FileAccess

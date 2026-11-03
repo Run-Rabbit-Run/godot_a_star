@@ -4,14 +4,12 @@ extends RefCounted
 ## either discards it (ability, external batch) or stops the battle (landed hit, start).
 const Fixtures := preload("res://features/battle/tests/regression_fixtures.gd")
 
-## Water spreading into water "converts" it forever: the smallest table that cannot settle.
-const NEVER_SETTLES := {&"core:water": {&"core:water": &"core:water"}}
 const DEFECT := "did not settle"
 
 
 func run(suite: Node) -> void:
 	var fixture: Fixtures = suite.fixture
-	_check_catalog_is_acyclic(suite)
+	_check_rule_settles(suite)
 	_check_propagation_reports_defect(suite)
 	_check_external_batch(suite, fixture)
 	_check_ability(suite, fixture)
@@ -20,43 +18,53 @@ func run(suite: Node) -> void:
 	_check_battle_start(suite, fixture)
 
 
-## Each conversion moves a cell along base -> result; without a cycle a cell converts at
-## most once per state, which is exactly the bound propagation enforces.
-func _check_catalog_is_acyclic(suite: Node) -> void:
-	var edges: Dictionary = {}
-	for spreading: StringName in HexStateCatalog.PROPAGATION:
-		var rules: Dictionary = HexStateCatalog.PROPAGATION[spreading]
-		for base: StringName in rules:
-			var targets: Array = edges.get(base, [])
-			targets.append(rules[base])
-			edges[base] = targets
-	var cycle := ""
-	for start: StringName in edges:
-		var stack: Array = [[start, [start]]]
-		while not stack.is_empty() and cycle.is_empty():
-			var entry: Array = stack.pop_back()
-			for next: StringName in edges.get(entry[0], []):
-				if next in entry[1]:
-					cycle = str(entry[1] + [next])
-					break
-				stack.append([next, entry[1] + [next]])
-	suite.expect(cycle.is_empty(), "Built-in hex state propagation has no conversion cycle: %s" % cycle)
-	for spreading: StringName in HexStateCatalog.PROPAGATION:
-		for base: StringName in HexStateCatalog.PROPAGATION[spreading]:
-			suite.expect(HexStateCatalog.has_state(base) and HexStateCatalog.has_state(HexStateCatalog.PROPAGATION[spreading][base]), "Propagation of %s uses known states" % spreading)
+## Electricity keeps running into charged water: the smallest rule that cannot settle.
+func _never_settles(_source_liquid: StringName, _source_energy: StringName, neighbor_liquid: StringName, _neighbor_energy: StringName) -> StringName:
+	return &"core:electricity" if neighbor_liquid == &"core:water" else &""
 
 
+## Every energy the built-in rule spreads is final for its receiver: the same source never
+## spreads to it again, so a cell receives spreading at most twice.
+func _check_rule_settles(suite: Node) -> void:
+	var values: Array[StringName] = [&""]
+	for id: StringName in HexStateCatalog.RULES:
+		values.append(id)
+	var source := Vector2i.ZERO
+	var neighbor := Vector2i(1, 0)
+	for source_liquid: StringName in values:
+		for source_energy: StringName in values:
+			for neighbor_liquid: StringName in values:
+				for neighbor_energy: StringName in values:
+					if not _fits(source_liquid, true) or not _fits(source_energy, false) or not _fits(neighbor_liquid, true) or not _fits(neighbor_energy, false):
+						continue
+					var energy := HexStateCatalog.spreading_energy(source_liquid, source_energy, neighbor_liquid, neighbor_energy)
+					if energy.is_empty():
+						continue
+					var grid := HexGrid.new([source, neighbor])
+					grid.set_liquid(neighbor, neighbor_liquid)
+					grid.set_energy(neighbor, neighbor_energy)
+					var events: Array[BattleEvent] = []
+					HexStateService.apply_to_grid(grid, neighbor, energy, events)
+					var again := HexStateCatalog.spreading_energy(source_liquid, source_energy, grid.get_liquid(neighbor), grid.get_energy(neighbor))
+					suite.expect(again.is_empty(), "Spreading %s from %s/%s into %s/%s is final" % [energy, source_liquid, source_energy, neighbor_liquid, neighbor_energy])
+
+
+static func _fits(id: StringName, liquid: bool) -> bool:
+	return id.is_empty() or HexStateCatalog.is_liquid(id) == liquid
+
+
+## The bound holds only while every reception is final; a rule that keeps spreading exceeds it.
 func _check_propagation_reports_defect(suite: Node) -> void:
 	var grid := HexGrid.new([Vector2i.ZERO, Vector2i(1, 0), Vector2i(2, 0)])
 	for hex: Vector2i in grid.get_cells():
 		grid.set_hex_state(hex, &"core:water")
 	var events: Array[BattleEvent] = []
 	var seeds: Array[Vector2i] = [Vector2i.ZERO]
-	var error := HexStateService.propagate(grid, seeds, events, NEVER_SETTLES)
+	var error := HexStateService.propagate(grid, seeds, events, _never_settles)
 	suite.expect(DEFECT in error, "Propagation that never settles reports the defect instead of logging it")
-	suite.expect(events.size() <= grid.get_cells().size() * HexStateCatalog.RULES.size(), "A defective table stops within the conversion bound")
+	suite.expect(events.size() <= grid.get_cells().size() * 2, "A defective rule stops within the spreading bound")
 	events.clear()
-	suite.expect(HexStateService.propagate(grid, seeds, events).is_empty(), "The built-in table settles on the same map")
+	suite.expect(HexStateService.propagate(grid, seeds, events).is_empty(), "The built-in rule settles on the same map")
 
 
 func _check_external_batch(suite: Node, fixture: Fixtures) -> void:
@@ -161,7 +169,7 @@ func _check_battle_start(suite: Node, fixture: Fixtures) -> void:
 	suite.expect(not engine.execute(EndTurnCommand.new(engine.get_active_unit_id())).accepted, "A battle that could not start rejects commands")
 
 
-## Three water cells in a row with the enemy standing in the pool; the table never settles.
+## Three water cells in a row with the enemy standing in the pool; the rule never settles.
 func _pool_state(fixture: Fixtures) -> BattleState:
 	var cells: Array[Vector2i] = []
 	for q in range(0, 5):
@@ -173,7 +181,7 @@ func _pool_state(fixture: Fixtures) -> BattleState:
 	var state: BattleState = fixture.state(cells, units)
 	for hex: Vector2i in [Vector2i(1, 0), Vector2i(2, 0), Vector2i(3, 0)]:
 		state.hex_grid.set_hex_state(hex, &"core:water")
-	state.hex_propagation = NEVER_SETTLES
+	state.spread_rule = _never_settles
 	return state
 
 

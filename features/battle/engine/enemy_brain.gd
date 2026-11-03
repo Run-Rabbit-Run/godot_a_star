@@ -222,7 +222,7 @@ static func _get_route_damage(
 
 	# The engine walks exactly this path and applies every crossed hazard once.
 	for index in range(1, path.size()):
-		damage += HexStateCatalog.get_damage(grid.get_hex_state_id(path[index]))
+		damage += HexStateService.damage_at(grid, path[index])
 
 	return damage
 
@@ -232,7 +232,7 @@ static func _get_standing_damage(grid: HexGrid, cell: Vector2i) -> int:
 	if grid == null:
 		return 0
 
-	return HexStateCatalog.get_damage(grid.get_hex_state_id(cell))
+	return HexStateService.damage_at(grid, cell)
 
 
 static func _is_better_candidate(

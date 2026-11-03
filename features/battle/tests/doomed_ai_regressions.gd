@@ -39,11 +39,11 @@ func _check_grid_copies(suite: Node) -> void:
 	var copy := grid.duplicate_grid()
 	var same := copy.get_cells() == grid.get_cells()
 	for cell: Vector2i in cells:
-		same = same and copy.get_terrain_id(cell) == grid.get_terrain_id(cell) and copy.is_traversable(cell) == grid.is_traversable(cell) and copy.get_configured_movement_cost(cell) == grid.get_configured_movement_cost(cell) and copy.get_hex_state_id(cell) == grid.get_hex_state_id(cell) and copy.get_hex_state_turns(cell) == grid.get_hex_state_turns(cell) and copy.has_obstacle(cell) == grid.has_obstacle(cell)
+		same = same and copy.get_terrain_id(cell) == grid.get_terrain_id(cell) and copy.is_traversable(cell) == grid.is_traversable(cell) and copy.get_configured_movement_cost(cell) == grid.get_configured_movement_cost(cell) and copy.get_liquid(cell) == grid.get_liquid(cell) and copy.get_energy(cell) == grid.get_energy(cell) and copy.get_liquid_turns(cell) == grid.get_liquid_turns(cell) and copy.get_energy_turns(cell) == grid.get_energy_turns(cell) and copy.has_obstacle(cell) == grid.has_obstacle(cell)
 	suite.expect(same, "Grid copy keeps cell order, terrain, traversal, costs, states and obstacles")
 	copy.damage_obstacle(cells[8], 3)
 	copy.set_hex_state(cells[4], &"core:water")
-	suite.expect(grid.get_obstacle(cells[8]).current_hp == 10 and grid.get_hex_state_id(cells[4]).is_empty(), "Changing a grid copy leaves the original intact")
+	suite.expect(grid.get_obstacle(cells[8]).current_hp == 10 and not grid.has_layers(cells[4]), "Changing a grid copy leaves the original intact")
 	var equal := true
 	for center: Vector2i in cells:
 		for radius in range(0, 5):
@@ -189,9 +189,9 @@ func _check_reaction_reaching_actor(suite: Node, fixture: Fixtures) -> void:
 	var shocks_from_water := 0
 	var reused_in_water := 0
 	for candidate: Dictionary in trace.last_action.candidates:
-		var in_water := state.hex_grid.get_hex_state_id(candidate.reached_hex) == &"core:water"
+		var in_water: bool = state.hex_grid.get_liquid(candidate.reached_hex) == &"core:water"
 		for record: Dictionary in candidate.actions:
-			if not record.command is UseAbilityCommand or state.hex_grid.get_hex_state_id(record.command.target_hex) != &"core:water":
+			if not record.command is UseAbilityCommand or state.hex_grid.get_liquid(record.command.target_hex) != &"core:water":
 				continue
 			if in_water:
 				shocks_from_water += 1
@@ -199,7 +199,7 @@ func _check_reaction_reaching_actor(suite: Node, fixture: Fixtures) -> void:
 			else:
 				reused_outside += int(record.has("reused"))
 	suite.expect(_summary(plan) == _summary(_exhaustive_plan(session)), "Distant shock through connected water matches exhaustive search")
-	suite.expect(plan.get("reason", "") == "doomed_maximum_damage" and state.hex_grid.get_hex_state_id(plan.get("hex", Vector2i.ZERO)) != &"core:water", "Doomed actor shocks the distant target from outside the water")
+	suite.expect(plan.get("reason", "") == "doomed_maximum_damage" and state.hex_grid.get_liquid(plan.get("hex", Vector2i.ZERO)) != &"core:water", "Doomed actor shocks the distant target from outside the water")
 	suite.expect(reused_outside > 0 and shocks_from_water > 0 and reused_in_water == 0, "Shocking connected water is simulated again from inside it (%d/%d/%d)" % [reused_outside, shocks_from_water, reused_in_water])
 
 
@@ -278,7 +278,7 @@ func _scenario(fixture: Fixtures, seed: int) -> BattleState:
 			state.hex_grid.set_hex_state(hex, STATES[rng.randi_range(0, STATES.size() - 1)])
 	if rng.randf() < 0.5:
 		for hex: Vector2i in free:
-			if state.hex_grid.get_hex_state_id(hex).is_empty():
+			if not state.hex_grid.has_layers(hex):
 				var obstacle := BattleObstacleDefinition.new()
 				obstacle.id = &"rock"
 				obstacle.hexes = [hex]

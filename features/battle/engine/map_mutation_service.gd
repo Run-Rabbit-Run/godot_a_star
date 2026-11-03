@@ -18,7 +18,6 @@ static func apply(
 
 	var candidate := state.hex_grid.duplicate_grid()
 	var events: Array[BattleEvent] = []
-	var explosions: Array[Dictionary] = []
 	var propagation_seeds: Array[Vector2i] = []
 
 	for mutation: MapMutation in mutations:
@@ -33,7 +32,7 @@ static func apply(
 			return MapMutationApplicationResult.rejected(error)
 
 		if mutation.kind == MapMutationKind.Value.APPLY_HEX_STATE:
-			HexStateService.apply_to_grid(candidate, mutation.hex, mutation.hex_state_id, events, explosions)
+			HexStateService.apply_to_grid(candidate, mutation.hex, mutation.hex_state_id, events)
 			propagation_seeds.append(mutation.hex)
 			continue
 
@@ -57,7 +56,7 @@ static func apply(
 			if candidate.has_cell(neighbor) and not seeds.has(neighbor):
 				seeds.append(neighbor)
 	# A batch whose reactions cannot settle is rejected whole: the candidate is discarded.
-	var propagation_error := HexStateService.propagate(candidate, seeds, events, state.hex_propagation)
+	var propagation_error := HexStateService.propagate(candidate, seeds, events, state.spread_rule)
 	if not propagation_error.is_empty():
 		return MapMutationApplicationResult.rejected(propagation_error)
 
@@ -72,10 +71,6 @@ static func apply(
 
 	state.map_revision += 1
 	state.state_revision += 1
-	for explosion: Dictionary in explosions:
-		for unit: UnitState in state.unit_states.values():
-			if unit.hex == explosion.hex:
-				UnitStatusService.damage(unit, 3, &"physical", events, &"", explosion.state_id)
 	var changed: Dictionary[Vector2i, bool] = {}
 	for event: BattleEvent in events.duplicate():
 		if event is MapMutationEvent and event.kind == MapMutationKind.Value.APPLY_HEX_STATE and event.hex_state_changed:
@@ -126,8 +121,8 @@ static func _validate_mutation(
 				return "SetTraversal target does not exist: %s." % mutation.hex
 			if mutation.movement_cost < 1:
 				return "SetTraversal movement cost must be at least 1."
-			var state_id := candidate.get_hex_state_id(mutation.hex)
-			if not state_id.is_empty() and mutation.movement_cost != HexStateCatalog.get_movement_cost(state_id):
+			var liquid := candidate.get_liquid(mutation.hex)
+			if not liquid.is_empty() and mutation.movement_cost != HexStateCatalog.get_movement_cost(liquid):
 				return "SetTraversal cost conflicts with hex state at %s." % mutation.hex
 			if not mutation.traversable and _is_occupied(state, mutation.hex):
 				return "An occupied hex cannot become non-traversable: %s." % mutation.hex

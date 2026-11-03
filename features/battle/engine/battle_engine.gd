@@ -19,7 +19,8 @@ func _init(p_state: BattleState, initialize := true) -> void:
 	var initial_events: Array[BattleEvent] = []
 	# Starting terrain settles on a copy, so rules that never settle leave the map untouched.
 	var settled := _state.hex_grid.duplicate_grid()
-	_terminal_error = HexStateService.propagate(settled, settled.get_cells(), initial_events, _state.hex_propagation)
+	HexStateService.settle(settled, initial_events)
+	_terminal_error = HexStateService.propagate(settled, settled.get_cells(), initial_events, _state.spread_rule)
 	if _terminal_error.is_empty():
 		_state.hex_grid.replace_with(settled)
 	else:
@@ -355,9 +356,7 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		segment_path.append(next_hex)
 		segment_cost += step_cost
 
-		var state_id := _state.hex_grid.get_hex_state_id(next_hex)
-
-		if state_id.is_empty():
+		if not _state.hex_grid.has_layers(next_hex):
 			continue
 
 		events.append(UnitMovedEvent.new(result.unit_id, segment_path, segment_cost))
@@ -551,7 +550,8 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 		return AttackResult.failure()
 
 	var health_before := target.health.current
-	var protection_hex_state := _state.hex_grid.get_hex_state_id(target.hex)
+	# Only the liquid layer gives cover: steam.
+	var protection_hex_state := _state.hex_grid.get_liquid(target.hex)
 	var shot := BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, target.hex)
 	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if shot else 0
 	var penalty := 0 if shot else BasicAttackRules.melee_penalty(attacker.basic_attack_range, attacker.basic_attack_damage)

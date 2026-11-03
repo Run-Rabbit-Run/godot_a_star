@@ -118,7 +118,7 @@ func apply_damage_events(source_unit_id: StringName, target_unit_id: StringName,
 		return events
 	var ability := source.get_ability(_ability_id)
 	var ranged := ability != null and ability.get_range(source) > 1
-	var protection_hex_state := _state.hex_grid.get_hex_state_id(target.hex)
+	var protection_hex_state := _state.hex_grid.get_liquid(target.hex)
 	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if ranged else 0
 	UnitStatusService.damage(target, amount, type, events, source_unit_id, &"", _ability_id, reduction, &"", protection_hex_state)
 	var reaction_error := DamageType.react(_state, target.hex, type, events)

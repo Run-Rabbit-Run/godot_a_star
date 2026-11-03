@@ -113,11 +113,11 @@ func run_damage_log(suite: Node) -> void:
 	suite.expect(BattleLogFormatter.describe(hit, units, null) == text, "Later status and terrain changes cannot alter historical formula")
 	var ability := fixture.ability(&"test:ranged", AbilityDefinition.TargetMode.ENEMY)
 	attacker.abilities[ability.id] = ability
-	state.hex_grid.set_hex_state(target.hex, &"core:acid_vapour")
+	state.hex_grid.set_hex_state(target.hex, &"core:steam")
 	var context := BattleEffectContext.new(state, ability.id)
 	var events := context.apply_damage_events(attacker.unit_id, target.unit_id, 8, &"acid")
 	hit = events[0] as UnitDamagedEvent
-	suite.expect(hit != null and hit.damage == 2 and hit.damage_modifiers == [{"source_id": &"core:acid_vapour", "amount": -6}], "Ability damage records acidic vapour protection")
+	suite.expect(hit != null and hit.damage == 5 and hit.damage_modifiers == [{"source_id": &"core:steam", "amount": -3}], "Ability damage records steam protection")
 	suite.expect("кислотный" in BattleLogFormatter.describe(hit, units, null) and "умение:" in BattleLogFormatter.describe(hit, units, null), "Ability log names damage type and origin")
 	# Each interaction is traced before the status is consumed or removed.
 	for scenario: Dictionary in [

@@ -52,12 +52,12 @@ func clear_hover() -> void:
 
 func refresh() -> void:
 	for hex: Vector2i in _labels.keys():
-		if not _properties.has(hex) or int(_properties[hex].get("turns", 0)) <= 0:
+		if not _properties.has(hex) or _turns_text(_properties[hex]).is_empty():
 			_labels[hex].queue_free()
 			_labels.erase(hex)
 	for hex: Vector2i in _properties:
-		var turns := int(_properties[hex].get("turns", 0))
-		if turns <= 0:
+		var turns := _turns_text(_properties[hex])
+		if turns.is_empty():
 			continue
 		if not _labels.has(hex):
 			var label := Label.new()
@@ -70,7 +70,7 @@ func refresh() -> void:
 			label.add_theme_constant_override("outline_size", 5)
 			add_child(label)
 			_labels[hex] = label
-		_labels[hex].text = str(turns)
+		_labels[hex].text = turns
 		_labels[hex].visible = _alt_visible
 	move_child(_popup, get_child_count() - 1)
 	_update_popup()
@@ -110,11 +110,29 @@ func _update_popup() -> void:
 		_popup.reset_size()
 		_popup.show()
 		return
-	var id := StringName(properties.get("state", &""))
-	if id.is_empty():
+	var names: PackedStringArray = []
+	var sections: PackedStringArray = []
+	for layer: String in ["liquid", "energy"]:
+		var id := StringName(properties.get(layer, &""))
+		if id.is_empty():
+			continue
+		names.append(HexStateCatalog.get_display_name(id))
+		sections.append("%s (осталось раундов: %d)\n%s" % [HexStateCatalog.get_display_name(id), int(properties.get(layer + "_turns", 0)), HexStateCatalog.description(id)])
+	if names.is_empty():
 		_popup.hide()
 		return
-	_title.text = HexStateCatalog.get_display_name(id)
-	_body.text = "%s\n\nСтоимость прохода: %d очк. движения.\nОсталось ходов (раундов): %d.\n%s" % [HexStateCatalog.description(id), properties.cost, properties.get("turns", 0), "" if properties.traversable else "Гекс непроходим."]
+	_title.text = " + ".join(names)
+	_body.text = "%s\n\nСтоимость прохода: %d очк. движения.\n%s" % ["\n\n".join(sections), properties.cost, "" if properties.traversable else "Гекс непроходим."]
 	_popup.reset_size()
 	_popup.show()
+
+
+## Remaining rounds shown under the hex while Alt is held: "3", or "2 · 3" for liquid · energy
+## when the layers expire at different times.
+static func _turns_text(properties: Dictionary) -> String:
+	var turns: PackedStringArray = []
+	for key: String in ["liquid_turns", "energy_turns"]:
+		var value := str(properties.get(key, 0))
+		if int(properties.get(key, 0)) > 0 and not turns.has(value):
+			turns.append(value)
+	return " · ".join(turns)

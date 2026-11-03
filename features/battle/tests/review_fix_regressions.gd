@@ -38,7 +38,7 @@ func run_review_fixes(suite: Node) -> void:
 	state.hex_grid.set_hex_state(Vector2i.ZERO, &"core:electricity")
 	var unchanged := MapMutationService.apply(state, [MapMutation.apply_hex_state(Vector2i.ZERO, &"core:electricity")])
 	suite.expect(unchanged.accepted and unchanged.events.is_empty() and state.map_revision == 0 and state.state_revision == 0, "Unchanged terrain keeps map and state revisions")
-	suite.expect(HexStateCatalog.get_damage_type(&"core:acid_vapour") == &"acid" and HexStateCatalog.get_damage_type(&"core:steam") == &"physical", "Hex damage types are explicit")
+	suite.expect(HexStateCatalog.get_damage_type(&"core:acid") == &"acid" and HexStateCatalog.get_damage_type(&"core:plasma") == &"plasma" and HexStateCatalog.get_damage_type(&"core:steam") == &"physical", "Hex damage types are explicit")
 
 	var a := Vector2i.ZERO
 	var b := Vector2i(1, 0)
@@ -54,7 +54,7 @@ func run_review_fixes(suite: Node) -> void:
 	ability.effects.assign([effect])
 	user.abilities[ability.id] = ability
 	var used := BattleEngine.new(state).execute(UseAbilityCommand.at_hex(user.unit_id, a, ability.id))
-	suite.expect(used.accepted and state.hex_grid.get_hex_state_id(a) == &"core:plasma" and state.hex_grid.get_hex_state_id(b) == &"core:plasma", "Area terrain ability resolves through one handler batch")
+	suite.expect(used.accepted and state.hex_grid.get_energy(a) == &"core:plasma" and state.hex_grid.get_energy(b) == &"core:plasma", "Area terrain ability resolves through one handler batch")
 	var counting := CountingHexHandler.new()
 	var hexes: Array[Vector2i] = [a, b]
 	counting.execute_hexes(effect, null, &"", hexes)

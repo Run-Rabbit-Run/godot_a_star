@@ -106,18 +106,22 @@ func run_presentation(suite: Node) -> void:
 	details.call("_update_popup")
 	var popup := details.get_node("HexStatePopup") as PanelContainer
 	var body: Label = details.get("_body")
-	suite.expect(popup.visible and "Горящее масло" == (details.get("_title") as Label).text and "Стоимость прохода: 2" in body.text and "Осталось ходов (раундов): 3" in body.text, "Hover popup shows state, cost and current duration")
-	suite.expect("Горение ×3" in body.text and "Тягучее масло ×3" in body.text and "2 огненного" in body.text, "Hover properties match catalog effects and damage")
+	suite.expect(popup.visible and "Масло + Огонь" == (details.get("_title") as Label).text and "Стоимость прохода: 2" in body.text and "осталось раундов: 3" in body.text, "Hover popup shows state, cost and current duration")
+	suite.expect("Горение ×2" in body.text and "Тягучее масло ×2" in body.text and "1 огненного" in body.text, "Hover properties match catalog effects and damage of both layers")
 	var timer_event := MapMutationEvent.new(MapMutationKind.Value.APPLY_HEX_STATE, Vector2i.ZERO, &"core:default", true, 2)
-	timer_event.hex_state_id = &"core:burning_oil"
-	timer_event.hex_state_turns = 2
+	timer_event.liquid_id = &"core:oil"
+	timer_event.liquid_turns = 2
+	timer_event.energy_id = &"core:fire"
+	timer_event.energy_turns = 2
 	timer_event.hex_state_changed = false
 	map.apply_map_event(timer_event)
-	suite.expect(timers[Vector2i.ZERO].text == "2" and "Осталось ходов (раундов): 2" in body.text, "Timer events update both badge and open popup")
+	suite.expect(timers[Vector2i.ZERO].text == "2" and "осталось раундов: 2" in body.text, "Timer events update both badge and open popup")
 	details.clear_hover()
 	suite.expect(not popup.visible, "Leaving hex hides its popup")
-	timer_event.hex_state_id = &""
-	timer_event.hex_state_turns = 0
+	timer_event.liquid_id = &""
+	timer_event.liquid_turns = 0
+	timer_event.energy_id = &""
+	timer_event.energy_turns = 0
 	timer_event.hex_state_changed = true
 	map.apply_map_event(timer_event)
 	suite.expect(not timers.has(Vector2i.ZERO), "Expiration removes duration badge")

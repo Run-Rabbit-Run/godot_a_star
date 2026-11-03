@@ -344,7 +344,7 @@ func render_grid(grid: HexGrid) -> void:
 		)
 
 	for hex: Vector2i in grid.get_cells():
-		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "state": grid.get_hex_state_id(hex), "turns": grid.get_hex_state_turns(hex), "obstacle": grid.get_obstacle(hex)}
+		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "liquid": grid.get_liquid(hex), "liquid_turns": grid.get_liquid_turns(hex), "energy": grid.get_energy(hex), "energy_turns": grid.get_energy_turns(hex), "obstacle": grid.get_obstacle(hex)}
 	_refresh_terrain_properties()
 	_hex_state_visuals.render(grid)
 	_hex_state_details.refresh()
@@ -523,12 +523,14 @@ func apply_map_event(event: MapMutationEvent) -> void:
 		_displayed_properties.erase(event.hex)
 	else:
 		var previous: Dictionary = _displayed_properties.get(event.hex, {})
-		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost, "state": previous.get("state", &""), "turns": previous.get("turns", 0), "obstacle": event.obstacle if event.obstacle_changed else previous.get("obstacle")}
+		_displayed_properties[event.hex] = {"terrain": event.terrain_id, "traversable": event.traversable, "cost": event.movement_cost, "liquid": previous.get("liquid", &""), "liquid_turns": previous.get("liquid_turns", 0), "energy": previous.get("energy", &""), "energy_turns": previous.get("energy_turns", 0), "obstacle": event.obstacle if event.obstacle_changed else previous.get("obstacle")}
 	if event.kind == MapMutationKind.Value.APPLY_HEX_STATE:
-		_displayed_properties[event.hex]["state"] = event.hex_state_id
-		_displayed_properties[event.hex]["turns"] = event.hex_state_turns
+		_displayed_properties[event.hex]["liquid"] = event.liquid_id
+		_displayed_properties[event.hex]["liquid_turns"] = event.liquid_turns
+		_displayed_properties[event.hex]["energy"] = event.energy_id
+		_displayed_properties[event.hex]["energy_turns"] = event.energy_turns
 		if event.hex_state_changed:
-			_hex_state_visuals.set_hex_state(event.hex, event.hex_state_id)
+			_hex_state_visuals.set_hex_layers(event.hex, event.liquid_id, event.energy_id)
 		_hex_state_details.refresh()
 		_update_terrain_properties(event.hex)
 		return

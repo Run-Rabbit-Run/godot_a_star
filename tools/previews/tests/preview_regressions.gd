@@ -14,7 +14,7 @@ func run(suite: Node) -> void:
 		var states_on_starts := 0
 		for placement: UnitPlacementDefinition in battle.unit_placements:
 			for cell: BattleMapCellDefinition in map.cells:
-				if cell.hex == placement.start_hex and not cell.hex_state_id.is_empty():
+				if cell.hex == placement.start_hex and cell.has_layers():
 					states_on_starts += 1
 		var first_unit := snapshot.get_unit_definition(battle.unit_placements[0].definition_id)
 		suite.expect(states_on_starts == battle.unit_placements.size(), "Hex status preview puts a state under every unit")

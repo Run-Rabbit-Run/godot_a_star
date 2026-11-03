@@ -44,8 +44,10 @@ static func create_request() -> BattleStartRequest:
 			definition.ability_ids.assign(CREATION_ABILITIES)
 		for cell: BattleMapCellDefinition in map.cells:
 			if cell.hex == placement.start_hex:
-				cell.hex_state_id = STATES[index % STATES.size()]
-				cell.movement_cost = HexStateCatalog.get_movement_cost(cell.hex_state_id)
+				var layers := HexStateCatalog.split(STATES[index % STATES.size()])
+				cell.liquid_id = layers[0]
+				cell.energy_id = layers[1]
+				cell.movement_cost = HexStateCatalog.get_movement_cost(cell.liquid_id)
 	var overrides: Array[UnitDefinition] = []
 	overrides.assign(unit_overrides.values())
 	loaded.request.content_snapshot = snapshot.with_battle_document(map, battle, overrides)

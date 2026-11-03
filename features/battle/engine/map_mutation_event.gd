@@ -11,8 +11,11 @@ var hex: Vector2i
 var terrain_id: StringName
 var traversable: bool
 var movement_cost: int
-var hex_state_id: StringName
-var hex_state_turns := 0
+## Both layers of the hex after the change, with their remaining rounds.
+var liquid_id: StringName
+var liquid_turns := 0
+var energy_id: StringName
+var energy_turns := 0
 ## Duration-only updates do not repeat exposure or rebuild the state artwork.
 var hex_state_changed := true
 
