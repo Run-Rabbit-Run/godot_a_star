@@ -139,6 +139,8 @@ func _check_adopted_ability_equals_direct(suite: Node, fixture: Fixtures) -> voi
 	var state: BattleState = fixture.state(cells, [user, enemy, other])
 	for hex: Vector2i in [Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1), Vector2i(4, 0)]:
 		state.hex_grid.set_hex_state(hex, &"core:water")
+	# The battle setup resolves the summoned unit by ID; a hand-built state registers it itself.
+	state.unit_definitions[&"core:electric_turret_unit"] = load("res://content/packages/core/electric_turret.tres")
 	Fixtures.start_turns(state)
 	var live := BattleEngine.new(state, false)
 	var forecast := live.fork_for_prediction()

@@ -10,6 +10,8 @@ var objective_system: ObjectiveSystem
 var deterministic_seed: int
 var random: RandomNumberGenerator
 var mod_api: ModAPI
+## Read-only definitions of the units effects may bring in (summons), resolved at setup by ID.
+var unit_definitions: Dictionary[StringName, UnitDefinition] = {}
 var state_revision := 0
 var map_revision := 0
 ## A forecast or transaction copy: its owner discards it, so effects apply to it directly.
@@ -58,6 +60,7 @@ func duplicate_for_prediction() -> BattleState:
 		units[id] = unit_states[id].duplicate_state()
 	var copy := BattleState.new(battle_id, hex_grid.duplicate_grid(), units, turn_service.get_turn_order(), objective_system, deterministic_seed, mod_api.frozen_copy())
 	copy.turn_service = turn_service.duplicate_service(units)
+	copy.unit_definitions = unit_definitions
 	copy.random.state = random.state
 	copy.state_revision = state_revision
 	copy.map_revision = map_revision

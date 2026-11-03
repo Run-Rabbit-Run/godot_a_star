@@ -70,6 +70,7 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 		)
 
 	var unit_spawns: Array[UnitSpawnData] = []
+	var referenced_units: Dictionary[StringName, UnitDefinition] = {}
 
 	for placement: UnitPlacementDefinition in definition.unit_placements:
 		var unit_definition := snapshot.get_unit_definition(
@@ -105,6 +106,9 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 			var ability_error := ability.validate()
 			if not ability_error.is_empty():
 				return BattleSetupCreationResult.failure("%s: %s" % [ability.id, ability_error])
+			var reference_error := _resolve_unit_references(ability, snapshot, referenced_units)
+			if not reference_error.is_empty():
+				return BattleSetupCreationResult.failure(reference_error)
 			abilities.append(ability)
 
 		var side := sides_by_id[placement.side_id]
@@ -148,9 +152,30 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 			unit_spawns,
 			definition.primary_objective,
 			definition.protected_faction,
-			request.deterministic_seed
+			request.deterministic_seed,
+			referenced_units
 		)
 	)
+
+
+## Resolves the units the ability's effects bring in (summons) from the same snapshot, so the
+## battle never reads a definition the content did not register.
+static func _resolve_unit_references(ability: AbilityDefinition, snapshot: ContentSnapshot, resolved: Dictionary[StringName, UnitDefinition]) -> String:
+	for effect: AbilityEffectDefinition in ability.effects:
+		var handler := snapshot.mod_api.get_effect_handler(effect.effect_type_id) if effect != null else null
+		if handler == null:
+			continue
+		for unit_id: StringName in handler.get_unit_references(effect):
+			if resolved.has(unit_id):
+				continue
+			var unit := snapshot.get_unit_definition(unit_id)
+			if unit == null:
+				return "%s: UnitDefinition could not be resolved: %s." % [ability.id, unit_id]
+			var error := handler.validate_unit_reference(effect, unit)
+			if not error.is_empty():
+				return "%s: %s" % [ability.id, error]
+			resolved[unit_id] = unit
+	return ""
 
 
 static func _validate_unit_definition(definition: UnitDefinition) -> String:

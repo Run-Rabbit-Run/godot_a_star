@@ -38,7 +38,7 @@
 | Возможность | Основные классы | Контракт |
 | --- | --- | --- |
 | Пакеты контента | `ContentPackage`, manifests, зависимости, `ContentLoader`, `ContentSnapshot`, `ContentLock` | CONTENT_AND_MODS.md |
-| Изоляция snapshot | Копии определений и setup, замороженный реестр `ModAPI` | CONTENT_AND_MODS.md «ContentSnapshot», «Способности и ModAPI» |
+| Изоляция snapshot | Копии определений и setup, замороженный реестр `ModAPI`, встроенные вложенные данные правил и ссылки на юнитов по ID (`get_unit_references()`, `BattleSetup.unit_definitions`) | CONTENT_AND_MODS.md «ContentSnapshot», «Способности и ModAPI» |
 | Авторский контент проекта | `content/authored/`, `UnitLibrary`, `SkillLibrary`, `ProjectBattleLoader`, `content/game_content.tres` | CONTENT_AND_MODS.md, [EDITOR.md](EDITOR.md) |
 | Разделение логики и визуала | `presentation_id` у юнитов и способностей, `UnitPresentationDefinition`, `AbilityPresentationDefinition`, fallback | [BATTLE_PRESENTATION.md](BATTLE_PRESENTATION.md) «Компоненты», CONTENT_AND_MODS.md «Логика и presentation» |
 

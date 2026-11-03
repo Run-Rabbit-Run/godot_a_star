@@ -34,6 +34,18 @@ func validate(_effect: AbilityEffectDefinition) -> String:
 	return "Ability effect handler does not implement validation."
 
 
+## IDs of the unit definitions the effect brings into a battle. Content loading checks that
+## they exist; the battle setup resolves them, and the context hands them out by ID.
+func get_unit_references(_effect: AbilityEffectDefinition) -> Array[StringName]:
+	var none: Array[StringName] = []
+	return none
+
+
+## Why a unit the effect references cannot serve it, or "".
+func validate_unit_reference(_effect: AbilityEffectDefinition, _unit: UnitDefinition) -> String:
+	return ""
+
+
 func execute(
 	_effect: AbilityEffectDefinition,
 	_context: BattleEffectContext,

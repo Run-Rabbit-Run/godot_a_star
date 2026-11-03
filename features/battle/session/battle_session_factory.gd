@@ -82,6 +82,7 @@ static func create(request: BattleStartRequest) -> BattleSessionCreationResult:
 		setup.deterministic_seed,
 		request.content_snapshot.mod_api
 	)
+	state.unit_definitions = setup.unit_definitions
 	var engine := BattleEngine.new(state)
 	var session := BattleSession.new(setup, state, engine, request.content_snapshot)
 

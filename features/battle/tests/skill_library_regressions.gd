@@ -82,8 +82,14 @@ func run(suite: Node) -> void:
 	summon.effects = [SkillLibrary.new_effect("core:summon")]
 	summon.target_mode = AbilityDefinition.TargetMode.EMPTY_HEX
 	var summon_packages := skills.apply_to_packages({summon.id: summon, electric_passive.id: electric_passive})
-	var summoned: UnitDefinition = summon_packages[-1].abilities[0].effects[0].parameters.unit
-	suite.expect(summoned.passive_definitions[&"core:electric_attack"].damage_type == &"fire", "Summoned units receive authored passive overrides")
+	var summoned: UnitDefinition = null
+	for package: ContentPackage in summon_packages:
+		for unit: UnitDefinition in package.units:
+			if unit.id == SummonEffectHandler.unit_id(summon_packages[-1].abilities[0].effects[0]):
+				summoned = unit
+	var cached := load("res://content/packages/core/electric_turret.tres") as UnitDefinition
+	suite.expect(summoned != null and summoned != cached and summoned.passive_definitions[&"core:electric_attack"].damage_type == &"fire", "Summoned units receive authored passive overrides")
+	suite.expect(not cached.passive_definitions.has(&"core:electric_attack"), "Authored passives leave the package units in the loader cache untouched")
 	var custom := SkillLibrary.new_document("active")
 	applied = skills.apply_to_packages({custom.id: custom, passive.id: passive})
 	var loaded := ContentLoader.load_packages(applied)
@@ -120,7 +126,7 @@ func _run_descriptions(suite: Node) -> void:
 	suite.expect(AbilityDescription.render(sweep).contains("урон атаки"), "Without a unit the base-attack damage is named instead of counted")
 	var tooltip := BattleHUD.ability_tooltip(sweep, {"attack_damage": 6})
 	suite.expect(tooltip.begins_with(sweep.display_name) and tooltip.contains("6 урона") and tooltip.contains("КД: 1"), "Battle tooltip joins name, rendered description and cooldown")
-	var turret := AbilityDescription.variables(skills.to_ability(builtin["core:electric_turret"]))
+	var turret := AbilityDescription.variables(skills.to_ability(builtin["core:electric_turret"]), {"find_unit": skills.find_unit})
 	var summon_hp := turret.filter(func(entry: Dictionary) -> bool: return entry.key == "summon_hp")
 	suite.expect(summon_hp.size() == 1 and summon_hp[0].value == "3", "Summon variables expose the summoned unit's health")
 	var twice := SkillLibrary.new_document("active")

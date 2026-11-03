@@ -2,14 +2,13 @@
 
 [ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
 [ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
-[ext_resource type="Resource" path="res://content/packages/core/electric_turret.tres" id="turret"]
 
 [sub_resource type="Resource" id="effect_0"]
 script = ExtResource("effect")
 effect_type_id = &"core:summon"
 parameters = {
 "center_only": true,
-"unit": ExtResource("turret"),
+"unit_id": "core:electric_turret_unit",
 }
 
 [resource]

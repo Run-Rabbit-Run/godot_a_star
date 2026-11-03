@@ -305,11 +305,11 @@ func _skill_tooltip(data: Dictionary) -> String:
 ## Attack of the edited unit as battle will see it, for unit-dependent skill description variables.
 func _unit_context() -> Dictionary:
 	if _document.is_empty():
-		return {}
+		return {"find_unit": _library.find_unit}
 	var ids: Array[StringName] = []
 	ids.assign(_document.passives)
 	var bonus := PassiveAbilityCatalog.attack_bonus(ids, SkillLibrary.passive_definitions(_skills))
-	return {"attack_damage": int(_document.damage) + bonus, "attack_range": int(_document.attack_range) if _document.attack_type == "ranged" else 1}
+	return {"attack_damage": int(_document.damage) + bonus, "attack_range": int(_document.attack_range) if _document.attack_type == "ranged" else 1, "find_unit": _library.find_unit}
 
 
 func _refresh_skill_tooltips(popup: PopupMenu) -> void:

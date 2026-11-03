@@ -9,7 +9,8 @@ const _TOKEN := "\\{([A-Za-z0-9_]+)\\}"
 
 ## Variables of an active ability in display order: [{key, label, value}].
 ## context describes the acting unit: attack_damage (base attack with passives) and attack_range.
-## Without it values that depend on the unit are named instead of counted.
+## Without it values that depend on the unit are named instead of counted. Its `find_unit`
+## (Callable: id -> UnitDefinition) resolves summoned units; without it they are left out.
 static func variables(ability: AbilityDefinition, context: Dictionary = {}) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	var attack_range := str(context.attack_range) if context.has("attack_range") else "дальность атаки"
@@ -38,7 +39,8 @@ static func variables(ability: AbilityDefinition, context: Dictionary = {}) -> A
 			&"core:hex_state":
 				_add(result, "hex_state" + suffix, "Состояние гекса" + number, HexStateCatalog.get_display_name(StringName(str(params.get("state_id", "")))).to_lower())
 			&"core:summon":
-				var unit: Variant = params.get("unit")
+				var find: Variant = context.get("find_unit")
+				var unit: Variant = find.call(SummonEffectHandler.unit_id(effect)) if find is Callable else null
 				if unit is UnitDefinition:
 					_add(result, "summon" + suffix, "Призываемый юнит" + number, unit.display_name)
 					if unit.base_stats != null:

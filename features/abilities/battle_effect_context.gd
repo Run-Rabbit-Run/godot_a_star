@@ -32,6 +32,12 @@ func get_corpses_at(hex: Vector2i) -> Array[UnitSnapshot]:
 	return _state.get_corpses_at(hex)
 
 
+## A unit definition an effect of this battle references (AbilityEffectHandler.get_unit_references),
+## or null. The battle resolved it at setup; it is read-only.
+func get_unit_definition(id: StringName) -> UnitDefinition:
+	return _state.unit_definitions.get(id) as UnitDefinition
+
+
 func summon(source_id: StringName, hex: Vector2i, definition: UnitDefinition) -> Array[BattleEvent]:
 	var events: Array[BattleEvent] = []
 	var source := _state.unit_states.get(source_id) as UnitState

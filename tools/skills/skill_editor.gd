@@ -442,7 +442,7 @@ func _effect_card(index: int) -> void:
 
 
 func _summon_text(params: Dictionary) -> String:
-	var unit: UnitDefinition = _library.units().get(StringName(String(params.get("unit_id", ""))))
+	var unit := _library.find_unit(StringName(String(params.get("unit_id", ""))))
 	if unit == null:
 		return "Призываемый юнит %s не найден." % params.get("unit_id", "")
 	return "Призывает «%s»: ОЗ %d, атака %d на дальность %d. Призываемый юнит меняется в своих данных, не здесь." % [unit.display_name, unit.base_stats.max_health, unit.base_stats.basic_attack_damage, unit.base_stats.basic_attack_range]
@@ -479,7 +479,7 @@ func _uses_unit_values() -> bool:
 
 
 func _context() -> Dictionary:
-	return {"attack_damage": int(_preview_attack.value), "attack_range": int(_preview_range.value)}
+	return {"attack_damage": int(_preview_attack.value), "attack_range": int(_preview_range.value), "find_unit": _library.find_unit}
 
 
 func _variable_entries() -> Array[Dictionary]:

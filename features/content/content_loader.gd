@@ -64,6 +64,9 @@ static func load_packages(
 		)
 		lock_entries.append(_create_lock_entry(package))
 
+	for definitions: Array in [battles, maps, units, ai_profiles, races, abilities, scenarios, campaigns]:
+		_validate_inline_data(definitions, result)
+
 	if not result.errors.is_empty():
 		return result
 
@@ -308,6 +311,44 @@ static func _collect_definitions(
 		target.append(definition)
 
 
+## Rule definitions keep nested data inline. `duplicate(true)` does not copy an external
+## resource, so one inside a definition would be shared by every snapshot copy and the loader
+## cache; other content is referred to by ID instead.
+static func _validate_inline_data(definitions: Array, result: ContentLoadResult) -> void:
+	for definition: Resource in definitions:
+		var external := _find_external_resource(definition, {})
+		if not external.is_empty():
+			result.add_error("%s embeds external resource %s; refer to other content by ID." % [definition.get("id"), external])
+
+
+## The path of the first external resource nested in the value, or "". The value itself may
+## be a file of its own: only what it holds is checked.
+static func _find_external_resource(value: Variant, visited: Dictionary, nested := false) -> String:
+	if value is Resource:
+		if nested and not value.resource_path.is_empty() and not value.resource_path.contains("::"):
+			return value.resource_path
+		if visited.has(value.get_instance_id()):
+			return ""
+		visited[value.get_instance_id()] = true
+		for property: Dictionary in value.get_property_list():
+			if not property.usage & PROPERTY_USAGE_STORAGE or property.name in ["script", "resource_path", "resource_name", "resource_local_to_scene"]:
+				continue
+			var found := _find_external_resource(value.get(property.name), visited, true)
+			if not found.is_empty():
+				return found
+	elif value is Array:
+		for item: Variant in value:
+			var found := _find_external_resource(item, visited, true)
+			if not found.is_empty():
+				return found
+	elif value is Dictionary:
+		for key: Variant in value:
+			var found := _find_external_resource(value[key], visited, true)
+			if not found.is_empty():
+				return found
+	return ""
+
+
 static func _validate_references(
 	snapshot: ContentSnapshot,
 	api: ModAPI,
@@ -390,6 +431,16 @@ static func _validate_references(
 
 			if not error.is_empty():
 				result.add_error("AbilityDefinition %s: %s" % [ability.id, error])
+				continue
+
+			for unit_id: StringName in handler.get_unit_references(effect):
+				var unit := snapshot.get_unit_definition(unit_id)
+				if unit == null:
+					result.add_error("AbilityDefinition %s references missing UnitDefinition %s." % [ability.id, unit_id])
+					continue
+				var unit_error := handler.validate_unit_reference(effect, unit)
+				if not unit_error.is_empty():
+					result.add_error("AbilityDefinition %s: %s" % [ability.id, unit_error])
 
 	_validate_scenarios(snapshot, result)
 

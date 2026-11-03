@@ -132,6 +132,8 @@ func _run_summon(suite: Node, fixture: Fixtures) -> void:
 	var turret := load("res://features/abilities/definitions/electric_turret.tres") as AbilityDefinition
 	battle.p1.abilities[turret.id] = turret
 	battle.p1.ability_cooldowns[turret.id] = 0
+	# The battle setup resolves the summoned unit by ID; a hand-built state registers it itself.
+	battle.state.unit_definitions[&"core:electric_turret_unit"] = load("res://content/packages/core/electric_turret.tres")
 	var engine := BattleEngine.new(battle.state)
 	var summon := engine.execute(UseAbilityCommand.at_hex(&"p1", Vector2i(3, 0), turret.id))
 	var summoned := StringName()

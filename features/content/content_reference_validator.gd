@@ -1,7 +1,7 @@
 class_name ContentReferenceValidator
 extends RefCounted
 
-const REFERENCE_FIELDS := ["map_id", "definition_id", "race_id", "presentation_id", "ai_profile_id", "ai_profile_override_id", "battle_id", "entry_scenario_id", "target_scenario_id", "ability_ids", "unit_ids", "scenario_ids", "entry_battle_ids", "entry_campaign_ids", "state_id", "status_id"]
+const REFERENCE_FIELDS := ["map_id", "definition_id", "race_id", "presentation_id", "ai_profile_id", "ai_profile_override_id", "battle_id", "entry_scenario_id", "target_scenario_id", "ability_ids", "unit_ids", "scenario_ids", "entry_battle_ids", "entry_campaign_ids", "state_id", "status_id", "unit_id"]
 
 static func validate(packages: Array[ContentPackage], result: ContentLoadResult) -> void:
 	for package: ContentPackage in packages:

@@ -30,7 +30,7 @@ func show(state: UnitSnapshot) -> void:
 		abilities,
 		state.turn.main_action_available and not state.health.is_defeated(),
 		state.ability_cooldowns,
-		{"attack_damage": state.basic_attack_damage, "attack_range": state.basic_attack_range}
+		{"attack_damage": state.basic_attack_damage, "attack_range": state.basic_attack_range, "find_unit": _content.get_unit_definition}
 	)
 
 	var definition := _unit_views.definitions.get(state.unit_id) as UnitDefinition

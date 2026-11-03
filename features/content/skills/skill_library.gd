@@ -30,6 +30,10 @@ func _init(packages: Array[ContentPackage]) -> void:
 func units() -> Dictionary:
 	return _units
 
+## A package unit by ID, or null; the `find_unit` of AbilityDescription contexts.
+func find_unit(id: StringName) -> UnitDefinition:
+	return _units.get(id)
+
 static func new_document(kind: String) -> Dictionary:
 	var data := {"schema_version": 1, "kind": kind, "id": "custom_skills:s_" + Crypto.new().generate_random_bytes(16).hex_encode(), "name": "Новый навык", "description": ""}
 	match kind:
@@ -47,11 +51,7 @@ static func new_effect(type := "core:damage") -> Dictionary:
 	return {"type": "core:damage", "parameters": {"amount": 2, "secondary_amount": 2, "damage_type": "physical", "use_base_attack": false, "affects_obstacles": true}}
 
 static func _effect_document(effect: AbilityEffectDefinition) -> Dictionary:
-	var params := effect.parameters.duplicate(true)
-	if params.get("unit") is UnitDefinition:
-		params["unit_id"] = String(params.unit.id)
-		params.erase("unit")
-	return {"type": String(effect.effect_type_id), "parameters": params}
+	return {"type": String(effect.effect_type_id), "parameters": effect.parameters.duplicate(true)}
 
 static func active_document(ability: AbilityDefinition) -> Dictionary:
 	var data := {"schema_version": 1, "kind": "active", "id": String(ability.id), "name": ability.display_name, "description": ability.description}
@@ -191,7 +191,7 @@ func validate(data: Dictionary) -> String:
 	var ability := to_ability(data)
 	var core_error := ability.validate()
 	if not core_error.is_empty(): return core_error
-	return _description_error(data, AbilityDescription.variables(ability))
+	return _description_error(data, AbilityDescription.variables(ability, {"find_unit": find_unit}))
 
 ## Built-in skills keep their target, flags, presentation and effect list; only parameters change.
 static func _structure_error(data: Dictionary, builtin: Dictionary) -> String:
@@ -220,11 +220,6 @@ func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 	effect.parameters = data.parameters.duplicate(true)
 	for key: String in ["amount", "secondary_amount", "levels"]:
 		if effect.parameters.has(key): effect.parameters[key] = int(effect.parameters[key])
-	if effect.effect_type_id == &"core:summon":
-		var id := StringName(effect.parameters.get("unit_id", ""))
-		effect.parameters.erase("unit_id")
-		var unit: UnitDefinition = units().get(id)
-		if unit != null: effect.parameters["unit"] = unit.duplicate(true)
 	return effect
 
 func validate_effect(data: Dictionary) -> String:
@@ -239,8 +234,6 @@ func validate_effect(data: Dictionary) -> String:
 			if not UnitStatusCatalog.has_status(StringName(str(params.get("status_id", "")))): return "Эффект состояния: выберите известное состояние юнита."
 		"core:hex_state":
 			if not HexStateCatalog.has_state(StringName(str(params.get("state_id", "")))): return "Эффект гекса: выберите известное состояние гекса."
-		"core:summon":
-			if to_effect(data).parameters.get("unit") == null: return "Призыв: выберите существующего призываемого юнита."
 	var handler: AbilityEffectHandler
 	match data.type:
 		"core:damage": handler = DamageEffectHandler.new()
@@ -248,7 +241,15 @@ func validate_effect(data: Dictionary) -> String:
 		"core:hex_state": handler = HexStateEffectHandler.new()
 		"core:summon": handler = SummonEffectHandler.new()
 		_: return "Неизвестный обработчик эффекта."
-	return handler.validate(to_effect(data))
+	var effect := to_effect(data)
+	var error := handler.validate(effect)
+	if not error.is_empty(): return error
+	for unit_id: StringName in handler.get_unit_references(effect):
+		var unit := find_unit(unit_id)
+		if unit == null: return "Призыв: выберите существующего призываемого юнита."
+		error = handler.validate_unit_reference(effect, unit)
+		if not error.is_empty(): return error
+	return ""
 
 func to_ability(data: Dictionary) -> AbilityDefinition:
 	var ability := AbilityDefinition.new()
@@ -287,8 +288,11 @@ func apply_to_packages(documents: Dictionary) -> Array[ContentPackage]:
 		for index: int in range(package.abilities.size()):
 			var id := String(package.abilities[index].id)
 			if documents.has(id): package.abilities[index] = to_ability(documents[id])
-			_apply_summon_passives(package.abilities[index], passives)
-		for unit: UnitDefinition in package.units: unit.passive_definitions = passives.duplicate(true)
+		# Package files hold their units as external resources, which duplicate(true) shares with
+		# the loader cache: each unit is copied before it takes this library's passives.
+		for index: int in range(package.units.size()):
+			package.units[index] = package.units[index].duplicate(true) as UnitDefinition
+			package.units[index].passive_definitions = passives.duplicate(true)
 		result.append(package)
 	var custom := ContentPackage.new()
 	custom.manifest = ContentPackageManifest.new()
@@ -299,13 +303,6 @@ func apply_to_packages(documents: Dictionary) -> Array[ContentPackage]:
 		custom.manifest.dependencies.append(dependency)
 	for data: Dictionary in documents.values():
 		if data.kind == "active" and String(data.id).begins_with("custom_skills:"):
-			var ability := to_ability(data)
-			_apply_summon_passives(ability, passives)
-			custom.abilities.append(ability)
+			custom.abilities.append(to_ability(data))
 	result.append(custom)
 	return result
-
-static func _apply_summon_passives(ability: AbilityDefinition, passives: Dictionary) -> void:
-	for effect: AbilityEffectDefinition in ability.effects:
-		var unit: Variant = effect.parameters.get("unit")
-		if unit is UnitDefinition: unit.passive_definitions = passives.duplicate(true)

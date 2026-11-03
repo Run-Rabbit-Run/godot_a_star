@@ -74,6 +74,8 @@ func _run() -> void:
 		await preload("res://features/battle/tests/rule_boundary_regressions.gd").new().run(self)
 	if runs("summon_control"):
 		preload("res://features/battle/tests/session_regressions.gd").new().run_summon_control(self)
+	if runs("summon_references"):
+		preload("res://features/battle/tests/summon_reference_regressions.gd").new().run(self)
 	if runs("simulation"):
 		preload("res://features/battle/tests/session_regressions.gd").new().run_simulation(self)
 	if runs("presentation"):
