@@ -3,6 +3,7 @@ extends Node2D
 
 
 const CUSTOM_TEXTURE_SIZE := 82.0
+const SKULL_ICON := preload("res://features/battle/ui/icons/skull.svg")
 
 
 @export_range(0.01, 1.0, 0.01)
@@ -20,6 +21,10 @@ var _defeated := false
 var _health_display_expanded := true
 var _status_row: GridContainer
 var _shown_statuses: Dictionary = {}
+## Health a previewed command would leave, or -1 without a preview.
+var _preview_health := -1
+var _preview_defeated := false
+var _preview_nodes: Array[CanvasItem] = []
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -112,6 +117,58 @@ func set_health_display_expanded(expanded: bool) -> void:
 	_apply_health_display()
 
 
+## Marks the part of the health bar a previewed command would remove, with "−N" beside it
+## and a skull when the unit would die. Presentation only.
+func show_health_preview(health_after: int, defeated: bool) -> void:
+	_preview_health = maxi(health_after, 0)
+	_preview_defeated = defeated
+	_draw_health_preview()
+
+
+func clear_health_preview() -> void:
+	_preview_health = -1
+	_draw_health_preview()
+
+
+func _draw_health_preview() -> void:
+	for node: CanvasItem in _preview_nodes:
+		if is_instance_valid(node):
+			node.queue_free()
+	_preview_nodes.clear()
+	var current := int(_health_bar.value)
+	if _preview_health < 0 or _defeated or _preview_health >= current or not _health_bar.visible:
+		return
+	var maximum := maxf(_health_bar.max_value, 1.0)
+	var width := _health_bar.size.x
+	var loss := ColorRect.new()
+	loss.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loss.color = Color(1.0, 0.9, 0.5, 0.9)
+	loss.position = Vector2(width * _preview_health / maximum, 0)
+	loss.size = Vector2(width * (current - _preview_health) / maximum, _health_bar.size.y)
+	_health_bar.add_child(loss)
+	_preview_nodes.append(loss)
+	var label := Label.new()
+	label.text = "−%d" % (current - _preview_health)
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", Color(1.0, 0.42, 0.34))
+	label.add_theme_color_override("font_outline_color", Color(0.06, 0.05, 0.05))
+	label.add_theme_constant_override("outline_size", 5)
+	label.z_as_relative = false
+	label.z_index = 101
+	label.position = _health_bar.position + Vector2(width + 4, -9)
+	add_child(label)
+	_preview_nodes.append(label)
+	if _preview_defeated:
+		var skull := Sprite2D.new()
+		skull.texture = SKULL_ICON
+		skull.scale = Vector2.ONE * 0.9
+		skull.z_as_relative = false
+		skull.z_index = 101
+		skull.position = _health_bar.position + Vector2(-14, _health_bar.size.y * 0.5)
+		add_child(skull)
+		_preview_nodes.append(skull)
+
+
 func _apply_health_display() -> void:
 	_health_bar.visible = not _defeated and _health_bar.value > 0
 	_health_label.visible = _health_display_expanded and not _defeated
@@ -121,6 +178,9 @@ func _apply_health_display() -> void:
 	_health_bar.size = Vector2(badge_width, 17.0 if _health_display_expanded else 4.0)
 	if _status_row != null:
 		_status_row.position.y = 32.0 if _health_display_expanded else 19.0
+	# The badge size follows Alt; a shown preview follows the badge.
+	if _preview_health >= 0:
+		_draw_health_preview()
 
 
 func show_statuses(statuses: Dictionary) -> void:

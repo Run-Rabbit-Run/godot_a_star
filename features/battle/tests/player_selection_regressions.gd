@@ -39,6 +39,14 @@ func run(suite: Node) -> void:
 		selection.hover(targets[0].hex)
 		suite.expect(map.get("_cursor_mode") != BattleMapView.CursorMode.DEFAULT and path_layer.get_used_cells().is_empty(), "Hovering an attackable opponent shows the attack cursor, not a path")
 		suite.expect(selection.command_at(active, targets[0].hex) is AttackCommand, "Clicking an attackable opponent means attacking")
+		var panel := map.get_node("ActionPreviewPanel") as ActionPreviewPanel
+		var target_actor: UnitActor = controller.get("_unit_views").actors[targets[0].unit_id]
+		var reach_layer := map.get_node("ReachVisuals") as Node2D
+		suite.expect("ОЗ" in panel.get_text() and not (target_actor.get("_preview_nodes") as Array).is_empty(), "Hovering a target previews its health loss on the unit and next to the cursor")
+		suite.expect(reach_layer.get_child_count() > 0, "Hovering an opponent shows its reach")
+		selection.hover_exited()
+		suite.expect(panel.get_text().is_empty() and (target_actor.get("_preview_nodes") as Array).is_empty() and reach_layer.get_child_count() == 0, "Leaving the hex clears the preview and the reach")
+		selection.hover(targets[0].hex)
 
 	suite.expect(not selection.select_ability(active, &"core:not_an_ability"), "A unit cannot aim an ability it does not have")
 	var area_ability := StringName()

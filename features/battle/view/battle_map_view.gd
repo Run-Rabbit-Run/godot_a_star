@@ -42,6 +42,8 @@ var _reachable_visuals: Node2D
 var _ranged_attack_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
+var _action_preview_panel: ActionPreviewPanel
+var _reach_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
 var _hex_state_details: HexStateDetails
 var _cursor_mode := CursorMode.DEFAULT
@@ -80,6 +82,9 @@ func _ready() -> void:
 	_hex_state_details.name = "HexStateDetails"
 	add_child(_hex_state_details)
 	_hex_state_details.setup(self, _displayed_properties)
+	_action_preview_panel = ActionPreviewPanel.new()
+	_action_preview_panel.name = "ActionPreviewPanel"
+	add_child(_action_preview_panel)
 	_mount_path_visuals()
 	_mount_ability_visuals()
 	_mount_interaction_visuals()
@@ -199,6 +204,11 @@ func _mount_interaction_visuals() -> void:
 	_ranged_attack_visuals.name = "RangedAttackVisuals"
 	_ranged_attack_visuals.z_index = 9
 	add_child(_ranged_attack_visuals)
+
+	_reach_visuals = Node2D.new()
+	_reach_visuals.name = "ReachVisuals"
+	_reach_visuals.z_index = 9
+	add_child(_reach_visuals)
 
 	_selection_visuals = Node2D.new()
 	_selection_visuals.name = "SelectionVisuals"
@@ -438,6 +448,50 @@ func show_ranged_attack_cells(
 
 
 func _add_attack_boundary_edge(start: Vector2, end: Vector2) -> void:
+	_add_boundary_edge(_ranged_attack_visuals, start, end, Color(1.0, 0.56, 0.16, 0.90))
+
+
+## Where a hovered unit could move and what it could hit in its next turn.
+func show_unit_reach(move_cells: Array[Vector2i], attack_cells: Array[Vector2i]) -> void:
+	clear_unit_reach()
+	var corners := PackedVector2Array([
+		Vector2(0, -32), Vector2(28, -16), Vector2(28, 16),
+		Vector2(0, 32), Vector2(-28, 16), Vector2(-28, -16),
+	])
+	var neighbours: Array[Vector2i] = [
+		Vector2i(1, -1), Vector2i(1, 0), Vector2i(0, 1),
+		Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(0, -1),
+	]
+	var area: Dictionary[Vector2i, bool] = {}
+	for cell: Vector2i in move_cells + attack_cells:
+		area[cell] = true
+	for cell: Vector2i in move_cells:
+		var fill := Polygon2D.new()
+		fill.position = to_local(hex_to_global_position(cell))
+		fill.polygon = corners
+		fill.color = Color(0.92, 0.25, 0.20, 0.16)
+		_reach_visuals.add_child(fill)
+	for cell: Vector2i in area:
+		var center := to_local(hex_to_global_position(cell))
+		for edge in range(6):
+			if not area.has(cell + neighbours[edge]):
+				_add_boundary_edge(_reach_visuals, center + corners[edge], center + corners[(edge + 1) % 6], Color(0.95, 0.30, 0.25, 0.9))
+
+
+func clear_unit_reach() -> void:
+	_clear_hex_visuals(_reach_visuals)
+
+
+## Summary of a previewed command next to the cursor; empty lines hide it.
+func show_action_preview(lines: PackedStringArray, warning: bool) -> void:
+	_action_preview_panel.show_lines(lines, warning)
+
+
+func clear_action_preview() -> void:
+	_action_preview_panel.hide_panel()
+
+
+func _add_boundary_edge(container: Node2D, start: Vector2, end: Vector2, color: Color) -> void:
 	var length := start.distance_to(end)
 	var direction := (end - start).normalized()
 	var offset := 0.0
@@ -448,9 +502,9 @@ func _add_attack_boundary_edge(start: Vector2, end: Vector2) -> void:
 			start + direction * minf(offset + 7.0, length),
 		])
 		dash.width = 1.8
-		dash.default_color = Color(1.0, 0.56, 0.16, 0.90)
+		dash.default_color = color
 		dash.antialiased = true
-		_ranged_attack_visuals.add_child(dash)
+		container.add_child(dash)
 		offset += 11.0
 
 
@@ -502,6 +556,8 @@ func clear_path() -> void:
 
 func clear_overlays() -> void:
 	clear_ranged_attack_cells()
+	clear_unit_reach()
+	clear_action_preview()
 	_reachable_layer.clear()
 	_clear_hex_visuals(_reachable_visuals)
 	clear_path()

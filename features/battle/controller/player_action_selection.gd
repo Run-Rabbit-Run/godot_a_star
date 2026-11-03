@@ -19,6 +19,10 @@ var _ability_hexes: Array[Vector2i] = []
 var _selected_ability_id := StringName()
 ## The unit whose options are shown; hover previews use it.
 var _acting_unit_id := StringName()
+## The last previewed command and state revision, so moving within one hex does not recompute.
+var _preview_key := ""
+var _preview: ActionPreview
+var _previewed_actors: Array[StringName] = []
 
 
 func setup(session: BattleSession, map_view: BattleMapView, hud: BattleHUD, unit_views: BattleUnitViewRegistry, content: ContentSnapshot) -> void:
@@ -41,6 +45,7 @@ func forget_movement() -> void:
 
 ## Resets the selection to movement and basic attacks of the unit and shows them.
 func show_movement_and_attacks(state: UnitSnapshot) -> void:
+	_clear_preview()
 	_acting_unit_id = state.unit_id
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
@@ -61,6 +66,7 @@ func show_movement_and_attacks(state: UnitSnapshot) -> void:
 func clear() -> void:
 	if _map_view == null:
 		return
+	_clear_preview()
 	_map_view.clear_ranged_attack_cells()
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
@@ -122,8 +128,14 @@ func command_at(active: UnitSnapshot, axial_cell: Vector2i) -> BattleCommand:
 	return MoveCommand.new(active.unit_id, axial_cell)
 
 
-## Shows what the hex would mean: an ability area, an attack cursor or a movement path.
+## Shows what the hex would mean: an ability area, an attack cursor or a movement path, with
+## the preview of its result; a hovered opponent also shows its reach.
 func hover(axial_cell: Vector2i) -> void:
+	_show_overlays(axial_cell)
+	_show_preview(axial_cell)
+
+
+func _show_overlays(axial_cell: Vector2i) -> void:
 	if not _selected_ability_id.is_empty():
 		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 		_map_view.clear_path()
@@ -160,6 +172,7 @@ func hover(axial_cell: Vector2i) -> void:
 
 
 func hover_exited() -> void:
+	_clear_preview()
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_map_view.clear_path()
 	_map_view.clear_ability_area()
@@ -253,3 +266,80 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	_attackable_hexes.append_array(_session.get_attackable_obstacle_hexes(state.unit_id))
 	if not shoots:
 		_map_view.show_targetable_cells(_attackable_hexes)
+
+
+func _show_preview(axial_cell: Vector2i) -> void:
+	_clear_preview()
+	if _session == null or not enabled:
+		return
+	var active := _session.get_unit(_acting_unit_id)
+	if active == null or _session.is_unit_ai_controlled(active.unit_id):
+		return
+	var hovered := _session.get_unit_at(axial_cell)
+	if hovered != null and hovered.faction != active.faction and _selected_ability_id.is_empty():
+		var reach := _session.get_reach(hovered.unit_id)
+		_map_view.show_unit_reach(reach.move, reach.attack)
+	var command := _previewable_command(active, axial_cell)
+	if command == null:
+		return
+	var key := "%s|%d" % [_command_key(command), _session.get_state_revision()]
+	if key != _preview_key:
+		_preview_key = key
+		_preview = _session.preview(command)
+	if not _preview.accepted:
+		return
+	var factions: Dictionary[StringName, int] = {}
+	for unit_id: StringName in _preview.units:
+		var snapshot := _session.get_unit(unit_id)
+		factions[unit_id] = snapshot.faction if snapshot != null else active.faction
+	factions[active.unit_id] = active.faction
+	for unit_id: StringName in _preview.units:
+		var change := _preview.units[unit_id] as ActionPreview.UnitChange
+		var actor := _unit_views.actors.get(unit_id) as UnitActor
+		if actor != null and change.health_after < change.health_before:
+			actor.show_health_preview(change.health_after, change.defeated)
+			_previewed_actors.append(unit_id)
+	var summary := ActionPreviewText.describe(_preview, _unit_views.definitions, factions, command is MoveCommand)
+	_map_view.show_action_preview(summary.lines, summary.warning)
+
+
+## The command worth previewing at the hex: an aimed ability target, an attackable target or
+## a reachable empty hex; null otherwise.
+func _previewable_command(active: UnitSnapshot, axial_cell: Vector2i) -> BattleCommand:
+	if not _selected_ability_id.is_empty():
+		return command_at(active, axial_cell) if _ability_hexes.has(axial_cell) else null
+	if _attackable_hexes.has(axial_cell):
+		return command_at(active, axial_cell)
+	if (
+		axial_cell != active.hex
+		and _session.get_unit_at(axial_cell) == null
+		and not _hex_grid.has_obstacle(axial_cell)
+		and _movement_search != null
+		and _movement_search.map_revision == _session.get_map_revision()
+		and _movement_search.get_cost(axial_cell) > 0
+	):
+		return MoveCommand.new(active.unit_id, axial_cell)
+	return null
+
+
+func _clear_preview() -> void:
+	for unit_id: StringName in _previewed_actors:
+		var actor := _unit_views.actors.get(unit_id) as UnitActor
+		if is_instance_valid(actor):
+			actor.clear_health_preview()
+	_previewed_actors.clear()
+	if _map_view != null:
+		_map_view.clear_unit_reach()
+		_map_view.clear_action_preview()
+
+
+static func _command_key(command: BattleCommand) -> String:
+	if command is MoveCommand:
+		return "move:%s:%s" % [command.unit_id, command.destination]
+	if command is AttackCommand:
+		return "attack:%s:%s" % [command.attacker_id, command.target_id]
+	if command is AttackObstacleCommand:
+		return "obstacle:%s:%s" % [command.attacker_id, command.target_hex]
+	if command is UseAbilityCommand:
+		return "ability:%s:%s:%s:%s" % [command.user_id, command.ability_id, command.target_id, command.target_hex]
+	return ""
