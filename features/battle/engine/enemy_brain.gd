@@ -3,8 +3,8 @@ extends RefCounted
 
 
 ## How many movement points of detour the AI accepts to avoid losing all current health.
-## Damage is weighed as a share of current health: two points at 100 health barely change
-## the choice, while at five health they push the unit onto a safer route.
+## Damage is weighed as a share of current health: one point at 15 health costs less than one
+## point of detour, while two points at five health are worth four and push the unit onto a safer route.
 const FULL_HEALTH_DETOUR_COST := 10
 
 

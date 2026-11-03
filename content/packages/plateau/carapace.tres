@@ -6,8 +6,8 @@
 [sub_resource type="Resource" id="Stats"]
 script = ExtResource("stats")
 movement_points = 4
-max_health = 85
-basic_attack_damage = 24
+max_health = 11
+basic_attack_damage = 3
 
 [resource]
 script = ExtResource("unit")

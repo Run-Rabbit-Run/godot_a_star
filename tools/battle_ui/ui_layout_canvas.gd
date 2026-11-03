@@ -69,7 +69,7 @@ func display(document: UILayoutDocument) -> void:
 		{"unit_id": &"b", "texture": load("res://features/battle/art/plateau_units/1.png"), "short_name": "Страж"},
 	], &"a")
 	if show_target:
-		_hud.show_target("Страж", load("res://features/battle/art/plateau_units/1.png"), "Противник", 60, 100, 12, 1, 3, 5, true)
+		_hud.show_target("Страж", load("res://features/battle/art/plateau_units/1.png"), "Противник", 9, 14, 3, 1, 3, 5, true)
 	_hud.set_settings_visible(show_settings)
 	await get_tree().process_frame
 	if not is_inside_tree() or revision != _revision:
