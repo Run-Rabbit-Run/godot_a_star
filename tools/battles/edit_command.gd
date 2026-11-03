@@ -16,12 +16,14 @@ enum Kind {
 	PUT_OBSTACLE,
 	REMOVE_OBSTACLE,
 	SET_GRID_OFFSET,
+	SET_OBJECTIVE,
 }
 
 
 var obstacle: BattleObstacleDefinition
 var obstacle_id: StringName
 
+var objective: BattleObjectiveDefinition
 var background_id: StringName
 var grid_offset_y := 0
 var custom_grid_offset := true
@@ -123,6 +125,12 @@ static func set_grid_offset(value: int, custom: bool = true) -> EditCommand:
 	return command
 
 
+static func set_objective(value: BattleObjectiveDefinition) -> EditCommand:
+	var command := EditCommand.new(Kind.SET_OBJECTIVE)
+	command.objective = value.duplicate(true) as BattleObjectiveDefinition
+	return command
+
+
 static func rename_document(value: String) -> EditCommand:
 	var command := EditCommand.new(Kind.SET_NAME)
 	command.display_name = value
@@ -155,6 +163,9 @@ func apply(document: BattleDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.SET_OBJECTIVE:
+			document.battle_definition.primary_objective = objective.duplicate(true) as BattleObjectiveDefinition
+
 		Kind.SET_GRID_OFFSET:
 			if grid_offset_y < BattleMapDefinition.MIN_GRID_OFFSET_Y or grid_offset_y > BattleMapDefinition.MAX_GRID_OFFSET_Y:
 				return _restore_failed(document)
@@ -221,6 +232,11 @@ func apply(document: BattleDocument) -> bool:
 			if index < 0:
 				return _restore_failed(document)
 			document.battle_definition.unit_placements.remove_at(index)
+			# A removed unit can no longer be a commander or a protected unit.
+			var marks := document.battle_definition.primary_objective
+			if marks != null:
+				marks.target_placement_ids.erase(placement_id)
+				marks.protected_placement_ids.erase(placement_id)
 
 		Kind.ADD_HEX:
 			for cell: BattleMapCellDefinition in document.map_definition.cells:

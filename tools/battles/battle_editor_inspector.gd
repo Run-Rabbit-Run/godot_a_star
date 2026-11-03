@@ -59,6 +59,7 @@ var export_button: Button
 var use_in_game_buttons: Array[Button] = []
 var background_option: OptionButton
 var grid_layout_controls: EditorGridLayoutControls
+var objective_panel := EditorObjectivePanel.new()
 var validation_summary: Label
 var diagnostics: ItemList
 var check_button: Button
@@ -201,6 +202,7 @@ func _build_unit_card(page: VBoxContainer) -> void:
 	EditorUi.add_shortcut(duplicate_button, KEY_D, true)
 	delete_button = _wide(EditorUi.button("Удалить юнита", Callable()))
 	EditorUi.add_shortcut(delete_button, KEY_DELETE)
+	objective_panel.build_marks(unit_card)
 	placement_actions = _row([duplicate_button, delete_button])
 	unit_card.add_child(placement_actions)
 
@@ -278,6 +280,7 @@ func _build_field_page(page: VBoxContainer) -> void:
 	for button: Button in [open_button, save_as_button, new_button, export_button]:
 		file_actions.add_child(button)
 	document.add_child(_use_in_game_button("Сохранить, проверить и назначить поле для обычного запуска игры (F5 в Godot)"))
+	objective_panel.build_card(page)
 	var backdrop := EditorUi.card(page, "ФОН")
 	background_option = _option()
 	for id: StringName in BattleBackdrops.NAMES:

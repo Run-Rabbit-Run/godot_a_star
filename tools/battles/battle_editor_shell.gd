@@ -299,6 +299,7 @@ func _build_inspector(body: Control) -> void:
 	_palette_search.text_changed.connect(_on_palette_search_changed)
 	_palette.item_selected.connect(_on_palette_selected)
 	_roster.item_selected.connect(func(index: int) -> void: _on_placement_selected(_roster.get_item_metadata(index)))
+	_inspector.objective_panel.objective_changed.connect(func(objective: BattleObjectiveDefinition) -> void: _execute(EditCommand.set_objective(objective)))
 	_side_option.item_selected.connect(_on_side_changed)
 	_ai_option.item_selected.connect(_on_ai_override_changed)
 	_obstacle_size.value_changed.connect(func(value: float) -> void:
@@ -412,6 +413,8 @@ func _apply_tool(tool: EditorBattleView.Tool) -> void:
 
 
 func _update_inspector() -> void:
+	if _document != null:
+		_inspector.objective_panel.show_state(_document, _selected_placement_id)
 	var placement := _find_placement(_selected_placement_id)
 	_inspector.show_context(
 		_view.active_tool,
