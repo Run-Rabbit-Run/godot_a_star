@@ -1,6 +1,6 @@
 # Состояния гексов и юнитов
 
-Все правила живут в ядре: `UnitStatusService`, `HexStateService`, `HexStateCatalog`, `UnitStatusCatalog`. SceneTree и графические ресурсы для расчёта не нужны.
+Все правила живут в ядре: `UnitStatusService`, `HexStateService`, `HexStateCatalog`, `UnitStatusCatalog`. SceneTree и графические ресурсы для расчёта не нужны. Код ссылается на статусы юнита константами `UnitStatusCatalog` (`WET`, `PARALYSIS` и другие), а не строками: `core:acid` и `core:plasma` — одновременно статусы и слои гекса, и константа показывает, о чём речь.
 
 ## Жизненный цикл
 

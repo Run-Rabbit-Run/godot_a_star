@@ -11,7 +11,7 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 			source = HexStateCatalog.get_display_name(event.source_hex_state_id)
 		if not event.source_status_id.is_empty():
 			source = UnitStatusCatalog.display_name(event.source_status_id)
-			if event.source_status_id in [&"core:burning", &"core:plasma", &"core:electrified"]:
+			if event.source_status_id in [UnitStatusCatalog.BURNING, UnitStatusCatalog.PLASMA, UnitStatusCatalog.ELECTRIFIED]:
 				source += " (конец хода)"
 		var text := "%s → %s: %d урона (%s), осталось %d ОЗ.\n  Расчёт: %s" % [source, _unit(event.target_id, units), event.damage, _damage_type(event.damage_type), event.target_health_remaining, _damage_formula(event, content)]
 		if event.target_defeated:

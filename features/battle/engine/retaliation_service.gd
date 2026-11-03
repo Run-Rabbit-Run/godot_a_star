@@ -7,7 +7,7 @@ static func respond(state: BattleState, attacker: UnitState, defender: UnitState
 	if attacker == null or defender == null or attacker.health.is_defeated() or defender.health.is_defeated():
 		return ""
 	var enabled := defender.melee_retaliation if defender.retaliation_configured else defender.passive_ability_ids.has(&"core:melee_retaliation")
-	if not enabled or defender.statuses.get(&"core:paralysis", 0) > 0:
+	if not enabled or defender.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
 		return ""
 	if HexGrid.get_distance(attacker.hex, defender.hex) > 1:
 		return ""

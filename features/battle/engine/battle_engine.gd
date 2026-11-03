@@ -276,7 +276,7 @@ func get_reach(unit_id: StringName) -> Dictionary:
 	var cells: Array[Vector2i] = []
 	var attack_cells: Array[Vector2i] = []
 	var unit := get_unit(unit_id)
-	if unit != null and not unit.health.is_defeated() and unit.statuses.get(&"core:paralysis", 0) <= 0:
+	if unit != null and not unit.health.is_defeated() and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) <= 0:
 		var points := maxi(0, unit.turn.movement_max - UnitStatusCatalog.movement_penalty(unit.statuses))
 		cells = MovementService.search(_state.hex_grid, unit.hex, points, _get_blocked_cells(unit_id)).get_reachable_cells()
 		cells.sort()
@@ -409,7 +409,7 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		segment_cost = 0
 		_apply_hex_state_damage(result.unit_id, events)
 
-		if moved_unit.health.is_defeated() or moved_unit.statuses.get(&"core:paralysis", 0) > 0:
+		if moved_unit.health.is_defeated() or moved_unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
 			break
 
 	if segment_cost > 0:
@@ -492,7 +492,7 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 ## The unit cannot act again this phase; a living unit resolves its end-of-turn effects once.
 func _finish_unit(unit_id: StringName, events: Array[BattleEvent]) -> void:
 	var unit := get_unit(unit_id)
-	var skipped: bool = unit != null and unit.statuses.get(&"core:paralysis", 0) > 0 and _state.turn_service.get_current_unit_id() != unit_id
+	var skipped: bool = unit != null and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0 and _state.turn_service.get_current_unit_id() != unit_id
 	_state.turn_service.finish_unit(unit_id)
 	if unit == null or _state.turn_service.has_ended(unit_id):
 		return
@@ -513,7 +513,7 @@ func _settle_turns(events: Array[BattleEvent]) -> void:
 	# Each passed phase consumes paralysis or health, so chained empty phases are bounded.
 	var attempts := 2
 	for unit: UnitState in _state.unit_states.values():
-		attempts += 2 * (unit.health.current + int(unit.statuses.get(&"core:paralysis", 0)))
+		attempts += 2 * (unit.health.current + int(unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0)))
 	while get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty() and _state.turn_service.get_ready_unit_ids().is_empty():
 		attempts -= 1
 		if attempts < 0:

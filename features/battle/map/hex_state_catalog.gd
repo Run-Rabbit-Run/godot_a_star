@@ -8,13 +8,13 @@ enum Layer { NONE, LIQUID, ENERGY }
 const LIFETIME := 3
 
 const RULES := {
-	&"core:water": {"name": "Вода", "layer": Layer.LIQUID, "statuses": {&"core:wet": 2}, "damage": 0},
-	&"core:oil": {"name": "Масло", "layer": Layer.LIQUID, "statuses": {&"core:sticky_oil": 2}, "damage": 0, "cost": 2},
-	&"core:acid": {"name": "Кислота", "layer": Layer.LIQUID, "statuses": {&"core:acid": 2}, "damage": 1},
-	&"core:steam": {"name": "Пар", "layer": Layer.LIQUID, "statuses": {&"core:wet": 1}, "damage": 0, "cover": 3},
-	&"core:fire": {"name": "Огонь", "layer": Layer.ENERGY, "statuses": {&"core:burning": 2}, "damage": 1},
-	&"core:electricity": {"name": "Электричество", "layer": Layer.ENERGY, "statuses": {&"core:electrified": 2}, "damage": 1},
-	&"core:plasma": {"name": "Плазма", "layer": Layer.ENERGY, "statuses": {&"core:plasma": 2}, "damage": 2},
+	&"core:water": {"name": "Вода", "layer": Layer.LIQUID, "statuses": {UnitStatusCatalog.WET: 2}, "damage": 0},
+	&"core:oil": {"name": "Масло", "layer": Layer.LIQUID, "statuses": {UnitStatusCatalog.STICKY_OIL: 2}, "damage": 0, "cost": 2},
+	&"core:acid": {"name": "Кислота", "layer": Layer.LIQUID, "statuses": {UnitStatusCatalog.ACID: 2}, "damage": 1},
+	&"core:steam": {"name": "Пар", "layer": Layer.LIQUID, "statuses": {UnitStatusCatalog.WET: 1}, "damage": 0, "cover": 3},
+	&"core:fire": {"name": "Огонь", "layer": Layer.ENERGY, "statuses": {UnitStatusCatalog.BURNING: 2}, "damage": 1},
+	&"core:electricity": {"name": "Электричество", "layer": Layer.ENERGY, "statuses": {UnitStatusCatalog.ELECTRIFIED: 2}, "damage": 1},
+	&"core:plasma": {"name": "Плазма", "layer": Layer.ENERGY, "statuses": {UnitStatusCatalog.PLASMA: 2}, "damage": 2},
 }
 
 ## Liquids that carry electricity to neighbors of the same liquid.

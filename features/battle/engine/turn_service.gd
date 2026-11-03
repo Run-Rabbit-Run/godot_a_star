@@ -63,7 +63,7 @@ func can_still_act(unit_id: StringName) -> bool:
 		and unit != null
 		and unit.faction == _active_faction
 		and not unit.health.is_defeated()
-		and unit.statuses.get(&"core:paralysis", 0) <= 0
+		and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) <= 0
 		and not _finished.has(unit_id)
 	)
 

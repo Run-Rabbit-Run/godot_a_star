@@ -18,7 +18,7 @@ static func evaluate(unit: UnitSnapshot, grid: HexGrid, path: Array[Vector2i]) -
 			break
 		simulated.hex = hex
 		HexStateService.expose(simulated, grid, events)
-		if simulated.health.is_defeated() or simulated.statuses.get(&"core:paralysis", 0) > 0:
+		if simulated.health.is_defeated() or simulated.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
 			reached = index == path.size() - 1
 			break
 	UnitStatusService.end_turn(simulated, events)

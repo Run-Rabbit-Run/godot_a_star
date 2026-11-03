@@ -44,7 +44,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		spawn.abilities
 	)
 	if base_stats.armor_levels > 0:
-		state.statuses[&"core:armor"] = base_stats.armor_levels
+		state.statuses[UnitStatusCatalog.ARMOR] = base_stats.armor_levels
 	state.passive_ability_ids.assign(passive_ids)
 	state.retaliation_configured = true
 	for id: StringName in passive_ids:
