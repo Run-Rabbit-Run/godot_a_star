@@ -155,7 +155,7 @@ func get_outcome() -> BattleOutcome.Value:
 
 ## What the command would do, from a forecast copy; the live battle never changes.
 func preview(command: BattleCommand) -> ActionPreview:
-	return ActionPreview.build(_engine.fork_for_prediction(), command)
+	return ActionPreview.build(_engine.fork_for_prediction(), _engine, command)
 
 
 ## {"move": cells the unit could reach in its next turn, "attack": cells it could hit from there}.
@@ -196,6 +196,11 @@ func set_side_command_source(
 	if has_diagnostic_observer():
 		diagnostic_record.emit("control_source_changed", {"side_id": side_id, "source_type": source.get_script().get_global_name(), "automatic": source.is_automatic(), "profile": source.profile if source is AICommandSource else null})
 	return true
+
+
+## The source that decides the unit's commands, or null.
+func get_command_source(unit_id: StringName) -> CommandSource:
+	return _get_command_source(unit_id)
 
 
 func get_next_ai_command() -> BattleCommand:

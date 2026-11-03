@@ -245,6 +245,12 @@ func get_result() -> BattleResult:
 	return result
 
 
+## [liquid, energy] of one hex, without copying the map.
+func get_hex_layers(hex: Vector2i) -> Array[StringName]:
+	var layers: Array[StringName] = [_state.hex_grid.get_liquid(hex), _state.hex_grid.get_energy(hex)]
+	return layers
+
+
 ## A detached copy of the current map.
 func get_hex_grid() -> HexGrid:
 	return _state.hex_grid.duplicate_grid()

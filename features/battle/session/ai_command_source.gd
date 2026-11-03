@@ -3,6 +3,8 @@ extends CommandSource
 
 
 const BASIC_MELEE_POLICY := &"basic_melee"
+## Plans every unit's move and action on forecast copies and acts with the best plan.
+const TACTICAL_POLICY := &"tactical"
 
 var profile: AIProfileDefinition
 ## Populated only while a diagnostic observer is attached. Never used for decisions.
@@ -16,7 +18,7 @@ func _init(p_profile: AIProfileDefinition) -> void:
 static func supports(p_profile: AIProfileDefinition) -> bool:
 	return (
 		p_profile != null
-		and p_profile.policy_id == BASIC_MELEE_POLICY
+		and p_profile.policy_id in [BASIC_MELEE_POLICY, TACTICAL_POLICY]
 	)
 
 
@@ -28,7 +30,40 @@ func next_command(session: BattleSession) -> BattleCommand:
 	if session == null or session.is_finished():
 		return null
 
-	var active_unit_id := session.get_active_unit_id()
+	if profile != null and profile.policy_id == TACTICAL_POLICY:
+		var tactical := _tactical_command(session)
+		if tactical != null:
+			return tactical
+	return _basic_command(session, session.get_active_unit_id())
+
+
+## The tactical policy: a doomed unit spends its last action first; otherwise the best plan of
+## any own ready unit. Without damage or progress the unit falls back to the basic policy.
+func _tactical_command(session: BattleSession) -> BattleCommand:
+	var candidates: Array[StringName] = []
+	for unit_id: StringName in session.get_ready_unit_ids():
+		# Hand-built sessions register no sources; their units follow the source that is asked.
+		var source := session.get_command_source(unit_id)
+		if session.can_command(unit_id) and (source == self or source == null):
+			candidates.append(unit_id)
+	if candidates.is_empty():
+		return null
+	for unit_id: StringName in candidates:
+		var last_action := AILastActionPlanner.plan(session, decision_trace, unit_id)
+		if not last_action.is_empty():
+			_trace("reason", last_action.reason)
+			return last_action.command
+	var best := AITacticalPlanner.plan(session, candidates, decision_trace)
+	if best.is_empty():
+		return null
+	if best.enemy_damage <= 0 and best.approach_gain <= 0:
+		_trace("reason", "tactical_no_progress_basic_fallback")
+		return _basic_command(session, best.unit_id)
+	_trace("reason", "tactical_best_plan")
+	return best.command
+
+
+func _basic_command(session: BattleSession, active_unit_id: StringName) -> BattleCommand:
 	var active := session.get_unit(active_unit_id)
 
 	if active == null or active.health.is_defeated():
@@ -48,7 +83,7 @@ func next_command(session: BattleSession) -> BattleCommand:
 		_trace("reason", "no_opponents")
 		return EndTurnCommand.new(active_unit_id)
 
-	var last_action := AILastActionPlanner.plan(session, decision_trace)
+	var last_action := AILastActionPlanner.plan(session, decision_trace, active_unit_id)
 	if not last_action.is_empty():
 		_trace("reason", last_action.reason)
 		return last_action.command

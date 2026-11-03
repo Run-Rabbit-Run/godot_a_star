@@ -180,31 +180,36 @@ static func get_approach_costs(
 	if grid == null:
 		return costs
 
-	var frontier: Array[Vector2i] = []
+	# Movement costs are small integers, so cells wait in one bucket per cost (Dial's algorithm).
+	var buckets: Array[Array] = [[]]
 
 	for cell: Vector2i in grid.get_cells_in_range(target, maxi(attack_range, 1)):
 		if cell != target and grid.is_traversable(cell):
 			costs[cell] = 0
-			frontier.append(cell)
+			buckets[0].append(cell)
 
-	while not frontier.is_empty():
-		var lowest_cost_index := 0
-
-		for index: int in range(1, frontier.size()):
-			if costs[frontier[index]] < costs[frontier[lowest_cost_index]]:
-				lowest_cost_index = index
-
-		var current := frontier[lowest_cost_index]
-		frontier.remove_at(lowest_cost_index)
-		# Stepping from a neighbor into the current cell pays the current cell's cost.
-		var neighbor_cost := costs[current] + grid.get_movement_cost(current)
-
-		for neighbor: Vector2i in grid.get_neighbors(current):
-			if costs.has(neighbor) and neighbor_cost >= costs[neighbor]:
+	var cost := 0
+	while cost < buckets.size():
+		var bucket: Array = buckets[cost]
+		var index := 0
+		while index < bucket.size():
+			var current: Vector2i = bucket[index]
+			index += 1
+			# A cell queued again at a lower cost was already expanded from there.
+			if costs[current] != cost:
 				continue
+			# Stepping from a neighbor into the current cell pays the current cell's cost.
+			var neighbor_cost := cost + grid.get_movement_cost(current)
 
-			costs[neighbor] = neighbor_cost
-			frontier.append(neighbor)
+			for neighbor: Vector2i in grid.get_neighbors(current):
+				if costs.has(neighbor) and neighbor_cost >= costs[neighbor]:
+					continue
+
+				costs[neighbor] = neighbor_cost
+				while buckets.size() <= neighbor_cost:
+					buckets.append([])
+				buckets[neighbor_cost].append(neighbor)
+		cost += 1
 
 	return costs
 

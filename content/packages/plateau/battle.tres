@@ -18,7 +18,7 @@ script = ExtResource("side")
 side_id = &"enemy"
 faction = 1
 control_source = 1
-ai_profile_id = &"core:basic_enemy_ai"
+ai_profile_id = &"core:tactical_enemy_ai"
 
 [sub_resource type="Resource" id="p0"]
 script = ExtResource("placement")

@@ -52,6 +52,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/content_regressions.gd").new().run_documents(self)
 	if runs("ai_and_forecast"):
 		preload("res://features/battle/tests/ai_regressions.gd").new().run_ai_and_forecast(self)
+	if runs("tactical_ai"):
+		preload("res://features/battle/tests/tactical_ai_regressions.gd").new().run(self)
 	if runs("doomed_ai"):
 		preload("res://features/battle/tests/ai_regressions.gd").new().run_doomed_ai(self)
 	if runs("doomed_ai_search"):

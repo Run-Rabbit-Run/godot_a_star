@@ -9,8 +9,8 @@ const LOCAL_EFFECTS := [&"core:damage", &"core:unit_status"]
 
 
 ## Finite horizon: one reachable move followed by one main action, using real combat rules.
-static func plan(session: BattleSession, trace: Variant = null) -> Dictionary:
-	var active := session.get_unit(session.get_active_unit_id())
+static func plan(session: BattleSession, trace: Variant = null, unit_id: StringName = &"") -> Dictionary:
+	var active := session.get_unit(unit_id if not unit_id.is_empty() else session.get_active_unit_id())
 	var grid := session.get_hex_grid()
 	var stay := MovementImpactForecast.evaluate(active, grid, [active.hex])
 	if not stay.lethal:
@@ -64,9 +64,9 @@ static func plan(session: BattleSession, trace: Variant = null) -> Dictionary:
 			var entry := {"command": move, "approach": approach, "alive": not actor.health.is_defeated(), "cost": cost}
 			if advance.is_empty() or _better_advance(entry, advance):
 				advance = entry
-		if actor.health.is_defeated() or position.get_active_unit_id() != active.unit_id or actor.statuses.get(&"core:paralysis", 0) > 0 or not actor.turn.main_action_available:
+		if actor.health.is_defeated() or not position.can_command(active.unit_id) or not actor.turn.main_action_available:
 			continue
-		for command: BattleCommand in _actions(position, actor, grid, others, memo):
+		for command: BattleCommand in actions(position, actor, grid, others, memo):
 			var scored := _score(position, actor, grid, others, command, cost, best, memo)
 			if scored.is_empty():
 				continue
@@ -95,7 +95,9 @@ static func plan(session: BattleSession, trace: Variant = null) -> Dictionary:
 	return {"command": EndTurnCommand.new(active.unit_id), "reason": "doomed_no_reachable_progress"}
 
 
-static func _actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], memo: Dictionary) -> Array[BattleCommand]:
+## Main actions the actor can take from its hex: attacks and built-in abilities that may hit an
+## opponent. `others` maps hexes to the other living units; `memo` needs "reach" and "skipped".
+static func actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], memo: Dictionary) -> Array[BattleCommand]:
 	var commands: Array[BattleCommand] = []
 	for target: UnitState in engine.get_attackable_targets(actor.unit_id):
 		commands.append(AttackCommand.new(actor.unit_id, target.unit_id))
@@ -128,7 +130,7 @@ static func _actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, othe
 
 ## True when a local effect at this center provably removes no opponent HP.
 static func _misses_opponents(ability: AbilityDefinition, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], center: Vector2i, memo: Dictionary) -> bool:
-	if not _is_local(ability):
+	if not is_local(ability):
 		return false
 	var unit_hit := false
 	if ability.target_mode in ORIGIN_MODES:
@@ -201,7 +203,7 @@ static func _score(position: BattleEngine, actor: UnitState, grid: HexGrid, othe
 
 ## Identifies the outcome of an ability for an actor standing outside everything it touches.
 static func _outcome_key(ability: AbilityDefinition, grid: HexGrid, others: Dictionary[Vector2i, UnitState], area: Array[Vector2i], center: Vector2i) -> String:
-	if not _is_local(ability):
+	if not is_local(ability):
 		# Terrain effects change every cell of the area.
 		var cells := area.duplicate()
 		cells.sort()
@@ -245,7 +247,8 @@ static func _simulate(position: BattleEngine, actor: UnitState, command: BattleC
 	return {"enemy_damage": enemy_damage, "friendly_damage": friendly_damage, "changed": changed}
 
 
-static func _is_local(ability: AbilityDefinition) -> bool:
+## True when the ability only damages or gives statuses to units inside its area.
+static func is_local(ability: AbilityDefinition) -> bool:
 	for effect: AbilityEffectDefinition in ability.effects:
 		if effect.effect_type_id not in LOCAL_EFFECTS:
 			return false

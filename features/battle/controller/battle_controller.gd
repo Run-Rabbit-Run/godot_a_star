@@ -429,9 +429,14 @@ func _execute_ai_turns() -> void:
 		if _runtime_failed:
 			return
 
-		var active := _battle_session.get_unit(
-			_battle_session.get_active_unit_id()
-		)
+		var command := _battle_session.get_next_ai_command()
+
+		if command == null:
+			_fail_runtime("AI command source did not provide a command.")
+			return
+
+		# The tactical AI picks its unit itself; the guard counts the unit that acts.
+		var active := _battle_session.get_unit(ActionPreview.actor_of(command))
 
 		if active == null:
 			_fail_runtime("AI-controlled active unit is not registered.")
@@ -443,11 +448,6 @@ func _execute_ai_turns() -> void:
 			return
 
 		_show_unit_movement(active)
-		var command := _battle_session.get_next_ai_command()
-
-		if command == null:
-			_fail_runtime("AI command source did not provide a command.")
-			return
 
 		var resolution := _battle_session.step(command)
 

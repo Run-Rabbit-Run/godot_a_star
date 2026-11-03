@@ -20,7 +20,7 @@
         "side_id": "player"
       },
       {
-        "ai_profile_override_id": "core:basic_enemy_ai",
+        "ai_profile_override_id": "core:tactical_enemy_ai",
         "character_binding": "",
         "definition_id": "custom_units:u_7764a17875745a2ec2f6fa1e405b2771",
         "facing": 0,
@@ -31,7 +31,7 @@
         "side_id": "enemy"
       },
       {
-        "ai_profile_override_id": "core:basic_enemy_ai",
+        "ai_profile_override_id": "core:tactical_enemy_ai",
         "character_binding": "",
         "definition_id": "custom_units:u_407a3c694d3db1b95aafc5b91bf723b6",
         "facing": 0,
@@ -62,7 +62,7 @@
         "side_id": "player"
       },
       {
-        "ai_profile_id": "core:basic_enemy_ai",
+        "ai_profile_id": "core:tactical_enemy_ai",
         "control_source": 1,
         "faction": 1,
         "side_id": "enemy"
