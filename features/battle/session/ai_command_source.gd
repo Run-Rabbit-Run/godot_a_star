@@ -53,6 +53,14 @@ func next_command(session: BattleSession) -> BattleCommand:
 		_trace("reason", last_action.reason)
 		return last_action.command
 
+	var opponent_hexes: Array[Vector2i] = []
+	for opponent: UnitSnapshot in opponents:
+		opponent_hexes.append(opponent.hex)
+	var disengage := _choose_disengage_move(session, active, target, opponent_hexes)
+	if disengage != null:
+		_trace("reason", "ranged_disengage_before_shot")
+		return disengage
+
 	# Prefer an ordinary attack when it can already reach an opponent.
 	var attackable_targets := session.get_attackable_targets(active.unit_id)
 	_trace("attackable_targets", attackable_targets)
@@ -86,6 +94,7 @@ func next_command(session: BattleSession) -> BattleCommand:
 		active.health.current,
 		active.basic_attack_range,
 		active,
+		opponent_hexes,
 		decision_trace
 	)
 
@@ -99,6 +108,17 @@ func next_command(session: BattleSession) -> BattleCommand:
 
 	_trace("reason", "no_improving_safe_move")
 	return EndTurnCommand.new(active_unit_id)
+
+
+## An engaged shooter steps to a reachable free firing position instead of striking at half damage.
+func _choose_disengage_move(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot, opponent_hexes: Array[Vector2i]) -> MoveCommand:
+	if active.basic_attack_range <= 1 or active.turn.movement_remaining <= 0 or not BasicAttackRules.is_engaged(active.hex, opponent_hexes):
+		return null
+	var move := EnemyBrain.choose_move(active.unit_id, active.hex, target.hex, session.get_movement_search(active.unit_id), session.get_hex_grid(), active.health.current, active.basic_attack_range, active, opponent_hexes, decision_trace)
+	# A safer cell that still cannot shoot is no reason to give up the strike.
+	if move == null or BasicAttackRules.is_engaged(move.destination, opponent_hexes) or HexGrid.get_distance(move.destination, target.hex) > active.basic_attack_range:
+		return null
+	return move
 
 
 func _choose_obstacle_command(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot) -> AttackObstacleCommand:

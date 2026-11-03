@@ -50,6 +50,7 @@ static func choose_move(
 	current_health: int = 0,
 	attack_range: int = 1,
 	forecast_unit: UnitSnapshot = null,
+	opponent_hexes: Array[Vector2i] = [],
 	diagnostic_trace: Variant = null
 ) -> MoveCommand:
 	if unit_id.is_empty() or movement_search == null:
@@ -63,6 +64,7 @@ static func choose_move(
 
 	if uses_paths:
 		start_approach = approach_costs[start]
+	start_approach = _get_ranged_approach(start_approach, start, attack_range, opponent_hexes)
 
 	var stay_score := _get_position_score(
 		start_approach,
@@ -98,6 +100,7 @@ static func choose_move(
 				continue
 
 			approach = approach_costs[cell]
+		approach = _get_ranged_approach(approach, cell, attack_range, opponent_hexes)
 
 		var total_damage := 0
 		if forecast_unit != null and grid != null:
@@ -151,6 +154,13 @@ static func choose_move(
 	if diagnostic_trace != null:
 		diagnostic_trace["movement"]["selected"] = {"hex": best_cell, "score": best_score, "cost": best_cost}
 	return MoveCommand.new(unit_id, best_cell)
+
+
+## Next to an enemy a ranged unit cannot shoot, so an attack position there still lies a step away.
+static func _get_ranged_approach(approach: int, cell: Vector2i, attack_range: int, opponent_hexes: Array[Vector2i]) -> int:
+	if attack_range > 1 and approach == 0 and BasicAttackRules.is_engaged(cell, opponent_hexes):
+		return 1
+	return approach
 
 
 ## Lower is better. Approach is scaled by health, so damage counts as a share of it.

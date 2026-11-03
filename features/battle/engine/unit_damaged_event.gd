@@ -16,6 +16,8 @@ var base_damage: int
 var calculated_damage: int
 ## Ordered signed adjustments: {source_id: StringName, amount: int}.
 var damage_modifiers: Array[Dictionary] = []
+## An ordinary attack shot past the neighbors; melee strikes and other damage stay false.
+var ranged_attack := false
 
 
 func _init(

@@ -170,7 +170,7 @@ func _update_attack_cursor(axial_cell: Vector2i) -> void:
 	var target := _session.get_unit_at(axial_cell)
 	# Attackable hexes come from the session, so an obstacle hex among them is a legal target.
 	if active != null and _hex_grid.has_obstacle(axial_cell) and not _session.is_unit_ai_controlled(active_unit_id):
-		_map_view.set_cursor_mode(BattleMapView.CursorMode.RANGED if active.basic_attack_range > 1 else BattleMapView.CursorMode.MELEE)
+		_map_view.set_cursor_mode(BattleMapView.CursorMode.RANGED if BasicAttackRules.is_shot(active.basic_attack_range, active.hex, axial_cell) else BattleMapView.CursorMode.MELEE)
 		return
 
 	if (
@@ -184,7 +184,7 @@ func _update_attack_cursor(axial_cell: Vector2i) -> void:
 
 	_map_view.set_cursor_mode(
 		BattleMapView.CursorMode.RANGED
-		if active.basic_attack_range > 1
+		if BasicAttackRules.is_shot(active.basic_attack_range, active.hex, axial_cell)
 		else BattleMapView.CursorMode.MELEE
 	)
 
@@ -224,12 +224,17 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	if state == null or state.health.is_defeated():
 		return
 
-	if state.basic_attack_range > 1:
+	var opponent_hexes: Array[Vector2i] = []
+	for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
+		opponent_hexes.append(opponent.hex)
+	# An engaged ranged unit only strikes its neighbors, so it gets the melee highlight.
+	var shoots := state.basic_attack_range > 1 and not BasicAttackRules.is_engaged(state.hex, opponent_hexes)
+	if shoots:
 		var range_cells := _hex_grid.get_cells_in_range(state.hex, state.basic_attack_range)
 		var enemy_cells: Array[Vector2i] = []
-		for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
-			if range_cells.has(opponent.hex):
-				enemy_cells.append(opponent.hex)
+		for opponent_hex: Vector2i in opponent_hexes:
+			if range_cells.has(opponent_hex):
+				enemy_cells.append(opponent_hex)
 		_map_view.show_ranged_attack_cells(range_cells, enemy_cells)
 
 	if _session.is_unit_ai_controlled(state.unit_id):
@@ -239,5 +244,5 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 		_attackable_hexes.append(target.hex)
 
 	_attackable_hexes.append_array(_session.get_attackable_obstacle_hexes(state.unit_id))
-	if state.basic_attack_range <= 1:
+	if not shoots:
 		_map_view.show_targetable_cells(_attackable_hexes)

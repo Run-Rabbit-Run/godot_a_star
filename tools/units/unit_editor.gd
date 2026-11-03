@@ -208,7 +208,7 @@ func _build_form(body: Control) -> void:
 	_attack.add_item("Дальняя атака")
 	_attack.item_selected.connect(_set_attack_type)
 	EditorUi.row(attack, "Тип атаки", _attack)
-	_number(attack, "Дальность", "attack_range", 2, 20, "Дальняя атака: 2–20 гексов, включая соседнюю клетку.")
+	_number(attack, "Дальность", "attack_range", 2, 20, "Дальняя атака: 2–20 гексов. Пока рядом враг, стрелять нельзя: соседнюю цель юнит бьёт вплотную за половину урона.")
 	_range_hint = EditorUi.hint("")
 	attack_card.add_child(_range_hint)
 	_effective_damage = EditorUi.label("", &"FieldLabel")

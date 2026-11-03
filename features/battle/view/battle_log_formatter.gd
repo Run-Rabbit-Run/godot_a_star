@@ -83,7 +83,9 @@ static func _damage_formula(event: UnitDamagedEvent, content: ContentSnapshot) -
 		var id: StringName = modifier.source_id
 		var amount: int = modifier.amount
 		var reason := "защита от дальнего урона"
-		if UnitStatusCatalog.has_status(id):
+		if id == BasicAttackRules.RANGED_MELEE_PENALTY:
+			reason = "стрелок в ближнем бою"
+		elif UnitStatusCatalog.has_status(id):
 			reason = UnitStatusCatalog.display_name(id)
 		elif id != &"ranged_protection":
 			reason = "гекс: %s" % HexStateCatalog.get_display_name(id)

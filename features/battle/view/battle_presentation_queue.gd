@@ -197,9 +197,7 @@ func _present_damage(
 		and attacker_definition != null
 		and attacker_definition.base_stats != null
 	):
-		tween = UnitCombatAnimator.attack(
-			attacker, actor, attacker_definition.base_stats.basic_attack_range > 1, contact
-		)
+		tween = UnitCombatAnimator.attack(attacker, actor, event.ranged_attack, contact)
 	else:
 		tween = UnitCombatAnimator.hit(actor, contact)
 	_track_tween(tween)

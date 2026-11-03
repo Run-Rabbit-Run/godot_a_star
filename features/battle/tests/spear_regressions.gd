@@ -96,7 +96,7 @@ func run(suite: Node) -> void:
 	attacker.turn.start_turn()
 	state.turn_service.start()
 	engine.execute(AttackCommand.new(attacker.unit_id, defender.unit_id))
-	suite.expect(attacker.health.current == 95, "Ranged attack at adjacent hex does not trigger response")
+	suite.expect(defender.health.current == 99 and attacker.health.current == 90, "A shooter's strike at an adjacent hex is a halved melee strike and provokes response")
 	# Return resolves even when owner is paralyzed, and uses current occupants.
 	user.pending_spear_return = {"hex": Vector2i(4, 0), "ability_id": &"core:spear_throw"}
 	user.statuses[&"core:paralysis"] = 1

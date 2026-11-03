@@ -113,6 +113,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 	):
 		return targets
 
+	var engaged := _is_engaged(attacker)
 	for candidate: UnitState in _state.unit_states.values():
 		if candidate.faction == attacker.faction:
 			continue
@@ -120,10 +121,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 		if candidate.health.is_defeated():
 			continue
 
-		if (
-			HexGrid.get_distance(attacker.hex, candidate.hex)
-			<= attacker.basic_attack_range
-		):
+		if BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, candidate.hex, engaged):
 			targets.append(candidate)
 
 	targets.sort_custom(_is_unit_id_before)
@@ -524,10 +522,7 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	if not attacker.turn.main_action_available:
 		return AttackResult.failure()
 
-	if (
-		HexGrid.get_distance(attacker.hex, target.hex)
-		> attacker.basic_attack_range
-	):
+	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, target.hex, _is_engaged(attacker)):
 		return AttackResult.failure()
 
 	if not attacker.turn.spend_main_action():
@@ -535,14 +530,19 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 
 	var health_before := target.health.current
 	var protection_hex_state := _state.hex_grid.get_hex_state_id(target.hex)
-	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if attacker.basic_attack_range > 1 else 0
-	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction, &"", protection_hex_state)
+	var shot := BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, target.hex)
+	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if shot else 0
+	var penalty := 0 if shot else BasicAttackRules.melee_penalty(attacker.basic_attack_range, attacker.basic_attack_damage)
+	var first_event := events.size()
+	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction, &"", protection_hex_state, penalty)
+	if shot:
+		_mark_ranged_hit(events, first_event)
 	for status: StringName in attacker.basic_attack_statuses:
 		UnitStatusService.apply(target, status, attacker.basic_attack_statuses[status], events)
 	# The hit itself has landed: a reaction that cannot settle stops the battle.
 	_terminal_error = DamageType.react(_state, target.hex, attacker.basic_attack_damage_type, events)
 	var damage := health_before - target.health.current
-	if attacker.basic_attack_range == 1 and _terminal_error.is_empty():
+	if not shot and _terminal_error.is_empty():
 		_terminal_error = RetaliationService.respond(_state, attacker, target, events)
 	return AttackResult.success(
 		attacker.unit_id,
@@ -623,7 +623,10 @@ func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolutio
 		return _rejected(error)
 	attacker.turn.spend_main_action()
 	var events: Array[BattleEvent] = []
-	ObstacleService.damage(_state, command.target_hex, attacker.basic_attack_damage, events)
+	var damage := attacker.basic_attack_damage
+	if not BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, command.target_hex):
+		damage -= BasicAttackRules.melee_penalty(attacker.basic_attack_range, damage)
+	ObstacleService.damage(_state, command.target_hex, damage, events)
 	_finish_action_turn(attacker.unit_id, events)
 	return _accepted(events)
 
@@ -637,4 +640,23 @@ func _obstacle_attack_error(attacker: UnitState, hex: Vector2i) -> String:
 		return "Атака препятствия недоступна."
 	if HexGrid.get_distance(attacker.hex, hex) > attacker.basic_attack_range:
 		return "Препятствие вне дальности атаки."
+	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, hex, _is_engaged(attacker)):
+		return "Рядом враг: стрелять нельзя."
 	return ""
+
+
+## True when a living opponent stands next to the unit, so it cannot shoot.
+func _is_engaged(unit: UnitState) -> bool:
+	var opponent_hexes: Array[Vector2i] = []
+	for other: UnitState in _state.unit_states.values():
+		if other.faction != unit.faction and not other.health.is_defeated():
+			opponent_hexes.append(other.hex)
+	return BasicAttackRules.is_engaged(unit.hex, opponent_hexes)
+
+
+## The hit's own damage event comes first; explosions it triggers follow it.
+static func _mark_ranged_hit(events: Array[BattleEvent], from_index: int) -> void:
+	for index in range(from_index, events.size()):
+		if events[index] is UnitDamagedEvent:
+			events[index].ranged_attack = true
+			return

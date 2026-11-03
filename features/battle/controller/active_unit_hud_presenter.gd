@@ -43,7 +43,12 @@ func show(state: UnitSnapshot) -> void:
 	var presentation := _unit_views.presentations.get(state.unit_id) as UnitPresentationDefinition
 	_hud.show_active_portrait(presentation.actor_texture if presentation != null else null)
 	_hud.show_combat_stats(state.basic_attack_damage, state.basic_attack_range)
-	_hud.show_basic_attack_button(state.basic_attack_range, state.turn.main_action_available)
+	var opponent_hexes: Array[Vector2i] = []
+	for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
+		opponent_hexes.append(opponent.hex)
+	# An engaged ranged unit cannot shoot: its button names the melee strike.
+	var reach := 1 if BasicAttackRules.is_engaged(state.hex, opponent_hexes) else state.basic_attack_range
+	_hud.show_basic_attack_button(reach, state.turn.main_action_available)
 	_show_turn_order()
 
 

@@ -31,14 +31,17 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 	if id == &"core:burning" or (id == &"core:sticky_oil" and unit.statuses.get(&"core:burning", 0) > 0):
 		_explode_oil(unit, events)
 
-static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"", protection_hex_state: StringName = &"") -> void:
+static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"", protection_hex_state: StringName = &"", melee_penalty: int = 0) -> void:
 	if unit == null or unit.health.is_defeated() or amount <= 0:
 		return
 	var before := unit.statuses.duplicate()
-	var adjusted := maxi(0, amount - ranged_reduction)
 	var modifiers: Array[Dictionary] = []
-	if adjusted != amount:
-		modifiers.append({"source_id": protection_hex_state if not protection_hex_state.is_empty() else &"ranged_protection", "amount": adjusted - amount})
+	var penalized := maxi(0, amount - melee_penalty)
+	if penalized != amount:
+		modifiers.append({"source_id": BasicAttackRules.RANGED_MELEE_PENALTY, "amount": penalized - amount})
+	var adjusted := maxi(0, penalized - ranged_reduction)
+	if adjusted != penalized:
+		modifiers.append({"source_id": protection_hex_state if not protection_hex_state.is_empty() else &"ranged_protection", "amount": adjusted - penalized})
 	var before_status_damage := adjusted
 	var modifier_status: StringName = &""
 	match type:
