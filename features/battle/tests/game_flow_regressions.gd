@@ -22,7 +22,7 @@ func _check_result_losses(suite: Node, fixture: Fixtures) -> void:
 	ally.health.current = 0
 	var units: Array[UnitState] = [hero, foe, ally]
 	var state: BattleState = fixture.state(cells, units)
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var engine := BattleEngine.new(state, false)
 	var resolution := engine.execute(AttackCommand.new(hero.unit_id, foe.unit_id))
 	var result := resolution.battle_result

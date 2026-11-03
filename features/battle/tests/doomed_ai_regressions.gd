@@ -68,7 +68,7 @@ func _check_prediction_engines(suite: Node, fixture: Fixtures) -> void:
 	mover.ability_cooldowns[blast.id] = 0
 	var enemy: UnitState = fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(4, 0))
 	var state: BattleState = fixture.state(cells, [mover, enemy])
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var live := BattleEngine.new(state, false)
 	var forecast := live.fork_for_prediction()
 	suite.expect(forecast.get_unit(mover.unit_id).get_ability(blast.id) == blast, "Forecast copies share read-only ability definitions")
@@ -106,7 +106,7 @@ func _check_skip_rules(suite: Node, fixture: Fixtures) -> void:
 		actor.abilities[ability.id] = ability
 		actor.ability_cooldowns[ability.id] = 0
 	var state: BattleState = fixture.state(cells, [actor, ally, enemy])
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var position := BattleEngine.new(state, false)
 	var grid := state.hex_grid
 	var own: Dictionary[Vector2i, UnitState] = {ally.hex: ally}
@@ -228,7 +228,7 @@ func _check_simulation_budget(suite: Node, fixture: Fixtures) -> void:
 
 
 func _session(state: BattleState) -> BattleSession:
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var setup := BattleSetup.new(state.battle_id, state.hex_grid, [], [], BattleObjectiveDefinition.new(), BattleFaction.Value.PLAYER, state.deterministic_seed)
 	return BattleSession.new(setup, state, BattleEngine.new(state, false), null)
 

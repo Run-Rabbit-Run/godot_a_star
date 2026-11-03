@@ -174,7 +174,7 @@ func run_turn_effect_order(suite: Node) -> void:
 			if event is UnitDamagedEvent and event.source_status_id == &"core:electrified":
 				tick_index = index
 				ticks += 1
-			if event is TurnEndedEvent and event.previous_unit_id == p.unit_id:
+			if event is TurnEndedEvent and event.unit_id == p.unit_id:
 				boundary_index = index
 		suite.expect(result.accepted and ticks == 1 and tick_index >= 0 and tick_index < boundary_index, "Periodic tick precedes handoff exactly once: %s" % action)
 		suite.expect(p.health.current == 99 and p.statuses[&"core:electrified"] == 1, "End tick uses fixed damage and one-level decay: %s" % action)
@@ -196,13 +196,13 @@ func run_turn_effect_order(suite: Node) -> void:
 	var skipped = null
 	for event: BattleEvent in result.events:
 		if event is TurnEndedEvent:
-			timeline.append("end:%s:%d" % [event.previous_unit_id, event.round_number])
+			timeline.append("end:%s:%d" % [event.unit_id, event.round_number])
 			if event.was_skipped:
 				skipped = event
 		elif event is UnitDamagedEvent:
 			timeline.append("tick:%s" % event.target_id)
-	suite.expect(timeline == ["end:p:1", "tick:e", "end:e:2"], "Skipped turn tick is between its start handoff and its end handoff")
-	suite.expect(skipped != null and skipped.previous_unit_id == e.unit_id and skipped.next_unit_id == p.unit_id, "Skipped turn explicitly identifies paralysis handoff")
+	suite.expect(timeline == ["end:p:1", "tick:e", "end:e:1"], "A paralyzed unit ticks at the end of its own phase, before its turn end")
+	suite.expect(skipped != null and skipped.unit_id == e.unit_id and skipped.round_number == 1, "The skipped turn names the paralyzed unit and its round")
 	suite.expect(e.health.current == 99 and not e.statuses.has(&"core:paralysis") and engine.get_active_unit_id() == p.unit_id, "Paralysis skip retains tick and decay once")
 	var units: Dictionary[StringName, UnitDefinition] = {}
 	suite.expect("пропущен из-за паралича" in BattleLogFormatter.describe(skipped, units, null), "Log explicitly explains skipped end-of-turn effects")

@@ -56,7 +56,7 @@ func present(
 
 	for event: BattleEvent in resolution.events:
 		hud.append_battle_log(BattleLogFormatter.describe(event, unit_definitions, _content_snapshot))
-		if event is TurnEndedEvent:
+		if event is PhaseStartedEvent:
 			hud.log_round(event.round_number)
 		var was_presented := await _present_event(
 			event,
@@ -118,7 +118,7 @@ func _present_event(
 			map_view
 		)
 
-	if event is TurnEndedEvent:
+	if event is TurnEndedEvent or event is PhaseStartedEvent:
 		return true
 
 	if event is MapMutationEvent:

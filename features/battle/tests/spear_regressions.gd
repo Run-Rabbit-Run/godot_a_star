@@ -57,7 +57,7 @@ func run(suite: Node) -> void:
 	suite.expect(ally.health.current == 87 and enemy.health.current == 87, "Sweep uses current base damage on both factions")
 	suite.expect(user.health.current == 100 and beyond.health.current == 100, "Sweep excludes self and distant units")
 	# Pin status is observed before automatic end-turn can consume a skipped victim turn.
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	user.turn.start_turn()
 	enemy.hex = Vector2i(2, 0)
 	var pin := AbilityExecutor.execute(state, UseAbilityCommand.new(user.unit_id, enemy.unit_id, &"core:spear_pin"))
@@ -94,7 +94,7 @@ func run(suite: Node) -> void:
 	defender.hex = Vector2i(1, 0)
 	attacker.basic_attack_range = 3
 	attacker.turn.start_turn()
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	engine.execute(AttackCommand.new(attacker.unit_id, defender.unit_id))
 	suite.expect(defender.health.current == 99 and attacker.health.current == 90, "A shooter's strike at an adjacent hex is a halved melee strike and provokes response")
 	# Return resolves even when owner is paralyzed, and uses current occupants.
@@ -141,7 +141,8 @@ func run(suite: Node) -> void:
 	enemy.health.current = 3
 	enemy.statuses.clear()
 	state = fixture.state(cells, [enemy, user])
-	engine = BattleEngine.new(state)
+	Fixtures.start_turns(state)
+	engine = BattleEngine.new(state, false)
 	var terminal := engine.execute(EndTurnCommand.new(enemy.unit_id))
 	suite.expect(terminal.accepted and terminal.battle_result != null and enemy.health.is_defeated(), "Lethal return finishes battle at owner turn start")
 	suite.expect(user.pending_spear_return.is_empty(), "Lethal return is consumed")
@@ -159,7 +160,7 @@ func run(suite: Node) -> void:
 	engine.execute(UseAbilityCommand.at_hex(user.unit_id, user.hex, &"core:spear_sweep"))
 	suite.expect(user.health.current == 95 and enemy.health.current == 93, "Melee sweep triggers one response")
 	user.turn.start_turn()
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var pin_health := user.health.current
 	var adjacent_pin := AbilityExecutor.execute(state, UseAbilityCommand.new(user.unit_id, enemy.unit_id, &"core:spear_pin"))
 	suite.expect(adjacent_pin.accepted and user.health.current == pin_health and enemy.statuses.get(&"core:paralysis", 0) == 1, "Pin disables response through paralysis")

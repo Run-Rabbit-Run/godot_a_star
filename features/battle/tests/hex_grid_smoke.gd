@@ -149,18 +149,24 @@ func _check_turn_state() -> void:
 
 func _check_turn_service() -> void:
 	var source_order: Array[StringName] = [&"alpha", &"beta"]
-	var service := TurnService.new(source_order)
+	var units: Dictionary[StringName, UnitState] = {
+		&"alpha": UnitState.new(&"alpha", &"alpha_definition", BattleFaction.Value.PLAYER, Vector2i.ZERO, TurnState.new(3), HealthState.new(10), 2),
+		&"beta": UnitState.new(&"beta", &"beta_definition", BattleFaction.Value.ENEMY, Vector2i(1, 0), TurnState.new(3), HealthState.new(10), 2),
+	}
+	var service := TurnService.new(source_order, units)
 	source_order.clear()
 
 	_expect(service.get_active_unit_id().is_empty(), "TurnService must be inactive before start.")
-	_expect(service.advance_turn().is_empty(), "Advance before start must not activate a unit.")
-	_expect(service.start() == &"alpha", "Start must select the copied first unit.")
-	_expect(service.advance_turn() == &"beta", "Advance must select the next unit.")
-	_expect(service.advance_turn() == &"alpha", "Turn order must wrap to the first unit.")
+	_expect(not service.advance_phase() and service.get_active_unit_id().is_empty(), "Advancing before start must not activate a unit.")
+	_expect(service.start() == &"alpha", "Start must open the player phase with its first unit.")
+	_expect(not service.advance_phase() and service.get_active_unit_id() == &"beta" and service.get_round_number() == 1, "The enemy phase follows within the same round.")
+	_expect(service.advance_phase() and service.get_active_unit_id() == &"alpha" and service.get_round_number() == 2, "The player phase opens the next round.")
+	service.finish_unit(&"alpha")
+	_expect(service.get_active_unit_id().is_empty() and service.get_ready_unit_ids().is_empty(), "A finished unit is no longer ready in its phase.")
 
 	var empty_order: Array[StringName] = []
 	var empty_service := TurnService.new(empty_order)
-	_expect(empty_service.start().is_empty() and empty_service.advance_turn().is_empty(), "Empty turn order must remain inactive.")
+	_expect(empty_service.start().is_empty() and not empty_service.advance_phase(), "Empty turn order must remain inactive.")
 
 
 func _check_battle_engine() -> void:

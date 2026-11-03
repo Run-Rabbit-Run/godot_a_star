@@ -1,19 +1,13 @@
 class_name TurnEndedEvent
 extends BattleEvent
+## A unit finished its turn in the phase; its end-of-turn effects precede this event.
 
-
-var previous_unit_id: StringName
-var next_unit_id: StringName
+var unit_id: StringName
 var round_number: int
-## Automatic paralysis skips still resolve their own end-of-turn effects.
+## A paralyzed unit did not act: its end-of-turn effects resolved with the phase end.
 var was_skipped := false
 
 
-func _init(
-	p_previous_unit_id: StringName,
-	p_next_unit_id: StringName,
-	p_round_number: int
-) -> void:
-	previous_unit_id = p_previous_unit_id
-	next_unit_id = p_next_unit_id
+func _init(p_unit_id: StringName, p_round_number: int) -> void:
+	unit_id = p_unit_id
 	round_number = maxi(p_round_number, 0)

@@ -4,7 +4,7 @@ extends RefCounted
 static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id: StringName) -> Array[Vector2i]:
 	var targets: Array[Vector2i] = []
 	var user := state.unit_states.get(unit_id) as UnitState
-	if user == null or user.health.is_defeated() or unit_id != state.turn_service.get_active_unit_id() or not user.turn.main_action_available:
+	if user == null or user.health.is_defeated() or not state.turn_service.can_command(unit_id) or not user.turn.main_action_available:
 		return targets
 	var ability := user.get_ability(ability_id)
 	if ability == null or user.ability_cooldowns.get(ability_id, 0) > 0:

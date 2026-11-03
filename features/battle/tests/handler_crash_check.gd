@@ -64,7 +64,7 @@ func _check_ability_crash(fixture: RefCounted) -> void:
 	var api := ModAPI.create_default()
 	api.register_effect_handler(&"test:crash", CrashAfterDamage.new())
 	state.mod_api = api
-	state.turn_service.start()
+	fixture.start_turns(state)
 	var engine := BattleEngine.new(state, false)
 	var revision := engine.get_state_revision()
 	var resolution := engine.execute(UseAbilityCommand.at_hex(user.unit_id, enemy.hex, ability.id))
@@ -86,7 +86,7 @@ func _check_return_crash(fixture: RefCounted) -> void:
 	var api := ModAPI.new()
 	api.register_effect_handler(&"core:damage", CrashOnReturn.new())
 	state.mod_api = api
-	state.turn_service.start()
+	fixture.start_turns(state)
 	var engine := BattleEngine.new(state, false)
 	engine.execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(4, 0), throw.id))
 	var struck := enemy.health.current

@@ -33,9 +33,10 @@ func _init(p_state: BattleState, initialize := true) -> void:
 		initial_ids.sort()
 		for unit_id: StringName in initial_ids:
 			_apply_hex_state_damage(unit_id, initial_events)
-		_start_unit_turn(get_active_unit_id())
-
-		_advance_defeated_active(initial_events, true)
+		# Every unit has just touched its terrain, so the first phase does not expose it again.
+		_start_phase(initial_events, true)
+		if get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
+			_settle_turns(initial_events)
 
 	if not initial_events.is_empty():
 		_state.state_revision += 1
@@ -108,7 +109,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 	if (
 		attacker == null
 		or attacker.health.is_defeated()
-		or attacker.unit_id != get_active_unit_id()
+		or not _state.turn_service.can_command(attacker.unit_id)
 		or not attacker.turn.main_action_available
 	):
 		return targets
@@ -178,6 +179,25 @@ func get_round_number() -> int:
 	return _state.turn_service.get_round_number()
 
 
+func get_active_faction() -> BattleFaction.Value:
+	return _state.turn_service.get_active_faction()
+
+
+## The unit that started its turn and has not finished it, or "".
+func get_current_unit_id() -> StringName:
+	return _state.turn_service.get_current_unit_id()
+
+
+## Units of the acting faction that may still act this phase, in placement order.
+func get_ready_unit_ids() -> Array[StringName]:
+	return _state.turn_service.get_ready_unit_ids()
+
+
+## True when the unit may give a command now: ready, and no other unit has started.
+func can_command(unit_id: StringName) -> bool:
+	return _state.turn_service.can_command(unit_id)
+
+
 func get_turn_order() -> Array[StringName]:
 	return _state.turn_service.get_turn_order()
 
@@ -234,7 +254,7 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 	if (
 		state == null
 		or state.health.is_defeated()
-		or unit_id != get_active_unit_id()
+		or not _state.turn_service.can_command(unit_id)
 	):
 		return MovementSearchResult.new(
 			empty_costs,
@@ -274,7 +294,7 @@ func apply_map_mutations(
 	if not application.accepted:
 		return _rejected(application.rejection_reason)
 
-	_advance_defeated_active(application.events)
+	_settle_turns(application.events)
 	var resolution := BattleResolution.success(
 		application.events,
 		_state.state_revision,
@@ -309,6 +329,9 @@ func execute(command: BattleCommand) -> BattleResolution:
 	if command is EndTurnCommand:
 		return _resolve_end_turn(command as EndTurnCommand)
 
+	if command is EndPhaseCommand:
+		return _resolve_end_phase(command as EndPhaseCommand)
+
 	return _rejected("Unsupported battle command.")
 
 
@@ -319,6 +342,7 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		return _rejected("Move command was rejected.")
 
 	var moved_unit := get_unit(result.unit_id)
+	_state.turn_service.begin_unit(result.unit_id)
 	var events: Array[BattleEvent] = []
 	var segment_path: Array[Vector2i] = [moved_unit.hex]
 	var segment_cost := 0
@@ -375,98 +399,98 @@ func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
 	return _accepted(result.events)
 
 
-func _finish_action_turn(_unit_id: StringName, events: Array[BattleEvent]) -> void:
+func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> void:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
-	var next_id := _end_turn(events)
-	if next_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
-		_terminal_error = "The next unit turn could not be started."
+	_finish_unit(unit_id, events)
 
 
 func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
-	if command.unit_id != get_active_unit_id():
-		return _rejected("Only the active unit can end its turn.")
+	if not _state.turn_service.can_command(command.unit_id):
+		return _rejected("Only a ready unit can end its turn while no other unit has started.")
 
 	var events: Array[BattleEvent] = []
-	var next_unit_id := _end_turn(events)
-
-	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
-		_terminal_error = "The next unit turn could not be started."
-
+	_finish_unit(command.unit_id, events)
 	return _accepted(events)
 
 
-func _start_unit_turn(unit_id: StringName) -> bool:
-	var state := get_unit(unit_id)
-
-	if state == null or state.health.is_defeated():
-		return false
-
-	state.turn.start_turn()
-	state.start_cooldown_turn()
-	state.turn.movement_remaining = maxi(0, state.turn.movement_remaining - UnitStatusCatalog.movement_penalty(state.statuses))
-	return true
+func _resolve_end_phase(command: EndPhaseCommand) -> BattleResolution:
+	if command.faction != get_active_faction():
+		return _rejected("Only the acting faction can end its phase.")
+	var events: Array[BattleEvent] = []
+	# Remaining units resolve their end-of-turn effects with the phase end.
+	for unit_id: StringName in _state.turn_service.get_ready_unit_ids():
+		_state.turn_service.finish_unit(unit_id)
+	return _accepted(events)
 
 
-func _end_turn(damage_events: Array[BattleEvent], initial_skip := false) -> StringName:
-	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		return StringName()
-
-	var previous_unit_id := get_active_unit_id()
-	var was_skipped := initial_skip
-	UnitStatusService.end_turn(get_unit(get_active_unit_id()), damage_events)
-	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		var ended := TurnEndedEvent.new(previous_unit_id, &"", get_round_number())
-		ended.was_skipped = was_skipped
-		damage_events.append(ended)
-		return StringName()
-	# Each skipped turn consumes paralysis or health; this bound covers chained skips.
-	var attempts := _state.turn_service.get_participant_count()
-	for unit: UnitState in _state.unit_states.values():
-		attempts += unit.health.current + int(unit.statuses.get(&"core:paralysis", 0))
-	attempts *= _state.turn_service.get_participant_count()
-	for _attempt in range(attempts):
-		var previous_round := get_round_number()
-		var next_unit_id := _state.turn_service.advance_turn()
-		if get_round_number() != previous_round:
-			HexStateService.end_round(_state, damage_events)
-
-		if not _start_unit_turn(next_unit_id):
-			continue
-
-		# Finish the old turn after its status effects, before the new hex exposure.
-		var ended := TurnEndedEvent.new(previous_unit_id, next_unit_id, get_round_number())
-		ended.was_skipped = was_skipped
-		damage_events.append(ended)
-		previous_unit_id = next_unit_id
-		was_skipped = false
-		var return_error := SpearReturnService.resolve(_state, get_unit(next_unit_id), damage_events)
+## Start-of-turn effects of every unit of the acting faction, in placement order.
+## The battle's first phase has no handoff to announce and repeats no terrain exposure.
+func _start_phase(events: Array[BattleEvent], first := false) -> void:
+	if not first:
+		events.append(PhaseStartedEvent.new(get_active_faction(), get_round_number()))
+	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
+		var unit := get_unit(unit_id)
+		unit.turn.start_turn()
+		unit.start_cooldown_turn()
+		unit.turn.movement_remaining = maxi(0, unit.turn.movement_remaining - UnitStatusCatalog.movement_penalty(unit.statuses))
+		var return_error := SpearReturnService.resolve(_state, unit, events)
 		if not return_error.is_empty():
-			# A turn boundary has no alternative path: a failed return stops the battle.
+			# A phase boundary has no alternative path: a failed return stops the battle.
 			_terminal_error = return_error
-			return StringName()
+			return
 		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-			return StringName()
-		_apply_hex_state_damage(next_unit_id, damage_events)
-
-		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-			return StringName()
-
-		var next := get_unit(next_unit_id)
-		if next.health.is_defeated():
-			continue
-		if next.statuses.get(&"core:paralysis", 0) > 0:
-			was_skipped = true
-			UnitStatusService.end_turn(next, damage_events)
+			return
+		if not first and not unit.health.is_defeated():
+			_apply_hex_state_damage(unit_id, events)
 			if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-				var skipped := TurnEndedEvent.new(next_unit_id, &"", get_round_number())
-				skipped.was_skipped = true
-				damage_events.append(skipped)
-				return StringName()
-			continue
-		return next_unit_id
+				return
 
-	return StringName()
+
+## The unit cannot act again this phase; a living unit resolves its end-of-turn effects once.
+func _finish_unit(unit_id: StringName, events: Array[BattleEvent]) -> void:
+	var unit := get_unit(unit_id)
+	var skipped: bool = unit != null and unit.statuses.get(&"core:paralysis", 0) > 0 and _state.turn_service.get_current_unit_id() != unit_id
+	_state.turn_service.finish_unit(unit_id)
+	if unit == null or _state.turn_service.has_ended(unit_id):
+		return
+	_state.turn_service.mark_ended(unit_id)
+	UnitStatusService.end_turn(unit, events)
+	var ended := TurnEndedEvent.new(unit_id, get_round_number())
+	ended.was_skipped = skipped
+	events.append(ended)
+
+
+## A started unit that died or got paralyzed ends its turn; a phase without ready units passes.
+func _settle_turns(events: Array[BattleEvent]) -> void:
+	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return
+	var current := _state.turn_service.get_current_unit_id()
+	if not current.is_empty() and not _state.turn_service.can_still_act(current):
+		_finish_unit(current, events)
+	# Each passed phase consumes paralysis or health, so chained empty phases are bounded.
+	var attempts := 2
+	for unit: UnitState in _state.unit_states.values():
+		attempts += 2 * (unit.health.current + int(unit.statuses.get(&"core:paralysis", 0)))
+	while get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty() and _state.turn_service.get_ready_unit_ids().is_empty():
+		attempts -= 1
+		if attempts < 0:
+			_terminal_error = "The next phase could not be started."
+			return
+		_end_phase(events)
+
+
+## End-of-turn effects of units that have not had them, then the other faction's phase.
+func _end_phase(events: Array[BattleEvent]) -> void:
+	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
+		if _state.turn_service.has_ended(unit_id):
+			continue
+		_finish_unit(unit_id, events)
+		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+			return
+	if _state.turn_service.advance_phase():
+		HexStateService.end_round(_state, events)
+	_start_phase(events)
 
 
 func _apply_hex_state_damage(
@@ -507,7 +531,7 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	if attacker == null or target == null:
 		return AttackResult.failure()
 
-	if attacker.unit_id != get_active_unit_id():
+	if not _state.turn_service.can_command(attacker.unit_id):
 		return AttackResult.failure()
 
 	if attacker.unit_id == target.unit_id:
@@ -553,9 +577,9 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 
 
 func _accepted(events: Array[BattleEvent]) -> BattleResolution:
-	# After a terminal error no further rules run, not even skipping a defeated active unit.
+	# After a terminal error no further rules run, not even passing the turn.
 	if _terminal_error.is_empty():
-		_advance_defeated_active(events)
+		_settle_turns(events)
 	_state.state_revision += 1
 	var resolution := BattleResolution.success(
 		events,
@@ -566,20 +590,6 @@ func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 
 	resolution.terminal_error = _terminal_error
 	return resolution
-
-func _advance_defeated_active(events: Array[BattleEvent], initial_turn := false) -> void:
-	var active := get_unit(get_active_unit_id())
-
-	if active == null or (not active.health.is_defeated() and active.statuses.get(&"core:paralysis", 0) <= 0):
-		return
-
-	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-		return
-
-	var next_unit_id := _end_turn(events, initial_turn and active.statuses.get(&"core:paralysis", 0) > 0)
-	if next_unit_id.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
-		_terminal_error = "The next unit turn could not be started."
-
 
 func _rejected(reason: String) -> BattleResolution:
 	return BattleResolution.rejected(
@@ -636,7 +646,7 @@ func _obstacle_attack_error(attacker: UnitState, hex: Vector2i) -> String:
 	var obstacle := _state.hex_grid.get_obstacle(hex)
 	if attacker == null or obstacle == null or not obstacle.destructible:
 		return "Уничтожаемое препятствие не найдено."
-	if attacker.unit_id != get_active_unit_id() or attacker.health.is_defeated() or not attacker.turn.main_action_available:
+	if not _state.turn_service.can_command(attacker.unit_id) or attacker.health.is_defeated() or not attacker.turn.main_action_available:
 		return "Атака препятствия недоступна."
 	if HexGrid.get_distance(attacker.hex, hex) > attacker.basic_attack_range:
 		return "Препятствие вне дальности атаки."

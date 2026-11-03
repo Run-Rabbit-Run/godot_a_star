@@ -34,10 +34,12 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 			if event.statuses[id] != event.previous_statuses.get(id, 0):
 				changes.append("%s ×%d" % [UnitStatusCatalog.display_name(id), event.statuses[id]])
 		return "%s: %s." % [_unit(event.unit_id, units), ", ".join(changes)] if not changes.is_empty() else ""
+	if event is PhaseStartedEvent:
+		return "Фаза %s." % ("игрока" if event.faction == BattleFaction.Value.PLAYER else "противника")
 	if event is TurnEndedEvent:
 		if event.was_skipped:
-			return "Ход %s пропущен из-за паралича; эффекты конца хода применены." % _unit(event.previous_unit_id, units)
-		return "%s завершает ход." % _unit(event.previous_unit_id, units)
+			return "Ход %s пропущен из-за паралича; эффекты конца хода применены." % _unit(event.unit_id, units)
+		return "%s завершает ход." % _unit(event.unit_id, units)
 	if event is MapMutationEvent:
 		if event.obstacle_changed:
 			return "Препятствие %s: %d урона, %s." % [_hex(event.hex), event.obstacle_damage, "уничтожено, проход открыт" if event.obstacle == null else "осталось %d / %d HP" % [event.obstacle.current_hp, event.obstacle.max_hp]]

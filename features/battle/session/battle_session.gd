@@ -114,6 +114,25 @@ func get_round_number() -> int:
 	return _engine.get_round_number()
 
 
+func get_active_faction() -> BattleFaction.Value:
+	return _engine.get_active_faction()
+
+
+## The unit that started its turn and has not finished it, or "".
+func get_current_unit_id() -> StringName:
+	return _engine.get_current_unit_id()
+
+
+## Units of the acting faction that may still act this phase, in placement order.
+func get_ready_unit_ids() -> Array[StringName]:
+	return _engine.get_ready_unit_ids()
+
+
+## True when the unit may give a command now: ready, and no other unit has started.
+func can_command(unit_id: StringName) -> bool:
+	return _engine.can_command(unit_id)
+
+
 func get_turn_order() -> Array[StringName]:
 	return _engine.get_turn_order()
 

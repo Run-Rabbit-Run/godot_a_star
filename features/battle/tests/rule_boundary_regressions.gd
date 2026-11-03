@@ -47,7 +47,7 @@ func _check_obstacle_damage_belongs_to_handlers(suite: Node, fixture: Fixtures) 
 	ability.effects[0].effect_type_id = &"test:demolish"
 	user.abilities[ability.id] = ability
 	user.ability_cooldowns[ability.id] = 0
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var resolution := BattleEngine.new(state, false).execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(2, 1), ability.id))
 	suite.expect(resolution.accepted and _hp(state, Vector2i(2, 1)) == 9 and _hp(state, Vector2i(2, 0)) == 10, "The effect pipeline lets any handler strike obstacles, not only core damage")
 
@@ -62,7 +62,7 @@ func _check_session_answers_rule_questions(suite: Node, fixture: Fixtures) -> vo
 		ability.uses_attack_range = id == &"core:blast"
 		user.abilities[id] = ability
 		user.ability_cooldowns[id] = 0
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var session := _session(state)
 	var snapshot := session.get_unit(user.unit_id)
 	var blast := snapshot.abilities.get(&"core:blast") as AbilitySnapshot

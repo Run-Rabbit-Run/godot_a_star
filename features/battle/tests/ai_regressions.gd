@@ -183,8 +183,10 @@ func run_doomed_ai(suite: Node) -> void:
 		state.hex_grid.set_hex_state(hex, StringName(cell.state_id))
 		state.hex_grid.set_traversal(hex, bool(cell.traversable), int(cell.movement_cost))
 	session = fixture.ai_session(state)
-	while state.turn_service.get_round_number() != int(data.round) or state.turn_service.get_active_unit_id() != StringName(data.active_unit_id):
-		state.turn_service.advance_turn()
+	# The recorded unit acts: its faction's phase, with its own turn already started.
+	if state.turn_service.get_active_faction() != participants[StringName(data.active_unit_id)].faction:
+		state.turn_service.advance_phase()
+	state.turn_service.begin_unit(StringName(data.active_unit_id))
 	state.random.state = int(data.rng_state)
 	participants[StringName(data.active_unit_id)].health.current = 1
 	source.decision_trace = {}

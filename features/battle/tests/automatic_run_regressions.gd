@@ -18,7 +18,7 @@ func run(suite: Node) -> void:
 func _check_guard(suite: Node, fixture: Fixtures) -> void:
 	var unit: UnitState = fixture.unit(&"ai", BattleFaction.Value.ENEMY, Vector2i.ZERO, 10, 3)
 	var hit := BattleResolution.success([UnitDamagedEvent.new(&"ai", &"target", 1, 5, false)], 0, &"ai")
-	var idle := BattleResolution.success([TurnEndedEvent.new(&"ai", &"ai", 1)], 0, &"ai")
+	var idle := BattleResolution.success([TurnEndedEvent.new(&"ai", 1)], 0, &"ai")
 
 	var guard := AutomaticRunGuard.new()
 	var error := ""

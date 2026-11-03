@@ -178,7 +178,7 @@ func _pool_state(fixture: Fixtures) -> BattleState:
 
 
 func _engine(state: BattleState) -> BattleEngine:
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	return BattleEngine.new(state, false)
 
 

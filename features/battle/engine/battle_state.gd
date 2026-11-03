@@ -30,7 +30,7 @@ func _init(
 	battle_id = p_battle_id
 	hex_grid = p_hex_grid
 	unit_states = p_unit_states
-	turn_service = TurnService.new(p_turn_order)
+	turn_service = TurnService.new(p_turn_order, unit_states)
 	objective_system = p_objective_system
 	deterministic_seed = p_deterministic_seed
 	mod_api = p_mod_api if p_mod_api != null else ModAPI.create_default()
@@ -57,7 +57,7 @@ func duplicate_for_prediction() -> BattleState:
 	for id: StringName in unit_states:
 		units[id] = unit_states[id].duplicate_state()
 	var copy := BattleState.new(battle_id, hex_grid.duplicate_grid(), units, turn_service.get_turn_order(), objective_system, deterministic_seed, mod_api.frozen_copy())
-	copy.turn_service = turn_service.duplicate_service()
+	copy.turn_service = turn_service.duplicate_service(units)
 	copy.random.state = random.state
 	copy.state_revision = state_revision
 	copy.map_revision = map_revision

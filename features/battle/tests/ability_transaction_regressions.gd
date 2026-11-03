@@ -139,7 +139,7 @@ func _check_adopted_ability_equals_direct(suite: Node, fixture: Fixtures) -> voi
 	var state: BattleState = fixture.state(cells, [user, enemy, other])
 	for hex: Vector2i in [Vector2i(3, 1), Vector2i(4, 1), Vector2i(5, 1), Vector2i(4, 0)]:
 		state.hex_grid.set_hex_state(hex, &"core:water")
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var live := BattleEngine.new(state, false)
 	var forecast := live.fork_for_prediction()
 	var grid := state.hex_grid
@@ -198,7 +198,7 @@ func _check_detached_failure(suite: Node, fixture: Fixtures) -> void:
 	ability.effects.append(failing)
 	user.abilities[ability.id] = ability
 	user.ability_cooldowns[ability.id] = 0
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var live := BattleEngine.new(state, false)
 	var before := _engine_fingerprint(live)
 	var forecast := live.fork_for_prediction()
@@ -221,7 +221,7 @@ func _check_return_failure(suite: Node, fixture: Fixtures) -> void:
 	var enemy: UnitState = fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(2, 0), 20)
 	var state: BattleState = fixture.state(cells, [user, enemy])
 	state.mod_api = api
-	state.turn_service.start()
+	Fixtures.start_turns(state)
 	var engine := BattleEngine.new(state, false)
 	var thrown := engine.execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(4, 0), throw.id))
 	var struck := enemy.health.current
@@ -323,7 +323,7 @@ func _line_state(fixture: Fixtures, api: ModAPI) -> BattleState:
 
 func _session(state: BattleState) -> BattleSession:
 	if state.turn_service.get_active_unit_id().is_empty():
-		state.turn_service.start()
+		Fixtures.start_turns(state)
 	var setup := BattleSetup.new(state.battle_id, state.hex_grid, [], [], BattleObjectiveDefinition.new(), BattleFaction.Value.PLAYER, state.deterministic_seed)
 	return BattleSession.new(setup, state, BattleEngine.new(state, false), null)
 
