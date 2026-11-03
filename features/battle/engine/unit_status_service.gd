@@ -8,6 +8,9 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 		return
 	if unit.status_immunities.has(id):
 		return
+	# Resistance keeps paralysis away while it lasts.
+	if id == &"core:paralysis" and unit.statuses.get(&"core:paralysis_resistance", 0) > 0:
+		return
 	var before := unit.statuses.duplicate()
 	var old_penalty := UnitStatusCatalog.movement_penalty(before)
 	if id == &"core:wet" and unit.statuses.get(&"core:plasma", 0) > 0:
@@ -19,13 +22,16 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 		var cancelled := mini(levels, int(unit.statuses.get(opposite, 0)))
 		_set_levels(unit, opposite, int(unit.statuses.get(opposite, 0)) - cancelled)
 		levels -= cancelled
+	if id == &"core:paralysis_resistance":
+		unit.statuses.erase(&"core:paralysis")
 	var previous := int(unit.statuses.get(id, 0))
-	_set_levels(unit, id, previous + levels)
+	# Paralysis never stacks past one level: it always costs exactly the next own turn.
+	_set_levels(unit, id, mini(1, previous + levels) if id == &"core:paralysis" else previous + levels)
 	if id == &"core:acid" and unit.statuses.get(id, 0) >= 5:
 		unit.statuses.erase(id)
 		unit.statuses.erase(&"core:armor")
-	if id in [&"core:electrified", &"core:plasma"] and levels > 0 and unit.statuses.get(id, 0) >= 5:
-		_set_levels(unit, &"core:paralysis", int(unit.statuses.get(&"core:paralysis", 0)) + 1)
+	if id in [&"core:electrified", &"core:plasma"] and levels > 0 and unit.statuses.get(id, 0) >= 5 and unit.statuses.get(&"core:paralysis_resistance", 0) <= 0 and not unit.status_immunities.has(&"core:paralysis"):
+		_set_levels(unit, &"core:paralysis", 1)
 	unit.turn.movement_remaining = maxi(0, unit.turn.movement_remaining - maxi(0, UnitStatusCatalog.movement_penalty(unit.statuses) - old_penalty))
 	_emit(unit, before, events)
 	if id == &"core:burning" or (id == &"core:sticky_oil" and unit.statuses.get(&"core:burning", 0) > 0):
@@ -91,11 +97,16 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	damage(unit, 2 if plasma > 0 else 0, &"fire", events, &"", &"", &"", 0, &"core:plasma")
 	damage(unit, 1 if electricity > 0 else 0, &"electric", events, &"", &"", &"", 0, &"core:electrified")
 	var before := unit.statuses.duplicate()
+	var was_paralyzed: bool = unit.statuses.get(&"core:paralysis", 0) > 0
 	if unit.statuses.get(&"core:acid", 0) > 0:
 		_set_levels(unit, &"core:armor", int(unit.statuses.get(&"core:armor", 0)) - 1)
 	for id: StringName in unit.statuses.keys():
 		if id != &"core:armor":
 			_set_levels(unit, id, int(unit.statuses[id]) - 1)
+	# Worn-off paralysis leaves one level of resistance, added after the decay so that it
+	# lasts through the opponent's phase and the unit's next own turn.
+	if was_paralyzed and not unit.statuses.has(&"core:paralysis"):
+		unit.statuses[&"core:paralysis_resistance"] = 1
 	_emit(unit, before, events)
 
 static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:

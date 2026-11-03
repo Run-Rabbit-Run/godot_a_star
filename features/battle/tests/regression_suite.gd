@@ -30,6 +30,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/hex_rule_regressions.gd").new().run_hex_lifetime(self)
 	if runs("statuses"):
 		preload("res://features/battle/tests/status_regressions.gd").new().run_statuses(self)
+	if runs("paralysis"):
+		preload("res://features/battle/tests/paralysis_regressions.gd").new().run(self)
 	if runs("damage_log"):
 		preload("res://features/battle/tests/status_regressions.gd").new().run_damage_log(self)
 	if runs("file_logging"):

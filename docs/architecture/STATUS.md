@@ -20,7 +20,7 @@
 | Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | [BATTLE_MAP.md](BATTLE_MAP.md) «Определение карты» |
 | Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE_MAP.md «Изменение карты» |
 | Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE_MAP.md «Препятствия местности», EDITOR.md «Препятствия» |
-| Статусы и состояния гексов | 8 статусов с уровнями, 12 состояний гексов, матрица, распространение, срок 3 раунда | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
+| Статусы и состояния гексов | 9 статусов с уровнями, включая устойчивость к параличу, 12 состояний гексов, матрица, распространение, срок 3 раунда | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
 | Обычная атака: выстрел и удар вплотную | `BasicAttackRules`, `UnitDamagedEvent.ranged_attack` | BATTLE_UNITS_AND_ABILITIES.md «Обычная атака» |
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
 | Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
@@ -77,7 +77,7 @@
 | Моды | Внутренние Resource-пакеты, зависимости, замороженный `ModAPI` | Установка и загрузка внешнего JSON/ZIP/PCK-пакета, отдельный data-only путь |
 | Экспорт редактора | `manifest.json` и `battle_document.json` в `content/authored/exports/` | Обратный импорт через `ContentLoader`; экспорт не является устанавливаемым модом |
 | Кампания | Бои, переходы по победе/поражению, проверка графа | Глобальная карта, Фобос/другие базы, сложные условия, постоянный состав и `SaveService` |
-| Юниты | Здоровье, ход, базовая атака, способности, восемь статусов, броня, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
+| Юниты | Здоровье, ход, базовая атака, способности, девять статусов, броня, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
 | Редакторы | Карта, гексы, препятствия, расстановки, стороны, ИИ, юниты, навыки, HUD, save/load/export/trial | Полный UI целей, зон, триггеров, кампаний, глобальной карты и диалогов; шаблоны карт и массовые операции |
 | Симуляция | Один бой и последовательность кампании, `SimulationRunResult.to_report()` | Batch-runner, агрегаты, JSON/CSV серии, журнал команд headless-прогона |
 | Диагностика | JSONL-лог графического боя | Подключение к `SimulationRunner` и проигрыватель записи |
