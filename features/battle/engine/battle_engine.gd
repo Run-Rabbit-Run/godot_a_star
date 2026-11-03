@@ -57,7 +57,13 @@ func get_initial_resolution() -> BattleResolution:
 
 ## A forecast never reapplies startup exposure, resets turns or consumes the live RNG.
 func fork_for_prediction() -> BattleEngine:
-	var copy := BattleEngine.new(_state.duplicate_for_prediction(), false)
+	return fork_onto(_state.duplicate_for_prediction())
+
+
+## The forecast engine over `state`, a detached copy the caller has just made of this battle's
+## state with `duplicate_for_prediction()` and keeps using itself.
+func fork_onto(state: BattleState) -> BattleEngine:
+	var copy := BattleEngine.new(state, false)
 	copy._terminal_error = _terminal_error
 	copy._caches_movement_searches = true
 	copy._movement_searches.assign(_movement_searches)

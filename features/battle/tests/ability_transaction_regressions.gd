@@ -255,18 +255,25 @@ func _check_context_failures(suite: Node, fixture: Fixtures) -> void:
 	suite.expect(not context.get_failure().contains("Second"), "The first failure reason is kept")
 
 
-## Real crashes are covered by handler_crash_check.gd; here the counter's filter is fed directly.
+## Real crashes are covered by handler_crash_check.gd; here the shared counter is fed directly.
 func _check_script_error_watch(suite: Node) -> void:
 	var watch := ScriptErrorWatch.start()
+	var counter: Logger = ScriptErrorWatch._counter
 	var no_trace: Array[ScriptBacktrace] = []
-	watch._log_error("f", "file", 1, "pushed", "", false, Logger.ERROR_TYPE_ERROR, no_trace)
-	watch._log_error("f", "file", 1, "warned", "", false, Logger.ERROR_TYPE_WARNING, no_trace)
+	counter._log_error("f", "file", 1, "pushed", "", false, Logger.ERROR_TYPE_ERROR, no_trace)
+	counter._log_error("f", "file", 1, "warned", "", false, Logger.ERROR_TYPE_WARNING, no_trace)
 	var thread := Thread.new()
-	thread.start(func() -> void: watch._log_error("f", "file", 1, "elsewhere", "", false, Logger.ERROR_TYPE_SCRIPT, no_trace))
-	thread.wait_to_finish()
+	thread.start(func() -> int:
+		var own := ScriptErrorWatch.start()
+		counter._log_error("f", "file", 1, "elsewhere", "", false, Logger.ERROR_TYPE_SCRIPT, no_trace)
+		return own.stop()
+	)
+	var counted_elsewhere: int = thread.wait_to_finish()
 	suite.expect(watch.error_count() == 0, "Pushed errors, warnings and other threads' script errors do not fail an effect")
-	watch._log_error("f", "file", 1, "crashed", "", false, Logger.ERROR_TYPE_SCRIPT, no_trace)
-	suite.expect(watch.stop() == 1, "A script error on the watched thread is counted")
+	suite.expect(counted_elsewhere == 1, "A watch on a worker thread counts that thread's script error")
+	var inner := ScriptErrorWatch.start()
+	counter._log_error("f", "file", 1, "crashed", "", false, Logger.ERROR_TYPE_SCRIPT, no_trace)
+	suite.expect(watch.stop() == 1 and inner.stop() == 1, "A script error on the watched thread is counted by every open watch")
 
 
 ## A field added to UnitState without copy_from would silently survive a rolled-forward

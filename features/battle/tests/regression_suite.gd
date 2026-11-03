@@ -82,6 +82,8 @@ func _run() -> void:
 		await preload("res://features/battle/tests/presentation_recovery_regressions.gd").new().run(self)
 	if runs("automatic_run"):
 		await preload("res://features/battle/tests/automatic_run_regressions.gd").new().run(self)
+	if runs("ai_threads"):
+		await preload("res://features/battle/tests/ai_thread_regressions.gd").new().run(self)
 	if runs("game_flow"):
 		await preload("res://features/battle/tests/game_flow_regressions.gd").new().run(self)
 	if runs("review_fixes"):

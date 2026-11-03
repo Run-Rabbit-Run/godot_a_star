@@ -213,7 +213,19 @@ func get_command_source(unit_id: StringName) -> CommandSource:
 	return _get_command_source(unit_id)
 
 
+## Decides at once on the calling thread; the graphical battle computes the same decision on a
+## worker thread through prepare_ai_decision() and finish_ai_decision().
 func get_next_ai_command() -> BattleCommand:
+	var decision := prepare_ai_decision()
+	if decision == null:
+		return null
+	decision.compute()
+	return finish_ai_decision(decision)
+
+
+## A decision of the automatic source that commands the active unit, or null when none decides
+## now. Call on the main thread; the decision plans on a detached copy (AIDecision).
+func prepare_ai_decision() -> AIDecision:
 	if is_finished():
 		return null
 
@@ -222,15 +234,37 @@ func get_next_ai_command() -> BattleCommand:
 	if source == null or not source.is_automatic():
 		return null
 
+	# Effects forecast on a worker thread report script errors through this shared counter.
+	ScriptErrorWatch.install()
 	var trace := {}
 	if has_diagnostic_observer() and source is AICommandSource:
 		source.decision_trace = trace
-	var command := source.next_command(self)
-	if has_diagnostic_observer():
-		diagnostic_record.emit("ai_decision", {"source_type": source.get_script().get_global_name(), "profile": source.profile if source is AICommandSource else null, "command": command, "trace": trace, "state": get_diagnostic_state()})
+	return AIDecision.new(source, fork_for_planning(), trace, get_state_revision())
+
+
+## The command of a computed decision, published to the observers on the calling thread; null
+## when the battle changed after the decision was prepared.
+func finish_ai_decision(decision: AIDecision) -> BattleCommand:
+	var source := decision.source
 	if source is AICommandSource:
 		source.decision_trace = null
-	return command
+	if decision.state_revision != get_state_revision():
+		push_warning("A stale AI decision was discarded: the battle changed while it was computed.")
+		return null
+	if has_diagnostic_observer():
+		diagnostic_record.emit("ai_decision", {"source_type": source.get_script().get_global_name(), "profile": source.profile if source is AICommandSource else null, "command": decision.command, "trace": decision.trace, "state": get_diagnostic_state()})
+	return decision.command
+
+
+## A forecast copy of the battle under the same command sources, without observers, so a
+## planner may read it on another thread while this session waits.
+func fork_for_planning() -> BattleSession:
+	var state := _state.duplicate_for_prediction()
+	var fork := BattleSession.new(_setup, state, _engine.fork_onto(state), _content_snapshot)
+	fork._side_command_sources = _side_command_sources.duplicate()
+	fork._unit_command_sources = _unit_command_sources.duplicate()
+	fork._unit_side_ids = _unit_side_ids.duplicate()
+	return fork
 
 
 

@@ -33,6 +33,9 @@ var _is_presenting := false
 var _runtime_failed := false
 var _completion_emitted := false
 var _automatic_run_active := false
+## The AI decision computed on a worker thread and its pool task, or null and -1.
+var _ai_decision: AIDecision
+var _ai_task_id := -1
 var _unit_views := BattleUnitViewRegistry.new()
 
 # Read-only compatibility bridge for diagnostics that inspect the old field name.
@@ -441,7 +444,9 @@ func _execute_ai_turns() -> void:
 		if _runtime_failed:
 			return
 
-		var command := _battle_session.get_next_ai_command()
+		var command := await _decide_ai_command()
+		if _runtime_failed:
+			return
 
 		if command == null:
 			_fail_runtime("AI command source did not provide a command.")
@@ -489,6 +494,39 @@ func _execute_ai_turns() -> void:
 		_show_unit_movement(active)
 
 	_set_presenting(false)
+
+
+## The AI plans its next command on a worker thread over a copy of the battle, while frames
+## keep coming; the live session is not touched until the decision is finished here.
+func _decide_ai_command() -> BattleCommand:
+	var decision := _battle_session.prepare_ai_decision()
+	if decision == null:
+		return null
+	_ai_decision = decision
+	_ai_task_id = WorkerThreadPool.add_task(decision.compute, false, "Battle AI decision")
+	while _ai_task_id >= 0 and not WorkerThreadPool.is_task_completed(_ai_task_id):
+		await _next_frame()
+	_collect_ai_task()
+	return _battle_session.finish_ai_decision(decision)
+
+
+## True while the AI computes its next command on a worker thread.
+func is_ai_deciding() -> bool:
+	return _ai_task_id >= 0
+
+
+## Every pool task is collected once: a finished one at once, a running one when it ends.
+func _collect_ai_task() -> void:
+	if _ai_task_id < 0:
+		return
+	WorkerThreadPool.wait_for_task_completion(_ai_task_id)
+	_ai_task_id = -1
+	_ai_decision = null
+
+
+func _exit_tree() -> void:
+	# A battle closed mid-decision waits for its planner, which reads only its own copy.
+	_collect_ai_task()
 
 
 ## Awaits a signal of this node, so a freed battle drops the waiting loop silently.

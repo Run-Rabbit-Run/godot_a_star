@@ -4,7 +4,7 @@ extends SceneTree
 ## tools/tests/run_tests.py accepts those and still fails on any other error.
 
 const CRASH := "Cannot call method 'call' on a null value."
-const CRASHES := 2
+const CRASHES := 3
 
 var checks := 0
 var failures: Array[String] = []
@@ -37,6 +37,7 @@ func _initialize() -> void:
 	load("res://content/packages/core/core_package.tres")
 	var fixture: RefCounted = load("res://features/battle/tests/regression_fixtures.gd").new()
 	_check_ability_crash(fixture)
+	_check_worker_crash(fixture)
 	_check_return_crash(fixture)
 	for failure: String in failures:
 		printerr("FAIL: ", failure)
@@ -52,6 +53,32 @@ func _expect(value: bool, message: String) -> void:
 
 
 func _check_ability_crash(fixture: RefCounted) -> void:
+	var engine := _crash_battle(fixture)
+	var user := engine.get_unit(&"user")
+	var enemy := engine.get_unit(&"enemy")
+	var revision := engine.get_state_revision()
+	var resolution := engine.execute(UseAbilityCommand.at_hex(user.unit_id, enemy.hex, &"core:crash"))
+	_expect(not resolution.accepted and "script error" in resolution.rejection_reason, "A crashing handler rejects the ability: %s" % resolution.rejection_reason)
+	_expect(enemy.health.current == 20 and user.turn.main_action_available and user.ability_cooldowns[&"core:crash"] == 0 and engine.get_state_revision() == revision, "A crashing handler leaves no partial damage, action or cooldown")
+
+
+## The same crash in a forecast on a pool thread, where the graphical AI plans: the error is
+## counted for that thread and rejects the ability there; the live battle stays as it was.
+func _check_worker_crash(fixture: RefCounted) -> void:
+	var engine := _crash_battle(fixture)
+	var forecast := engine.fork_for_prediction()
+	var command := UseAbilityCommand.at_hex(&"user", engine.get_unit(&"enemy").hex, &"core:crash")
+	# BattleSession.prepare_ai_decision() installs the counter on the main thread the same way.
+	ScriptErrorWatch.install()
+	var outcome := {}
+	WorkerThreadPool.wait_for_task_completion(WorkerThreadPool.add_task(func() -> void: outcome["resolution"] = forecast.execute(command)))
+	var resolution: BattleResolution = outcome.get("resolution")
+	_expect(resolution != null and not resolution.accepted and "script error" in resolution.rejection_reason, "A handler crashing on a pool thread rejects the forecast ability")
+	_expect(engine.get_unit(&"enemy").health.current == 20 and engine.get_unit(&"user").turn.main_action_available, "A crashed forecast leaves the live battle untouched")
+
+
+## A user next to an enemy, with an ability whose handler strikes and then crashes.
+func _crash_battle(fixture: RefCounted) -> BattleEngine:
 	var user: UnitState = fixture.unit(&"user", BattleFaction.Value.PLAYER, Vector2i.ZERO, 20, 3)
 	var enemy: UnitState = fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(1, 0), 20)
 	var ability: AbilityDefinition = fixture.ability(&"core:crash", AbilityDefinition.TargetMode.HEX)
@@ -65,11 +92,7 @@ func _check_ability_crash(fixture: RefCounted) -> void:
 	api.register_effect_handler(&"test:crash", CrashAfterDamage.new())
 	state.mod_api = api
 	fixture.start_turns(state)
-	var engine := BattleEngine.new(state, false)
-	var revision := engine.get_state_revision()
-	var resolution := engine.execute(UseAbilityCommand.at_hex(user.unit_id, enemy.hex, ability.id))
-	_expect(not resolution.accepted and "script error" in resolution.rejection_reason, "A crashing handler rejects the ability: %s" % resolution.rejection_reason)
-	_expect(enemy.health.current == 20 and user.turn.main_action_available and user.ability_cooldowns[ability.id] == 0 and engine.get_state_revision() == revision, "A crashing handler leaves no partial damage, action or cooldown")
+	return BattleEngine.new(state, false)
 
 
 func _check_return_crash(fixture: RefCounted) -> void:
