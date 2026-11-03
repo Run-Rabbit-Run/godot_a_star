@@ -604,7 +604,8 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if shot else 0
 	var penalty := 0 if shot else BasicAttackRules.melee_penalty(attacker.basic_attack_range, attacker.basic_attack_damage)
 	var first_event := events.size()
-	UnitStatusService.damage(target, attacker.basic_attack_damage, attacker.basic_attack_damage_type, events, attacker.unit_id, &"", &"", reduction, &"", protection_hex_state, penalty)
+	var hit := DamageRequest.new(attacker.basic_attack_damage, attacker.basic_attack_damage_type).from_unit(attacker.unit_id)
+	UnitStatusService.damage(target, hit.with_cover(reduction, protection_hex_state).with_melee_penalty(penalty), events)
 	if shot:
 		_mark_ranged_hit(events, first_event)
 	for status: StringName in attacker.basic_attack_statuses:

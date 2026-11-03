@@ -14,7 +14,7 @@ static func expose(unit: UnitState, grid: HexGrid, events: Array[BattleEvent]) -
 		for status: StringName in effects:
 			UnitStatusService.apply(unit, status, int(effects[status]), events)
 	for id: StringName in layers:
-		UnitStatusService.damage(unit, HexStateCatalog.get_damage(id), HexStateCatalog.get_damage_type(id), events, &"", id)
+		UnitStatusService.damage(unit, DamageRequest.new(HexStateCatalog.get_damage(id), HexStateCatalog.get_damage_type(id)).from_hex_state(id), events)
 
 
 ## Direct damage both layers of the hex deal to an occupant.

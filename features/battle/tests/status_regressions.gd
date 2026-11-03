@@ -13,18 +13,18 @@ func _check_statuses(suite: Node) -> void:
 	var unit := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	var events: Array[BattleEvent] = []
 	UnitStatusService.apply(unit, &"core:wet", 3, events)
-	UnitStatusService.damage(unit, 1, &"electric", events)
+	UnitStatusService.damage(unit, DamageRequest.new(1, &"electric"), events)
 	suite.expect(unit.health.current == 98 and unit.statuses.get(&"core:wet", 0) == 3, "Wet amplifies electric damage without decay")
-	UnitStatusService.damage(unit, 2, &"fire", events)
+	UnitStatusService.damage(unit, DamageRequest.new(2, &"fire"), events)
 	suite.expect(unit.health.current == 98 and unit.statuses.get(&"core:wet", 0) == 1, "Wet absorbs fire one-to-one")
 	UnitStatusService.apply(unit, &"core:plasma", 2, events)
 	suite.expect(not unit.statuses.has(&"core:wet"), "Plasma removes wet")
-	UnitStatusService.damage(unit, 8, &"water", events)
+	UnitStatusService.damage(unit, DamageRequest.new(8, &"water"), events)
 	suite.expect(unit.health.current == 98, "Plasma blocks water damage")
 	unit.status_immunities.append(&"core:burning")
 	UnitStatusService.apply(unit, &"core:burning", 2, events)
 	suite.expect(not unit.statuses.has(&"core:burning"), "Burning immunity blocks only status")
-	UnitStatusService.damage(unit, 2, &"fire", events)
+	UnitStatusService.damage(unit, DamageRequest.new(2, &"fire"), events)
 	suite.expect(unit.health.current == 96, "Status immunity is not damage immunity")
 	UnitStatusService.apply(unit, &"core:armor", 8, events)
 	UnitStatusService.apply(unit, &"core:acid", 5, events)
@@ -67,12 +67,12 @@ func _check_fixed_status_damage(suite: Node) -> void:
 		if levels > 0:
 			unit.statuses[&"core:wet"] = levels
 		var events: Array[BattleEvent] = []
-		UnitStatusService.damage(unit, 3, &"electric", events)
+		UnitStatusService.damage(unit, DamageRequest.new(3, &"electric"), events)
 		suite.expect(unit.health.current == (96 if levels > 0 else 97) and unit.statuses.get(&"core:wet", 0) == levels, "Wet adds one electric damage without consumption: %d" % levels)
 	var wet := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	wet.statuses[&"core:wet"] = 3
 	var no_damage: Array[BattleEvent] = []
-	UnitStatusService.damage(wet, 0, &"electric", no_damage)
+	UnitStatusService.damage(wet, DamageRequest.new(0, &"electric"), no_damage)
 	suite.expect(wet.health.current == 100 and no_damage.is_empty(), "Wet amplification cannot create damage from zero")
 	var protected := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	protected.statuses.assign({&"core:plasma": 3, &"core:wet": 1})
@@ -130,7 +130,7 @@ func run_damage_log(suite: Node) -> void:
 		var unit := fixture.unit(&"victim", BattleFaction.Value.ENEMY, Vector2i.ZERO)
 		unit.statuses[scenario.status] = scenario.levels
 		events.clear()
-		UnitStatusService.damage(unit, 5, scenario.type, events)
+		UnitStatusService.damage(unit, DamageRequest.new(5, scenario.type), events)
 		hit = events.back() as UnitDamagedEvent
 		suite.expect(hit != null and hit.calculated_damage == scenario.final and hit.damage_modifiers == [{"source_id": scenario.status, "amount": scenario.delta}], "Trace matches actual status interaction: %s/%s" % [scenario.type, scenario.status])
 		var sum := hit.base_damage
@@ -139,13 +139,13 @@ func run_damage_log(suite: Node) -> void:
 		suite.expect(sum == hit.calculated_damage and unit.health.current == 100 - hit.damage, "Trace arithmetic reconciles with actual health loss")
 	var fragile := fixture.unit(&"fragile", BattleFaction.Value.ENEMY, Vector2i.ZERO, 2)
 	events.clear()
-	UnitStatusService.damage(fragile, 6, &"plasma", events, &"", &"core:plasma")
+	UnitStatusService.damage(fragile, DamageRequest.new(6, &"plasma").from_hex_state(&"core:plasma"), events)
 	hit = events.back() as UnitDamagedEvent
 	suite.expect(hit.base_damage == 6 and hit.calculated_damage == 6 and hit.damage == 2, "Overkill preserves calculated damage separately from health loss")
 	text = BattleLogFormatter.describe(hit, units, null)
 	suite.expect("плазменный" in text and "гекс: Плазма" in text and "Снято 2 ОЗ" in text, "Log distinguishes overkill from damage absorption")
 	events.clear()
-	UnitStatusService.damage(target, 2, &"physical", events, attacker.unit_id, &"", &"", 3, &"", &"core:steam")
+	UnitStatusService.damage(target, DamageRequest.new(2).from_unit(attacker.unit_id).with_cover(3, &"core:steam"), events)
 	hit = events.back() as UnitDamagedEvent
 	suite.expect(hit.damage == 0 and hit.damage_modifiers == [{"source_id": &"core:steam", "amount": -2}], "Protection records absorbed amount rather than unused capacity")
 

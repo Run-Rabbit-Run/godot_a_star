@@ -37,20 +37,21 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 	if id == &"core:burning" or (id == &"core:sticky_oil" and unit.statuses.get(&"core:burning", 0) > 0):
 		_explode_oil(unit, events)
 
-static func damage(unit: UnitState, amount: int, type: StringName, events: Array[BattleEvent], source: StringName = &"", hex_state: StringName = &"", ability: StringName = &"", ranged_reduction: int = 0, status: StringName = &"", protection_hex_state: StringName = &"", melee_penalty: int = 0) -> void:
+static func damage(unit: UnitState, request: DamageRequest, events: Array[BattleEvent]) -> void:
+	var amount := request.amount
 	if unit == null or unit.health.is_defeated() or amount <= 0:
 		return
 	var before := unit.statuses.duplicate()
 	var modifiers: Array[Dictionary] = []
-	var penalized := maxi(0, amount - melee_penalty)
+	var penalized := maxi(0, amount - request.melee_penalty)
 	if penalized != amount:
 		modifiers.append({"source_id": BasicAttackRules.RANGED_MELEE_PENALTY, "amount": penalized - amount})
-	var adjusted := maxi(0, penalized - ranged_reduction)
+	var adjusted := maxi(0, penalized - request.ranged_reduction)
 	if adjusted != penalized:
-		modifiers.append({"source_id": protection_hex_state if not protection_hex_state.is_empty() else &"ranged_protection", "amount": adjusted - penalized})
+		modifiers.append({"source_id": request.cover_hex_state_id if not request.cover_hex_state_id.is_empty() else &"ranged_protection", "amount": adjusted - penalized})
 	var before_status_damage := adjusted
 	var modifier_status: StringName = &""
-	match type:
+	match request.type:
 		&"physical":
 			modifier_status = &"core:armor"
 			adjusted = maxi(0, adjusted - int(unit.statuses.get(&"core:armor", 0)))
@@ -76,14 +77,14 @@ static func damage(unit: UnitState, amount: int, type: StringName, events: Array
 		modifiers.append({"source_id": modifier_status, "amount": adjusted - before_status_damage})
 	_emit(unit, before, events)
 	var applied := unit.health.apply_damage(adjusted)
-	var event := UnitDamagedEvent.new(source, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), hex_state, ability)
-	event.damage_type = type
+	var event := UnitDamagedEvent.new(request.source_unit_id, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), request.source_hex_state_id, request.source_ability_id)
+	event.damage_type = request.type
 	event.base_damage = amount
 	event.calculated_damage = adjusted
 	event.damage_modifiers.assign(modifiers)
-	event.source_status_id = status
+	event.source_status_id = request.source_status_id
 	events.append(event)
-	if type == &"fire":
+	if request.type == &"fire":
 		_explode_oil(unit, events)
 
 static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
@@ -93,9 +94,9 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var burning := int(unit.statuses.get(&"core:burning", 0))
 	var plasma := int(unit.statuses.get(&"core:plasma", 0))
 	var electricity := int(unit.statuses.get(&"core:electrified", 0))
-	damage(unit, 1 if burning > 0 else 0, &"fire", events, &"", &"", &"", 0, &"core:burning")
-	damage(unit, 2 if plasma > 0 else 0, &"fire", events, &"", &"", &"", 0, &"core:plasma")
-	damage(unit, 1 if electricity > 0 else 0, &"electric", events, &"", &"", &"", 0, &"core:electrified")
+	damage(unit, DamageRequest.new(1 if burning > 0 else 0, &"fire").from_status(&"core:burning"), events)
+	damage(unit, DamageRequest.new(2 if plasma > 0 else 0, &"fire").from_status(&"core:plasma"), events)
+	damage(unit, DamageRequest.new(1 if electricity > 0 else 0, &"electric").from_status(&"core:electrified"), events)
 	var before := unit.statuses.duplicate()
 	var was_paralyzed: bool = unit.statuses.get(&"core:paralysis", 0) > 0
 	if unit.statuses.get(&"core:acid", 0) > 0:
@@ -117,7 +118,7 @@ static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var before := unit.statuses.duplicate()
 	unit.statuses.erase(&"core:sticky_oil")
 	_emit(unit, before, events)
-	damage(unit, amount, &"physical", events, &"", &"", &"", 0, &"core:sticky_oil")
+	damage(unit, DamageRequest.new(amount).from_status(&"core:sticky_oil"), events)
 
 static func _set_levels(unit: UnitState, id: StringName, levels: int) -> void:
 	if levels <= 0:

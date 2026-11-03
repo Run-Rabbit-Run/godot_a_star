@@ -13,7 +13,8 @@ static func respond(state: BattleState, attacker: UnitState, defender: UnitState
 		return ""
 	# A response is a melee strike, so a ranged defender deals half damage.
 	var penalty := BasicAttackRules.melee_penalty(defender.basic_attack_range, defender.basic_attack_damage)
-	UnitStatusService.damage(attacker, defender.basic_attack_damage, defender.basic_attack_damage_type, events, defender.unit_id, &"", &"core:melee_retaliation", 0, &"", &"", penalty)
+	var strike := DamageRequest.new(defender.basic_attack_damage, defender.basic_attack_damage_type).from_unit(defender.unit_id).with_ability(&"core:melee_retaliation")
+	UnitStatusService.damage(attacker, strike.with_melee_penalty(penalty), events)
 	for status: StringName in defender.basic_attack_statuses:
 		UnitStatusService.apply(attacker, status, defender.basic_attack_statuses[status], events)
 	return DamageType.react(state, attacker.hex, defender.basic_attack_damage_type, events)
