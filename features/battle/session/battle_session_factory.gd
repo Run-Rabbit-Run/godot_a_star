@@ -56,9 +56,11 @@ static func create(request: BattleStartRequest) -> BattleSessionCreationResult:
 		occupied_hexes[state.hex] = true
 		turn_order.append(state.unit_id)
 
-	var primary_objective := BattleObjectiveFactory.create(
-		setup.primary_objective_definition
-	)
+	var unit_ids: Dictionary[StringName, StringName] = {}
+	for spawn: UnitSpawnData in setup.unit_spawns:
+		unit_ids[spawn.placement_id] = spawn.unit_id
+	var objective_definition := setup.primary_objective_definition
+	var primary_objective := BattleObjectiveFactory.create(objective_definition, unit_ids)
 
 	if primary_objective == null:
 		return BattleSessionCreationResult.failure(
@@ -67,7 +69,9 @@ static func create(request: BattleStartRequest) -> BattleSessionCreationResult:
 
 	var objective_system := ObjectiveSystem.new(
 		primary_objective,
-		setup.protected_faction
+		setup.protected_faction,
+		BattleObjectiveFactory.to_unit_ids(objective_definition.protected_placement_ids, unit_ids),
+		objective_definition.round_limit
 	)
 	var state := BattleState.new(
 		setup.battle_id,

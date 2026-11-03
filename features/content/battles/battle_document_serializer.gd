@@ -100,10 +100,15 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 	var objective: Dictionary = {}
 
 	if document.battle_definition.primary_objective != null:
+		var definition := document.battle_definition.primary_objective
 		objective = {
-			"type": document.battle_definition.primary_objective.type,
-			"description": document.battle_definition.primary_objective.description,
-			"target_faction": document.battle_definition.primary_objective.target_faction,
+			"type": definition.type,
+			"description": definition.description,
+			"target_faction": definition.target_faction,
+			"rounds": definition.rounds,
+			"round_limit": definition.round_limit,
+			"targets": Array(definition.target_placement_ids).map(func(id: StringName) -> String: return String(id)),
+			"protected": Array(definition.protected_placement_ids).map(func(id: StringName) -> String: return String(id)),
 		}
 
 	var package_versions: Dictionary = {}
@@ -195,6 +200,12 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 		battle.primary_objective.type = int(objective_data.get("type", 0)) as BattleObjectiveType.Value
 		battle.primary_objective.description = objective_data.get("description", "")
 		battle.primary_objective.target_faction = int(objective_data.get("target_faction", 1)) as BattleFaction.Value
+		battle.primary_objective.rounds = int(objective_data.get("rounds", 5))
+		battle.primary_objective.round_limit = int(objective_data.get("round_limit", BattleObjectiveDefinition.DEFAULT_ROUND_LIMIT))
+		for id: Variant in objective_data.get("targets", []):
+			battle.primary_objective.target_placement_ids.append(StringName(str(id)))
+		for id: Variant in objective_data.get("protected", []):
+			battle.primary_objective.protected_placement_ids.append(StringName(str(id)))
 
 	for side_data: Dictionary in battle_data.get("sides", []):
 		var side := BattleSideDefinition.new()
@@ -269,6 +280,7 @@ static func _validate_structure(data: Dictionary) -> String:
 		return error
 	error = _validate_fields(battle.get("objective", {}), {
 		"type": TYPE_INT, "description": TYPE_STRING, "target_faction": TYPE_INT,
+		"rounds": TYPE_INT, "round_limit": TYPE_INT, "targets": TYPE_ARRAY, "protected": TYPE_ARRAY,
 	}, "battle.objective")
 	if not error.is_empty():
 		return error

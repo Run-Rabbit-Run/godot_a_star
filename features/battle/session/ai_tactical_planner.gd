@@ -12,6 +12,10 @@ const SELF_DEATH_PENALTY := 20.0
 const THREAT_WEIGHT := 0.5
 const APPROACH_WEIGHT := 0.3
 const SHOOTER_PRESSURE_BONUS := 2.0
+## Units the objective names: an opponent's commander or protected unit is worth more, and its
+## defeat may decide the battle; an own one stays out of reach twice as carefully.
+const KEY_DAMAGE_WEIGHT := 1.0
+const KEY_KILL_BONUS := 10.0
 ## Forecast executions one decision may spend, shared evenly by the candidate units with a
 ## floor per unit; beyond its share a unit keeps the best plan found so far.
 const DECISION_BUDGET := 300
@@ -33,9 +37,11 @@ static func plan(session: BattleSession, unit_ids: Array[StringName], trace: Var
 	var simulations := 0
 	# Approach costs depend only on the opponent and the attack range: shared by all units.
 	var approach_cache: Dictionary = {}
+	var keys: Array[StringName] = session.get_objective_target_ids()
+	keys.append_array(session.get_protected_unit_ids())
 	var budget := maxi(MIN_UNIT_BUDGET, DECISION_BUDGET / unit_ids.size())
 	for unit_id: StringName in unit_ids:
-		var memo := {"reach": {}, "skipped": 0, "simulations": 0, "approach": approach_cache, "budget": budget}
+		var memo := {"reach": {}, "skipped": 0, "simulations": 0, "approach": approach_cache, "budget": budget, "keys": keys}
 		var unit_plan := _plan_unit(session, base, grid, unit_id, opponents, threat, memo)
 		simulations += memo.simulations
 		if trace != null:
@@ -82,7 +88,7 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 		if other.faction != actor.faction and other.basic_attack_range > 1:
 			shooters.append(other.hex)
 	var reach := _action_reach(actor_state)
-	var context := {"health_before": actor.health.current, "start_approach": start_approach, "threat": threat, "shooters": shooters, "range": actor.basic_attack_range, "faction": actor.faction}
+	var context := {"health_before": actor.health.current, "start_approach": start_approach, "threat": threat, "shooters": shooters, "range": actor.basic_attack_range, "faction": actor.faction, "key": memo.keys.has(unit_id)}
 	var best: Dictionary = {}
 	# Outcomes of area abilities that leave the actor outside; the same from every hex.
 	var outcomes: Dictionary = {}
@@ -97,7 +103,7 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 		var forecast := MovementImpactForecast.evaluate(actor, grid, path)
 		if not forecast.reached:
 			continue
-		var idle := _score(cell, 0, 0, 0, 0, actor.health.current - int(forecast.damage), bool(forecast.lethal), context)
+		var idle := _score(cell, {}, actor.health.current - int(forecast.damage), bool(forecast.lethal), context)
 		_keep(best, idle, move if move != null else EndTurnCommand.new(unit_id), unit_id, move != null)
 		if memo.simulations >= memo.budget or not _in_reach(cell, opponents, reach):
 			continue
@@ -119,7 +125,7 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 			var outcome: Dictionary = outcomes.get(key, {}) if not key.is_empty() else {}
 			if outcome.is_empty():
 				memo.simulations += 1
-				outcome = _outcome(position, mover, command)
+				outcome = _outcome(position, mover, command, memo.keys)
 				if outcome.is_empty():
 					continue
 				if not key.is_empty():
@@ -130,17 +136,17 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 				# The actor stands outside the area: only its route and turn end touch it.
 				health_after = actor.health.current - int(forecast.damage)
 				defeated = bool(forecast.lethal)
-			var scored := _score(cell, outcome.enemy_damage, outcome.kills, outcome.friendly_damage, outcome.friendly_kills, health_after, defeated, context)
+			var scored := _score(cell, outcome, health_after, defeated, context)
 			_keep(best, scored, move if move != null else command, unit_id, move != null)
 	return best
 
 
 ## Losses on each side when the mover takes the command, from a forecast; {} if rejected.
-static func _outcome(position: BattleEngine, mover: UnitState, command: BattleCommand) -> Dictionary:
+static func _outcome(position: BattleEngine, mover: UnitState, command: BattleCommand, keys: Array[StringName]) -> Dictionary:
 	var preview := ActionPreview.build(position.fork_for_prediction(), position, command)
 	if not preview.accepted:
 		return {}
-	var outcome := {"enemy_damage": 0, "kills": 0, "friendly_damage": 0, "friendly_kills": 0, "health_after": mover.health.current, "defeated": false}
+	var outcome := {"enemy_damage": 0, "kills": 0, "key_damage": 0, "key_kills": 0, "friendly_damage": 0, "friendly_kills": 0, "health_after": mover.health.current, "defeated": false}
 	for changed_id: StringName in preview.units:
 		var change := preview.units[changed_id] as ActionPreview.UnitChange
 		var lost := change.health_before - change.health_after
@@ -151,6 +157,9 @@ static func _outcome(position: BattleEngine, mover: UnitState, command: BattleCo
 		elif unit != null and unit.faction != mover.faction:
 			outcome.enemy_damage += lost
 			outcome.kills += int(change.defeated)
+			if keys.has(changed_id):
+				outcome.key_damage += lost
+				outcome.key_kills += int(change.defeated)
 		else:
 			outcome.friendly_damage += lost
 			outcome.friendly_kills += int(change.defeated)
@@ -169,14 +178,16 @@ static func _outcome_key(command: BattleCommand, mover: UnitState, grid: HexGrid
 	return "%s@%s" % [ability.id, command.target_hex]
 
 
-## Score of a plan ending on `cell` with these losses on each side.
-static func _score(cell: Vector2i, enemy_damage: int, kills: int, friendly_damage: int, friendly_kills: int, health_after: int, defeated: bool, context: Dictionary) -> Dictionary:
+## Score of a plan ending on `cell` with the outcome's losses on each side ({} for no action).
+static func _score(cell: Vector2i, outcome: Dictionary, health_after: int, defeated: bool, context: Dictionary) -> Dictionary:
+	var enemy_damage: int = outcome.get("enemy_damage", 0)
 	var self_loss: int = int(context.health_before) - health_after
 	var threat := mini(int(context.threat.get(cell, 0)), maxi(health_after, 0))
-	var score := enemy_damage + KILL_BONUS * kills
-	score -= FRIENDLY_DAMAGE_WEIGHT * friendly_damage + FRIENDLY_KILL_PENALTY * friendly_kills
+	var score := enemy_damage + KILL_BONUS * int(outcome.get("kills", 0))
+	score += KEY_DAMAGE_WEIGHT * int(outcome.get("key_damage", 0)) + KEY_KILL_BONUS * int(outcome.get("key_kills", 0))
+	score -= FRIENDLY_DAMAGE_WEIGHT * int(outcome.get("friendly_damage", 0)) + FRIENDLY_KILL_PENALTY * int(outcome.get("friendly_kills", 0))
 	score -= SELF_DAMAGE_WEIGHT * self_loss + (SELF_DEATH_PENALTY if defeated else 0.0)
-	score -= THREAT_WEIGHT * threat
+	score -= THREAT_WEIGHT * threat * (2.0 if context.key else 1.0)
 	# Without damage the position matters: get closer, and pin shooters down in melee.
 	if enemy_damage <= 0:
 		score -= APPROACH_WEIGHT * float(context.approach)

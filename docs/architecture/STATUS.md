@@ -14,6 +14,7 @@
 | Атомарное создание боя | `BattleSetupFactory`, `BattleSessionFactory` | BATTLE.md «Граница запуска» |
 | Read-only граница | `UnitSnapshot`, копия `HexGrid`, глубокая копия setup | BATTLE.md «Владение состоянием» |
 | Общий путь игрока и ИИ | `BattleCommand` → `BattleSession.step()` | BATTLE.md «Команды и результат шага» |
+| Цели боя | `ObjectiveSystem`, `SurviveRoundsObjective`, `EliminateTargetsObjective`, защищаемые юниты, лимит раундов | BATTLE.md «Цели боя» |
 | Прогноз команды | `ActionPreview`, `BattleSession.preview()`, `get_reach()`, `ActionPreviewPanel`, `UnitActor.show_health_preview()` | BATTLE.md «Прогноз команды», BATTLE_PRESENTATION.md «Прогноз при наведении» |
 | Фазы сторон | `TurnService`, `FieldOrder`, `EndPhaseCommand`, `PhaseStartedEvent`, `BattleEngine.can_command()`, выбор юнита в `BattleController` | BATTLE.md «Фазы сторон», BATTLE_PRESENTATION.md «HUD» |
 | Порядок границ хода | `BattleEngine._finish_unit()`, `_end_phase()`, `TurnEndedEvent.was_skipped` | BATTLE.md «Порядок границ хода» |

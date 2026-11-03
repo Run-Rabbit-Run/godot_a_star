@@ -224,7 +224,7 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 	_hud.show_target(
 		_unit_views.get_display_name(target.unit_id),
 		presentation.actor_texture if presentation != null else null,
-		"Союзник" if target.faction == BattleFaction.Value.PLAYER else "Противник",
+		("Союзник" if target.faction == BattleFaction.Value.PLAYER else "Противник") + _objective_role(target.unit_id),
 		target.health.current,
 		target.health.maximum,
 		target.basic_attack_damage,
@@ -342,4 +342,13 @@ static func _command_key(command: BattleCommand) -> String:
 		return "obstacle:%s:%s" % [command.attacker_id, command.target_hex]
 	if command is UseAbilityCommand:
 		return "ability:%s:%s:%s:%s" % [command.user_id, command.ability_id, command.target_id, command.target_hex]
+	return ""
+
+
+## " · командир" or " · под защитой" for a unit the objective names, otherwise "".
+func _objective_role(unit_id: StringName) -> String:
+	if _session.get_objective_target_ids().has(unit_id):
+		return " · командир"
+	if _session.get_protected_unit_ids().has(unit_id):
+		return " · под защитой"
 	return ""

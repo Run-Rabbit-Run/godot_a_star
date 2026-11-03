@@ -149,6 +149,16 @@ func get_objective_description() -> String:
 	return _engine.get_objective_description()
 
 
+## Commanders the player has to defeat.
+func get_objective_target_ids() -> Array[StringName]:
+	return _engine.get_objective_target_ids()
+
+
+## Units whose defeat loses the battle.
+func get_protected_unit_ids() -> Array[StringName]:
+	return _engine.get_protected_unit_ids()
+
+
 func get_outcome() -> BattleOutcome.Value:
 	return _engine.get_outcome()
 

@@ -213,6 +213,14 @@ func get_objective_description() -> String:
 	return _state.objective_system.get_description()
 
 
+func get_objective_target_ids() -> Array[StringName]:
+	return _state.objective_system.get_target_unit_ids()
+
+
+func get_protected_unit_ids() -> Array[StringName]:
+	return _state.objective_system.get_protected_unit_ids()
+
+
 func get_outcome() -> BattleOutcome.Value:
 	return _state.objective_system.get_outcome(
 		_state.unit_states,
@@ -518,6 +526,9 @@ func _end_phase(events: Array[BattleEvent]) -> void:
 			return
 	if _state.turn_service.advance_phase():
 		HexStateService.end_round(_state, events)
+		# A new round can decide the battle: a survived objective or the round limit.
+		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+			return
 	_start_phase(events)
 
 

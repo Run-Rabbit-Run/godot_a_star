@@ -165,7 +165,7 @@ func _initialize_battle() -> void:
 	_input_router.hex_hovered.connect(_on_hex_hovered)
 	_input_router.hex_hover_exited.connect(_on_hex_hover_exited)
 	_hud.clear_action()
-	_hud.show_objective(_battle_session.get_objective_description())
+	_hud.show_objective(_objective_text())
 	_presentation_queue.configure(_start_request.content_snapshot, _unit_views)
 	_set_presenting(true)
 	var initial_resolution := _battle_session.get_initial_resolution()
@@ -375,6 +375,18 @@ func _on_end_phase_requested() -> void:
 	if not presented or _finish_battle_if_needed(resolution):
 		return
 	await _continue_turn_cycle()
+
+
+## The objective with the units it names: commanders to defeat and units to keep alive.
+func _objective_text() -> String:
+	var parts: PackedStringArray = [_battle_session.get_objective_description()]
+	for entry: Array in [["командир", _battle_session.get_objective_target_ids()], ["сохранить", _battle_session.get_protected_unit_ids()]]:
+		var names: PackedStringArray = []
+		for unit_id: StringName in entry[1]:
+			names.append(_unit_views.get_display_name(unit_id))
+		if not names.is_empty():
+			parts.append("%s: %s" % [entry[0], ", ".join(names)])
+	return " · ".join(parts)
 
 
 ## The started unit, else the player's chosen ready unit, else the engine's default.
