@@ -17,6 +17,7 @@ func run(suite: Node) -> void:
 	_check_random_scenarios(suite, fixture)
 	_check_reaction_reaching_actor(suite, fixture)
 	_check_simulation_budget(suite, fixture)
+	_check_budget_cap(suite, fixture)
 
 
 func _check_grid_copies(suite: Node) -> void:
@@ -225,6 +226,36 @@ func _check_simulation_budget(suite: Node, fixture: Fixtures) -> void:
 	var plan := AILastActionPlanner.plan(_session(fixture.state(cells, units)), trace)
 	# Every action from every position would take about 6000 forecast forks.
 	suite.expect(plan.get("reason", "") == "doomed_maximum_damage" and plan.enemy_damage == 9 and trace.last_action.simulations <= 150, "Realistic doomed plan needs few forecast simulations (%d)" % trace.last_action.simulations)
+
+
+## Pruning cannot help here: basic attacks and two melee sweeps are forecast from every
+## position next to one of many opponents. The plan stops at the budget and still strikes.
+func _check_budget_cap(suite: Node, fixture: Fixtures) -> void:
+	var cells: Array[Vector2i] = []
+	var opponent_hexes: Array[Vector2i] = []
+	for r in range(12):
+		for column in range(16):
+			var hex := Vector2i(column - (r >> 1), r)
+			cells.append(hex)
+			if column % 3 == 1 and r % 2 == 0:
+				opponent_hexes.append(hex)
+	var actor: UnitState = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i(8 - 3, 6), 1, 8)
+	actor.statuses[&"core:electrified"] = 4
+	for id: StringName in [&"core:budget_sweep", &"core:budget_spin"]:
+		var sweep: AbilityDefinition = fixture.ability(id, AbilityDefinition.TargetMode.SELF, 1)
+		sweep.range = 1
+		sweep.melee_attack = true
+		actor.abilities[sweep.id] = sweep
+		actor.ability_cooldowns[sweep.id] = 0
+	var units: Array[UnitState] = [actor]
+	for index in range(opponent_hexes.size()):
+		units.append(fixture.unit(StringName("p%d" % index), BattleFaction.Value.PLAYER, opponent_hexes[index], 20))
+	var trace := {}
+	var plan := AILastActionPlanner.plan(_session(fixture.state(cells, units)), trace)
+	var simulations: int = trace.last_action.simulations
+	var refused: int = trace.last_action.refused_over_budget
+	suite.expect(simulations == AILastActionPlanner.SIMULATION_BUDGET and refused > 0, "A doomed plan stops at the forecast budget (%d run, %d refused)" % [simulations, refused])
+	suite.expect(plan.get("reason", "") == "doomed_maximum_damage" and int(plan.get("enemy_damage", 0)) > 0, "The plan found within the budget still strikes: %s" % plan.get("reason", ""))
 
 
 func _session(state: BattleState) -> BattleSession:

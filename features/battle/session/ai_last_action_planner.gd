@@ -6,6 +6,10 @@ extends RefCounted
 const ORIGIN_MODES := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]
 ## Effects that change only units inside the area; terrain effects may spread across the map.
 const LOCAL_EFFECTS := [&"core:damage", &"core:unit_status"]
+## Forecasts of actions one plan may run. Every reachable position is still tried, so an
+## advance stays available; beyond the budget no further action is forecast and the best
+## plan found so far stands. Below it the plan equals the exhaustive search.
+const SIMULATION_BUDGET := 300
 
 
 ## Finite horizon: one reachable move followed by one main action, using real combat rules.
@@ -41,7 +45,7 @@ static func plan(session: BattleSession, trace: Variant = null, unit_id: StringN
 		var unit := base.get_unit(id)
 		if unit != null and id != active.unit_id and not unit.health.is_defeated():
 			others[unit.hex] = unit
-	var memo := {"outcomes": {}, "reach": {}, "simulations": 0, "skipped": 0}
+	var memo := {"outcomes": {}, "reach": {}, "simulations": 0, "skipped": 0, "refused": 0}
 	if not cells.has(active.hex):
 		cells.append(active.hex)
 		cells.sort()
@@ -81,7 +85,7 @@ static func plan(session: BattleSession, trace: Variant = null, unit_id: StringN
 			if _improves(best, scored.enemy_damage, cost):
 				best = {"command": command if move == null else move, "followup_command": command, "enemy_damage": scored.enemy_damage, "cost": cost, "hex": actor.hex}
 	if trace != null:
-		trace["last_action"] = {"stay_forecast": stay, "candidates": candidates, "simulations": memo.simulations, "skipped_without_opponents": memo.skipped}
+		trace["last_action"] = {"stay_forecast": stay, "candidates": candidates, "simulations": memo.simulations, "skipped_without_opponents": memo.skipped, "refused_over_budget": memo.refused}
 	if not best.is_empty():
 		best["reason"] = "doomed_maximum_damage"
 		if trace != null:
@@ -221,7 +225,11 @@ static func _outcome_key(ability: AbilityDefinition, grid: HexGrid, others: Dict
 	return str([ability.id, hit_ids, center_unit.unit_id if center_unit != null else &"", _obstacle_hexes(grid, area), obstacle_center])
 
 
+## The action's outcome from a forecast; {} for a rejected command or one over the budget.
 static func _simulate(position: BattleEngine, actor: UnitState, command: BattleCommand, memo: Dictionary) -> Dictionary:
+	if memo.simulations >= SIMULATION_BUDGET:
+		memo["refused"] = int(memo.get("refused", 0)) + 1
+		return {}
 	memo.simulations += 1
 	var resolution := position.fork_for_prediction().execute(command)
 	if not resolution.accepted or not resolution.terminal_error.is_empty():
