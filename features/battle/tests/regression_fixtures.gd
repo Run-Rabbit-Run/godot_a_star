@@ -67,12 +67,16 @@ func spear_request() -> BattleStartRequest:
 	loaded.request.content_snapshot = snapshot.with_battle_document(snapshot.get_map_definition(battle.map_id), battle, units)
 	return loaded.request
 
-## Starts a hand-built state in the phase of its first unit, so that unit acts first.
+## Starts a hand-built state with the unit the test listed first: its faction's phase, its turn begun.
 static func start_turns(state: BattleState) -> void:
 	state.turn_service.start()
-	var order := state.turn_service.get_turn_order()
-	if not order.is_empty() and state.unit_states[order[0]].faction != state.turn_service.get_active_faction():
+	var listed := state.unit_states.keys()
+	if listed.is_empty():
+		return
+	if state.unit_states[listed[0]].faction != state.turn_service.get_active_faction():
 		state.turn_service.advance_phase()
+	if state.turn_service.can_still_act(listed[0]):
+		state.turn_service.begin_unit(listed[0])
 
 ## A session around a hand-built state, for AI decisions and engine checks without a battle setup.
 func ai_session(state: BattleState) -> BattleSession:

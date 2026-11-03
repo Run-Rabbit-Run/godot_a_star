@@ -52,7 +52,7 @@ func show(state: UnitSnapshot) -> void:
 	_show_turn_order(state.unit_id)
 
 
-## The acting faction's units first, then the other faction's, each in placement order.
+## The acting faction's units first, then the other faction's, each in field order.
 func _show_turn_order(shown_unit_id: StringName) -> void:
 	var entries: Array[Dictionary] = []
 	var acting := _session.get_active_faction()

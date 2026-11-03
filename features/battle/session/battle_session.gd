@@ -123,7 +123,7 @@ func get_current_unit_id() -> StringName:
 	return _engine.get_current_unit_id()
 
 
-## Units of the acting faction that may still act this phase, in placement order.
+## Units of the acting faction that may still act this phase, in field order.
 func get_ready_unit_ids() -> Array[StringName]:
 	return _engine.get_ready_unit_ids()
 

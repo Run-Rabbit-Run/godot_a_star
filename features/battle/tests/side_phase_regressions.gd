@@ -6,6 +6,7 @@ const Fixtures := preload("res://features/battle/tests/regression_fixtures.gd")
 func run(suite: Node) -> void:
 	var fixture: Fixtures = suite.fixture
 	_run_order(suite, fixture)
+	_run_field_order(suite, fixture)
 	_run_choice_and_lock(suite, fixture)
 	_run_phase_effects(suite, fixture)
 	_run_end_phase(suite, fixture)
@@ -37,6 +38,28 @@ func _run_order(suite: Node, fixture: Fixtures) -> void:
 	engine.execute(EndTurnCommand.new(&"e1"))
 	engine.execute(EndTurnCommand.new(&"e2"))
 	suite.expect(engine.get_active_faction() == BattleFaction.Value.PLAYER and engine.get_round_number() == 2 and engine.get_active_unit_id() == &"p1", "The next round opens with the player phase again")
+
+
+func _run_field_order(suite: Node, fixture: Fixtures) -> void:
+	var cells: Array[Vector2i] = []
+	for r in range(3):
+		for q in range(-1, 7):
+			cells.append(Vector2i(q, r))
+	var pa := fixture.unit(&"pa", BattleFaction.Value.PLAYER, Vector2i(5, 0))
+	var pb := fixture.unit(&"pb", BattleFaction.Value.PLAYER, Vector2i(3, 1))
+	var pc := fixture.unit(&"pc", BattleFaction.Value.PLAYER, Vector2i(0, 2))
+	var ea := fixture.unit(&"ea", BattleFaction.Value.ENEMY, Vector2i(0, 0))
+	var eb := fixture.unit(&"eb", BattleFaction.Value.ENEMY, Vector2i(4, 0))
+	var ec := fixture.unit(&"ec", BattleFaction.Value.ENEMY, Vector2i(2, 1))
+	# The placement order is scrambled on purpose: only the field decides.
+	var engine := BattleEngine.new(fixture.state(cells, [pc, ea, pb, ec, pa, eb]))
+	suite.expect(engine.get_ready_unit_ids() == [&"pa", &"pb", &"pc"] and engine.get_active_unit_id() == &"pa", "Player units go from the top row, leftmost first")
+	suite.expect(engine.get_turn_order() == [&"pa", &"pb", &"pc", &"eb", &"ea", &"ec"], "Enemy units go from the top row, rightmost first")
+	engine.execute(EndPhaseCommand.new(BattleFaction.Value.PLAYER))
+	suite.expect(engine.get_active_unit_id() == &"eb", "The enemy phase opens with its top-right unit")
+	engine.execute(MoveCommand.new(&"eb", Vector2i(4, 2)))
+	engine.execute(EndTurnCommand.new(&"eb"))
+	suite.expect(engine.get_ready_unit_ids() == [&"ea", &"ec"] and engine.get_active_unit_id() == &"ea", "The order follows current positions")
 
 
 func _run_choice_and_lock(suite: Node, fixture: Fixtures) -> void:

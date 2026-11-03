@@ -29,9 +29,7 @@ func _init(p_state: BattleState, initialize := true) -> void:
 
 	if _terminal_error.is_empty() and get_outcome() == BattleOutcome.Value.IN_PROGRESS:
 		# Every starting occupant is already touching its terrain; expose each once.
-		var initial_ids := _state.unit_states.keys()
-		initial_ids.sort()
-		for unit_id: StringName in initial_ids:
+		for unit_id: StringName in _state.turn_service.get_turn_order():
 			_apply_hex_state_damage(unit_id, initial_events)
 		# Every unit has just touched its terrain, so the first phase does not expose it again.
 		_start_phase(initial_events, true)
@@ -188,7 +186,7 @@ func get_current_unit_id() -> StringName:
 	return _state.turn_service.get_current_unit_id()
 
 
-## Units of the acting faction that may still act this phase, in placement order.
+## Units of the acting faction that may still act this phase, in field order.
 func get_ready_unit_ids() -> Array[StringName]:
 	return _state.turn_service.get_ready_unit_ids()
 
@@ -424,7 +422,7 @@ func _resolve_end_phase(command: EndPhaseCommand) -> BattleResolution:
 	return _accepted(events)
 
 
-## Start-of-turn effects of every unit of the acting faction, in placement order.
+## Start-of-turn effects of every unit of the acting faction, in field order.
 ## The battle's first phase has no handoff to announce and repeats no terrain exposure.
 func _start_phase(events: Array[BattleEvent], first := false) -> void:
 	if not first:

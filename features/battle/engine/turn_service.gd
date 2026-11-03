@@ -2,8 +2,9 @@ class_name TurnService
 extends RefCounted
 ## Side phases: the player faction acts with its units in any order, then the enemy faction.
 ## A unit that started its turn with a command finishes it before another unit may act.
+## Whenever an order among units matters, it is their FieldOrder at that moment.
 
-var _turn_order: Array[StringName] = []
+var _participants: Array[StringName] = []
 ## The battle's unit registry: readiness reads current faction, health and paralysis.
 var _units: Dictionary[StringName, UnitState] = {}
 var _active_faction := BattleFaction.Value.PLAYER
@@ -18,13 +19,13 @@ var _current_unit_id := StringName()
 
 ## `units` is shared, not copied: the service sees every change of the battle's units.
 func _init(turn_order: Array[StringName], units: Dictionary[StringName, UnitState] = {}) -> void:
-	_turn_order.assign(turn_order)
+	_participants.assign(turn_order)
 	_units = units
 
 
 ## Opens round 1 with the player phase and returns its first ready unit.
 func start() -> StringName:
-	_started = not _turn_order.is_empty()
+	_started = not _participants.is_empty()
 	_round_number = 1 if _started else 0
 	_active_faction = BattleFaction.Value.PLAYER
 	_clear_phase()
@@ -39,11 +40,11 @@ func get_active_faction() -> BattleFaction.Value:
 	return _active_faction
 
 
-## The started unit, otherwise the first ready unit of the phase in placement order.
+## The started unit, otherwise the first ready unit of the phase in field order.
 func get_active_unit_id() -> StringName:
 	if not _current_unit_id.is_empty():
 		return _current_unit_id
-	for unit_id: StringName in _turn_order:
+	for unit_id: StringName in get_turn_order():
 		if can_still_act(unit_id):
 			return unit_id
 	return StringName()
@@ -72,19 +73,19 @@ func can_command(unit_id: StringName) -> bool:
 	return can_still_act(unit_id) and (_current_unit_id.is_empty() or _current_unit_id == unit_id)
 
 
-## Units that may still act this phase, in placement order.
+## Units that may still act this phase, in field order.
 func get_ready_unit_ids() -> Array[StringName]:
 	var ready: Array[StringName] = []
-	for unit_id: StringName in _turn_order:
+	for unit_id: StringName in get_turn_order():
 		if can_still_act(unit_id):
 			ready.append(unit_id)
 	return ready
 
 
-## Living units of the acting faction in placement order.
+## Living units of the acting faction in field order.
 func get_phase_unit_ids() -> Array[StringName]:
 	var phase_units: Array[StringName] = []
-	for unit_id: StringName in _turn_order:
+	for unit_id: StringName in get_turn_order():
 		var unit := _units.get(unit_id) as UnitState
 		if unit != null and unit.faction == _active_faction and not unit.health.is_defeated():
 			phase_units.append(unit_id)
@@ -128,35 +129,34 @@ func advance_phase() -> bool:
 
 ## The service of a copied battle reads the copy's units.
 func duplicate_service(units: Dictionary[StringName, UnitState]) -> TurnService:
-	var copy := TurnService.new(_turn_order, units)
+	var copy := TurnService.new(_participants, units)
 	copy._copy_phase(self)
 	return copy
 
 
 ## Takes over another service's order and phase; keeps reading this battle's units.
 func copy_from(other: TurnService) -> void:
-	_turn_order.assign(other._turn_order)
+	_participants.assign(other._participants)
 	_copy_phase(other)
 
 
 func get_participant_count() -> int:
-	return _turn_order.size()
+	return _participants.size()
 
 
-## New participants enter at the end. A unit joining the acting faction acts from its next phase.
+## A unit joining the acting faction acts from its next phase.
 func add_participant(unit_id: StringName) -> void:
-	if _turn_order.has(unit_id):
+	if _participants.has(unit_id):
 		return
-	_turn_order.append(unit_id)
+	_participants.append(unit_id)
 	var unit := _units.get(unit_id) as UnitState
 	if unit != null and unit.faction == _active_faction:
 		_finished[unit_id] = true
 
 
+## Every participant: the player's units, then the enemy's, each in current field order.
 func get_turn_order() -> Array[StringName]:
-	var result: Array[StringName] = []
-	result.assign(_turn_order)
-	return result
+	return FieldOrder.sort_ids(_participants, _units)
 
 
 func _clear_phase() -> void:
