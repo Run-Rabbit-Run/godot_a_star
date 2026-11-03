@@ -17,6 +17,8 @@ var _movement_search: MovementSearchResult
 var _attackable_hexes: Array[Vector2i] = []
 var _ability_hexes: Array[Vector2i] = []
 var _selected_ability_id := StringName()
+## The unit whose options are shown; hover previews use it.
+var _acting_unit_id := StringName()
 
 
 func setup(session: BattleSession, map_view: BattleMapView, hud: BattleHUD, unit_views: BattleUnitViewRegistry, content: ContentSnapshot) -> void:
@@ -39,6 +41,7 @@ func forget_movement() -> void:
 
 ## Resets the selection to movement and basic attacks of the unit and shows them.
 func show_movement_and_attacks(state: UnitSnapshot) -> void:
+	_acting_unit_id = state.unit_id
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
 	_ability_hexes.clear()
@@ -69,6 +72,10 @@ func clear() -> void:
 
 
 ## Starts aiming the ability; false when the unit cannot use it now.
+func is_aiming_ability() -> bool:
+	return not _selected_ability_id.is_empty()
+
+
 func select_ability(active: UnitSnapshot, ability_id: StringName) -> bool:
 	if (
 		active == null
@@ -126,7 +133,7 @@ func hover(axial_cell: Vector2i) -> void:
 			_hud.clear_target()
 			return
 
-		var active := _session.get_unit(_session.get_active_unit_id())
+		var active := _session.get_unit(_acting_unit_id)
 		var selected := active.abilities.get(_selected_ability_id) as AbilitySnapshot
 		if selected == null or (selected.area_radius <= 0 and not selected.targets_hex):
 			_map_view.clear_ability_area()
@@ -165,7 +172,7 @@ func _update_attack_cursor(axial_cell: Vector2i) -> void:
 	if _session == null or not enabled or not _attackable_hexes.has(axial_cell):
 		return
 
-	var active_unit_id := _session.get_active_unit_id()
+	var active_unit_id := _acting_unit_id
 	var active := _session.get_unit(active_unit_id)
 	var target := _session.get_unit_at(axial_cell)
 	# Attackable hexes come from the session, so an obstacle hex among them is a legal target.

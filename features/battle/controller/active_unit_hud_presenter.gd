@@ -16,7 +16,7 @@ func setup(session: BattleSession, hud: BattleHUD, unit_views: BattleUnitViewReg
 
 
 func show(state: UnitSnapshot) -> void:
-	_hud.show_round(_session.get_round_number())
+	_hud.show_round(_session.get_round_number(), _session.get_active_faction())
 	_hud.show_health(state.health.current, state.health.maximum)
 	_hud.show_movement(state.turn.movement_remaining, state.turn.movement_max)
 	_hud.show_main_action(state.turn.main_action_available)
@@ -49,18 +49,23 @@ func show(state: UnitSnapshot) -> void:
 	# An engaged ranged unit cannot shoot: its button names the melee strike.
 	var reach := 1 if BasicAttackRules.is_engaged(state.hex, opponent_hexes) else state.basic_attack_range
 	_hud.show_basic_attack_button(reach, state.turn.main_action_available)
-	_show_turn_order()
+	_show_turn_order(state.unit_id)
 
 
-func _show_turn_order() -> void:
+## The acting faction's units first, then the other faction's, each in placement order.
+func _show_turn_order(shown_unit_id: StringName) -> void:
 	var entries: Array[Dictionary] = []
+	var acting := _session.get_active_faction()
+	var ready := _session.get_ready_unit_ids()
+	var order: Array[StringName] = []
+	for in_phase: bool in [true, false]:
+		for unit_id: StringName in _session.get_turn_order():
+			var state := _session.get_unit(unit_id)
+			if state != null and (state.faction == acting) == in_phase:
+				order.append(unit_id)
 
-	for unit_id: StringName in _session.get_turn_order():
+	for unit_id: StringName in order:
 		var state := _session.get_unit(unit_id)
-
-		if state == null:
-			continue
-
 		var definition := _unit_views.definitions.get(unit_id) as UnitDefinition
 		var presentation := _unit_views.presentations.get(unit_id) as UnitPresentationDefinition
 		var display_name := String(unit_id)
@@ -78,6 +83,7 @@ func _show_turn_order() -> void:
 			"texture": texture,
 			"faction": state.faction,
 			"defeated": state.health.is_defeated(),
+			"acted": state.faction == acting and not state.health.is_defeated() and not ready.has(unit_id),
 		})
 
-	_hud.show_turn_order(entries, _session.get_active_unit_id())
+	_hud.show_turn_order(entries, shown_unit_id)

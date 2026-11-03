@@ -26,6 +26,8 @@ var _is_initialization_requested := false
 var _is_initialized := false
 var initialization_error := ""
 var _selection := PlayerActionSelection.new()
+## A ready player unit chosen by click while no unit has started its turn.
+var _selected_unit_id := StringName()
 var _active_unit_hud := ActiveUnitHudPresenter.new()
 var _is_presenting := false
 var _runtime_failed := false
@@ -150,6 +152,7 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
+	_hud.end_phase_requested.connect(_on_end_phase_requested)
 	var health_display := HEALTH_DISPLAY_CONTROLLER.new()
 	health_display.name = "HealthDisplayController"
 	add_child(health_display)
@@ -189,9 +192,7 @@ func _initialize_battle() -> void:
 
 	_set_presenting(false)
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	if active != null:
 		_show_unit_movement(active)
@@ -205,7 +206,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _is_presenting or _battle_session == null:
 		return
 
-	var active_unit_id := _battle_session.get_active_unit_id()
+	var active_unit_id := _acting_unit_id()
 
 	if active_unit_id.is_empty():
 		return
@@ -217,6 +218,19 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 		return
 
 	if _battle_session.is_unit_ai_controlled(active.unit_id):
+		return
+
+	# Before any unit starts, clicking another ready unit of the player chooses it.
+	var clicked := _battle_session.get_unit_at(axial_cell)
+	if (
+		clicked != null
+		and clicked.unit_id != active.unit_id
+		and not _selection.is_aiming_ability()
+		and _battle_session.can_command(clicked.unit_id)
+		and not _battle_session.is_unit_ai_controlled(clicked.unit_id)
+	):
+		_selected_unit_id = clicked.unit_id
+		_show_unit_movement(clicked)
 		return
 
 	var command := _selection.command_at(active, axial_cell)
@@ -242,7 +256,7 @@ func _on_hex_selected(axial_cell: Vector2i) -> void:
 	if _finish_battle_if_needed(resolution):
 		return
 
-	if was_presented and _battle_session.get_active_unit_id() != active_unit_id:
+	if was_presented and _acting_unit_id() != active_unit_id:
 		await _continue_turn_cycle()
 		return
 
@@ -269,9 +283,7 @@ func _on_ability_requested(ability_id: StringName) -> void:
 	if _is_presenting or _battle_session == null:
 		return
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	_selection.select_ability(active, ability_id)
 
@@ -280,9 +292,7 @@ func _on_movement_requested() -> void:
 	if _is_presenting or _battle_session == null:
 		return
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	if (
 		active == null
@@ -297,9 +307,7 @@ func _on_basic_attack_requested() -> void:
 	if _is_presenting or _battle_session == null:
 		return
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	if (
 		active == null
@@ -321,9 +329,8 @@ func _on_end_turn_requested() -> void:
 		return
 
 	_set_presenting(true)
-	var active_unit_id := _battle_session.get_active_unit_id()
 	var resolution := _battle_session.step(
-		EndTurnCommand.new(active_unit_id)
+		EndTurnCommand.new(_acting_unit_id())
 	)
 
 	if not resolution.accepted:
@@ -344,11 +351,48 @@ func _on_end_turn_requested() -> void:
 	await _continue_turn_cycle()
 
 
+## Ends the turns of every remaining unit of the player's faction and passes the phase.
+func _on_end_phase_requested() -> void:
+	if _is_presenting or _battle_session == null or _battle_session.is_active_unit_ai_controlled():
+		return
+
+	_set_presenting(true)
+	var resolution := _battle_session.step(EndPhaseCommand.new(_battle_session.get_active_faction()))
+
+	if not resolution.accepted:
+		if not _finish_battle_if_needed(resolution):
+			push_error(resolution.rejection_reason)
+			_set_presenting(false)
+		return
+
+	var presented := await _present_resolution(
+		resolution,
+		_unit_views.actors,
+		_unit_views.definitions,
+		_map_view,
+		_hud
+	)
+	if not presented or _finish_battle_if_needed(resolution):
+		return
+	await _continue_turn_cycle()
+
+
+## The started unit, else the player's chosen ready unit, else the engine's default.
+func _acting_unit_id() -> StringName:
+	var current := _battle_session.get_current_unit_id()
+	if not current.is_empty():
+		return current
+	if not _selected_unit_id.is_empty() and _battle_session.can_command(_selected_unit_id) and not _battle_session.is_unit_ai_controlled(_selected_unit_id):
+		return _selected_unit_id
+	_selected_unit_id = StringName()
+	return _battle_session.get_active_unit_id()
+
+
 func _continue_turn_cycle() -> void:
 	if _runtime_failed:
 		return
 	_refresh_map_revision()
-	var active_unit_id := _battle_session.get_active_unit_id()
+	var active_unit_id := _acting_unit_id()
 	var active := _battle_session.get_unit(active_unit_id)
 
 	if active == null:
@@ -427,9 +471,7 @@ func _execute_ai_turns() -> void:
 		if _finish_battle_if_needed(resolution):
 			return
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	if active != null:
 		_show_unit_movement(active)
@@ -460,9 +502,7 @@ func _refresh_map_revision() -> void:
 	_selection.set_grid(_hex_grid)
 	_map_view.clear_overlays()
 
-	var active := _battle_session.get_unit(
-		_battle_session.get_active_unit_id()
-	)
+	var active := _battle_session.get_unit(_acting_unit_id())
 
 	if active != null:
 		_show_unit_movement(active)

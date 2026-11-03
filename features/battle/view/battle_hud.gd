@@ -4,6 +4,7 @@ extends CanvasLayer
 
 ## HUD сообщает о намерении и не изменяет состояние боя напрямую.
 signal end_turn_requested
+signal end_phase_requested
 signal movement_requested
 signal basic_attack_requested
 signal ability_requested(ability_id: StringName)
@@ -57,6 +58,7 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _ability_button_template: Button = $"HUDRoot/%AbilityButtonTemplate"
 @onready var _settings_button: Button = $"HUDRoot/%SettingsButton"
 @onready var _end_turn_button: Button = $"HUDRoot/%EndTurnButton"
+@onready var _end_phase_button: Button = $"HUDRoot/%EndPhaseButton"
 @onready var _speed_half_button: Button = $"HUDRoot/%SpeedHalfButton"
 @onready var _speed_1_button: Button = $"HUDRoot/%Speed1Button"
 @onready var _speed_2_button: Button = $"HUDRoot/%Speed2Button"
@@ -133,6 +135,7 @@ func _ready() -> void:
 			_display_status_label
 		)
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
+	_end_phase_button.pressed.connect(_on_end_phase_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
 	_settings_button.pressed.connect(_on_settings_button_pressed)
@@ -183,6 +186,7 @@ func log_round(round_number: int) -> void:
 func set_interaction_enabled(enabled: bool) -> void:
 	_interaction_enabled = enabled
 	_end_turn_button.disabled = not enabled
+	_end_phase_button.disabled = not enabled
 	# Display settings remain accessible during AI turns and after battle.
 	_speed_half_button.disabled = false
 	_speed_1_button.disabled = false
@@ -279,8 +283,13 @@ func show_area_target(area_size: int) -> void:
 	_target_placeholder.text = "ОБЛАСТЬ СПОСОБНОСТИ\n%d ГЕКСОВ\n\nЭффекты применяются к гексам или юнитам области" % area_size
 
 
-func show_round(round_number: int) -> void:
+## The acting faction is named when given: "РАУНД 02 · ФАЗА ИГРОКА".
+func show_round(round_number: int, faction: int = -1) -> void:
 	_round_label.text = "РАУНД %02d" % round_number
+	if faction == BattleFaction.Value.PLAYER:
+		_round_label.text += " · ФАЗА ИГРОКА"
+	elif faction == BattleFaction.Value.ENEMY:
+		_round_label.text += " · ФАЗА ПРОТИВНИКА"
 
 
 func show_objective(description: String) -> void:
@@ -367,22 +376,16 @@ func clear_target() -> void:
 	_target_placeholder.text = "Наведите курсор на юнита,\nчтобы увидеть характеристики"
 
 
+## Cards keep the given order; an entry with "acted" is dimmed and checked.
 func show_turn_order(entries: Array[Dictionary], active_unit_id: StringName) -> void:
 	for child in _turn_order_container.get_children():
 		_turn_order_container.remove_child(child)
 		child.queue_free()
 
-	var active_index := 0
-
 	for index in range(entries.size()):
-		if entries[index].get("unit_id", StringName()) == active_unit_id:
-			active_index = index
-			break
-
-	for offset in range(entries.size()):
-		var entry: Dictionary = entries[(active_index + offset) % entries.size()]
+		var entry := entries[index]
 		_turn_order_container.add_child(
-			_create_turn_card(entry, offset == 0, offset + 1)
+			_create_turn_card(entry, entry.get("unit_id", StringName()) == active_unit_id, index + 1)
 		)
 
 
@@ -426,6 +429,10 @@ func show_outcome(outcome: BattleOutcome.Value) -> void:
 
 func _on_end_turn_button_pressed() -> void:
 	end_turn_requested.emit()
+
+
+func _on_end_phase_button_pressed() -> void:
+	end_phase_requested.emit()
 
 
 func _on_movement_button_pressed() -> void:
@@ -561,11 +568,11 @@ func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelC
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	portrait.texture = entry.get("texture") as Texture2D
-	portrait.modulate = Color(0.35, 0.35, 0.35, 1.0) if entry.get("defeated", false) else Color.WHITE
+	portrait.modulate = Color(0.35, 0.35, 0.35, 1.0) if entry.get("defeated", false) else Color(0.6, 0.6, 0.6, 1.0) if entry.get("acted", false) else Color.WHITE
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(portrait)
 	var caption := Label.new()
-	caption.text = str(order)
+	caption.text = "✓" if entry.get("acted", false) else str(order)
 	card.tooltip_text = String(entry.get("short_name", ""))
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.add_theme_font_size_override("font_size", 9)
@@ -584,6 +591,8 @@ func _apply_styles() -> void:
 	_basic_attack_button.icon = BattleActionIcons.ICONS.attack
 	_end_turn_button.icon = BattleActionIcons.ICONS.defend
 	_end_turn_button.add_theme_color_override("font_color", Color("f5d995"))
+	_end_phase_button.icon = BattleActionIcons.ICONS.defend
+	_end_phase_button.add_theme_color_override("font_color", Color("f5d995"))
 
 
 func _apply_health_badge(label: Label, current: int, maximum: int) -> void:

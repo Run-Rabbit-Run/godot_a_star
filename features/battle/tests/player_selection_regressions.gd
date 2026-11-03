@@ -66,6 +66,47 @@ func run(suite: Node) -> void:
 	controller.call("_set_presenting", false)
 	screen.queue_free()
 	await suite.get_tree().process_frame
+	await _run_phase_choice(suite, fixture)
+
+
+## Inside a phase the player picks which ready unit acts, until one has started its turn.
+func _run_phase_choice(suite: Node, fixture: Fixtures) -> void:
+	var screen := preload("res://features/battle/battle_screen.tscn").instantiate() as BattleScreen
+	suite.expect(screen.setup(fixture.spear_request()), "Phase choice battle setup accepted")
+	suite.add_child(screen)
+	await suite.get_tree().process_frame
+	await suite.get_tree().process_frame
+	var controller: BattleController = screen.get("_battle_controller")
+	var session: BattleSession = controller.get("_battle_session")
+	var first: StringName = controller.call("_acting_unit_id")
+	var ready := session.get_ready_unit_ids()
+	var other := StringName()
+	for unit_id: StringName in ready:
+		if unit_id != first and session.get_movement_search(unit_id).get_reachable_cells().size() > 1:
+			other = unit_id
+			break
+	suite.expect(ready.size() > 1 and not other.is_empty(), "The player phase offers several ready units")
+	if other.is_empty():
+		screen.queue_free()
+		return
+	await controller.call("_on_hex_selected", session.get_unit(other).hex)
+	suite.expect(controller.call("_acting_unit_id") == other and session.get_current_unit_id().is_empty(), "Clicking another ready unit chooses it without starting its turn")
+	var destination := Vector2i(999, 999)
+	for hex: Vector2i in session.get_movement_search(other).get_reachable_cells():
+		if session.get_unit_at(hex) == null:
+			destination = hex
+			break
+	await controller.call("_on_hex_selected", destination)
+	suite.expect(session.get_current_unit_id() == other, "Moving the chosen unit starts its turn")
+	await controller.call("_on_hex_selected", session.get_unit(first).hex)
+	suite.expect(controller.call("_acting_unit_id") == other, "A started unit cannot be swapped for another")
+	var hud: BattleHUD = controller.get("_hud")
+	var round_label := hud.get_node("HUDRoot/%RoundLabel") as Label
+	suite.expect(round_label != null and round_label.text.contains("ФАЗА ИГРОКА"), "The round label names the acting phase")
+	await controller.call("_on_end_phase_requested")
+	suite.expect(session.get_active_faction() == BattleFaction.Value.ENEMY and session.get_ready_unit_ids().size() > 0, "Ending the phase passes the turn to the enemy faction")
+	screen.queue_free()
+	await suite.get_tree().process_frame
 
 
 ## A reachable empty hex within basic attack range of a living opponent, or the unit's own hex.
