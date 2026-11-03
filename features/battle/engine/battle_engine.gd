@@ -245,6 +245,31 @@ func get_result() -> BattleResult:
 	return result
 
 
+## A detached copy of the current map.
+func get_hex_grid() -> HexGrid:
+	return _state.hex_grid.duplicate_grid()
+
+
+## Where a unit could stand in its next turn and which cells it could attack from there,
+## while everyone else stays put. A paralyzed or defeated unit reaches nothing.
+func get_reach(unit_id: StringName) -> Dictionary:
+	var cells: Array[Vector2i] = []
+	var attack_cells: Array[Vector2i] = []
+	var unit := get_unit(unit_id)
+	if unit != null and not unit.health.is_defeated() and unit.statuses.get(&"core:paralysis", 0) <= 0:
+		var points := maxi(0, unit.turn.movement_max - UnitStatusCatalog.movement_penalty(unit.statuses))
+		cells = MovementService.search(_state.hex_grid, unit.hex, points, _get_blocked_cells(unit_id)).get_reachable_cells()
+		cells.sort()
+		var attack: Dictionary[Vector2i, bool] = {}
+		for cell: Vector2i in cells:
+			for target: Vector2i in _state.hex_grid.get_cells_in_range(cell, unit.basic_attack_range):
+				if target != cell:
+					attack[target] = true
+		attack_cells.assign(attack.keys())
+		attack_cells.sort()
+	return {"move": cells, "attack": attack_cells}
+
+
 func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 	var empty_costs: Dictionary[Vector2i, int] = {}
 	var empty_came_from: Dictionary[Vector2i, Vector2i] = {}

@@ -153,6 +153,16 @@ func get_outcome() -> BattleOutcome.Value:
 	return _engine.get_outcome()
 
 
+## What the command would do, from a forecast copy; the live battle never changes.
+func preview(command: BattleCommand) -> ActionPreview:
+	return ActionPreview.build(_engine.fork_for_prediction(), command)
+
+
+## {"move": cells the unit could reach in its next turn, "attack": cells it could hit from there}.
+func get_reach(unit_id: StringName) -> Dictionary:
+	return _engine.get_reach(unit_id)
+
+
 func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 	return _engine.get_movement_search(unit_id)
 

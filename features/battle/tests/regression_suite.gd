@@ -12,6 +12,8 @@ func _run() -> void:
 	if runs("spear"):
 		preload("res://features/battle/tests/spear_regressions.gd").new().run(self)
 		await preload("res://features/battle/tests/spear_regressions.gd").new().run_presentation(self)
+	if runs("action_preview"):
+		preload("res://features/battle/tests/action_preview_regressions.gd").new().run(self)
 	if runs("side_phases"):
 		preload("res://features/battle/tests/side_phase_regressions.gd").new().run(self)
 	if runs("basic_attack"):
