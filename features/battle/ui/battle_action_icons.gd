@@ -12,6 +12,8 @@ const ICONS := {
 	"turret": preload("res://features/battle/ui/icons/classic/turret.svg"),
 	"spear": preload("res://features/battle/ui/icons/classic/spear.svg"),
 	"ability": preload("res://features/battle/ui/icons/classic/ability.svg"),
+	"strategist": preload("res://features/battle/ui/icons/classic/strategist.svg"),
+	"shuttle": preload("res://features/battle/ui/icons/classic/shuttle.svg"),
 }
 
 static func ability(id: StringName) -> Texture2D:
@@ -22,4 +24,5 @@ static func ability(id: StringName) -> Texture2D:
 		&"core:electromagnetic_shot": return ICONS.attack
 		&"core:electric_turret": return ICONS.turret
 		&"core:spear_throw", &"core:spear_sweep", &"core:spear_pin": return ICONS.spear
+		&"core:health_shuttle": return ICONS.shuttle
 	return ICONS.ability

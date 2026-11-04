@@ -43,6 +43,7 @@ static func load_packages(
 	var ability_presentations: Array[AbilityPresentationDefinition] = []
 	var scenarios: Array[ScenarioDefinition] = []
 	var campaigns: Array[CampaignDefinition] = []
+	var strategist_abilities: Array[StrategistAbilityDefinition] = []
 	var lock_entries: Array[ContentLockEntry] = []
 	var ids_by_type: Dictionary[String, Dictionary] = {}
 
@@ -62,9 +63,10 @@ static func load_packages(
 			ids_by_type,
 			result
 		)
+		_collect_definitions(package, "strategist_ability", package.strategist_abilities, strategist_abilities, ids_by_type, result)
 		lock_entries.append(_create_lock_entry(package))
 
-	for definitions: Array in [battles, maps, units, ai_profiles, races, abilities, scenarios, campaigns]:
+	for definitions: Array in [battles, maps, units, ai_profiles, races, abilities, scenarios, campaigns, strategist_abilities]:
 		_validate_inline_data(definitions, result)
 
 	if not result.errors.is_empty():
@@ -82,7 +84,8 @@ static func load_packages(
 		ContentLock.new(ModAPI.VERSION, lock_entries),
 		api,
 		unit_presentations,
-		ability_presentations
+		ability_presentations,
+		strategist_abilities
 	)
 
 	if not snapshot.is_valid:
@@ -442,7 +445,36 @@ static func _validate_references(
 				if not unit_error.is_empty():
 					result.add_error("AbilityDefinition %s: %s" % [ability.id, unit_error])
 
+	for ability_id: StringName in snapshot.get_strategist_ability_definition_ids():
+		_validate_strategist_ability(snapshot.get_strategist_ability_definition(ability_id), snapshot, api, result)
+
 	_validate_scenarios(snapshot, result)
+
+
+## Strategist abilities obey the effect contract of unit abilities: known handlers, valid
+## parameters and units that exist in the snapshot.
+static func _validate_strategist_ability(ability: StrategistAbilityDefinition, snapshot: ContentSnapshot, api: ModAPI, result: ContentLoadResult) -> void:
+	var error := ability.validate()
+	if not error.is_empty():
+		result.add_error("StrategistAbilityDefinition %s: %s" % [ability.id, error])
+		return
+	for effect: AbilityEffectDefinition in ability.effects:
+		var handler := api.get_effect_handler(effect.effect_type_id)
+		if handler == null:
+			result.add_error("StrategistAbilityDefinition %s requires missing effect handler %s." % [ability.id, effect.effect_type_id])
+			continue
+		error = handler.validate(effect)
+		if not error.is_empty():
+			result.add_error("StrategistAbilityDefinition %s: %s" % [ability.id, error])
+			continue
+		for unit_id: StringName in handler.get_unit_references(effect):
+			var unit := snapshot.get_unit_definition(unit_id)
+			if unit == null:
+				result.add_error("StrategistAbilityDefinition %s references missing UnitDefinition %s." % [ability.id, unit_id])
+				continue
+			var unit_error := handler.validate_unit_reference(effect, unit)
+			if not unit_error.is_empty():
+				result.add_error("StrategistAbilityDefinition %s: %s" % [ability.id, unit_error])
 
 
 static func _validate_scenarios(

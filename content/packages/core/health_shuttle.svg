@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="384" height="384" viewBox="0 0 384 384">
+  <defs>
+    <linearGradient id="hull" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#77827f"/>
+      <stop offset="0.28" stop-color="#d8ddd3"/>
+      <stop offset="0.5" stop-color="#f1f2ea"/>
+      <stop offset="0.78" stop-color="#bfc6bd"/>
+      <stop offset="1" stop-color="#66716f"/>
+    </linearGradient>
+    <linearGradient id="scorch" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#2a1c14" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2a1c14" stop-opacity="0.62"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3b2a20"/>
+      <stop offset="0.5" stop-color="#8a5a35"/>
+      <stop offset="1" stop-color="#34251c"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3a4447"/>
+      <stop offset="0.5" stop-color="#7d8a8c"/>
+      <stop offset="1" stop-color="#323b3e"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="0.38" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#e8fff9"/>
+      <stop offset="0.35" stop-color="#7ee6d4"/>
+      <stop offset="1" stop-color="#1d5a5a"/>
+    </radialGradient>
+    <radialGradient id="beacon" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#f2ffe9"/>
+      <stop offset="0.45" stop-color="#8dff7a"/>
+      <stop offset="1" stop-color="#2f9a3a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g stroke="#17252c" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Landing legs behind the hull -->
+    <path fill="url(#metal)" d="M150 286 L104 352 L114 356 L162 296 Z"/>
+    <path fill="url(#metal)" d="M234 286 L280 352 L270 356 L222 296 Z"/>
+    <path fill="url(#metal)" d="M184 312 L182 356 L202 356 L200 312 Z"/>
+    <path fill="#2b3437" d="M86 350 H128 Q132 364 107 366 Q82 364 86 350 Z"/>
+    <path fill="#2b3437" d="M256 350 H298 Q302 364 277 366 Q252 364 256 350 Z"/>
+    <path fill="#2b3437" d="M172 352 H212 Q215 366 192 368 Q169 366 172 352 Z"/>
+    <!-- Side fins -->
+    <path fill="#a83a2c" d="M126 222 L96 286 L122 294 L130 262 Z"/>
+    <path fill="#a83a2c" d="M258 222 L288 286 L262 294 L254 262 Z"/>
+    <!-- Hull -->
+    <path fill="url(#hull)" d="M122 300 L134 120 Q192 30 250 120 L262 300 Z"/>
+    <path fill="url(#scorch)" stroke="none" d="M124 250 L260 250 L262 300 L122 300 Z"/>
+    <!-- Heat shield -->
+    <path fill="url(#shield)" d="M112 296 Q192 340 272 296 L266 318 Q192 356 118 318 Z"/>
+    <!-- Hull bands -->
+    <path fill="#3d4a4c" d="M131 150 Q192 162 253 150 L255 166 Q192 178 129 166 Z"/>
+    <path fill="#3d4a4c" d="M126 256 Q192 268 258 256 L259 270 Q192 282 125 270 Z"/>
+    <!-- Porthole -->
+    <circle fill="#596567" cx="192" cy="118" r="22"/>
+    <circle fill="url(#glass)" cx="192" cy="118" r="14" stroke-width="3"/>
+    <!-- Medical emblem -->
+    <circle fill="#f6f7ef" cx="192" cy="212" r="34"/>
+    <path fill="#3fae4a" stroke-width="4" d="M182 186 H202 V202 H218 V222 H202 V238 H182 V222 H166 V202 H182 Z"/>
+    <!-- Antenna and beacon -->
+    <path fill="none" d="M192 56 V34"/>
+  </g>
+  <circle fill="url(#beacon)" cx="192" cy="30" r="16"/>
+  <circle fill="#c9ffb8" stroke="#17252c" stroke-width="3" cx="192" cy="30" r="6"/>
+  <!-- Hull highlight -->
+  <path fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round" d="M168 84 Q158 150 156 240"/>
+</svg>

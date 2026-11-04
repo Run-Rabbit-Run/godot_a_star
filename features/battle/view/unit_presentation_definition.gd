@@ -16,6 +16,8 @@ extends Resource
 ## Optional measured body bounds, excluding nearly transparent generator residue.
 @export var corpse_visible_region := Rect2()
 @export_range(24.0, 120.0, 1.0) var corpse_width := 76.0
+## The unit arrives falling from the sky onto its hex instead of appearing in place.
+@export var arrives_from_sky := false
 
 
 ## Alpha bounds per texture instance. Content snapshots hand out copies of this

@@ -21,6 +21,19 @@ var turns_started := 0
 var melee_retaliation := false
 var retaliation_configured := false
 var pending_spear_return: Dictionary = {}
+## Summoned units and constructions: a faction does not live on through them, and the battle
+## result does not count them.
+var is_summoned := false
+## The strategist ability that brought the unit in, or "".
+var summoned_by := StringName()
+## The unit's hex exists because the unit landed on it; its defeat removes the hex.
+var holds_hex := false
+## The body was destroyed with its hex: it is no longer on the battlefield.
+var corpse_removed := false
+## Bonus to the maximum health this unit currently has from allied auras.
+var max_health_bonus := 0
+## Bonus to the maximum health of the unit's other living allies while this unit lives.
+var ally_max_health_bonus := 0
 
 
 func _init(
@@ -60,6 +73,12 @@ func get_ability(ability_id: StringName) -> AbilityDefinition:
 	return abilities.get(ability_id) as AbilityDefinition
 
 
+## False for an object that can neither move, attack nor use an ability: it never takes a turn.
+## Effects of its phase still apply to it.
+func takes_turns() -> bool:
+	return turn.movement_max > 0 or basic_attack_damage > 0 or not abilities.is_empty()
+
+
 ## Runtime collections are detached. Ability definitions are read-only during a battle,
 ## so the copy shares them instead of deep-copying every definition per forecast.
 func duplicate_state() -> UnitState:
@@ -78,6 +97,12 @@ func duplicate_state() -> UnitState:
 	copy.melee_retaliation = melee_retaliation
 	copy.retaliation_configured = retaliation_configured
 	copy.pending_spear_return = pending_spear_return.duplicate(true)
+	copy.is_summoned = is_summoned
+	copy.summoned_by = summoned_by
+	copy.holds_hex = holds_hex
+	copy.corpse_removed = corpse_removed
+	copy.max_health_bonus = max_health_bonus
+	copy.ally_max_health_bonus = ally_max_health_bonus
 	return copy
 
 
@@ -102,3 +127,9 @@ func copy_from(other: UnitState) -> void:
 	melee_retaliation = other.melee_retaliation
 	retaliation_configured = other.retaliation_configured
 	pending_spear_return = other.pending_spear_return.duplicate(true)
+	is_summoned = other.is_summoned
+	summoned_by = other.summoned_by
+	holds_hex = other.holds_hex
+	corpse_removed = other.corpse_removed
+	max_health_bonus = other.max_health_bonus
+	ally_max_health_bonus = other.ally_max_health_bonus

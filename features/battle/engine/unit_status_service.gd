@@ -79,6 +79,7 @@ static func damage(unit: UnitState, request: DamageRequest, events: Array[Battle
 	var applied := unit.health.apply_damage(adjusted)
 	var event := UnitDamagedEvent.new(request.source_unit_id, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), request.source_hex_state_id, request.source_ability_id)
 	event.damage_type = request.type
+	event.target_health_maximum = unit.health.maximum
 	event.base_damage = amount
 	event.calculated_damage = adjusted
 	event.damage_modifiers.assign(modifiers)

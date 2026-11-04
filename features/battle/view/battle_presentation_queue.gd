@@ -80,7 +80,24 @@ func _present_event(
 	hud: BattleHUD
 ) -> bool:
 	if event is UnitSummonedEvent:
-		return _unit_views != null and _unit_views.create_summoned(event as UnitSummonedEvent)
+		return await _present_summon(event as UnitSummonedEvent, unit_actors)
+	if event is StrategistAbilityUsedEvent:
+		return await _present_strategist_call(event as StrategistAbilityUsedEvent, map_view)
+	if event is UnitHealthChangedEvent:
+		var health_event := event as UnitHealthChangedEvent
+		var health_actor := _actor(unit_actors, health_event.unit_id)
+		if health_actor != null:
+			health_actor.show_health(health_event.health_after, health_event.maximum_after)
+			var change := health_event.maximum_after - health_event.maximum_before
+			_show_badge(health_actor, "%+d ОЗ" % change, Color(0.42, 0.78, 0.40) if change > 0 else Color(0.72, 0.62, 0.48))
+		return true
+	if event is CorpseRemovedEvent:
+		var body := _actor(unit_actors, (event as CorpseRemovedEvent).unit_id)
+		if body != null:
+			var removal := body.create_removal_tween()
+			_track_tween(removal)
+			await _finish(removal)
+		return true
 	if event is UnitStatusChangedEvent:
 		var status_event := event as UnitStatusChangedEvent
 		var actor := _actor(unit_actors, status_event.unit_id)
@@ -222,7 +239,9 @@ func _show_damage_health(
 	) as UnitDefinition
 	var maximum_health := maxi(event.target_health_remaining, 1)
 
-	if target_definition != null and target_definition.base_stats != null:
+	if event.target_health_maximum > 0:
+		maximum_health = event.target_health_maximum
+	elif target_definition != null and target_definition.base_stats != null:
 		maximum_health = target_definition.base_stats.max_health
 
 	actor.show_health(event.target_health_remaining, maximum_health)
@@ -230,11 +249,16 @@ func _show_damage_health(
 
 
 func _show_damage_number(event: UnitDamagedEvent, actor: UnitActor) -> void:
+	_show_badge(actor, str(event.damage), DamageTypeColors.get_color(event.damage_type))
+
+
+## A short rising label above the unit: damage taken or a change of its maximum health.
+func _show_badge(actor: UnitActor, text: String, color: Color) -> void:
 	var badge := PanelContainer.new()
 	badge.name = "DamageNumber"
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.z_index = 100
-	var background := DamageTypeColors.get_color(event.damage_type)
+	var background := color
 	background.a = 0.92
 	var style := StyleBoxFlat.new()
 	style.bg_color = background
@@ -248,7 +272,7 @@ func _show_damage_number(event: UnitDamagedEvent, actor: UnitActor) -> void:
 	badge.add_theme_stylebox_override("panel", style)
 	var number := Label.new()
 	number.name = "Number"
-	number.text = str(event.damage)
+	number.text = text
 	number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -267,6 +291,47 @@ func _show_damage_number(event: UnitDamagedEvent, actor: UnitActor) -> void:
 	tween.tween_property(badge, "modulate:a", 0.0, 0.45).set_delay(0.4)
 	_track_tween(tween)
 	tween.finished.connect(badge.queue_free)
+
+
+## A summoned unit appears on its hex; one whose presentation says so falls from the sky.
+func _present_summon(event: UnitSummonedEvent, unit_actors: Dictionary[StringName, UnitActor]) -> bool:
+	if _unit_views == null or not _unit_views.create_summoned(event):
+		return false
+	var presentation := _unit_views.get_presentation(event.unit.unit_id)
+	var actor := _actor(unit_actors, event.unit.unit_id)
+	if actor == null or presentation == null or not presentation.arrives_from_sky:
+		return true
+	var drop := actor.create_arrival_tween()
+	_track_tween(drop)
+	await _finish(drop)
+	return true
+
+
+## A beacon marks where the strategist's ability strikes before its effects are shown.
+func _present_strategist_call(event: StrategistAbilityUsedEvent, map_view: BattleMapView) -> bool:
+	var beacon := Node2D.new()
+	beacon.name = "StrategistBeacon"
+	beacon.z_index = 15
+	beacon.position = map_view.to_local(map_view.hex_to_global_position(event.target_hex))
+	var ring := Line2D.new()
+	ring.width = 2.5
+	ring.default_color = Color(0.62, 1.0, 0.70, 0.95)
+	ring.antialiased = true
+	ring.points = _circle_points(26.0, 32)
+	beacon.add_child(ring)
+	var pillar := Polygon2D.new()
+	pillar.polygon = PackedVector2Array([Vector2(-7, 0), Vector2(7, 0), Vector2(3, -420), Vector2(-3, -420)])
+	pillar.color = Color(0.62, 1.0, 0.70, 0.35)
+	beacon.add_child(pillar)
+	map_view.add_child(beacon)
+	beacon.scale = Vector2(0.3, 0.3)
+	var tween := beacon.create_tween()
+	tween.tween_property(beacon, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(beacon, "modulate:a", 0.0, 0.25)
+	tween.tween_callback(beacon.queue_free)
+	_track_tween(tween)
+	await _finish(tween)
+	return true
 
 
 func _present_ability(

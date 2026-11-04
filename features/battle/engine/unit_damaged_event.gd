@@ -6,6 +6,8 @@ var attacker_id: StringName
 var target_id: StringName
 var damage: int
 var target_health_remaining: int
+## The target's maximum health when it was hit; allied auras can make it differ from its definition.
+var target_health_maximum := 0
 var target_defeated: bool
 var source_hex_state_id: StringName
 var source_ability_id: StringName

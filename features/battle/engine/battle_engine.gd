@@ -16,6 +16,9 @@ func _init(p_state: BattleState, initialize := true) -> void:
 	if not initialize:
 		return
 	_state.turn_service.start()
+	# Auras of the starting units are part of the setup, like passives: they apply silently.
+	var silent: Array[BattleEvent] = []
+	HealthAuraService.refresh(_state, silent)
 	var initial_events: Array[BattleEvent] = []
 	# Starting terrain settles on a copy, so rules that never settle leave the map untouched.
 	var settled := _state.hex_grid.duplicate_grid()
@@ -32,6 +35,7 @@ func _init(p_state: BattleState, initialize := true) -> void:
 		# Every starting occupant is already touching its terrain; expose each once.
 		for unit_id: StringName in _state.turn_service.get_turn_order():
 			_apply_hex_state_damage(unit_id, initial_events)
+		_settle_presence(initial_events)
 		# Every unit has just touched its terrain, so the first phase does not expose it again.
 		_start_phase(initial_events, true)
 		if get_outcome() == BattleOutcome.Value.IN_PROGRESS and _terminal_error.is_empty():
@@ -253,6 +257,8 @@ func get_result() -> BattleResult:
 		objective_result
 	)
 	for unit: UnitState in _state.unit_states.values():
+		if unit.is_summoned:
+			continue
 		result.participants[unit.faction] = result.participants.get(unit.faction, 0) + 1
 		if unit.health.is_defeated():
 			result.defeated[unit.faction] = result.defeated.get(unit.faction, 0) + 1
@@ -338,7 +344,9 @@ func apply_map_mutations(
 	if not application.accepted:
 		return _rejected(application.rejection_reason)
 
-	_settle_turns(application.events)
+	_settle_presence(application.events)
+	if _terminal_error.is_empty():
+		_settle_turns(application.events)
 	var resolution := BattleResolution.success(
 		application.events,
 		_state.state_revision,
@@ -375,6 +383,9 @@ func execute(command: BattleCommand) -> BattleResolution:
 
 	if command is EndPhaseCommand:
 		return _resolve_end_phase(command as EndPhaseCommand)
+
+	if command is UseStrategistAbilityCommand:
+		return _resolve_strategist(command as UseStrategistAbilityCommand)
 
 	return _rejected("Unsupported battle command.")
 
@@ -423,6 +434,7 @@ func _resolve_attack(command: AttackCommand) -> BattleResolution:
 	var result := _execute_attack(command, events)
 	if not result.is_successful:
 		return _rejected("Attack command was rejected.")
+	_settle_presence(events)
 	if _terminal_error.is_empty():
 		_finish_action_turn(command.attacker_id, events)
 	return _accepted(events)
@@ -437,8 +449,43 @@ func _resolve_ability(command: UseAbilityCommand) -> BattleResolution:
 			_terminal_error = result.rejection_reason
 		return _rejected(result.rejection_reason)
 
-	_finish_action_turn(command.user_id, result.events)
+	_settle_presence(result.events)
+	if _terminal_error.is_empty():
+		_finish_action_turn(command.user_id, result.events)
 	return _accepted(result.events)
+
+
+## The strategist acts beside the units: the started unit keeps its turn.
+func _resolve_strategist(command: UseStrategistAbilityCommand) -> BattleResolution:
+	var result := StrategistAbilityExecutor.execute(_state, command)
+	if not result.accepted:
+		if result.state_changed:
+			_terminal_error = result.rejection_reason
+		return _rejected(result.rejection_reason)
+	return _accepted(result.events)
+
+
+## Abilities of the player faction's strategist, sorted by ID.
+func get_strategist_ability_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	ids.assign(_state.strategist_abilities.keys())
+	ids.sort()
+	return ids
+
+
+## Why the faction's strategist cannot use the ability now, or "".
+func get_strategist_unavailable_reason(faction: BattleFaction.Value, ability_id: StringName) -> String:
+	if not _terminal_error.is_empty() or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+		return "Бой завершён."
+	return StrategistAbilityExecutor.unavailable_reason(_state, faction, ability_id)
+
+
+## Hexes UseStrategistAbilityCommand accepts now for the ability.
+func get_strategist_target_hexes(faction: BattleFaction.Value, ability_id: StringName) -> Array[Vector2i]:
+	if not get_strategist_unavailable_reason(faction, ability_id).is_empty():
+		var none: Array[Vector2i] = []
+		return none
+	return StrategistAbilityExecutor.get_target_hexes(_state, faction, ability_id)
 
 
 func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> void:
@@ -485,8 +532,9 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 			return
 		if not first and not unit.health.is_defeated():
 			_apply_hex_state_damage(unit_id, events)
-			if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-				return
+		_settle_presence(events)
+		if not _terminal_error.is_empty() or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
+			return
 
 
 ## The unit cannot act again this phase; a living unit resolves its end-of-turn effects once.
@@ -498,6 +546,10 @@ func _finish_unit(unit_id: StringName, events: Array[BattleEvent]) -> void:
 		return
 	_state.turn_service.mark_ended(unit_id)
 	UnitStatusService.end_turn(unit, events)
+	_settle_presence(events)
+	# An object resolves the effects of its phase but has no turn to end.
+	if not unit.takes_turns():
+		return
 	var ended := TurnEndedEvent.new(unit_id, get_round_number())
 	ended.was_skipped = skipped
 	events.append(ended)
@@ -543,6 +595,17 @@ func _apply_hex_state_damage(
 	events: Array[BattleEvent]
 ) -> void:
 	HexStateService.expose(get_unit(unit_id), _state.hex_grid, events)
+
+
+## Consequences of units that appeared or fell, right after the effects that caused them: the
+## hexes of defeated holders leave the map, allied health auras follow their living sources.
+func _settle_presence(events: Array[BattleEvent]) -> void:
+	if not _terminal_error.is_empty():
+		return
+	# The removal changes the map only after the effects have landed: a refusal stops the battle.
+	_terminal_error = HeldHexService.collapse_defeated(_state, events)
+	if _terminal_error.is_empty():
+		HealthAuraService.refresh(_state, events)
 
 
 func _execute_move(command: MoveCommand) -> MoveResult:
@@ -625,6 +688,7 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 
 func _accepted(events: Array[BattleEvent]) -> BattleResolution:
 	# After a terminal error no further rules run, not even passing the turn.
+	_settle_presence(events)
 	if _terminal_error.is_empty():
 		_settle_turns(events)
 	_state.state_revision += 1

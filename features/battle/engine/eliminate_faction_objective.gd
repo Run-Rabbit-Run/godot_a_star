@@ -19,9 +19,11 @@ func is_completed(
 	_round_number: int
 ) -> bool:
 	for state: UnitState in unit_states.values():
+		# Summoned units and constructions keep no faction alive.
 		if (
 			state.faction == _target_faction
 			and not state.health.is_defeated()
+			and not state.is_summoned
 		):
 			return false
 

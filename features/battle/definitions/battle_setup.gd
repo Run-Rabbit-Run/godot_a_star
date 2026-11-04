@@ -11,6 +11,8 @@ var protected_faction: BattleFaction.Value
 var deterministic_seed: int
 ## Units the abilities of this battle may bring in (summons), by ID.
 var unit_definitions: Dictionary[StringName, UnitDefinition] = {}
+## Abilities of the player faction's strategist, by ID.
+var strategist_abilities: Dictionary[StringName, StrategistAbilityDefinition] = {}
 
 
 func _init(
@@ -46,4 +48,7 @@ func duplicate_setup() -> BattleSetup:
 	var copied_units: Dictionary[StringName, UnitDefinition] = {}
 	for id: StringName in unit_definitions:
 		copied_units[id] = unit_definitions[id].duplicate(true)
-	return BattleSetup.new(battle_id, hex_grid.duplicate_grid(), copied_sides, copied_spawns, primary_objective_definition.duplicate(true), protected_faction, deterministic_seed, copied_units)
+	var copy := BattleSetup.new(battle_id, hex_grid.duplicate_grid(), copied_sides, copied_spawns, primary_objective_definition.duplicate(true), protected_faction, deterministic_seed, copied_units)
+	for id: StringName in strategist_abilities:
+		copy.strategist_abilities[id] = strategist_abilities[id].duplicate(true)
+	return copy

@@ -11,5 +11,6 @@ extends Resource
 @export var races: Array[RaceDefinition] = []
 @export var abilities: Array[AbilityDefinition] = []
 @export var ability_presentations: Array[AbilityPresentationDefinition] = []
+@export var strategist_abilities: Array[StrategistAbilityDefinition] = []
 @export var scenarios: Array[ScenarioDefinition] = []
 @export var campaigns: Array[CampaignDefinition] = []

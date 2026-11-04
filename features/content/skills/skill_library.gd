@@ -13,6 +13,8 @@ const DAMAGE_TYPES := {"physical": "Физический", "electric": "Элек
 ## Effect parameters that keep a built-in skill's structure: the editor shows them read-only.
 const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"]}
 const FIXED_ACTIVE_KEYS := ["target_mode", "uses_attack_range", "returns_next_turn", "melee_attack", "presentation_id"]
+## Passive properties the skill documents describe; a built-in passive keeps its other ones.
+const PASSIVE_DOCUMENT_KEYS := ["name", "description", "attack_bonus", "damage_type", "status", "levels", "immunity", "retaliation"]
 
 var _packages: Array[ContentPackage] = []
 var _builtin: Dictionary = {}
@@ -138,6 +140,11 @@ static func passive_definitions(documents: Dictionary) -> Dictionary:
 	for data: Dictionary in documents.values():
 		if data.kind != "passive": continue
 		var passive := {"name": data.name, "description": String(data.get("description", "")), "attack_bonus": int(data.attack_bonus), "levels": int(data.levels), "retaliation": data.retaliation}
+		# An override of a built-in passive edits its text and numbers, never its fixed effect.
+		var builtin: Dictionary = PassiveAbilityCatalog.DEFINITIONS.get(StringName(data.id), {})
+		for key: String in builtin:
+			if key not in PASSIVE_DOCUMENT_KEYS:
+				passive[key] = builtin[key]
 		for key: String in ["damage_type", "status", "immunity"]:
 			if not String(data[key]).is_empty(): passive[key] = StringName(data[key])
 		result[StringName(data.id)] = passive

@@ -8,17 +8,22 @@ extends RefCounted
 ## context; the caller then discards the state the effects ran on. With `skip_defeated`
 ## a target already defeated when its turn comes is passed over (the returning weapon).
 static func apply(context: BattleEffectContext, state: BattleState, ability: AbilityDefinition, user_id: StringName, cells: Array[Vector2i], target_ids: Array[StringName], skip_defeated := false) -> Array[BattleEvent]:
+	return apply_effects(context, state, ability.effects, user_id, cells, target_ids, skip_defeated)
+
+
+## The same run for effects that belong to no unit ability, such as the strategist's.
+static func apply_effects(context: BattleEffectContext, state: BattleState, effects: Array[AbilityEffectDefinition], user_id: StringName, cells: Array[Vector2i], target_ids: Array[StringName], skip_defeated := false) -> Array[BattleEvent]:
 	# A handler that crashes returns an ordinary empty list; its script error fails the run.
 	var watch := ScriptErrorWatch.start()
-	var events := _run(context, state, ability, user_id, cells, target_ids, skip_defeated, watch)
+	var events := _run(context, state, effects, user_id, cells, target_ids, skip_defeated, watch)
 	if watch.stop() > 0:
 		context.fail("An ability effect raised a script error.")
 	return events
 
 
-static func _run(context: BattleEffectContext, state: BattleState, ability: AbilityDefinition, user_id: StringName, cells: Array[Vector2i], target_ids: Array[StringName], skip_defeated: bool, watch: ScriptErrorWatch) -> Array[BattleEvent]:
+static func _run(context: BattleEffectContext, state: BattleState, effects: Array[AbilityEffectDefinition], user_id: StringName, cells: Array[Vector2i], target_ids: Array[StringName], skip_defeated: bool, watch: ScriptErrorWatch) -> Array[BattleEvent]:
 	var events: Array[BattleEvent] = []
-	for effect: AbilityEffectDefinition in ability.effects:
+	for effect: AbilityEffectDefinition in effects:
 		var handler := state.mod_api.get_effect_handler(effect.effect_type_id) if effect != null else null
 		if handler == null:
 			context.fail("Missing ability effect handler: %s." % (effect.effect_type_id if effect != null else &""))

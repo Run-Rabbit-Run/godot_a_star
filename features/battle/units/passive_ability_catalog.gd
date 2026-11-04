@@ -16,6 +16,7 @@ const DEFINITIONS := {
 	&"core:water_attack": {"name": "Водная базовая атака", "damage_type": &"water", "description": "Обычная атака наносит {damage_type} урон."},
 	&"core:acid_attack": {"name": "Кислотная базовая атака", "damage_type": &"acid", "description": "Обычная атака наносит {damage_type} урон."},
 	&"core:plasma_attack": {"name": "Плазменная базовая атака", "damage_type": &"plasma", "description": "Обычная атака наносит {damage_type} урон."},
+	&"core:ally_max_health": {"name": "Жизнеобеспечение (+1 ОЗ союзникам)", "ally_max_health": 1, "description": "Пока юнит цел, у остальных союзников максимум ОЗ больше на {ally_health}."},
 }
 
 static func validate(ids: Array[StringName], overrides: Dictionary = {}) -> String:

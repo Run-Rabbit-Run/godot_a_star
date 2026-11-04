@@ -20,6 +20,7 @@ var _ability_definitions: Dictionary[StringName, AbilityDefinition] = {}
 var _ability_presentation_definitions: Dictionary[StringName, AbilityPresentationDefinition] = {}
 var _scenario_definitions: Dictionary[StringName, ScenarioDefinition] = {}
 var _campaign_definitions: Dictionary[StringName, CampaignDefinition] = {}
+var _strategist_ability_definitions: Dictionary[StringName, StrategistAbilityDefinition] = {}
 
 
 func _init(
@@ -34,7 +35,8 @@ func _init(
 	p_content_lock: ContentLock = null,
 	p_mod_api: ModAPI = null,
 	p_unit_presentation_definitions: Array[UnitPresentationDefinition] = [],
-	p_ability_presentation_definitions: Array[AbilityPresentationDefinition] = []
+	p_ability_presentation_definitions: Array[AbilityPresentationDefinition] = [],
+	p_strategist_ability_definitions: Array[StrategistAbilityDefinition] = []
 ) -> void:
 	_content_lock = p_content_lock.duplicate_lock() if p_content_lock != null else null
 	mod_api = (p_mod_api if p_mod_api != null else ModAPI.create_default()).frozen_copy()
@@ -56,6 +58,7 @@ func _init(
 	)
 	_register_resources(p_scenario_definitions, _scenario_definitions, "ScenarioDefinition")
 	_register_resources(p_campaign_definitions, _campaign_definitions, "CampaignDefinition")
+	_register_resources(p_strategist_ability_definitions, _strategist_ability_definitions, "StrategistAbilityDefinition")
 
 
 func get_battle_definition(definition_id: StringName) -> BattleDefinition:
@@ -100,6 +103,14 @@ func get_scenario_definition(definition_id: StringName) -> ScenarioDefinition:
 
 func get_campaign_definition(definition_id: StringName) -> CampaignDefinition:
 	return _read_definition(_campaign_definitions, definition_id) as CampaignDefinition
+
+
+func get_strategist_ability_definition(definition_id: StringName) -> StrategistAbilityDefinition:
+	return _read_definition(_strategist_ability_definitions, definition_id) as StrategistAbilityDefinition
+
+
+func get_strategist_ability_definition_ids() -> Dictionary[StringName, bool]:
+	return _collect_ids(_strategist_ability_definitions)
 
 
 func get_unit_definition_ids() -> Dictionary[StringName, bool]:
@@ -162,6 +173,7 @@ func with_battle_document(
 	var ability_presentations: Array[AbilityPresentationDefinition] = []
 	var scenarios: Array[ScenarioDefinition] = []
 	var campaigns: Array[CampaignDefinition] = []
+	var strategist_abilities: Array[StrategistAbilityDefinition] = []
 
 	for existing: BattleDefinition in _battle_definitions.values():
 		if existing.id != battle_definition.id:
@@ -187,6 +199,8 @@ func with_battle_document(
 		scenarios.append(definition)
 	for definition: CampaignDefinition in _campaign_definitions.values():
 		campaigns.append(definition)
+	for definition: StrategistAbilityDefinition in _strategist_ability_definitions.values():
+		strategist_abilities.append(definition)
 
 	for override: UnitDefinition in unit_overrides:
 		for index in range(units.size()):
@@ -210,7 +224,8 @@ func with_battle_document(
 		content_lock,
 		mod_api,
 		unit_presentations,
-		ability_presentations
+		ability_presentations,
+		strategist_abilities
 	)
 
 func _register_resources(

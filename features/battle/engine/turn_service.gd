@@ -15,6 +15,8 @@ var _finished: Dictionary[StringName, bool] = {}
 ## Units whose end-of-turn effects already resolved this phase.
 var _ended: Dictionary[StringName, bool] = {}
 var _current_unit_id := StringName()
+## The acting faction's strategist has used its ability this phase.
+var _strategist_used := false
 
 
 ## `units` is shared, not copied: the service sees every change of the battle's units.
@@ -56,12 +58,14 @@ func get_current_unit_id() -> StringName:
 
 
 ## True when the unit may act in this phase at all, ignoring which unit has started.
+## An object that never takes turns is never ready.
 func can_still_act(unit_id: StringName) -> bool:
 	var unit := _units.get(unit_id) as UnitState
 	return (
 		_started
 		and unit != null
 		and unit.faction == _active_faction
+		and unit.takes_turns()
 		and not unit.health.is_defeated()
 		and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) <= 0
 		and not _finished.has(unit_id)
@@ -115,6 +119,15 @@ func has_ended(unit_id: StringName) -> bool:
 	return _ended.has(unit_id)
 
 
+## Whether the acting faction's strategist has already used an ability this phase.
+func is_strategist_used() -> bool:
+	return _strategist_used
+
+
+func mark_strategist_used() -> void:
+	_strategist_used = true
+
+
 ## Passes the turn to the other faction; returns true when this opens a new round.
 func advance_phase() -> bool:
 	if not _started:
@@ -163,6 +176,7 @@ func _clear_phase() -> void:
 	_finished.clear()
 	_ended.clear()
 	_current_unit_id = StringName()
+	_strategist_used = false
 
 
 func _copy_phase(other: TurnService) -> void:
@@ -172,3 +186,4 @@ func _copy_phase(other: TurnService) -> void:
 	_finished = other._finished.duplicate()
 	_ended = other._ended.duplicate()
 	_current_unit_id = other._current_unit_id
+	_strategist_used = other._strategist_used

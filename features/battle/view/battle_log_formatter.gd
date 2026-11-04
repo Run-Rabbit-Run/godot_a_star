@@ -24,7 +24,16 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 			return "Копьё возвращается к %s из %s." % [_unit(event.user_id, units), _hex(event.origin_hex)]
 		return "%s применяет «%s» в %s." % [_unit(event.user_id, units), _ability(event.ability_id, content), _hex(event.target_hex)]
 	if event is UnitSummonedEvent:
+		if not units.has(event.summoner_id):
+			return "%s прибывает в %s." % [event.definition.display_name, _hex(event.unit.hex)]
 		return "%s призывает %s в %s." % [_unit(event.summoner_id, units), event.definition.display_name, _hex(event.unit.hex)]
+	if event is StrategistAbilityUsedEvent:
+		var strategist_ability := content.get_strategist_ability_definition(event.ability_id) if content != null else null
+		return "Стратег применяет «%s» в %s." % [strategist_ability.display_name if strategist_ability != null else String(event.ability_id), _hex(event.target_hex)]
+	if event is UnitHealthChangedEvent:
+		return "%s: максимум ОЗ %d → %d, ОЗ %d → %d." % [_unit(event.unit_id, units), event.maximum_before, event.maximum_after, event.health_before, event.health_after]
+	if event is CorpseRemovedEvent:
+		return "%s: тело уничтожено вместе с гексом %s." % [_unit(event.unit_id, units), _hex(event.hex)]
 	if event is UnitStatusChangedEvent:
 		var changes: PackedStringArray = []
 		for id: StringName in event.previous_statuses:

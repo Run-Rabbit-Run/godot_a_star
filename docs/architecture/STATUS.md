@@ -30,7 +30,10 @@
 | Описания умений | `AbilityDefinition.description`, `AbilityDescription`, подсказки HUD и редактора юнитов | BATTLE_UNITS_AND_ABILITIES.md «Описание», BATTLE_PRESENTATION.md «HUD» |
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
 | Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
-| Трупы в состоянии боя | `BattleState.get_corpses_at()` | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
+| Трупы в состоянии боя | `BattleState.get_corpses_at()`, уничтожение тела вместе с удерживаемым гексом (`corpse_removed`) | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
+| Умения стратега | `StrategistAbilityDefinition`, `StrategistAbilityExecutor`, `UseStrategistAbilityCommand`, `core:landing`, `core:health_shuttle`; раз в фазу игрока | BATTLE_UNITS_AND_ABILITIES.md «Умения стратега» |
+| Удерживаемый гекс и аура здоровья | `HeldHexService`, `HealthAuraService`, `core:ally_max_health`, `UnitHealthChangedEvent`, `CorpseRemovedEvent` | BATTLE_UNITS_AND_ABILITIES.md «Последствия появления и гибели», «Пассивные умения» |
+| Объекты и призванные | `UnitState.takes_turns()`, `is_summoned`: объект не ходит, призванные не продлевают жизнь фракции и не входят в итог | BATTLE.md «Фазы сторон», «Цели боя» |
 | ИИ | `EnemyBrain`, `MovementImpactForecast`, `AILastActionPlanner` с переиспользованием исходов, отсевом пустых действий и бюджетом прогнозов, атака мешающих препятствий, отход стрелка перед выстрелом; тактический профиль `AITacticalPlanner`; решение на копии боя в пуле потоков (`AIDecision`) | [BATTLE_AI.md](BATTLE_AI.md), BATTLE_AI.md «Поиск без лишних прогонов», BATTLE_AI.md «Решение на копии боя» |
 
 ### Контент
@@ -51,6 +54,7 @@
 | Масштаб фигур и погибшие пары | `texture_scale()`, `unit_visual_profiles.json`, `content/authored/assets/corpses/` по basename | BATTLE_PRESENTATION.md «Масштаб фигур», [../tools/UNITS.md](../tools/UNITS.md) |
 | HP юнитов и раскрытие по Alt | `battle_health_display_controller.gd`, `user://battle_ui_settings.cfg` | BATTLE_PRESENTATION.md «Акторы и здоровье» |
 | Подсветки | Радиус дальней атаки, маркеры непроходимости/поверхности/стоимости | BATTLE_PRESENTATION.md «Подсветки», «Состояния гексов и маркеры» |
+| Стратег в HUD | Кнопка «Стратег», попап умений, гексы посадки вне сетки, падение капсулы `UnitArrivalAnimator` | BATTLE_PRESENTATION.md «HUD», «Прибытие с неба и уничтожение тела» |
 | Боевой лог | `BattleLogFormatter`, панель HUD | BATTLE_PRESENTATION.md «Боевой лог» |
 | Варианты HUD | `UILayoutDocument`, `UILayoutStore`, `UILayoutPresenter` | BATTLE_PRESENTATION.md «Сохраняемые варианты HUD» |
 | Фоны и высота поля | `BattleBackdrops`, `HexStateArt`, `grid_offset_y`, `battle_grid_layout.cfg` | BATTLE_PRESENTATION.md «Фон и положение поля», EDITOR.md «Визуальный workflow» |
@@ -96,6 +100,8 @@
 - ИИ `basic_melee` ходит юнитами в порядке поля, от самого верхнего правого, выбирает цель по расстоянию, прогнозирует одно перемещение и одно основное действие, берёт первое подходящее умение по порядку, а призыв ставит на первый допустимый гекс. Тактический профиль оценивает планы, но горизонт тот же: одно перемещение и одно действие, без будущих ходов противника, кроме карты угроз, и без групповых планов.
 - Графический цикл автоматических команд отдаёт кадр после каждой команды и останавливается с явной ошибкой при превышении хода юнита, 30 раундах без прогресса или 500 раундах без игрока (SIMULATION_AND_PLAYBACK.md «Автоматическая игра в графическом бою»). Тупик двух ИИ — остановка с ошибкой, а не ничья. Решение ИИ считается в пуле потоков на копии боя, но его длительность не ограничена временем: тактический ИИ на поле из 4 юнитов и 152 гексов думает в среднем около 0,2 с, до 0,7 с.
 - Удаление гекса с живым юнитом и превращение его в непроходимый отклоняются; погибшие не блокируют мутации.
+- Стратег есть только у фракции игрока и знает все умения snapshot; выбор умений стратега для конкретного боя, стратег противника и применение умений стратега ИИ (в том числе при автоматическом управлении стороной игрока) не реализованы.
+- Гексы посадки у нижнего и верхнего края поля частично лежат под панелями HUD; там, где панель перекрывает гекс, щелчок достаётся панели.
 - Сохранение посреди боя не принято как требование.
 
 ## Ближайшие архитектурные направления

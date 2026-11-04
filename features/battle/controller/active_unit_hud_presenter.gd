@@ -50,6 +50,22 @@ func show(state: UnitSnapshot) -> void:
 	var reach := 1 if BasicAttackRules.is_engaged(state.hex, opponent_hexes) else state.basic_attack_range
 	_hud.show_basic_attack_button(reach, state.turn.main_action_available)
 	_show_turn_order(state.unit_id)
+	show_strategist()
+
+
+## The player's strategist abilities with the reason each is unavailable now.
+func show_strategist() -> void:
+	var entries: Array[Dictionary] = []
+	for ability_id: StringName in _session.get_strategist_ability_ids():
+		var definition := _content.get_strategist_ability_definition(ability_id)
+		entries.append({
+			"id": ability_id,
+			"name": definition.display_name if definition != null else String(ability_id),
+			"description": definition.description if definition != null else "",
+			"reason": _session.get_strategist_unavailable_reason(BattleFaction.Value.PLAYER, ability_id),
+		})
+	var commands := _session.get_active_faction() == BattleFaction.Value.PLAYER and not _session.is_finished() and not _session.is_active_unit_ai_controlled()
+	_hud.show_strategist(entries, commands)
 
 
 ## The acting faction's units first, then the other faction's, each in field order.
@@ -66,6 +82,9 @@ func _show_turn_order(shown_unit_id: StringName) -> void:
 
 	for unit_id: StringName in order:
 		var state := _session.get_unit(unit_id)
+		# Objects take no turns, so the turn order does not list them.
+		if not state.takes_turns:
+			continue
 		var definition := _unit_views.definitions.get(unit_id) as UnitDefinition
 		var presentation := _unit_views.presentations.get(unit_id) as UnitPresentationDefinition
 		var display_name := String(unit_id)

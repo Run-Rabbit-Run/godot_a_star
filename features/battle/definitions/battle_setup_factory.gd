@@ -144,24 +144,43 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 			)
 		)
 
-	return BattleSetupCreationResult.success(
-		BattleSetup.new(
-			definition.id,
-			hex_grid,
-			resolved_sides,
-			unit_spawns,
-			definition.primary_objective,
-			definition.protected_faction,
-			request.deterministic_seed,
-			referenced_units
-		)
+	# The player's strategist knows every strategist ability of the snapshot.
+	var strategist_abilities: Dictionary[StringName, StrategistAbilityDefinition] = {}
+	var strategist_ids: Array[StringName] = []
+	strategist_ids.assign(snapshot.get_strategist_ability_definition_ids().keys())
+	strategist_ids.sort()
+	for ability_id: StringName in strategist_ids:
+		var strategist_ability := snapshot.get_strategist_ability_definition(ability_id)
+		var strategist_error := strategist_ability.validate()
+		if not strategist_error.is_empty():
+			return BattleSetupCreationResult.failure("%s: %s" % [ability_id, strategist_error])
+		var strategist_reference_error := _resolve_effect_unit_references(ability_id, strategist_ability.effects, snapshot, referenced_units)
+		if not strategist_reference_error.is_empty():
+			return BattleSetupCreationResult.failure(strategist_reference_error)
+		strategist_abilities[ability_id] = strategist_ability
+
+	var setup := BattleSetup.new(
+		definition.id,
+		hex_grid,
+		resolved_sides,
+		unit_spawns,
+		definition.primary_objective,
+		definition.protected_faction,
+		request.deterministic_seed,
+		referenced_units
 	)
+	setup.strategist_abilities = strategist_abilities
+	return BattleSetupCreationResult.success(setup)
 
 
 ## Resolves the units the ability's effects bring in (summons) from the same snapshot, so the
 ## battle never reads a definition the content did not register.
 static func _resolve_unit_references(ability: AbilityDefinition, snapshot: ContentSnapshot, resolved: Dictionary[StringName, UnitDefinition]) -> String:
-	for effect: AbilityEffectDefinition in ability.effects:
+	return _resolve_effect_unit_references(ability.id, ability.effects, snapshot, resolved)
+
+
+static func _resolve_effect_unit_references(ability_id: StringName, effects: Array[AbilityEffectDefinition], snapshot: ContentSnapshot, resolved: Dictionary[StringName, UnitDefinition]) -> String:
+	for effect: AbilityEffectDefinition in effects:
 		var handler := snapshot.mod_api.get_effect_handler(effect.effect_type_id) if effect != null else null
 		if handler == null:
 			continue
@@ -170,10 +189,10 @@ static func _resolve_unit_references(ability: AbilityDefinition, snapshot: Conte
 				continue
 			var unit := snapshot.get_unit_definition(unit_id)
 			if unit == null:
-				return "%s: UnitDefinition could not be resolved: %s." % [ability.id, unit_id]
+				return "%s: UnitDefinition could not be resolved: %s." % [ability_id, unit_id]
 			var error := handler.validate_unit_reference(effect, unit)
 			if not error.is_empty():
-				return "%s: %s" % [ability.id, error]
+				return "%s: %s" % [ability_id, error]
 			resolved[unit_id] = unit
 	return ""
 

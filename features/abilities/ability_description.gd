@@ -66,6 +66,8 @@ static func passive_variables(definition: Dictionary) -> Array[Dictionary]:
 		_add(result, "levels", "Уровней за удар", str(int(definition.get("levels", 2))))
 	if not str(definition.get("immunity", "")).is_empty():
 		_add(result, "immunity", "Невосприимчивость", UnitStatusCatalog.display_name(StringName(str(definition.immunity))).to_lower())
+	if int(definition.get("ally_max_health", 0)) > 0:
+		_add(result, "ally_health", "Бонус ОЗ союзникам", str(int(definition.ally_max_health)))
 	return result
 
 

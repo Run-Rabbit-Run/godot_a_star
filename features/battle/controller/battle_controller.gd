@@ -163,6 +163,7 @@ func _initialize_battle() -> void:
 	_hud.movement_requested.connect(_on_movement_requested)
 	_hud.basic_attack_requested.connect(_on_basic_attack_requested)
 	_hud.ability_requested.connect(_on_ability_requested)
+	_hud.strategist_ability_requested.connect(_on_strategist_ability_requested)
 	_hud.playback_speed_requested.connect(_on_playback_speed_requested)
 	_input_router.hex_selected.connect(_on_hex_selected)
 	_input_router.hex_hovered.connect(_on_hex_hovered)
@@ -289,6 +290,14 @@ func _on_ability_requested(ability_id: StringName) -> void:
 	var active := _battle_session.get_unit(_acting_unit_id())
 
 	_selection.select_ability(active, ability_id)
+
+
+## Aims the strategist's ability: its landing hexes become clickable although the grid lacks them.
+func _on_strategist_ability_requested(ability_id: StringName) -> void:
+	if _is_presenting or _battle_session == null or _battle_session.is_active_unit_ai_controlled():
+		return
+	if _selection.select_strategist_ability(ability_id):
+		_input_router.set_extra_cells(_selection.get_extra_target_cells())
 
 
 func _on_movement_requested() -> void:
@@ -567,6 +576,8 @@ func _set_presenting(is_presenting: bool) -> void:
 	_selection.enabled = not is_presenting
 
 	if is_presenting:
+		var none: Array[Vector2i] = []
+		_input_router.set_extra_cells(none)
 		_selection.clear()
 
 
@@ -597,6 +608,8 @@ func _finish_battle_if_needed(
 
 ## The active unit's options on the map and its panels in the HUD.
 func _show_unit_movement(state: UnitSnapshot) -> void:
+	var none: Array[Vector2i] = []
+	_input_router.set_extra_cells(none)
 	_selection.show_movement_and_attacks(state)
 	_active_unit_hud.show(state)
 

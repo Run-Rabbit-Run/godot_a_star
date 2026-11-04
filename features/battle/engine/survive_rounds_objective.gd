@@ -17,7 +17,7 @@ func is_completed(unit_states: Dictionary[StringName, UnitState], round_number: 
 	if round_number > _rounds:
 		return true
 	for state: UnitState in unit_states.values():
-		if state.faction == _target_faction and not state.health.is_defeated():
+		if state.faction == _target_faction and not state.health.is_defeated() and not state.is_summoned:
 			return false
 	return true
 

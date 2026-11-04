@@ -20,6 +20,12 @@ var passive_ability_ids: Array[StringName] = []
 var basic_attack_statuses: Dictionary[StringName, int] = {}
 var turns_started := 0
 var pending_spear_return: Dictionary = {}
+var is_summoned := false
+var summoned_by := StringName()
+var holds_hex := false
+var corpse_removed := false
+var takes_turns := true
+var max_health_bonus := 0
 
 
 func _init(state: UnitState) -> void:
@@ -35,6 +41,12 @@ func _init(state: UnitState) -> void:
 	basic_attack_statuses.assign(state.basic_attack_statuses)
 	turns_started = state.turns_started
 	pending_spear_return = state.pending_spear_return.duplicate(true)
+	is_summoned = state.is_summoned
+	summoned_by = state.summoned_by
+	holds_hex = state.holds_hex
+	corpse_removed = state.corpse_removed
+	takes_turns = state.takes_turns()
+	max_health_bonus = state.max_health_bonus
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

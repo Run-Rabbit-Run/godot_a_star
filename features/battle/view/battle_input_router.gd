@@ -11,6 +11,8 @@ signal hex_selected(axial_cell: Vector2i)
 @onready var _hud := get_node_or_null("%BattleUI") as BattleHUD
 
 var _hex_grid: HexGrid
+## Hexes outside the grid the player may point at now, such as landing hexes.
+var _extra_cells: Dictionary[Vector2i, bool] = {}
 var _hovered_hex := Vector2i.ZERO
 var _has_hovered_hex := false
 var _interaction_enabled := true
@@ -18,6 +20,17 @@ var _interaction_enabled := true
 
 func setup(hex_grid: HexGrid) -> void:
 	_hex_grid = hex_grid
+
+
+## Accepts these hexes too, although the grid lacks them; an empty list returns to the grid.
+func set_extra_cells(cells: Array[Vector2i]) -> void:
+	_extra_cells.clear()
+	for cell: Vector2i in cells:
+		_extra_cells[cell] = true
+
+
+func _accepts(cell: Vector2i) -> bool:
+	return _hex_grid != null and (_hex_grid.has_cell(cell) or _extra_cells.has(cell))
 
 
 func set_interaction_enabled(enabled: bool) -> void:
@@ -46,7 +59,7 @@ func _process(_delta: float) -> void:
 	)
 	var axial_cell := HexCoordinateMapper.offset_to_axial(map_cell)
 
-	if not _hex_grid.has_cell(axial_cell):
+	if not _accepts(axial_cell):
 		_clear_hover()
 		return
 
@@ -76,7 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	var map_cell := _terrain_layer.local_to_map(_terrain_layer.to_local(_terrain_layer.get_canvas_transform().affine_inverse() * mouse_event.position))
 	var hex := HexCoordinateMapper.offset_to_axial(map_cell)
-	if _hex_grid == null or not _hex_grid.has_cell(hex):
+	if not _accepts(hex):
 		return
 	hex_selected.emit(hex)
 	get_viewport().set_input_as_handled()

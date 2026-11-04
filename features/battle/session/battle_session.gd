@@ -106,6 +106,21 @@ func get_attackable_obstacle_hexes(unit_id: StringName) -> Array[Vector2i]:
 	return _engine.get_attackable_obstacle_hexes(unit_id)
 
 
+## Abilities of the player faction's strategist, sorted by ID; their content is in the snapshot.
+func get_strategist_ability_ids() -> Array[StringName]:
+	return _engine.get_strategist_ability_ids()
+
+
+## Why the faction's strategist cannot use the ability now, or "".
+func get_strategist_unavailable_reason(faction: BattleFaction.Value, ability_id: StringName) -> String:
+	return _engine.get_strategist_unavailable_reason(faction, ability_id)
+
+
+## Hexes UseStrategistAbilityCommand accepts now; outside the map for a landing.
+func get_strategist_target_hexes(faction: BattleFaction.Value, ability_id: StringName) -> Array[Vector2i]:
+	return _engine.get_strategist_target_hexes(faction, ability_id)
+
+
 func get_active_unit_id() -> StringName:
 	return _engine.get_active_unit_id()
 
@@ -284,7 +299,9 @@ func step(command: BattleCommand) -> BattleResolution:
 	var resolution := _engine.execute(command)
 	for event: BattleEvent in resolution.events:
 		if event is UnitSummonedEvent:
-			_unit_side_ids[event.unit.unit_id] = _unit_side_ids.get(event.summoner_id, StringName())
+			# The strategist is no unit: what it brings in joins the side of its faction.
+			var side_id: StringName = _unit_side_ids.get(event.summoner_id, _side_of_faction(event.unit.faction))
+			_unit_side_ids[event.unit.unit_id] = side_id
 			var source := _unit_command_sources.get(event.summoner_id) as CommandSource
 			if source != null:
 				_unit_command_sources[event.unit.unit_id] = source
@@ -376,6 +393,13 @@ func _get_command_source(unit_id: StringName) -> CommandSource:
 
 	var side_id: StringName = _unit_side_ids.get(unit_id, StringName())
 	return _side_command_sources.get(side_id) as CommandSource
+
+
+func _side_of_faction(faction: BattleFaction.Value) -> StringName:
+	for side: BattleSideData in _setup.sides:
+		if side.faction == faction:
+			return side.side_id
+	return StringName()
 
 
 func _get_side(side_id: StringName) -> BattleSideData:

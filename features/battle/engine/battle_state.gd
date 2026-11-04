@@ -18,6 +18,8 @@ var map_revision := 0
 var is_detached := false
 ## Read-only spreading rule of this battle; the built-in one unless a test sets another.
 var spread_rule: Callable = HexStateCatalog.spreading_energy
+## Read-only abilities of the player faction's strategist, by ID.
+var strategist_abilities: Dictionary[StringName, StrategistAbilityDefinition] = {}
 
 
 func _init(
@@ -45,7 +47,7 @@ func _init(
 func get_corpses_at(hex: Vector2i) -> Array[UnitSnapshot]:
 	var corpses: Array[UnitSnapshot] = []
 	for unit: UnitState in unit_states.values():
-		if unit.hex == hex and unit.health.is_defeated():
+		if unit.hex == hex and unit.health.is_defeated() and not unit.corpse_removed:
 			corpses.append(UnitSnapshot.new(unit))
 	corpses.sort_custom(func(a: UnitSnapshot, b: UnitSnapshot) -> bool:
 		return String(a.unit_id) < String(b.unit_id)
@@ -66,6 +68,7 @@ func duplicate_for_prediction() -> BattleState:
 	copy.map_revision = map_revision
 	copy.is_detached = true
 	copy.spread_rule = spread_rule
+	copy.strategist_abilities = strategist_abilities
 	return copy
 
 

@@ -298,6 +298,12 @@ func _check_unit_copy_covers_every_field(suite: Node, fixture: Fixtures) -> void
 	full.melee_retaliation = true
 	full.retaliation_configured = true
 	full.pending_spear_return = {"hex": Vector2i(1, 1), "ability_id": &"core:copied"}
+	full.is_summoned = true
+	full.summoned_by = &"core:copied"
+	full.holds_hex = true
+	full.corpse_removed = true
+	full.max_health_bonus = 1
+	full.ally_max_health_bonus = 2
 	var fresh: UnitState = fixture.unit(&"unit", BattleFaction.Value.ENEMY, Vector2i.ZERO)
 	var untouched: Array[String] = []
 	for property: Dictionary in full.get_property_list():

@@ -1,7 +1,8 @@
 class_name ObjectiveSystem
 extends RefCounted
 ## The outcome of a battle: defeat first (protected faction or a protected unit gone), then the
-## primary objective, then the round limit.
+## primary objective, then the round limit. A faction lives on through its own units only:
+## summoned units and constructions do not count (`UnitState.is_summoned`).
 
 
 var _primary_objective: BattleObjective
@@ -75,7 +76,7 @@ func _has_living_unit(
 	faction: BattleFaction.Value
 ) -> bool:
 	for state: UnitState in unit_states.values():
-		if state.faction == faction and not state.health.is_defeated():
+		if state.faction == faction and not state.health.is_defeated() and not state.is_summoned:
 			return true
 
 	return false

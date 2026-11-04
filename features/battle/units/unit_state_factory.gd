@@ -57,4 +57,5 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 			state.basic_attack_statuses[passive.status] = int(passive.get("levels", 2))
 		if passive.has("immunity"):
 			state.status_immunities.append(passive.immunity)
+		state.ally_max_health_bonus += int(passive.get("ally_max_health", 0))
 	return state

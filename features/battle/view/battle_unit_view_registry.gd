@@ -95,7 +95,7 @@ func show_health_before(events: Array[BattleEvent]) -> void:
 
 		actor.show_health(
 			damage.target_health_remaining + damage.damage,
-			definition.base_stats.max_health
+			damage.target_health_maximum if damage.target_health_maximum > 0 else definition.base_stats.max_health
 		)
 
 
@@ -178,3 +178,9 @@ func synchronize(session: BattleSession) -> void:
 		actor.show_statuses(state.statuses)
 		if state.health.is_defeated():
 			actor.synchronize_defeat()
+		else:
+			actor.finish_arrival()
+		# A body destroyed with its hex is no longer on the battlefield.
+		actor.visible = not state.corpse_removed
+		if state.corpse_removed:
+			actor.modulate.a = 0.0

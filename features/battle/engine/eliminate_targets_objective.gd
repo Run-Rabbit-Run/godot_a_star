@@ -20,7 +20,7 @@ func is_completed(unit_states: Dictionary[StringName, UnitState], _round_number:
 		if state.health.is_defeated():
 			continue
 		targets_left = targets_left or _target_ids.has(state.unit_id)
-		faction_left = faction_left or state.faction == _target_faction
+		faction_left = faction_left or (state.faction == _target_faction and not state.is_summoned)
 	return not targets_left or not faction_left
 
 

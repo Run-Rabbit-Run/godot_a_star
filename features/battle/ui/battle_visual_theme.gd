@@ -25,7 +25,7 @@ static func apply_to(root: Control) -> void:
 	theme.set_font_size("font_size", "TooltipLabel", 15)
 	root.theme = theme
 	# Parts are found by their unique names in the HUD scene, wherever the layout places them.
-	for part: String in ["%StrategistPanel", "%ActiveUnitPanel", "%ActionPanel", "%TargetPanel", "%SpeedPanel", "%BattleLogPanel", "%SystemPanel"]:
+	for part: String in ["%StrategistPanel", "%StrategistPopup", "%ActiveUnitPanel", "%ActionPanel", "%TargetPanel", "%SpeedPanel", "%BattleLogPanel", "%SystemPanel"]:
 		var container := root.get_node(part) as PanelContainer
 		container.add_theme_stylebox_override("panel", panel())
 	# Individual queue cards carry the frame, leaving unused queue space clear.

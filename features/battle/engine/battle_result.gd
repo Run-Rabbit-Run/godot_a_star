@@ -7,9 +7,9 @@ var deterministic_seed: int
 var outcome: BattleOutcome.Value
 var round_number: int
 var objective_result: ObjectiveResult
-## Participants per faction when the battle ended, summoned units included.
+## The faction's own units when the battle ended; summoned units and constructions are not counted.
 var participants: Dictionary[BattleFaction.Value, int] = {}
-## Defeated participants per faction.
+## Defeated own units per faction.
 var defeated: Dictionary[BattleFaction.Value, int] = {}
 
 

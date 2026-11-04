@@ -5,6 +5,8 @@ extends RefCounted
 var _state: BattleState
 var _ability_id: StringName
 var target_hex := Vector2i.ZERO
+## The faction whose strategist uses the ability, or -1 for a unit's ability.
+var acting_faction := -1
 var _failure := ""
 
 
@@ -48,21 +50,62 @@ func summon(source_id: StringName, hex: Vector2i, definition: UnitDefinition) ->
 		if candidate.hex == hex and not candidate.health.is_defeated():
 			fail("Summon target is occupied: %s." % hex)
 			return events
+	var unit := _spawn(source_id, source.faction, hex, definition)
+	if unit == null:
+		return events
+	events.append(UnitSummonedEvent.new(source_id, unit, definition))
+	HexStateService.expose(unit, _state.hex_grid, events)
+	return events
+
+
+## Adds the missing hex next to the battlefield and drops the strategist's unit onto it; the unit
+## holds the hex while it lives.
+func land(source_id: StringName, hex: Vector2i, definition: UnitDefinition, terrain_id: StringName) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	if acting_faction < 0:
+		fail("Landing needs the strategist's faction.")
+		return events
+	if _state.hex_grid.has_cell(hex):
+		fail("Landing needs a hex outside the battlefield: %s." % hex)
+		return events
+	var touches_field := false
+	for direction: Vector2i in HexGrid.DIRECTIONS:
+		touches_field = touches_field or _state.hex_grid.has_cell(hex + direction)
+	if not touches_field:
+		fail("Landing hex must touch the battlefield: %s." % hex)
+		return events
+	var mutations: Array[MapMutation] = [MapMutation.add_hex(hex, terrain_id)]
+	var added := MapMutationService.apply(_state, mutations)
+	if not added.accepted:
+		fail(added.rejection_reason)
+		return events
+	events.append_array(added.events)
+	var unit := _spawn(source_id, acting_faction as BattleFaction.Value, hex, definition)
+	if unit == null:
+		return events
+	unit.holds_hex = true
+	unit.summoned_by = _ability_id
+	events.append(UnitSummonedEvent.new(source_id, unit, definition))
+	HexStateService.expose(unit, _state.hex_grid, events)
+	return events
+
+
+## A new summoned participant with a deterministic unique ID; it acts from its side's next phase.
+func _spawn(source_id: StringName, faction: BattleFaction.Value, hex: Vector2i, definition: UnitDefinition) -> UnitState:
 	var suffix := _state.unit_states.size()
 	var id := StringName("%s:summon:%d" % [source_id, suffix])
 	while _state.unit_states.has(id):
 		suffix += 1
 		id = StringName("%s:summon:%d" % [source_id, suffix])
-	var spawn := UnitSpawnData.new(id, id, definition.id, definition, &"", source.faction, BattleControlSource.Value.PLAYER, &"", null, hex)
+	var spawn := UnitSpawnData.new(id, id, definition.id, definition, &"", faction, BattleControlSource.Value.PLAYER, &"", null, hex)
 	var unit := UnitStateFactory.create(spawn)
 	if unit == null:
 		fail("Summoned unit could not be created: %s." % definition.id)
-		return events
+		return null
+	unit.is_summoned = true
 	_state.unit_states[id] = unit
 	_state.turn_service.add_participant(id)
-	events.append(UnitSummonedEvent.new(source_id, unit, definition))
-	HexStateService.expose(unit, _state.hex_grid, events)
-	return events
+	return unit
 
 
 ## A detached copy of the obstacle at the hex, or null.

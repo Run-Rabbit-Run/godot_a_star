@@ -8,6 +8,7 @@ signal end_phase_requested
 signal movement_requested
 signal basic_attack_requested
 signal ability_requested(ability_id: StringName)
+signal strategist_ability_requested(ability_id: StringName)
 signal playback_speed_requested(speed: float)
 
 
@@ -69,6 +70,13 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _display_status_label: Label = $"HUDRoot/%DisplayStatusLabel"
 @onready var _settings_content: VBoxContainer = $"HUDRoot/%SettingsContent"
 @onready var _skills_caption: Label = $"HUDRoot/%SkillsCaption"
+@onready var _strategist_button: Button = $"HUDRoot/%StrategistButton"
+@onready var _strategist_popup: PanelContainer = $"HUDRoot/%StrategistPopup"
+@onready var _strategist_status_label: Label = $"HUDRoot/%StrategistStatusLabel"
+@onready var _strategist_ability_list: VBoxContainer = $"HUDRoot/%StrategistAbilityList"
+var _strategist_buttons: Dictionary[StringName, Button] = {}
+## True while the player commands its strategist: its own phase, under the player's control.
+var _strategist_available := false
 var _objective_description := ""
 var _health_text := ""
 var _interaction_enabled := true
@@ -139,6 +147,8 @@ func _ready() -> void:
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
 	_settings_button.pressed.connect(_on_settings_button_pressed)
+	_strategist_button.toggled.connect(set_strategist_popup_visible)
+	set_strategist_popup_visible(false)
 	_speed_half_button.pressed.connect(_on_speed_requested.bind(0.5))
 	_speed_1_button.pressed.connect(_on_speed_requested.bind(1.0))
 	_speed_2_button.pressed.connect(_on_speed_requested.bind(2.0))
@@ -193,6 +203,78 @@ func set_interaction_enabled(enabled: bool) -> void:
 	_speed_2_button.disabled = false
 	_speed_4_button.disabled = false
 	_refresh_action_button_states()
+	_refresh_strategist_button()
+
+
+## Strategist abilities as [{id, name, description, reason}]: an empty reason means usable now.
+## `available` is false outside the player's own phase; the button is then disabled.
+func show_strategist(entries: Array[Dictionary], available: bool) -> void:
+	_strategist_available = available and not entries.is_empty()
+	var ids: Array[StringName] = []
+	for entry: Dictionary in entries:
+		ids.append(entry.id)
+	if ids != _strategist_buttons.keys():
+		_rebuild_strategist_buttons(entries)
+	var usable := 0
+	for entry: Dictionary in entries:
+		var button := _strategist_buttons[entry.id]
+		var reason: String = entry.get("reason", "")
+		button.disabled = not reason.is_empty()
+		var status := reason if not reason.is_empty() else "Доступно: одно умение стратега за фазу."
+		button.tooltip_text = "\n".join(PackedStringArray([entry.name, String(entry.get("description", "")), status])).strip_edges()
+		usable += 1 if reason.is_empty() else 0
+	if entries.is_empty():
+		_strategist_status_label.text = "У стратега нет умений."
+	elif not available:
+		_strategist_status_label.text = "Стратег действует в фазу игрока."
+	else:
+		_strategist_status_label.text = "Одно умение за фазу · доступно: %d" % usable if usable > 0 else "Сейчас ни одно умение недоступно."
+	_strategist_button.text = "Стратег" if usable > 0 or not _strategist_available else "Стратег ✓"
+	_refresh_strategist_button()
+
+
+func set_strategist_popup_visible(popup_visible: bool) -> void:
+	popup_visible = popup_visible and not _strategist_button.disabled
+	_strategist_popup.visible = popup_visible
+	_strategist_button.set_pressed_no_signal(popup_visible)
+
+
+func show_strategist_targeting(display_name: String) -> void:
+	_action_label.text = "ВЫБЕРИТЕ ГЕКС У КРАЯ ПОЛЯ: %s" % display_name.to_upper()
+
+
+## Ability IDs contain ':', which node names do not allow.
+static func get_strategist_button_name(ability_id: StringName) -> String:
+	return "Strategist_%s" % String(ability_id).validate_node_name()
+
+
+func _refresh_strategist_button() -> void:
+	_strategist_button.disabled = not _interaction_enabled or not _strategist_available
+	if _strategist_button.disabled:
+		set_strategist_popup_visible(false)
+
+
+func _rebuild_strategist_buttons(entries: Array[Dictionary]) -> void:
+	for button: Button in _strategist_buttons.values():
+		_strategist_ability_list.remove_child(button)
+		button.queue_free()
+	_strategist_buttons.clear()
+	for entry: Dictionary in entries:
+		var button := Button.new()
+		button.name = get_strategist_button_name(entry.id)
+		button.text = entry.name
+		button.icon = BattleActionIcons.ability(entry.id)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.custom_minimum_size = Vector2(0, 52)
+		BattleVisualTheme.style_button(button)
+		button.pressed.connect(_on_strategist_ability_pressed.bind(entry.id))
+		_strategist_ability_list.add_child(button)
+		_strategist_buttons[entry.id] = button
+
+
+func _on_strategist_ability_pressed(ability_id: StringName) -> void:
+	set_strategist_popup_visible(false)
+	strategist_ability_requested.emit(ability_id)
 
 
 func show_basic_attack_button(attack_range: int, available: bool) -> void:

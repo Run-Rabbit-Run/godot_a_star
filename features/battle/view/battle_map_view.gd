@@ -42,6 +42,9 @@ var _reachable_visuals: Node2D
 var _ranged_attack_visuals: Node2D
 var _selection_visuals: Node2D
 var _hover_visuals: Node2D
+var _landing_visuals: Node2D
+## Offset cells the board was fitted to at its first render; hexes added in battle do not refit it.
+var _fit_cells: Array[Vector2i] = []
 var _action_preview_panel: ActionPreviewPanel
 var _reach_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
@@ -220,6 +223,11 @@ func _mount_interaction_visuals() -> void:
 	_hover_visuals.z_index = 13
 	add_child(_hover_visuals)
 
+	_landing_visuals = Node2D.new()
+	_landing_visuals.name = "LandingVisuals"
+	_landing_visuals.z_index = 11
+	add_child(_landing_visuals)
+
 func _fit_battle_backdrop() -> void:
 	if _battle_backdrop == null:
 		return
@@ -288,6 +296,8 @@ func _add_grid_number(number: int, center: Vector2, label_scale: Vector2) -> voi
 
 func _calculate_grid_local_bounds() -> Rect2:
 	var used_cells := _terrain_layer.get_used_cells()
+	if not _fit_cells.is_empty():
+		used_cells = _fit_cells.duplicate()
 	if _presentation_frame.x > 0 and _presentation_frame.y > 0:
 		used_cells.clear()
 		for row in range(_presentation_frame.y):
@@ -341,8 +351,11 @@ func render_grid(grid: HexGrid) -> void:
 	if _default_source_id == -1:
 		return
 
+	var first_render := _fit_cells.is_empty()
 	for hex: Vector2i in grid.get_cells():
 		var map_cell := HexCoordinateMapper.axial_to_offset(hex)
+		if first_render:
+			_fit_cells.append(map_cell)
 		var tile := _get_terrain_tile(
 			grid.get_configured_movement_cost(hex)
 		)
@@ -544,6 +557,17 @@ func clear_ability_area() -> void:
 	_clear_hex_visuals(_ability_area_visuals)
 
 
+## Outlines of hexes outside the battlefield where the strategist may land something.
+func show_landing_targets(cells: Array[Vector2i]) -> void:
+	clear_landing_targets()
+	for cell: Vector2i in cells:
+		_add_hex_visual(_landing_visuals, cell, Color(0.40, 0.86, 0.55, 0.16), Color(0.62, 1.0, 0.70, 0.85), 1.8, false)
+
+
+func clear_landing_targets() -> void:
+	_clear_hex_visuals(_landing_visuals)
+
+
 func clear_path() -> void:
 	_path_layer.clear()
 
@@ -568,6 +592,7 @@ func clear_overlays() -> void:
 	_clear_hex_visuals(_selection_visuals)
 	_highlight_layer.clear()
 	_clear_hex_visuals(_hover_visuals)
+	clear_landing_targets()
 
 func apply_map_event(event: MapMutationEvent) -> void:
 	if event == null:
@@ -659,12 +684,15 @@ func _show_hover(axial_cell: Vector2i) -> void:
 	_highlight_layer.clear()
 	_clear_hex_visuals(_hover_visuals)
 	_paint_cell_on_layer(axial_cell, _highlight_layer)
+	# A hovered landing hex lies outside the board, where no tile marks it.
+	var outside := _terrain_layer.get_cell_source_id(HexCoordinateMapper.axial_to_offset(axial_cell)) == -1
 	_add_hex_visual(
 		_hover_visuals,
 		axial_cell,
-		Color(0.84, 0.84, 0.76, 0.045),
+		Color(0.62, 1.0, 0.70, 0.30) if outside else Color(0.84, 0.84, 0.76, 0.045),
 		Color(0.91, 0.90, 0.81, 0.52),
-		1.2
+		1.2,
+		false
 	)
 
 
@@ -701,14 +729,15 @@ func _add_hex_visual(
 	axial_cell: Vector2i,
 	fill_color: Color,
 	outline_color: Color,
-	outline_width: float
+	outline_width: float,
+	needs_tile := true
 ) -> void:
 	if container == null:
 		return
 
 	var map_cell := HexCoordinateMapper.axial_to_offset(axial_cell)
 
-	if _terrain_layer.get_cell_source_id(map_cell) == -1:
+	if needs_tile and _terrain_layer.get_cell_source_id(map_cell) == -1:
 		return
 
 	var center := to_local(

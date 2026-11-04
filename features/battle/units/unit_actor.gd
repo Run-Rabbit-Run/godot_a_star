@@ -18,6 +18,8 @@ var _presentation: UnitPresentationDefinition
 var _corpse: Sprite2D
 var _defeat_tween: Tween
 var _defeated := false
+## The figure is still falling onto its hex: health and base appear once it lands.
+var _arriving := false
 var _health_display_expanded := true
 var _status_row: GridContainer
 var _shown_statuses: Dictionary = {}
@@ -170,8 +172,8 @@ func _draw_health_preview() -> void:
 
 
 func _apply_health_display() -> void:
-	_health_bar.visible = not _defeated and _health_bar.value > 0
-	_health_label.visible = _health_display_expanded and not _defeated
+	_health_bar.visible = not _defeated and not _arriving and _health_bar.value > 0
+	_health_label.visible = _health_display_expanded and not _defeated and not _arriving
 	# Only the expanded badge needs enough width for its numbers.
 	var badge_width := maxf(52.0, _health_label.get_minimum_size().x + 10.0) if _health_display_expanded else 40.0
 	_health_bar.position = Vector2(-badge_width * 0.5, 13.0)
@@ -295,6 +297,42 @@ func finish_defeat() -> void:
 	_corpse.modulate.a = 1.0
 	# Below living units (20) and tactical overlays (8+), above terrain effects (5).
 	z_index = 6
+
+
+## The figure falls from the sky onto its hex; health and base appear once it has landed.
+func create_arrival_tween() -> Tween:
+	_arriving = true
+	_show_base = false
+	queue_redraw()
+	_apply_health_display()
+	if _status_row != null:
+		_status_row.hide()
+	var height := _presentation.height_above_feet() if _presentation != null else CUSTOM_TEXTURE_SIZE
+	return UnitArrivalAnimator.create(self, _sprite, height)
+
+
+## Also the reset after a cut arrival: the figure stands on its hex at rest.
+func finish_arrival() -> void:
+	_arriving = false
+	for child: Node in get_children():
+		if child is UnitArrivalAnimator:
+			child.restore()
+			child.queue_free()
+	if _defeated:
+		return
+	_show_base = true
+	queue_redraw()
+	_apply_health_display()
+	if _status_row != null:
+		_status_row.visible = not _shown_statuses.is_empty()
+
+
+## The body leaves the battlefield with its hex: it fades out and stays hidden.
+func create_removal_tween() -> Tween:
+	var tween := create_tween()
+	tween.tween_property(self, "modulate:a", 0.0, 0.4)
+	tween.tween_callback(hide)
+	return tween
 
 
 func create_movement_tween(positions: Array[Vector2]) -> Tween:

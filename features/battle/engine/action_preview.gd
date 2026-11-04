@@ -50,6 +50,9 @@ static func build(forecast: BattleEngine, before: BattleEngine, command: BattleC
 			change.defeated = event.target_defeated
 		elif event is UnitStatusChangedEvent:
 			preview._change(event.unit_id, before).statuses_after = event.statuses.duplicate()
+		elif event is UnitHealthChangedEvent:
+			# A lost aura can cost health as surely as a hit.
+			preview._change(event.unit_id, before).health_after = event.health_after
 		elif event is UnitMovedEvent and event.unit_id == preview.actor_id and not event.path.is_empty():
 			preview.destination = event.path.back()
 		elif event is MapMutationEvent and event.obstacle_changed:
@@ -90,4 +93,5 @@ static func actor_of(command: BattleCommand) -> StringName:
 		return command.user_id
 	if command is EndTurnCommand:
 		return command.unit_id
+	# EndPhaseCommand and the strategist's commands belong to a faction, not to a unit.
 	return StringName()

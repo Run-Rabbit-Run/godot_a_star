@@ -1,8 +1,8 @@
 class_name PlayerActionSelection
 extends RefCounted
-## What the player is about to do with the active unit: move, attack or aim an ability.
-## It shows the overlays, cursor and hovered target, and turns a clicked hex into a command;
-## the session alone decides whether the command is legal.
+## What the player is about to do with the active unit: move, attack or aim an ability, or
+## aim an ability of the strategist. It shows the overlays, cursor and hovered target, and turns
+## a clicked hex into a command; the session alone decides whether the command is legal.
 
 ## False while the battle presents events: the cursor then stays neutral.
 var enabled := true
@@ -17,6 +17,9 @@ var _movement_search: MovementSearchResult
 var _attackable_hexes: Array[Vector2i] = []
 var _ability_hexes: Array[Vector2i] = []
 var _selected_ability_id := StringName()
+## The strategist ability being aimed and the hexes it may land on, possibly outside the grid.
+var _strategist_ability_id := StringName()
+var _strategist_hexes: Array[Vector2i] = []
 ## The unit whose options are shown; hover previews use it.
 var _acting_unit_id := StringName()
 ## The last previewed command and state revision, so moving within one hex does not recompute.
@@ -50,6 +53,7 @@ func show_movement_and_attacks(state: UnitSnapshot) -> void:
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
 	_ability_hexes.clear()
+	_forget_strategist()
 	_map_view.clear_ability_area()
 	_map_view.clear_path()
 	_movement_search = _session.get_movement_search(state.unit_id)
@@ -71,15 +75,55 @@ func clear() -> void:
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
 	_ability_hexes.clear()
+	_forget_strategist()
 	_attackable_hexes.clear()
 	_map_view.show_targetable_cells(_attackable_hexes)
 	_map_view.clear_ability_area()
 	_hud.clear_target()
 
 
-## Starts aiming the ability; false when the unit cannot use it now.
+## True while a unit's or the strategist's ability is aimed.
 func is_aiming_ability() -> bool:
-	return not _selected_ability_id.is_empty()
+	return not _selected_ability_id.is_empty() or not _strategist_ability_id.is_empty()
+
+
+## Starts aiming the player's strategist ability; false when it cannot be used now.
+func select_strategist_ability(ability_id: StringName) -> bool:
+	var hexes := _session.get_strategist_target_hexes(BattleFaction.Value.PLAYER, ability_id)
+	if hexes.is_empty():
+		return false
+	_clear_preview()
+	_selected_ability_id = StringName()
+	_ability_hexes.clear()
+	_attackable_hexes.clear()
+	var empty_cells: Array[Vector2i] = []
+	_map_view.clear_ranged_attack_cells()
+	_map_view.show_reachable_cells(empty_cells)
+	_map_view.show_targetable_cells(empty_cells)
+	_map_view.clear_ability_area()
+	_map_view.clear_path()
+	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
+	_strategist_ability_id = ability_id
+	_strategist_hexes = hexes
+	_map_view.show_landing_targets(hexes)
+	var definition := _content.get_strategist_ability_definition(ability_id)
+	_hud.show_strategist_targeting(definition.display_name if definition != null else String(ability_id))
+	return true
+
+
+## Hexes outside the grid the player may click now: the aimed strategist ability's targets.
+func get_extra_target_cells() -> Array[Vector2i]:
+	return _strategist_hexes.duplicate()
+
+
+func _forget_strategist() -> void:
+	# The aiming hint has no later event to replace it, unlike a unit's attack.
+	if not _strategist_ability_id.is_empty() and _hud != null:
+		_hud.clear_action()
+	_strategist_ability_id = StringName()
+	_strategist_hexes.clear()
+	if _map_view != null:
+		_map_view.clear_landing_targets()
 
 
 func select_ability(active: UnitSnapshot, ability_id: StringName) -> bool:
@@ -109,6 +153,10 @@ func select_ability(active: UnitSnapshot, ability_id: StringName) -> bool:
 
 ## The command a click on the hex means for the active unit, or null when it means nothing.
 func command_at(active: UnitSnapshot, axial_cell: Vector2i) -> BattleCommand:
+	if not _strategist_ability_id.is_empty():
+		if not _strategist_hexes.has(axial_cell):
+			return null
+		return UseStrategistAbilityCommand.new(BattleFaction.Value.PLAYER, _strategist_ability_id, axial_cell)
 	if not _selected_ability_id.is_empty():
 		if not _ability_hexes.has(axial_cell):
 			return null
@@ -136,6 +184,11 @@ func hover(axial_cell: Vector2i) -> void:
 
 
 func _show_overlays(axial_cell: Vector2i) -> void:
+	if not _strategist_ability_id.is_empty():
+		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
+		_map_view.clear_path()
+		_hud.clear_target()
+		return
 	if not _selected_ability_id.is_empty():
 		_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 		_map_view.clear_path()
@@ -306,6 +359,8 @@ func _show_preview(axial_cell: Vector2i) -> void:
 ## The command worth previewing at the hex: an aimed ability target, an attackable target or
 ## a reachable empty hex; null otherwise.
 func _previewable_command(active: UnitSnapshot, axial_cell: Vector2i) -> BattleCommand:
+	if not _strategist_ability_id.is_empty():
+		return null
 	if not _selected_ability_id.is_empty():
 		return command_at(active, axial_cell) if _ability_hexes.has(axial_cell) else null
 	if _attackable_hexes.has(axial_cell):

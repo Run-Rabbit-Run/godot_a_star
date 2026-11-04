@@ -23,6 +23,7 @@ ContentPackage[]
 - расы;
 - способности;
 - presentation-определения способностей;
+- умения стратега (`strategist_abilities`);
 - сценарии и кампании.
 
 Базовые пакеты находятся в `content/packages/`. Этот `.tres`-формат удобен для разработки внутри Godot, но не считается готовым публичным форматом пользовательских модов.
@@ -121,6 +122,10 @@ Headless-расчёт не должен требовать `PackedScene`, тек
 Обработчик меняет бой только через `BattleEffectContext` и возвращает вызванные события. Если эффект нельзя завершить, он вызывает `context.fail(reason)`: движок отбрасывает всю способность, откатывать уже сделанное обработчику не нужно. Ошибка скрипта в обработчике отбрасывает способность так же ([BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Атомарность»).
 
 Площадной обработчик может переопределить `execute_hexes(effect, context, source, hexes)`, чтобы разрешить всю область одним пакетом; по умолчанию он вызывает `execute_hex()` для каждой клетки. `core:hex_state` использует `BattleEffectContext.apply_hex_states()`: все клетки меняются до распространения реакций, порядок клеток не влияет на результат.
+
+`StrategistAbilityDefinition` подчиняется тем же правилам, что и способности: ID в namespace пакета, встроенные эффекты, проверка обработчиков и юнитов из `get_unit_references()` в `ContentLoader`, разрешение юнитов в `BattleSetupFactory`. Встроенный ModAPI регистрирует для них `core:landing` (`unit_id`, `center_only=true`, необязательный `terrain_id`). Core package поставляет `core:health_shuttle`, юнита `core:health_shuttle_unit` и его presentation `core:health_shuttle_actor` (`content/packages/core/health_shuttle.svg` → PNG, происхождение — [README.md](../../content/packages/core/README.md)).
+
+Переопределение встроенного пассива из `SkillLibrary` меняет только поля документа навыка (название, описание, числа, тип урона, состояния); остальные свойства встроенного определения, например `ally_max_health`, сохраняются.
 
 Core package регистрирует `core:spear_throw`, `core:spear_sweep`, `core:spear_pin` и presentation `core:spear_presentation` (взмах и пригвождение, снаряд) и `core:spear_throw_presentation` (бросок, доставка `RETURNING`); лазер использует `core:laser_presentation` (доставка `BEAM`); пассивный каталог — `core:melee_retaliation`. Авторский `custom_units:spear_guard` находится в `content/authored/units/spear_guard.json` и выбирается обычной палитрой редактора. Изображение/профиль — project-owned `gt_spear_guard.png` и unit_visual_profiles.json. Схема JSON юнита сохраняется.
 
