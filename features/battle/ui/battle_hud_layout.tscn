@@ -501,18 +501,7 @@ size_flags_horizontal = 3
 icon = ExtResource("5_end")
 text = "Защита"
 expand_icon = true
-tooltip_text = "Завершает ход юнита"
-
-[node name="EndPhaseButton" type="Button" parent="ActionPanel/Content/SkillButtons"]
-unique_name_in_owner = true
-autowrap_mode = 3
-custom_minimum_size = Vector2(190, 64)
-layout_mode = 2
-size_flags_horizontal = 3
-icon = ExtResource("5_end")
-text = "Конец фазы"
-expand_icon = true
-tooltip_text = "Завершает ходы всех оставшихся юнитов и передаёт ход противнику"
+tooltip_text = "Даёт юниту 1 уровень щита и завершает его ход"
 
 [node name="SpeedPanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true

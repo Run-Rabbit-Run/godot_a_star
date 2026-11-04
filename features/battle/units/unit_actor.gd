@@ -4,6 +4,8 @@ extends Node2D
 
 const CUSTOM_TEXTURE_SIZE := 82.0
 const SKULL_ICON := preload("res://features/battle/ui/icons/skull.svg")
+## Brightness of the figure of a unit that can no longer act in the current phase.
+const SPENT_TURN_TINT := Color(0.68, 0.68, 0.68)
 
 
 @export_range(0.01, 1.0, 0.01)
@@ -27,6 +29,9 @@ var _shown_statuses: Dictionary = {}
 var _preview_health := -1
 var _preview_defeated := false
 var _preview_nodes: Array[CanvasItem] = []
+## The figure's own tint; dimming for a spent turn multiplies it.
+var _sprite_tint := Color.WHITE
+var _turn_spent := false
 
 @onready var _sprite: Sprite2D = %Sprite
 @onready var _unit_id_label: Label = %UnitIdLabel
@@ -70,10 +75,11 @@ func setup(
 	_unit_id_label.text = definition.display_name
 	_unit_id_label.visible = false
 
+	_sprite_tint = _sprite.self_modulate
 	if presentation != null and presentation.actor_texture != null:
 		_sprite.texture = presentation.actor_texture
 		_sprite.material = null
-		_sprite.self_modulate = BattleVisualPalette.MINIATURE_TINT
+		_sprite_tint = BattleVisualPalette.MINIATURE_TINT
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		var texture_size := presentation.actor_texture.get_size()
 		var longest_side := maxf(texture_size.x, texture_size.y)
@@ -90,9 +96,21 @@ func setup(
 	_combat_role_label.visible = false
 	_combat_role_label.text = "◎"
 	show_health(current_health, maximum_health)
+	set_turn_spent(_turn_spent)
 	modulate = (
 		presentation.actor_color if presentation != null else Color.WHITE
 	)
+
+
+## Dims only the figure: health, statuses and the base stay readable. Hit and death animations
+## tint the sprite's modulate, the dimming its self_modulate, so neither undoes the other.
+func set_turn_spent(spent: bool) -> void:
+	_turn_spent = spent
+	_sprite.self_modulate = _sprite_tint * (SPENT_TURN_TINT if spent else Color.WHITE)
+
+
+func is_turn_spent() -> bool:
+	return _turn_spent
 
 
 func show_health(current: int, maximum: int) -> void:

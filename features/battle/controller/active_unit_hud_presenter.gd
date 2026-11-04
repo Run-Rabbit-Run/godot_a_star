@@ -72,7 +72,6 @@ func show_strategist() -> void:
 func _show_turn_order(shown_unit_id: StringName) -> void:
 	var entries: Array[Dictionary] = []
 	var acting := _session.get_active_faction()
-	var ready := _session.get_ready_unit_ids()
 	var order: Array[StringName] = []
 	for in_phase: bool in [true, false]:
 		for unit_id: StringName in _session.get_turn_order():
@@ -102,7 +101,7 @@ func _show_turn_order(shown_unit_id: StringName) -> void:
 			"texture": texture,
 			"faction": state.faction,
 			"defeated": state.health.is_defeated(),
-			"acted": state.faction == acting and not state.health.is_defeated() and not ready.has(unit_id),
+			"acted": _session.has_spent_turn(unit_id),
 		})
 
 	_hud.show_turn_order(entries, shown_unit_id)

@@ -4,7 +4,6 @@ extends CanvasLayer
 
 ## HUD сообщает о намерении и не изменяет состояние боя напрямую.
 signal end_turn_requested
-signal end_phase_requested
 signal movement_requested
 signal basic_attack_requested
 signal ability_requested(ability_id: StringName)
@@ -59,7 +58,6 @@ const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
 @onready var _ability_button_template: Button = $"HUDRoot/%AbilityButtonTemplate"
 @onready var _settings_button: Button = $"HUDRoot/%SettingsButton"
 @onready var _end_turn_button: Button = $"HUDRoot/%EndTurnButton"
-@onready var _end_phase_button: Button = $"HUDRoot/%EndPhaseButton"
 @onready var _speed_half_button: Button = $"HUDRoot/%SpeedHalfButton"
 @onready var _speed_1_button: Button = $"HUDRoot/%Speed1Button"
 @onready var _speed_2_button: Button = $"HUDRoot/%Speed2Button"
@@ -143,7 +141,6 @@ func _ready() -> void:
 			_display_status_label
 		)
 	_end_turn_button.pressed.connect(_on_end_turn_button_pressed)
-	_end_phase_button.pressed.connect(_on_end_phase_button_pressed)
 	_movement_button.pressed.connect(_on_movement_button_pressed)
 	_basic_attack_button.pressed.connect(_on_basic_attack_button_pressed)
 	_settings_button.pressed.connect(_on_settings_button_pressed)
@@ -196,7 +193,6 @@ func log_round(round_number: int) -> void:
 func set_interaction_enabled(enabled: bool) -> void:
 	_interaction_enabled = enabled
 	_end_turn_button.disabled = not enabled
-	_end_phase_button.disabled = not enabled
 	# Display settings remain accessible during AI turns and after battle.
 	_speed_half_button.disabled = false
 	_speed_1_button.disabled = false
@@ -513,10 +509,6 @@ func _on_end_turn_button_pressed() -> void:
 	end_turn_requested.emit()
 
 
-func _on_end_phase_button_pressed() -> void:
-	end_phase_requested.emit()
-
-
 func _on_movement_button_pressed() -> void:
 	movement_requested.emit()
 
@@ -673,8 +665,6 @@ func _apply_styles() -> void:
 	_basic_attack_button.icon = BattleActionIcons.ICONS.attack
 	_end_turn_button.icon = BattleActionIcons.ICONS.defend
 	_end_turn_button.add_theme_color_override("font_color", Color("f5d995"))
-	_end_phase_button.icon = BattleActionIcons.ICONS.defend
-	_end_phase_button.add_theme_color_override("font_color", Color("f5d995"))
 
 
 func _apply_health_badge(label: Label, current: int, maximum: int) -> void:

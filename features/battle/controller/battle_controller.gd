@@ -155,7 +155,6 @@ func _initialize_battle() -> void:
 		return
 
 	_hud.end_turn_requested.connect(_on_end_turn_requested)
-	_hud.end_phase_requested.connect(_on_end_phase_requested)
 	var health_display := HEALTH_DISPLAY_CONTROLLER.new()
 	health_display.name = "HealthDisplayController"
 	add_child(health_display)
@@ -344,32 +343,6 @@ func _on_end_turn_requested() -> void:
 	var resolution := _battle_session.step(
 		EndTurnCommand.new(_acting_unit_id())
 	)
-
-	if not resolution.accepted:
-		if not _finish_battle_if_needed(resolution):
-			push_error(resolution.rejection_reason)
-			_set_presenting(false)
-		return
-
-	var presented := await _present_resolution(
-		resolution,
-		_unit_views.actors,
-		_unit_views.definitions,
-		_map_view,
-		_hud
-	)
-	if not presented or _finish_battle_if_needed(resolution):
-		return
-	await _continue_turn_cycle()
-
-
-## Ends the turns of every remaining unit of the player's faction and passes the phase.
-func _on_end_phase_requested() -> void:
-	if _is_presenting or _battle_session == null or _battle_session.is_active_unit_ai_controlled():
-		return
-
-	_set_presenting(true)
-	var resolution := _battle_session.step(EndPhaseCommand.new(_battle_session.get_active_faction()))
 
 	if not resolution.accepted:
 		if not _finish_battle_if_needed(resolution):
@@ -627,6 +600,8 @@ func _present_resolution(resolution: BattleResolution, actors: Dictionary[String
 	# A cut animation is optional presentation: the view snaps to the session and play goes on.
 	if _presentation_queue.interrupted_steps > 0:
 		_synchronize_view()
+	# Units that have had their turn stay dimmed until their faction's next phase.
+	_unit_views.show_spent_turns(_battle_session)
 	return true
 
 

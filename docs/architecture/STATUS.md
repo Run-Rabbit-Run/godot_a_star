@@ -16,13 +16,13 @@
 | Общий путь игрока и ИИ | `BattleCommand` → `BattleSession.step()` | BATTLE.md «Команды и результат шага» |
 | Цели боя | `ObjectiveSystem`, `SurviveRoundsObjective`, `EliminateTargetsObjective`, защищаемые юниты, лимит раундов | BATTLE.md «Цели боя» |
 | Прогноз команды | `ActionPreview`, `BattleSession.preview()`, `get_reach()`, `ActionPreviewPanel`, `UnitActor.show_health_preview()` | BATTLE.md «Прогноз команды», BATTLE_PRESENTATION.md «Прогноз при наведении» |
-| Фазы сторон | `TurnService`, `FieldOrder`, `EndPhaseCommand`, `PhaseStartedEvent`, `BattleEngine.can_command()`, выбор юнита в `BattleController` | BATTLE.md «Фазы сторон», BATTLE_PRESENTATION.md «HUD» |
+| Фазы сторон | `TurnService`, `FieldOrder`, `EndPhaseCommand` без кнопки в HUD, `PhaseStartedEvent`, `BattleEngine.can_command()`, `BattleSession.has_spent_turn()`, выбор юнита в `BattleController` | BATTLE.md «Фазы сторон», BATTLE_PRESENTATION.md «HUD» |
 | Порядок границ хода | `BattleEngine._finish_unit()`, `_end_phase()`, `TurnEndedEvent.was_skipped` | BATTLE.md «Порядок границ хода» |
 | Аварийная остановка | `BattleResolution.terminal_error`, однократные `battle_failed`/`battle_finished`, восстановление отображения | BATTLE.md «Аварийная остановка» |
 | Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | [BATTLE_MAP.md](BATTLE_MAP.md) «Определение карты» |
 | Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE_MAP.md «Изменение карты» |
 | Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE_MAP.md «Препятствия местности», EDITOR.md «Препятствия» |
-| Статусы и состояния гексов | 9 статусов с уровнями, включая устойчивость к параличу, два слоя гексов (4 жидкости, 3 энергии), пять реакций, распространение, срок 3 раунда у каждого слоя | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
+| Статусы и состояния гексов | 10 статусов с уровнями, включая устойчивость к параличу и щит от «Защиты» (`EndTurnCommand`), два слоя гексов (4 жидкости, 3 энергии), пять реакций, распространение, срок 3 раунда у каждого слоя | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
 | Обычная атака: выстрел и удар вплотную | `BasicAttackRules`, `UnitDamagedEvent.ranged_attack` | BATTLE_UNITS_AND_ABILITIES.md «Обычная атака» |
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
 | Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
@@ -53,6 +53,7 @@
 | Анимации | `UnitMovementAnimator`, `UnitCombatAnimator`, `UnitDeathAnimator`, доставка способностей из данных | BATTLE_PRESENTATION.md «Анимации» |
 | Масштаб фигур и погибшие пары | `texture_scale()`, `unit_visual_profiles.json`, `content/authored/assets/corpses/` по basename | BATTLE_PRESENTATION.md «Масштаб фигур», [../tools/UNITS.md](../tools/UNITS.md) |
 | HP юнитов и раскрытие по Alt | `battle_health_display_controller.gd`, `user://battle_ui_settings.cfg` | BATTLE_PRESENTATION.md «Акторы и здоровье» |
+| Затемнение походивших | `UnitActor.set_turn_spent()`, `BattleUnitViewRegistry.show_spent_turns()` | BATTLE_PRESENTATION.md «Акторы и здоровье» |
 | Подсветки | Радиус дальней атаки, маркеры непроходимости/поверхности/стоимости | BATTLE_PRESENTATION.md «Подсветки», «Состояния гексов и маркеры» |
 | Стратег в HUD | Кнопка «Стратег», попап умений, гексы посадки вне сетки, падение капсулы `UnitArrivalAnimator` | BATTLE_PRESENTATION.md «HUD», «Прибытие с неба и уничтожение тела» |
 | Боевой лог | `BattleLogFormatter`, панель HUD | BATTLE_PRESENTATION.md «Боевой лог» |
@@ -83,7 +84,7 @@
 | Моды | Внутренние Resource-пакеты, зависимости, замороженный `ModAPI` | Установка и загрузка внешнего JSON/ZIP/PCK-пакета, отдельный data-only путь |
 | Экспорт редактора | `manifest.json` и `battle_document.json` в `content/authored/exports/` | Обратный импорт через `ContentLoader`; экспорт не является устанавливаемым модом |
 | Кампания | Бои, переходы по победе/поражению, проверка графа | Глобальная карта, Фобос/другие базы, сложные условия, постоянный состав и `SaveService` |
-| Юниты | Здоровье, ход, базовая атака, способности, девять статусов, броня, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
+| Юниты | Здоровье, ход, базовая атака, способности, десять статусов, броня, щит, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
 | Редакторы | Карта, гексы, препятствия, расстановки, стороны, ИИ, цель боя, юниты, навыки, HUD, save/load/export/trial | UI зон, триггеров, кампаний, глобальной карты и диалогов; шаблоны карт и массовые операции |
 | Симуляция | Один бой и последовательность кампании, `SimulationRunResult.to_report()` | Batch-runner, агрегаты, JSON/CSV серии, журнал команд headless-прогона |
 | Диагностика | JSONL-лог графического боя | Подключение к `SimulationRunner` и проигрыватель записи |

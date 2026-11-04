@@ -2,6 +2,9 @@ class_name BattleEngine
 extends RefCounted
 
 
+## Shield levels the defend command (EndTurnCommand) gives every unit.
+const DEFEND_SHIELD_LEVELS := 1
+
 var _state: BattleState
 var _initial_resolution: BattleResolution
 var _terminal_error := ""
@@ -494,12 +497,13 @@ func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> voi
 	_finish_unit(unit_id, events)
 
 
+## Defending ends the turn: the unit raises a shield that covers it until its side's next phase.
 func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 	if not _state.turn_service.can_command(command.unit_id):
 		return _rejected("Only a ready unit can end its turn while no other unit has started.")
 
 	var events: Array[BattleEvent] = []
-	_finish_unit(command.unit_id, events)
+	_finish_unit(command.unit_id, events, DEFEND_SHIELD_LEVELS)
 	return _accepted(events)
 
 
@@ -518,6 +522,9 @@ func _resolve_end_phase(command: EndPhaseCommand) -> BattleResolution:
 func _start_phase(events: Array[BattleEvent], first := false) -> void:
 	if not first:
 		events.append(PhaseStartedEvent.new(get_active_faction(), get_round_number()))
+	# The side's shields fall before any start effect, so none of them meets a shield of this side.
+	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
+		UnitStatusService.start_phase(get_unit(unit_id), events)
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
 		var unit := get_unit(unit_id)
 		unit.turn.start_turn()
@@ -538,7 +545,9 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 
 
 ## The unit cannot act again this phase; a living unit resolves its end-of-turn effects once.
-func _finish_unit(unit_id: StringName, events: Array[BattleEvent]) -> void:
+## A defending unit raises `shield_levels` of shield after them, so its own periodic damage
+## does not break the shield meant for the opponent's phase.
+func _finish_unit(unit_id: StringName, events: Array[BattleEvent], shield_levels := 0) -> void:
 	var unit := get_unit(unit_id)
 	var skipped: bool = unit != null and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0 and _state.turn_service.get_current_unit_id() != unit_id
 	_state.turn_service.finish_unit(unit_id)
@@ -547,6 +556,7 @@ func _finish_unit(unit_id: StringName, events: Array[BattleEvent]) -> void:
 	_state.turn_service.mark_ended(unit_id)
 	UnitStatusService.end_turn(unit, events)
 	_settle_presence(events)
+	UnitStatusService.apply(unit, UnitStatusCatalog.SHIELD, shield_levels, events)
 	# An object resolves the effects of its phase but has no turn to end.
 	if not unit.takes_turns():
 		return

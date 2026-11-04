@@ -75,6 +75,12 @@ static func damage(unit: UnitState, request: DamageRequest, events: Array[Battle
 				adjusted += 1
 	if adjusted != before_status_damage:
 		modifiers.append({"source_id": modifier_status, "amount": adjusted - before_status_damage})
+	# The shield is the last layer: it prevents only damage that would reach health, then breaks.
+	var prevented := mini(adjusted, int(unit.statuses.get(UnitStatusCatalog.SHIELD, 0)))
+	if prevented > 0:
+		adjusted -= prevented
+		unit.statuses.erase(UnitStatusCatalog.SHIELD)
+		modifiers.append({"source_id": UnitStatusCatalog.SHIELD, "amount": -prevented})
 	_emit(unit, before, events)
 	var applied := unit.health.apply_damage(adjusted)
 	var event := UnitDamagedEvent.new(request.source_unit_id, unit.unit_id, applied, unit.health.current, unit.health.is_defeated(), request.source_hex_state_id, request.source_ability_id)
@@ -103,12 +109,21 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	if unit.statuses.get(UnitStatusCatalog.ACID, 0) > 0:
 		_set_levels(unit, UnitStatusCatalog.ARMOR, int(unit.statuses.get(UnitStatusCatalog.ARMOR, 0)) - 1)
 	for id: StringName in unit.statuses.keys():
-		if id != UnitStatusCatalog.ARMOR:
+		# Armor never wears off; a shield lasts until its side's next phase.
+		if id != UnitStatusCatalog.ARMOR and id != UnitStatusCatalog.SHIELD:
 			_set_levels(unit, id, int(unit.statuses[id]) - 1)
 	# Worn-off paralysis leaves one level of resistance, added after the decay so that it
 	# lasts through the opponent's phase and the unit's next own turn.
 	if was_paralyzed and not unit.statuses.has(UnitStatusCatalog.PARALYSIS):
 		unit.statuses[UnitStatusCatalog.PARALYSIS_RESISTANCE] = 1
+	_emit(unit, before, events)
+
+## Effects of the unit's statuses at the start of its side's phase: every shield level falls.
+static func start_phase(unit: UnitState, events: Array[BattleEvent]) -> void:
+	if unit == null or unit.health.is_defeated() or not unit.statuses.has(UnitStatusCatalog.SHIELD):
+		return
+	var before := unit.statuses.duplicate()
+	unit.statuses.erase(UnitStatusCatalog.SHIELD)
 	_emit(unit, before, events)
 
 static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:

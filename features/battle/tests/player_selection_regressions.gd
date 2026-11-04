@@ -111,8 +111,22 @@ func _run_phase_choice(suite: Node, fixture: Fixtures) -> void:
 	var hud: BattleHUD = controller.get("_hud")
 	var round_label := hud.get_node("HUDRoot/%RoundLabel") as Label
 	suite.expect(round_label != null and round_label.text.contains("ФАЗА ИГРОКА"), "The round label names the acting phase")
-	await controller.call("_on_end_phase_requested")
-	suite.expect(session.get_active_faction() == BattleFaction.Value.ENEMY and session.get_ready_unit_ids().size() > 0, "Ending the phase passes the turn to the enemy faction")
+	var actors: Dictionary[StringName, UnitActor] = (controller.get("_unit_views") as BattleUnitViewRegistry).actors
+	suite.expect(not actors[other].is_turn_spent(), "A started unit is not dimmed before its turn ends")
+	await controller.call("_on_end_turn_requested")
+	suite.expect(session.get_unit(other).statuses.get(UnitStatusCatalog.SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS, "Defending gives the unit a shield")
+	suite.expect(actors[other].is_turn_spent() and not actors[first].is_turn_spent(), "A unit that has had its turn is dimmed, a ready one is not")
+	suite.expect(hud.get_node_or_null("HUDRoot/%EndPhaseButton") == null, "The HUD has no end-phase button")
+	# The player's phase ends once every unit has defended.
+	var guard := ready.size()
+	while session.get_active_faction() == BattleFaction.Value.PLAYER and guard > 0:
+		guard -= 1
+		await controller.call("_on_end_turn_requested")
+	suite.expect(session.get_active_faction() == BattleFaction.Value.ENEMY and session.get_ready_unit_ids().size() > 0, "Defending with every unit passes the turn to the enemy faction")
+	var dimmed := 0
+	for actor: UnitActor in actors.values():
+		dimmed += 1 if actor.is_turn_spent() else 0
+	suite.expect(dimmed == 0, "A new phase brightens every unit again")
 	screen.queue_free()
 	await suite.get_tree().process_frame
 

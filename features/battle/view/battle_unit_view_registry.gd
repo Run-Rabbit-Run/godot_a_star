@@ -149,6 +149,14 @@ func get_texture(unit_id: StringName) -> Texture2D:
 	return presentation.portrait_texture if presentation.portrait_texture != null else presentation.actor_texture
 
 
+## Dims the figures of units that can no longer act this phase; a new phase brightens them.
+func show_spent_turns(session: BattleSession) -> void:
+	for unit_id: StringName in actors:
+		var actor: Variant = actors[unit_id]
+		if is_instance_valid(actor):
+			(actor as UnitActor).set_turn_spent(session.has_spent_turn(unit_id))
+
+
 func synchronize(session: BattleSession) -> void:
 	for id: StringName in session.get_turn_order():
 		var state := session.get_unit(id)
@@ -184,3 +192,4 @@ func synchronize(session: BattleSession) -> void:
 		actor.visible = not state.corpse_removed
 		if state.corpse_removed:
 			actor.modulate.a = 0.0
+	show_spent_turns(session)

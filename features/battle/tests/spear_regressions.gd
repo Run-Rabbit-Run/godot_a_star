@@ -32,9 +32,9 @@ func run(suite: Node) -> void:
 	predicted.execute(EndTurnCommand.new(enemy.unit_id))
 	predicted.execute(EndTurnCommand.new(beyond.unit_id))
 	suite.expect(not user.pending_spear_return.is_empty() and enemy.health.current == 97, "Forecast return does not mutate live state")
-	engine.execute(EndTurnCommand.new(ally.unit_id))
-	engine.execute(EndTurnCommand.new(enemy.unit_id))
-	var returned := engine.execute(EndTurnCommand.new(beyond.unit_id))
+	# The phases pass without defending, so no shield takes part in the return.
+	engine.execute(EndPhaseCommand.new(BattleFaction.Value.PLAYER))
+	var returned := engine.execute(EndPhaseCommand.new(BattleFaction.Value.ENEMY))
 	suite.expect(enemy.health.current == 94 and ally.health.current == 94 and user.health.current == 100, "Return damages path once and excludes owner")
 	suite.expect(user.pending_spear_return.is_empty(), "Pending return consumed")
 	var boundary := -1
@@ -143,7 +143,7 @@ func run(suite: Node) -> void:
 	state = fixture.state(cells, [enemy, user])
 	Fixtures.start_turns(state)
 	engine = BattleEngine.new(state, false)
-	var terminal := engine.execute(EndTurnCommand.new(enemy.unit_id))
+	var terminal := engine.execute(EndPhaseCommand.new(BattleFaction.Value.ENEMY))
 	suite.expect(terminal.accepted and terminal.battle_result != null and enemy.health.is_defeated(), "Lethal return finishes battle at owner turn start")
 	suite.expect(user.pending_spear_return.is_empty(), "Lethal return is consumed")
 	# Adjacent sweep can trigger a response; pin paralyzes its victim before responses.

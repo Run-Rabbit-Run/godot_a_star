@@ -148,6 +148,21 @@ func can_command(unit_id: StringName) -> bool:
 	return _engine.can_command(unit_id)
 
 
+## True while the battle goes on for a living unit of the acting faction that can no longer act
+## this phase: it finished its turn, is paralyzed or joined the phase as a summon. An object
+## never takes turns, so it never counts.
+func has_spent_turn(unit_id: StringName) -> bool:
+	var unit := _engine.get_unit(unit_id)
+	return (
+		unit != null
+		and unit.takes_turns()
+		and unit.faction == _engine.get_active_faction()
+		and not unit.health.is_defeated()
+		and not is_finished()
+		and not _engine.get_ready_unit_ids().has(unit_id)
+	)
+
+
 func get_turn_order() -> Array[StringName]:
 	return _engine.get_turn_order()
 
