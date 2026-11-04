@@ -38,6 +38,9 @@ static func variables(ability: AbilityDefinition, context: Dictionary = {}) -> A
 				_add(result, "levels" + suffix, "Уровней состояния" + number, str(params.get("levels", 0)))
 			&"core:hex_state":
 				_add(result, "hex_state" + suffix, "Состояние гекса" + number, HexStateCatalog.get_display_name(StringName(str(params.get("state_id", "")))).to_lower())
+			&"core:push":
+				_add(result, "push_distance" + suffix, "Дальность толчка" + number, str(params.get("distance", 0)))
+				_add(result, "collision_damage" + suffix, "Урон столкновения" + number, str(PushService.COLLISION_DAMAGE))
 			&"core:summon":
 				var find: Variant = context.get("find_unit")
 				var unit: Variant = find.call(SummonEffectHandler.unit_id(effect)) if find is Callable else null

@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="damage"]
+script = ExtResource("effect")
+effect_type_id = &"core:damage"
+parameters = {"amount": 1, "damage_type": "physical", "affects_obstacles": false}
+
+[sub_resource type="Resource" id="push"]
+script = ExtResource("effect")
+effect_type_id = &"core:push"
+parameters = {"distance": 2}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:shove"
+display_name = "Толчок"
+description = "Толчок соседнего противника: {damage} урона ({damage_type}), затем он отлетает от юнита по прямой, дальность толчка — {push_distance}. Юнит, препятствие, непроходимая клетка или край поля на пути обрывают полёт: оба участника столкновения получают по {collision_damage} физического урона. Перезарядка {cooldown}."
+presentation_id = &"core:shove_presentation"
+range = 1
+area_radius = 0
+target_mode = 1
+cooldown_turns = 2
+melee_attack = false
+returns_next_turn = false
+effects = Array[ExtResource("effect")]([SubResource("damage"), SubResource("push")])

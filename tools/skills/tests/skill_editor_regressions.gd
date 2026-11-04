@@ -47,6 +47,13 @@ func _check_editing(suite: Node) -> void:
 	editor._set_document(builtin["core:spear_sweep"])
 	editor._preview_attack.value = 9
 	suite.expect(editor._preview_context.visible and editor._preview.text.contains("9 урона"), "Preview uses the example unit attack for base-attack damage")
+	editor._set_document(builtin["core:shove"])
+	var push_spins := editor._form.find_children("*", "SpinBox", true, false).filter(func(spin: SpinBox) -> bool:
+		return spin.max_value == PushEffectHandler.MAX_DISTANCE and spin.value == 2
+	)
+	suite.expect(push_spins.size() == 1, "The push effect card edits its distance")
+	(push_spins[0] as SpinBox).value = 4
+	suite.expect(editor._document.effects[1].parameters.distance == 4 and editor._preview.text.contains("дальность толчка — 4") and editor._validation.text.begins_with("✓"), "A changed push distance reaches the draft and its description")
 	var turret: Dictionary = builtin["core:electric_turret"]
 	var started := Time.get_ticks_usec()
 	editor._set_document(turret)

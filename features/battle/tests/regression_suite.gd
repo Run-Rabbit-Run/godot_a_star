@@ -38,6 +38,10 @@ func _run() -> void:
 		preload("res://features/battle/tests/paralysis_regressions.gd").new().run(self)
 	if runs("shield"):
 		preload("res://features/battle/tests/shield_regressions.gd").new().run(self)
+	if runs("push"):
+		preload("res://features/battle/tests/push_regressions.gd").new().run(self)
+	if runs("push_view"):
+		await preload("res://features/battle/tests/push_regressions.gd").new().run_presentation(self)
 	if runs("damage_log"):
 		preload("res://features/battle/tests/status_regressions.gd").new().run_damage_log(self)
 	if runs("file_logging"):

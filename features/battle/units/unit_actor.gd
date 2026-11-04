@@ -358,6 +358,26 @@ func create_movement_tween(positions: Array[Vector2]) -> Tween:
 	return _movement_animator.create_motion(self, _sprite, positions, _movement_profile)
 
 
+## A push: a quick slide without gait through the given global positions, then, when
+## `blocker` is a global position, a short knock toward it and back. Null without motion.
+func create_push_tween(positions: Array[Vector2], blocker: Variant = null) -> Tween:
+	const SECONDS_PER_HEX := 0.12
+	const KNOCK_SHARE := 0.22
+	var parent := get_parent() as Node2D
+	if parent == null or (positions.is_empty() and not blocker is Vector2):
+		return null
+	var tween := create_tween()
+	for index in range(positions.size()):
+		var step := tween.tween_property(self, "position", parent.to_local(positions[index]), SECONDS_PER_HEX)
+		if index == positions.size() - 1 and not blocker is Vector2:
+			step.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if blocker is Vector2:
+		var rest := parent.to_local(positions.back() if not positions.is_empty() else global_position)
+		tween.tween_property(self, "position", rest.lerp(parent.to_local(blocker), KNOCK_SHARE), 0.06)
+		tween.tween_property(self, "position", rest, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	return tween
+
+
 func get_combat_sprite() -> Sprite2D:
 	return _sprite
 

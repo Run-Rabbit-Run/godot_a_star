@@ -112,6 +112,9 @@ func _present_event(
 			map_view
 		)
 
+	if event is UnitPushedEvent:
+		return await _present_push(event as UnitPushedEvent, unit_actors, map_view)
+
 	if event is UnitDamagedEvent:
 		return await _present_damage(
 			event as UnitDamagedEvent,
@@ -169,6 +172,26 @@ func _present_move(
 		_track_tween(tween)
 		await _finish(tween)
 
+	return true
+
+
+## The pushed actor slides along its line; a collision ends with a knock toward what it hit.
+## The collision damage follows as ordinary damage events.
+func _present_push(event: UnitPushedEvent, unit_actors: Dictionary[StringName, UnitActor], map_view: BattleMapView) -> bool:
+	var actor := _actor(unit_actors, event.unit_id)
+	if actor == null:
+		push_error("UnitActor is not registered for the pushed unit.")
+		return false
+	var positions: Array[Vector2] = []
+	for path_index in range(1, event.path.size()):
+		positions.append(map_view.hex_to_global_position(event.path[path_index]))
+	var blocker: Variant = null
+	if event.collision != UnitPushedEvent.Collision.NONE:
+		blocker = map_view.hex_to_global_position(event.blocker_hex)
+	var tween := actor.create_push_tween(positions, blocker)
+	if tween != null:
+		_track_tween(tween)
+		await _finish(tween)
 	return true
 
 

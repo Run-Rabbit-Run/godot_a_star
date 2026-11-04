@@ -90,6 +90,7 @@ static func damage(unit: UnitState, request: DamageRequest, events: Array[Battle
 	event.calculated_damage = adjusted
 	event.damage_modifiers.assign(modifiers)
 	event.source_status_id = request.source_status_id
+	event.collision = request.collision
 	events.append(event)
 	if request.type == &"fire":
 		_explode_oil(unit, events)

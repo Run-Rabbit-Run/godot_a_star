@@ -29,6 +29,7 @@
 | Способности | `AbilityDefinition`, `TargetMode`, `AbilityExecutor`, effect handlers, `ModAPI`; транзакция способности и общий `AbilityEffectPipeline`, сбой обработчика через `BattleEffectContext.fail()` | BATTLE_UNITS_AND_ABILITIES.md «Способности», BATTLE_UNITS_AND_ABILITIES.md «Атомарность» |
 | Описания умений | `AbilityDefinition.description`, `AbilityDescription`, подсказки HUD и редактора юнитов | BATTLE_UNITS_AND_ABILITIES.md «Описание», BATTLE_PRESENTATION.md «HUD» |
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
+| Толчок и столкновения | `core:push`, `PushEffectHandler`, `PushService`, `UnitPushedEvent`, `UnitDamagedEvent.collision`, умение `core:shove` | BATTLE_UNITS_AND_ABILITIES.md «Толчок и столкновения» |
 | Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
 | Трупы в состоянии боя | `BattleState.get_corpses_at()`, уничтожение тела вместе с удерживаемым гексом (`corpse_removed`) | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
 | Умения стратега | `StrategistAbilityDefinition`, `StrategistAbilityExecutor`, `UseStrategistAbilityCommand`, `core:landing`, `core:health_shuttle`; раз в фазу игрока | BATTLE_UNITS_AND_ABILITIES.md «Умения стратега» |

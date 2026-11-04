@@ -225,7 +225,7 @@ func to_effect(data: Dictionary) -> AbilityEffectDefinition:
 	var effect := AbilityEffectDefinition.new()
 	effect.effect_type_id = StringName(data.type)
 	effect.parameters = data.parameters.duplicate(true)
-	for key: String in ["amount", "secondary_amount", "levels"]:
+	for key: String in ["amount", "secondary_amount", "levels", "distance"]:
 		if effect.parameters.has(key): effect.parameters[key] = int(effect.parameters[key])
 	return effect
 
@@ -241,12 +241,15 @@ func validate_effect(data: Dictionary) -> String:
 			if not UnitStatusCatalog.has_status(StringName(str(params.get("status_id", "")))): return "Эффект состояния: выберите известное состояние юнита."
 		"core:hex_state":
 			if not HexStateCatalog.has_state(StringName(str(params.get("state_id", "")))): return "Эффект гекса: выберите известное состояние гекса."
+		"core:push":
+			if not _integer(params, "distance", 1, PushEffectHandler.MAX_DISTANCE): return "Эффект толчка: дальность — целое число 1–%d." % PushEffectHandler.MAX_DISTANCE
 	var handler: AbilityEffectHandler
 	match data.type:
 		"core:damage": handler = DamageEffectHandler.new()
 		"core:unit_status": handler = UnitStatusEffectHandler.new()
 		"core:hex_state": handler = HexStateEffectHandler.new()
 		"core:summon": handler = SummonEffectHandler.new()
+		"core:push": handler = PushEffectHandler.new()
 		_: return "Неизвестный обработчик эффекта."
 	var effect := to_effect(data)
 	var error := handler.validate(effect)

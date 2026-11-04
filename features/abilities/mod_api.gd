@@ -16,6 +16,7 @@ static func create_default() -> ModAPI:
 	api.register_effect_handler(&"core:unit_status", UnitStatusEffectHandler.new())
 	api.register_effect_handler(&"core:summon", SummonEffectHandler.new())
 	api.register_effect_handler(&"core:landing", LandingEffectHandler.new())
+	api.register_effect_handler(&"core:push", PushEffectHandler.new())
 	return api
 
 

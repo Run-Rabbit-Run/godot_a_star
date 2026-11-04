@@ -78,7 +78,7 @@ func fork_onto(state: BattleState) -> BattleEngine:
 
 
 func supports_ability_prediction(ability: AbilityDefinition) -> bool:
-	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script()]
+	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script(), PushEffectHandler.new().get_script()]
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := _state.mod_api.get_effect_handler(effect.effect_type_id)
 		if handler == null or not supported.has(handler.get_script()):

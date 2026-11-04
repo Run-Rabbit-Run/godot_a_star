@@ -20,6 +20,8 @@ var calculated_damage: int
 var damage_modifiers: Array[Dictionary] = []
 ## An ordinary attack shot past the neighbors; melee strikes and other damage stay false.
 var ranged_attack := false
+## Damage of a collision after a push (PushService), dealt to both sides of it.
+var collision := false
 
 
 func _init(

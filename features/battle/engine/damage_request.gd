@@ -18,6 +18,8 @@ var ranged_reduction := 0
 var cover_hex_state_id: StringName
 ## Damage a ranged unit loses when it strikes in melee.
 var melee_penalty := 0
+## A pushed unit ran into something: the hit is the collision, not the source's strike.
+var collision := false
 
 
 func _init(p_amount: int, p_type: StringName = &"physical") -> void:
@@ -53,4 +55,9 @@ func with_cover(reduction: int, hex_state_id: StringName) -> DamageRequest:
 
 func with_melee_penalty(penalty: int) -> DamageRequest:
 	melee_penalty = penalty
+	return self
+
+
+func from_collision() -> DamageRequest:
+	collision = true
 	return self

@@ -52,6 +52,9 @@
 | 2026-11-04 | «Защита» по умолчанию даёт любому юниту 1 уровень щита и завершает его ход | [HEX_AND_UNIT_STATES.md](architecture/HEX_AND_UNIT_STATES.md) «Щит» |
 | 2026-11-04 | Кнопки «Конец фазы» нет: фаза заканчивается, когда походили все юниты стороны | [BATTLE_PRESENTATION.md](architecture/BATTLE_PRESENTATION.md) «HUD» |
 | 2026-11-04 | Юнит, который уже походил в фазе, чуть затемнён на поле до конца фазы | [BATTLE_PRESENTATION.md](architecture/BATTLE_PRESENTATION.md) «Акторы и здоровье» |
+| 2026-11-04 | Столкновение: оттолкнутый, врезавшись на пути в юнит, препятствие, непроходимую клетку или край поля, останавливается, и оба получают по 1 физическому урону; непроходимая клетка и край поля урона не получают | [BATTLE_UNITS_AND_ABILITIES.md](architecture/BATTLE_UNITS_AND_ABILITIES.md) «Толчок и столкновения» |
+| 2026-11-04 | Толкаются только живые юниты; препятствия и непроходимые клетки неподвижны; край поля действует как стена | [BATTLE_UNITS_AND_ABILITIES.md](architecture/BATTLE_UNITS_AND_ABILITIES.md) «Толчок и столкновения» |
+| 2026-11-04 | Источник толчка — эффект `core:push` и общее умение «Толчок» core package | [BATTLE_UNITS_AND_ABILITIES.md](architecture/BATTLE_UNITS_AND_ABILITIES.md) «Толчок и столкновения» |
 
 ## Отложенные решения
 

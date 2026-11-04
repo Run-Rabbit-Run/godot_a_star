@@ -16,7 +16,7 @@ const TARGET_HELP := {
 	5: "Поражается путь от юнита до выбранного гекса.",
 	6: "Действует вокруг своего гекса: соседи в радиусе области, без самого юнита.",
 }
-const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ"}
+const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ", "core:push": "ТОЛЧОК"}
 ## Targets whose "other targets" damage applies even without an area radius.
 const SPREADING_TARGETS := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]
 ## Consecutive edits of these keys share one undo step (typing).
@@ -439,6 +439,9 @@ func _effect_card(index: int) -> void:
 			card.add_child(EditorUi.hint("Живёт %d полных раунда. %s" % [HexStateCatalog.LIFETIME, "Создаётся только в центре области." if params.get("center_only", false) else "Создаётся на всех гексах области."]))
 		"core:summon":
 			card.add_child(EditorUi.hint(_summon_text(params)))
+		"core:push":
+			_number(grid, "Дальность толчка", params, "distance", 1, PushEffectHandler.MAX_DISTANCE, change, "На сколько гексов цель отлетает от юнита по прямой.")
+			card.add_child(EditorUi.hint("Столкновение обрывает толчок: цель и то, во что она врезалась, получают по %d физического урона." % PushService.COLLISION_DAMAGE))
 
 
 func _summon_text(params: Dictionary) -> String:
@@ -563,6 +566,8 @@ func _effect_description(effect: Dictionary) -> String:
 			return HexStateCatalog.description(StringName(params.get("state_id", "")))
 		"core:damage":
 			return "Броня поглощает только физический урон. Влага и горение меняют огненный, водный и электрический урон по правилам состояний."
+		"core:push":
+			return "Цель отлетает от юнита по прямой, не тратя движения. Юнит, препятствие, непроходимая клетка или край поля на пути останавливают её, и оба участника столкновения получают по %d физического урона; стена и край поля урона не получают. Тела не мешают. Состояния гексов на пути действуют, как при обычном перемещении." % PushService.COLLISION_DAMAGE
 	return ""
 
 

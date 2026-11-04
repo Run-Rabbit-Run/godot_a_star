@@ -5,8 +5,12 @@ extends RefCounted
 static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefinition], content: ContentSnapshot) -> String:
 	if event is UnitMovedEvent:
 		return "%s перемещается в %s (движение: %d)." % [_unit(event.unit_id, units), _hex(event.path.back()) if not event.path.is_empty() else "—", event.movement_cost]
+	if event is UnitPushedEvent:
+		return _push(event, units)
 	if event is UnitDamagedEvent:
 		var source := _unit(event.attacker_id, units)
+		if event.collision:
+			source = "Столкновение"
 		if not event.source_hex_state_id.is_empty():
 			source = HexStateCatalog.get_display_name(event.source_hex_state_id)
 		if not event.source_status_id.is_empty():
@@ -77,6 +81,23 @@ static func _ability(id: StringName, content: ContentSnapshot) -> String:
 	return definition.display_name if definition != null else String(id)
 
 
+static func _push(event: UnitPushedEvent, units: Dictionary[StringName, UnitDefinition]) -> String:
+	# A unit stopped at once is still pushed: it hits what stands next to it.
+	var text := "%s отброшен" % _unit(event.unit_id, units)
+	if event.path.size() > 1:
+		text += " в %s" % _hex(event.path.back())
+	match event.collision:
+		UnitPushedEvent.Collision.UNIT:
+			text += " и врезается в %s" % _unit(event.blocker_unit_id, units)
+		UnitPushedEvent.Collision.OBSTACLE:
+			text += " и врезается в препятствие %s" % _hex(event.blocker_hex)
+		UnitPushedEvent.Collision.IMPASSABLE:
+			text += " и врезается в непроходимую клетку %s" % _hex(event.blocker_hex)
+		UnitPushedEvent.Collision.EDGE:
+			text += " и ударяется о край поля"
+	return text + "."
+
+
 static func _hex(cell: Vector2i) -> String:
 	return "(%d, %d)" % [cell.x, cell.y]
 
@@ -89,6 +110,8 @@ static func _damage_formula(event: UnitDamagedEvent, content: ContentSnapshot) -
 	var origin := "базовая атака"
 	if not event.source_ability_id.is_empty():
 		origin = "умение: %s" % _ability(event.source_ability_id, content)
+	if event.collision:
+		origin = "столкновение"
 	if not event.source_hex_state_id.is_empty():
 		origin = "гекс: %s" % HexStateCatalog.get_display_name(event.source_hex_state_id)
 	if not event.source_status_id.is_empty():

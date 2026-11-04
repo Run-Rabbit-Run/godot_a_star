@@ -158,6 +158,21 @@ func apply_hex_states(hexes: Array[Vector2i], id: StringName) -> Array[BattleEve
 	return result.events
 
 
+## Pushes the target straight away from the source's hex. A target off the source's six axes
+## has no such line and stays in place; a defeated one is not moved.
+func push(source_unit_id: StringName, target_unit_id: StringName, distance: int) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	var source := _state.unit_states.get(source_unit_id) as UnitState
+	var target := _state.unit_states.get(target_unit_id) as UnitState
+	if source == null or target == null:
+		fail("Push needs an existing source and target: %s -> %s." % [source_unit_id, target_unit_id])
+		return events
+	var direction := AbilityExecutor.get_line_direction(source.hex, target.hex)
+	if direction != Vector2i.ZERO:
+		PushService.push(_state, source_unit_id, target_unit_id, direction, distance, _ability_id, events)
+	return events
+
+
 func apply_damage_events(source_unit_id: StringName, target_unit_id: StringName, amount: int, type: StringName = &"physical") -> Array[BattleEvent]:
 	var events: Array[BattleEvent] = []
 	var source := _state.unit_states.get(source_unit_id) as UnitState

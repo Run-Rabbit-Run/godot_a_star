@@ -6,6 +6,9 @@ extends RefCounted
 const ORIGIN_MODES := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]
 ## Effects that change only units inside the area; terrain effects may spread across the map.
 const LOCAL_EFFECTS := [&"core:damage", &"core:unit_status"]
+## Effects whose outcome depends on the user's hex even when its area does not: a push flies
+## straight away from the user.
+const ORIGIN_EFFECTS := [&"core:push"]
 ## Forecasts of actions one plan may run. Every reachable position is still tried, so an
 ## advance stays available; beyond the budget no further action is forecast and the best
 ## plan found so far stands. Below it the plan equals the exhaustive search.
@@ -184,8 +187,8 @@ static func _score(position: BattleEngine, actor: UnitState, grid: HexGrid, othe
 	var ability: AbilityDefinition
 	if command is UseAbilityCommand:
 		ability = actor.get_ability(command.ability_id)
-	# Retaliation depends on the actor's distance to each defender.
-	if ability == null or ability.melee_attack:
+	# Retaliation depends on the actor's distance to each defender, a push on its hex.
+	if ability == null or ability.melee_attack or depends_on_origin(ability):
 		return _simulate(position, actor, command, memo)
 	var center: Vector2i = command.target_hex if command.targets_hex else position.get_unit(command.target_id).hex
 	var area := AbilityExecutor.get_affected_hexes(grid, actor.hex, ability, center)
@@ -263,6 +266,14 @@ static func is_local(ability: AbilityDefinition) -> bool:
 	return true
 
 
+## True when an effect of the ability acts differently from another hex of the user.
+static func depends_on_origin(ability: AbilityDefinition) -> bool:
+	for effect: AbilityEffectDefinition in ability.effects:
+		if effect.effect_type_id in ORIGIN_EFFECTS:
+			return true
+	return false
+
+
 ## No elemental damage: a hit unit starts no terrain reaction.
 static func _is_physical(ability: AbilityDefinition) -> bool:
 	for effect: AbilityEffectDefinition in ability.effects:
@@ -284,7 +295,7 @@ static func _supports_prediction(ability: AbilityDefinition) -> bool:
 	# Status application may cause immediate oil explosions; score its real events as well.
 	var can_affect_enemy := false
 	for effect: AbilityEffectDefinition in ability.effects:
-		if effect.effect_type_id not in [&"core:damage", &"core:hex_state", &"core:unit_status", &"core:summon"]:
+		if effect.effect_type_id not in [&"core:damage", &"core:hex_state", &"core:unit_status", &"core:summon", &"core:push"]:
 			return false
 		can_affect_enemy = can_affect_enemy or effect.effect_type_id != &"core:summon"
 	return can_affect_enemy
