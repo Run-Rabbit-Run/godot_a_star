@@ -292,5 +292,17 @@
       572.0
     ],
     "corpse_width": 82
+  },
+  "nika_iskra.png": {
+    "height": 82,
+    "foot_anchor": [0.43, 0.965],
+    "corpse_width": 82,
+    "corpse_visible_region": [55, 144, 1665, 595]
+  },
+  "saveliy_dopusk.png": {
+    "height": 90,
+    "foot_anchor": [0.4, 0.975],
+    "corpse_width": 90,
+    "corpse_visible_region": [48, 97, 1681, 717]
   }
 }

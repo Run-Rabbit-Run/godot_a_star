@@ -1,0 +1,32 @@
+{
+  "assets": [
+    {
+      "output": "units/nika_iskra.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/battle-pairs/units/01-ulichnaya-iskra-battle-v2.png",
+      "sha256": "169AFBE7D45EDD6E42EBC44E75CF2CB8791EF7732303BF1929F0B75A13906A11",
+      "tool": "built-in ImageGen",
+      "transparent_background": true
+    },
+    {
+      "output": "units/saveliy_dopusk.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/battle-pairs/units/01-korabelny-battle.png",
+      "sha256": "DF46585B97E65D50BB9F4555FB8E3A5BADAC20A9F1A277F2DD8F810DAC6863FC",
+      "tool": "built-in ImageGen",
+      "transparent_background": true
+    },
+    {
+      "output": "corpses/nika_iskra.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/battle-pairs/corpses/01-ulichnaya-iskra-battle-v2.png",
+      "sha256": "17300C23830DC9C06C6F6A26A2AB59B93EEE3B536A556B0DC4C5AD318DD48EE1",
+      "tool": "built-in ImageGen",
+      "transparent_background": true
+    },
+    {
+      "output": "corpses/saveliy_dopusk.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/battle-pairs/corpses/01-korabelny-battle.png",
+      "sha256": "A9B2C8168253325282BED42C12258AD46DFFBA0A23C6D71C513E47D46B10AAB4",
+      "tool": "built-in ImageGen",
+      "transparent_background": true
+    }
+  ]
+}
