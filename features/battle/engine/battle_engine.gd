@@ -511,20 +511,21 @@ func _resolve_end_phase(command: EndPhaseCommand) -> BattleResolution:
 	if command.faction != get_active_faction():
 		return _rejected("Only the acting faction can end its phase.")
 	var events: Array[BattleEvent] = []
-	# Remaining units resolve their end-of-turn effects with the phase end.
+	# Remaining units end their turns with the phase end.
 	for unit_id: StringName in _state.turn_service.get_ready_unit_ids():
 		_state.turn_service.finish_unit(unit_id)
 	return _accepted(events)
 
 
-## Start-of-turn effects of every unit of the acting faction, in field order.
+## Start of the acting faction's phase for every unit of it, in field order: reserves expire,
+## turns restart, the hex acts, then the periodic statuses act and lose their levels.
 ## The battle's first phase has no handoff to announce and repeats no terrain exposure.
 func _start_phase(events: Array[BattleEvent], first := false) -> void:
 	if not first:
 		events.append(PhaseStartedEvent.new(get_active_faction(), get_round_number()))
 	# The side's shields fall before any start effect, so none of them meets a shield of this side.
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
-		UnitStatusService.start_phase(get_unit(unit_id), events)
+		UnitStatusService.expire_reserves(get_unit(unit_id), events)
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
 		var unit := get_unit(unit_id)
 		unit.turn.start_turn()
@@ -539,25 +540,29 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 			return
 		if not first and not unit.health.is_defeated():
 			_apply_hex_state_damage(unit_id, events)
+		# The hex comes first, so what it gives acts in this phase; properties lose their level
+		# only after it, so a resistance still meets the paralysis of the unit's own hex.
+		UnitStatusService.start_phase(unit, events)
 		_settle_presence(events)
 		if not _terminal_error.is_empty() or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 			return
 
 
-## The unit cannot act again this phase; a living unit resolves its end-of-turn effects once.
-## A defending unit raises `shield_levels` of shield after them, so its own periodic damage
-## does not break the shield meant for the opponent's phase.
+## The unit cannot act again this phase and ends its turn once. A defending unit raises
+## `shield_levels` of shield that covers it until its side's next phase.
 func _finish_unit(unit_id: StringName, events: Array[BattleEvent], shield_levels := 0) -> void:
 	var unit := get_unit(unit_id)
-	var skipped: bool = unit != null and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0 and _state.turn_service.get_current_unit_id() != unit_id
+	var paralyzed: bool = unit != null and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0
+	var skipped := paralyzed and _state.turn_service.get_current_unit_id() != unit_id
+	# A unit that could still act in this phase lost its turn to the paralysis; one that had
+	# already finished (it acted, or was summoned) keeps the paralysis for its next phase.
+	var lost_turn := paralyzed and not _state.turn_service.has_finished(unit_id)
 	_state.turn_service.finish_unit(unit_id)
 	if unit == null or _state.turn_service.has_ended(unit_id):
 		return
-	_state.turn_service.mark_ended(unit_id)
-	UnitStatusService.end_turn(unit, events)
-	_settle_presence(events)
+	_state.turn_service.mark_ended(unit_id, lost_turn)
 	UnitStatusService.apply(unit, UnitStatusCatalog.SHIELD, shield_levels, events)
-	# An object resolves the effects of its phase but has no turn to end.
+	# An object has no turn to end.
 	if not unit.takes_turns():
 		return
 	var ended := TurnEndedEvent.new(unit_id, get_round_number())
@@ -584,14 +589,15 @@ func _settle_turns(events: Array[BattleEvent]) -> void:
 		_end_phase(events)
 
 
-## End-of-turn effects of units that have not had them, then the other faction's phase.
+## Turns of the units that have not ended them, the turn statuses of the whole side, then the
+## other faction's phase.
 func _end_phase(events: Array[BattleEvent]) -> void:
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
 		if _state.turn_service.has_ended(unit_id):
 			continue
 		_finish_unit(unit_id, events)
-		if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
-			return
+	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
+		UnitStatusService.end_phase(get_unit(unit_id), _state.turn_service.lost_turn_to_paralysis(unit_id), events)
 	if _state.turn_service.advance_phase():
 		HexStateService.end_round(_state, events)
 		# A new round can decide the battle: a survived objective or the round limit.
@@ -759,7 +765,7 @@ func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolutio
 		damage -= BasicAttackRules.melee_penalty(attacker.basic_attack_range, damage)
 	# The strike has landed: a flask burst the map refuses stops the battle, as after a hit.
 	_terminal_error = ObstacleService.damage(_state, command.target_hex, damage, events)
-	# A burst may kill: its consequences come before the attacker's end-of-turn effects.
+	# A burst may kill: its consequences come before the attacker's turn ends.
 	_settle_presence(events)
 	if _terminal_error.is_empty():
 		_finish_action_turn(attacker.unit_id, events)

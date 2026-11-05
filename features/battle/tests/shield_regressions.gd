@@ -65,17 +65,15 @@ func _run_status_lifetime(suite: Node, fixture: Fixtures) -> void:
 	var events: Array[BattleEvent] = []
 	var unit := fixture.unit(&"unit", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	unit.statuses.assign({SHIELD: 2, UnitStatusCatalog.WET: 2})
-	UnitStatusService.end_turn(unit, events)
-	suite.expect(unit.statuses.get(SHIELD, 0) == 2 and unit.statuses.get(UnitStatusCatalog.WET, 0) == 1, "The shield does not wear off at the end of the turn")
-	unit.statuses.assign({SHIELD: 1, UnitStatusCatalog.BURNING: 2})
-	UnitStatusService.end_turn(unit, events)
-	suite.expect(unit.health.current == 100 and not unit.statuses.has(SHIELD), "The shield prevents periodic damage too")
+	UnitStatusService.start_phase(unit, events)
+	UnitStatusService.end_phase(unit, false, events)
+	suite.expect(unit.statuses.get(SHIELD, 0) == 2 and unit.statuses.get(UnitStatusCatalog.WET, 0) == 1, "The shield is a reserve: the level decay of the phase boundaries skips it")
 	unit.statuses.assign({SHIELD: 3, UnitStatusCatalog.ARMOR: 1})
 	events.clear()
-	UnitStatusService.start_phase(unit, events)
+	UnitStatusService.expire_reserves(unit, events)
 	suite.expect(unit.statuses.size() == 1 and unit.statuses.get(UnitStatusCatalog.ARMOR, 0) == 1 and events.size() == 1 and events[0] is UnitStatusChangedEvent, "The phase start removes every shield level and nothing else")
 	events.clear()
-	UnitStatusService.start_phase(unit, events)
+	UnitStatusService.expire_reserves(unit, events)
 	suite.expect(events.is_empty(), "A phase start without a shield publishes nothing")
 	suite.expect(UnitStatusCatalog.has_status(SHIELD) and UnitStatusCatalog.display_name(SHIELD) == "Щит", "The shield is a named status")
 	suite.expect(ResourceLoader.exists("res://features/battle/ui/icons/status/shield.svg"), "The shield has a status icon")
@@ -89,7 +87,7 @@ func _run_defend(suite: Node, fixture: Fixtures) -> void:
 	player.statuses[UnitStatusCatalog.ELECTRIFIED] = 2
 	var forecast := ActionPreview.build(engine.fork_for_prediction(), engine, EndTurnCommand.new(player.unit_id))
 	var change := forecast.units.get(player.unit_id) as ActionPreview.UnitChange
-	suite.expect(change != null and change.statuses_after.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS and change.health_after == 99, "The defend forecast shows the shield and the turn's own tick")
+	suite.expect(change != null and change.statuses_after.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS and change.health_after == 100, "The defend forecast shows the shield; periodic damage is not part of the turn")
 	var result := engine.execute(EndTurnCommand.new(player.unit_id))
 	var timeline: Array[String] = []
 	for event: BattleEvent in result.events:
@@ -99,11 +97,15 @@ func _run_defend(suite: Node, fixture: Fixtures) -> void:
 			timeline.append("shield")
 		elif event is TurnEndedEvent and event.unit_id == player.unit_id:
 			timeline.append("end")
-	suite.expect(timeline == ["tick", "shield", "end"], "Defending raises the shield after the turn's own effects, before its end")
-	suite.expect(player.health.current == 99 and player.statuses.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS, "Own periodic damage does not break the defend shield")
+	suite.expect(timeline == ["shield", "end"], "Defending raises the shield before the turn ends; the turn end deals no periodic damage")
+	suite.expect(player.health.current == 100 and player.statuses.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS and player.statuses.get(UnitStatusCatalog.ELECTRIFIED, 0) == 2, "The electrified unit keeps its levels and health until its next phase")
 	suite.expect(engine.get_active_faction() == BattleFaction.Value.ENEMY and player.statuses.has(SHIELD), "The shield survives the opponent's phase start")
-	engine.execute(AttackCommand.new(enemy.unit_id, player.unit_id))
-	suite.expect(player.health.current == 98 and not player.statuses.has(SHIELD), "The shield prevents one damage of the opponent's attack and breaks")
+	var attack := engine.execute(AttackCommand.new(enemy.unit_id, player.unit_id))
+	var hit: UnitDamagedEvent
+	for event: BattleEvent in attack.events:
+		if event is UnitDamagedEvent and event.attacker_id == enemy.unit_id and event.target_id == player.unit_id:
+			hit = event
+	suite.expect(hit != null and hit.damage == 1 and hit.damage_modifiers.back() == {"source_id": SHIELD, "amount": -1} and not player.statuses.has(SHIELD), "The shield prevents one damage of the opponent's attack and breaks")
 	suite.expect(not enemy.statuses.has(SHIELD), "Attacking does not give a shield")
 
 	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i.ZERO)
@@ -133,6 +135,16 @@ func _run_phase_lifetime(suite: Node, fixture: Fixtures) -> void:
 	suite.expect(enemy.statuses.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS, "The opponent's shield lasts until its own phase")
 	engine.execute(EndTurnCommand.new(player.unit_id))
 	suite.expect(not enemy.statuses.has(SHIELD) and player.statuses.get(SHIELD, 0) == BattleEngine.DEFEND_SHIELD_LEVELS, "Each side's shields fall at its own phase start")
+	# The side's own periodic damage comes after its shields fell: it never spends one.
+	player.statuses[UnitStatusCatalog.BURNING] = 2
+	result = engine.execute(EndTurnCommand.new(enemy.unit_id))
+	var order: Array[String] = []
+	for event: BattleEvent in result.events:
+		if event is UnitStatusChangedEvent and event.unit_id == player.unit_id and event.previous_statuses.has(SHIELD) and not event.statuses.has(SHIELD):
+			order.append("shield")
+		elif event is UnitDamagedEvent and event.target_id == player.unit_id and event.source_status_id == UnitStatusCatalog.BURNING:
+			order.append("burning")
+	suite.expect(order == ["shield", "burning"] and player.health.current == 99 and player.statuses.get(UnitStatusCatalog.BURNING, 0) == 1, "The shield falls before the side's periodic damage, which then lands in full")
 
 	# The first unit's start effect, a returning spear, meets no shield of a later ally.
 	var line: Array[Vector2i] = []

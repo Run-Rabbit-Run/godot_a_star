@@ -12,7 +12,7 @@ var _round_number := 0
 var _started := false
 ## Units that cannot act again this phase: they finished, or joined it as summons.
 var _finished: Dictionary[StringName, bool] = {}
-## Units whose end-of-turn effects already resolved this phase.
+## Units whose turn ended this phase; true when paralysis kept the unit from acting in it.
 var _ended: Dictionary[StringName, bool] = {}
 var _current_unit_id := StringName()
 ## The acting faction's strategist has used its ability this phase.
@@ -111,12 +111,18 @@ func has_finished(unit_id: StringName) -> bool:
 	return _finished.has(unit_id)
 
 
-func mark_ended(unit_id: StringName) -> void:
-	_ended[unit_id] = true
+## `lost_to_paralysis`: the unit could still act in this phase when paralysis ended its turn.
+func mark_ended(unit_id: StringName, lost_to_paralysis := false) -> void:
+	_ended[unit_id] = lost_to_paralysis
 
 
 func has_ended(unit_id: StringName) -> bool:
 	return _ended.has(unit_id)
+
+
+## Whether paralysis cost the unit its turn in this phase.
+func lost_turn_to_paralysis(unit_id: StringName) -> bool:
+	return _ended.get(unit_id, false)
 
 
 ## Whether the acting faction's strategist has already used an ability this phase.

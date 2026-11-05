@@ -53,7 +53,7 @@ func _run_boundary(suite: Node, fixture: Fixtures) -> void:
 	state.hex_grid.set_hex_state(Vector2i(1, 0), &"core:fire")
 	var session := fixture.ai_session(state)
 	var preview := session.preview(AttackCommand.new(&"attacker", &"target"))
-	suite.expect((preview.units[&"attacker"] as ActionPreview.UnitChange).health_after == 99, "The actor's own end-of-turn burn is part of the preview")
+	suite.expect(preview.accepted and not preview.units.has(&"attacker"), "The actor's burning acts at its next phase start, outside the preview")
 	suite.expect((preview.units[&"target"] as ActionPreview.UnitChange).health_after == 98, "Effects of the next phase are not part of the preview")
 
 

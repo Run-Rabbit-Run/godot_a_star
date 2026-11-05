@@ -21,6 +21,9 @@ static func evaluate(unit: UnitSnapshot, grid: HexGrid, path: Array[Vector2i]) -
 		if simulated.health.is_defeated() or simulated.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
 			reached = index == path.size() - 1
 			break
-	UnitStatusService.end_turn(simulated, events)
+	# The unit's next own phase starts the same way as in the battle: reserves expire, the hex
+	# acts, then the periodic statuses.
+	UnitStatusService.expire_reserves(simulated, events)
 	HexStateService.expose(simulated, grid, events)
+	UnitStatusService.start_phase(simulated, events)
 	return {"reached": reached, "damage": unit.health.current - simulated.health.current, "lethal": simulated.health.is_defeated()}

@@ -1,8 +1,8 @@
 class_name ActionPreview
 extends RefCounted
-## What one command would do, computed on a forecast copy of the battle: the action itself,
-## the reactions it causes and the acting unit's own end-of-turn effects, up to the end of its
-## turn. Effects of the next phase are not part of it. Read-only data for the battle UI.
+## What one command would do, computed on a forecast copy of the battle: the action itself and
+## the reactions it causes, up to the end of the acting unit's turn. Effects of the phase
+## boundaries, periodic damage included, are not part of it. Read-only data for the battle UI.
 
 
 ## Health and statuses of one unit before and after the previewed command.

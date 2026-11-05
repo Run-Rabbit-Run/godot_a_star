@@ -91,14 +91,19 @@ func _run_phase_effects(suite: Node, fixture: Fixtures) -> void:
 			exposed.append(event.target_id)
 	suite.expect(phase_index >= 0 and exposed == [&"e1", &"e2"], "Both enemies take terrain exposure at the start of their phase")
 
-	# End-of-turn effects follow the unit's own action; others wait for the phase end.
+	# Periodic damage waits for the side's next phase start and reaches every unit in field order.
 	battle = _battle(fixture)
 	engine = BattleEngine.new(battle.state)
 	battle.p1.statuses[&"core:burning"] = 2
 	battle.p2.statuses[&"core:burning"] = 2
 	var first := engine.execute(EndTurnCommand.new(&"p1"))
-	suite.expect(_ticks(first.events) == [&"p1"] and battle.p2.health.current == 100, "Only the unit that ended its turn burns right away")
-	suite.expect(_ticks_before_turn_end(first.events, &"p1"), "The burn precedes that unit's turn end")
+	suite.expect(_ticks(first.events).is_empty() and battle.p1.health.current == 100, "Ending a turn deals no periodic damage")
+	engine.execute(EndTurnCommand.new(&"p2"))
+	var next := engine.execute(EndPhaseCommand.new(BattleFaction.Value.ENEMY))
+	var player_phase := _index_of_phase(next.events, BattleFaction.Value.PLAYER)
+	var after_start: Array[BattleEvent] = []
+	after_start.assign(next.events.slice(player_phase + 1))
+	suite.expect(player_phase >= 0 and _ticks(next.events) == [&"p1", &"p2"] and _ticks(after_start) == [&"p1", &"p2"], "Every unit of the side burns at its phase start, in field order")
 
 
 func _run_end_phase(suite: Node, fixture: Fixtures) -> void:
@@ -108,7 +113,7 @@ func _run_end_phase(suite: Node, fixture: Fixtures) -> void:
 	suite.expect(not engine.execute(EndPhaseCommand.new(BattleFaction.Value.ENEMY)).accepted, "Only the acting faction can end its phase")
 	var ended := engine.execute(EndPhaseCommand.new(BattleFaction.Value.PLAYER))
 	suite.expect(ended.accepted and engine.get_active_faction() == BattleFaction.Value.ENEMY, "Ending the phase passes the turn")
-	suite.expect(_ticks(ended.events) == [&"p2"] and _ticks_before_turn_end(ended.events, &"p2"), "Units that did not act get their end-of-turn effects with the phase end")
+	suite.expect(_ticks(ended.events).is_empty(), "Units that did not act take no periodic damage with the phase end")
 	var phase_index := _index_of_phase(ended.events, BattleFaction.Value.ENEMY)
 	var turn_ends := 0
 	for index in range(phase_index):
@@ -165,13 +170,3 @@ func _ticks(events: Array[BattleEvent]) -> Array[StringName]:
 		if event is UnitDamagedEvent and event.source_status_id == &"core:burning":
 			targets.append(event.target_id)
 	return targets
-
-
-func _ticks_before_turn_end(events: Array[BattleEvent], unit_id: StringName) -> bool:
-	var ticked := false
-	for event: BattleEvent in events:
-		if event is UnitDamagedEvent and event.source_status_id == &"core:burning" and event.target_id == unit_id:
-			ticked = true
-		if event is TurnEndedEvent and event.unit_id == unit_id:
-			return ticked
-	return false

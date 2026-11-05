@@ -1,10 +1,10 @@
 class_name TurnEndedEvent
 extends BattleEvent
-## A unit finished its turn in the phase; its end-of-turn effects precede this event.
+## A unit finished its turn in the phase.
 
 var unit_id: StringName
 var round_number: int
-## A paralyzed unit did not act: its end-of-turn effects resolved with the phase end.
+## A paralyzed unit did not act: its turn ended with the phase end.
 var was_skipped := false
 
 

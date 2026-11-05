@@ -6,6 +6,8 @@ const Fixtures := preload("res://features/battle/tests/regression_fixtures.gd")
 func run_statuses(suite: Node) -> void:
 	_check_statuses(suite)
 	_check_fixed_status_damage(suite)
+	_check_categories(suite)
+	_check_phase_timing(suite)
 
 
 func _check_statuses(suite: Node) -> void:
@@ -30,7 +32,7 @@ func _check_statuses(suite: Node) -> void:
 	UnitStatusService.apply(unit, &"core:acid", 5, events)
 	suite.expect(not unit.statuses.has(&"core:armor") and not unit.statuses.has(&"core:acid"), "Acid threshold removes armor and acid")
 	events.clear()
-	UnitStatusService.end_turn(unit, events)
+	UnitStatusService.start_phase(unit, events)
 	var periodic_found := false
 	for event: BattleEvent in events:
 		if event is UnitDamagedEvent:
@@ -53,7 +55,7 @@ func _check_fixed_status_damage(suite: Node) -> void:
 			if levels > 0:
 				unit.statuses[spec.id] = levels
 			var events: Array[BattleEvent] = []
-			UnitStatusService.end_turn(unit, events)
+			UnitStatusService.start_phase(unit, events)
 			var expected_damage: int = spec.amount if levels > 0 else 0
 			suite.expect(unit.health.current == 100 - expected_damage and unit.statuses.get(spec.id, 0) == maxi(0, levels - 1), "Fixed status damage and one-level decay: %s/%d" % [spec.id, levels])
 			var hits := 0
@@ -77,12 +79,80 @@ func _check_fixed_status_damage(suite: Node) -> void:
 	var protected := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	protected.statuses.assign({&"core:plasma": 3, &"core:wet": 1})
 	var events: Array[BattleEvent] = []
-	UnitStatusService.end_turn(protected, events)
+	UnitStatusService.start_phase(protected, events)
 	suite.expect(protected.health.current == 99 and not protected.statuses.has(&"core:wet"), "Plasma periodic fire damage uses fire absorption")
 	var oily := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	oily.statuses[&"core:sticky_oil"] = 3
 	UnitStatusService.apply(oily, &"core:burning", 2, events)
 	suite.expect(oily.health.current == 95 and not oily.statuses.has(&"core:sticky_oil"), "Oil explosion retains sum-of-levels rule")
+
+
+## Each status has one category, and the category alone decides when its levels fall.
+func _check_categories(suite: Node) -> void:
+	var expected := {
+		&"core:burning": UnitStatusCatalog.Category.PERIODIC,
+		&"core:electrified": UnitStatusCatalog.Category.PERIODIC,
+		&"core:plasma": UnitStatusCatalog.Category.PERIODIC,
+		&"core:acid": UnitStatusCatalog.Category.PERIODIC,
+		&"core:sticky_oil": UnitStatusCatalog.Category.TURN,
+		&"core:paralysis": UnitStatusCatalog.Category.TURN,
+		&"core:wet": UnitStatusCatalog.Category.PROPERTY,
+		&"core:paralysis_resistance": UnitStatusCatalog.Category.PROPERTY,
+		&"core:armor": UnitStatusCatalog.Category.RESERVE,
+		&"core:shield": UnitStatusCatalog.Category.RESERVE,
+	}
+	for id: StringName in UnitStatusCatalog.RULES:
+		suite.expect(expected.has(id) and UnitStatusCatalog.category(id) == expected[id] and not UnitStatusCatalog.category_name(id).is_empty(), "Status %s has its category" % id)
+	var fixture: Fixtures = suite.fixture
+	var unit := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	unit.statuses.assign({&"core:burning": 3, &"core:acid": 2, &"core:paralysis": 1, &"core:paralysis_resistance": 1, &"core:armor": 4})
+	var events: Array[BattleEvent] = []
+	UnitStatusService.start_phase(unit, events)
+	suite.expect(unit.health.current == 99 and unit.statuses == {&"core:burning": 2, &"core:acid": 1, &"core:paralysis": 1, &"core:armor": 3}, "The phase start: periodic statuses and properties lose a level, turn statuses keep theirs, acid takes one armor")
+	unit.statuses.assign({&"core:burning": 3, &"core:sticky_oil": 2, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2})
+	UnitStatusService.end_phase(unit, false, events)
+	suite.expect(unit.statuses == {&"core:burning": 3, &"core:sticky_oil": 1, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2}, "The phase end: only turn statuses lose a level")
+
+
+## Periodic damage lands at the start of the side's phase, after the hex, never at a turn end.
+func _check_phase_timing(suite: Node) -> void:
+	var fixture: Fixtures = suite.fixture
+	var cells: Array[Vector2i] = [Vector2i.ZERO, Vector2i(5, 0)]
+	var player := fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	var enemy := fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(5, 0))
+	var state := fixture.state(cells, [player, enemy])
+	state.hex_grid.set_hex_state(Vector2i.ZERO, &"core:fire")
+	var engine := BattleEngine.new(state)
+	suite.expect(player.health.current == 98 and player.statuses.get(&"core:burning", 0) == 1, "The first phase: the starting fire burns once, then the periodic burning acts and loses a level")
+	var turn := engine.execute(EndTurnCommand.new(player.unit_id))
+	var hit_in_turn := false
+	for event: BattleEvent in turn.events:
+		if event is TurnEndedEvent and event.unit_id == player.unit_id:
+			break
+		hit_in_turn = hit_in_turn or (event is UnitDamagedEvent and event.target_id == player.unit_id)
+	suite.expect(not hit_in_turn and player.health.current == 98, "The turn end deals no periodic damage")
+	var next := engine.execute(EndTurnCommand.new(enemy.unit_id))
+	var sources: Array[String] = []
+	for event: BattleEvent in next.events:
+		if event is UnitDamagedEvent and event.target_id == player.unit_id:
+			sources.append("hex" if not event.source_hex_state_id.is_empty() else String(event.source_status_id))
+	suite.expect(sources == ["hex", "core:burning"] and player.health.current == 96 and player.statuses.get(&"core:burning", 0) == 2, "The phase start: the hex acts first, then the burning it gave")
+	var units: Dictionary[StringName, UnitDefinition] = {}
+	for event: BattleEvent in next.events:
+		if event is UnitDamagedEvent and event.source_status_id == &"core:burning":
+			suite.expect("(начало фазы)" in BattleLogFormatter.describe(event, units, null), "The log marks periodic damage as the phase start")
+
+	# Oil from the opponent slows the whole own phase and wears off only at its end.
+	player = fixture.unit(&"player", BattleFaction.Value.PLAYER, Vector2i.ZERO)
+	enemy = fixture.unit(&"enemy", BattleFaction.Value.ENEMY, Vector2i(5, 0))
+	engine = BattleEngine.new(fixture.state(cells, [player, enemy]))
+	engine.execute(EndTurnCommand.new(player.unit_id))
+	var events: Array[BattleEvent] = []
+	UnitStatusService.apply(player, &"core:sticky_oil", 1, events)
+	engine.execute(EndTurnCommand.new(enemy.unit_id))
+	suite.expect(player.statuses.get(&"core:sticky_oil", 0) == 1 and player.turn.movement_remaining == player.turn.movement_max - 1, "The last oil level stays visible through the phase it slows")
+	engine.execute(EndTurnCommand.new(player.unit_id))
+	suite.expect(not player.statuses.has(&"core:sticky_oil"), "Oil loses its level at the end of its side's phase")
 
 
 func run_damage_log(suite: Node) -> void:
@@ -166,26 +236,25 @@ func run_turn_effect_order(suite: Node) -> void:
 			p.abilities[ability.id] = ability
 			command = UseAbilityCommand.new(p.unit_id, e.unit_id, ability.id)
 		var result := engine.execute(command)
-		var tick_index := -1
-		var boundary_index := -1
 		var ticks := 0
-		for index in range(result.events.size()):
-			var event := result.events[index]
+		for event: BattleEvent in result.events:
 			if event is UnitDamagedEvent and event.source_status_id == &"core:electrified":
+				ticks += 1
+		suite.expect(result.accepted and ticks == 0 and p.health.current == 100 and p.statuses[&"core:electrified"] == 2, "Ending the turn and handing off the phase deal no periodic damage: %s" % action)
+		var start_result := engine.execute(EndTurnCommand.new(e.unit_id))
+		var phase_index := -1
+		var tick_index := -1
+		ticks = 0
+		for index in range(start_result.events.size()):
+			var event := start_result.events[index]
+			if event is PhaseStartedEvent and event.faction == BattleFaction.Value.PLAYER:
+				phase_index = index
+			if event is UnitDamagedEvent and event.target_id == p.unit_id and event.source_status_id == &"core:electrified":
 				tick_index = index
 				ticks += 1
-			if event is TurnEndedEvent and event.unit_id == p.unit_id:
-				boundary_index = index
-		suite.expect(result.accepted and ticks == 1 and tick_index >= 0 and tick_index < boundary_index, "Periodic tick precedes handoff exactly once: %s" % action)
-		suite.expect(p.health.current == 99 and p.statuses[&"core:electrified"] == 1, "End tick uses fixed damage and one-level decay: %s" % action)
-		p.health.current = 100
-		var start_result := engine.execute(EndTurnCommand.new(e.unit_id))
-		var premature_tick := false
-		for event: BattleEvent in start_result.events:
-			if event is UnitDamagedEvent and event.target_id == p.unit_id and not event.source_status_id.is_empty():
-				premature_tick = true
-		suite.expect(start_result.accepted and engine.get_round_number() == 2 and p.health.current == 100 and not premature_tick, "Starting the next own turn does not apply periodic damage: %s" % action)
-	# A skipped unit has its own boundary, after its own tick, before the next round.
+		suite.expect(start_result.accepted and engine.get_round_number() == 2 and ticks == 1 and tick_index > phase_index and phase_index >= 0, "The next own phase start ticks exactly once: %s" % action)
+		suite.expect(p.health.current == 99 and p.statuses[&"core:electrified"] == 1, "The phase start tick uses fixed damage and one-level decay: %s" % action)
+	# A skipped unit ticks at its phase start; its skipped turn ends with the phase.
 	var p := fixture.unit(&"p", BattleFaction.Value.PLAYER, Vector2i.ZERO)
 	var e := fixture.unit(&"e", BattleFaction.Value.ENEMY, Vector2i(1, 0))
 	var state := fixture.state([p.hex, e.hex], [p, e])
@@ -201,12 +270,12 @@ func run_turn_effect_order(suite: Node) -> void:
 				skipped = event
 		elif event is UnitDamagedEvent:
 			timeline.append("tick:%s" % event.target_id)
-	suite.expect(timeline == ["end:p:1", "tick:e", "end:e:1"], "A paralyzed unit ticks at the end of its own phase, before its turn end")
+	suite.expect(timeline == ["end:p:1", "tick:e", "end:e:1"], "A paralyzed unit ticks at the start of its phase, then its skipped turn ends with the phase")
 	suite.expect(skipped != null and skipped.unit_id == e.unit_id and skipped.round_number == 1, "The skipped turn names the paralyzed unit and its round")
 	suite.expect(e.health.current == 99 and not e.statuses.has(&"core:paralysis") and engine.get_active_unit_id() == p.unit_id, "Paralysis skip retains tick and decay once")
 	var units: Dictionary[StringName, UnitDefinition] = {}
-	suite.expect("пропущен из-за паралича" in BattleLogFormatter.describe(skipped, units, null), "Log explicitly explains skipped end-of-turn effects")
-	# Direct terrain damage still belongs to the new turn, unlike periodic status damage.
+	suite.expect("пропущен из-за паралича" in BattleLogFormatter.describe(skipped, units, null), "Log explicitly explains the skipped turn")
+	# The hex acts at the phase start first, then the periodic status it gave.
 	e.statuses.clear()
 	state.hex_grid.set_hex_state(e.hex, &"core:electricity")
 	result = engine.execute(EndTurnCommand.new(p.unit_id))
@@ -216,7 +285,7 @@ func run_turn_effect_order(suite: Node) -> void:
 			timeline.append("handoff")
 		elif event is UnitDamagedEvent:
 			timeline.append("terrain" if event.source_hex_state_id == &"core:electricity" and event.source_status_id.is_empty() else "periodic")
-	suite.expect(timeline == ["handoff", "terrain"], "Beginning terrain exposure follows handoff and does not tick electrified status")
+	suite.expect(timeline == ["handoff", "terrain", "periodic"], "The phase start exposes the unit to its hex, then ticks the status the hex gave")
 	# The first participant can already be paralyzed when the battle starts.
 	p.statuses.assign({&"core:electrified": 2, &"core:paralysis": 1})
 	e.statuses.clear()
@@ -230,16 +299,17 @@ func run_turn_effect_order(suite: Node) -> void:
 		elif event is TurnEndedEvent:
 			timeline.append("handoff")
 			skipped = event
-	suite.expect(timeline == ["tick", "handoff"] and engine.get_active_unit_id() == e.unit_id, "Initial paralysis resolves end tick before the handoff")
+	suite.expect(timeline == ["tick", "handoff"] and engine.get_active_unit_id() == e.unit_id, "Initial paralysis: the first phase start ticks, then the skipped turn ends")
 	suite.expect(skipped != null and skipped.was_skipped, "Initial paralysis is explicitly marked as a skipped turn")
-	# Lethal periodic damage must also precede the terminal turn boundary.
+	# Lethal periodic damage at the phase start decides the battle before any turn of that phase.
 	e.health.current = 1
 	e.statuses[&"core:electrified"] = 2
-	result = engine.execute(EndTurnCommand.new(e.unit_id))
+	engine.execute(EndTurnCommand.new(e.unit_id))
+	result = engine.execute(EndTurnCommand.new(p.unit_id))
 	timeline.clear()
 	for event: BattleEvent in result.events:
-		if event is UnitDamagedEvent:
+		if event is UnitDamagedEvent and event.target_id == e.unit_id:
 			timeline.append("tick")
 		elif event is TurnEndedEvent:
 			timeline.append("handoff")
-	suite.expect(timeline == ["tick", "handoff"] and result.battle_result != null, "Lethal end tick precedes battle-ending boundary")
+	suite.expect(timeline == ["handoff", "tick"] and e.health.is_defeated() and result.battle_result != null, "Lethal phase start tick ends the battle")

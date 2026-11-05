@@ -60,14 +60,16 @@ func run_doomed_ai(suite: Node) -> void:
 	source.decision_trace = {}
 	var before := JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state()))
 	var command := source.next_command(session)
-	suite.expect(command is MoveCommand and command.destination == Vector2i(2, 0), "Doomed unit moves into attack range before end-of-turn death")
+	suite.expect(command is MoveCommand and command.destination == Vector2i(2, 0), "Doomed unit moves into attack range before its periodic death")
 	suite.expect(source.decision_trace.reason == "doomed_maximum_damage", "Doomed damage plan is explained in AI trace")
 	suite.expect(before == JSON.stringify(BattleLogSerializer.encode(session.get_diagnostic_state())), "Speculative actions do not mutate live units, map, turns, revisions or RNG")
 	suite.expect(session.step(command).accepted and enemy.health.current == 1, "Doomed movement survives until action")
 	command = source.next_command(session)
 	suite.expect(command is AttackCommand and command.target_id == player.unit_id, "Doomed unit attacks after approaching")
 	var resolution := session.step(command)
-	suite.expect(resolution.accepted and player.health.current == 18 and enemy.health.is_defeated(), "Attack damages opponent before actor dies at end of turn")
+	suite.expect(resolution.accepted and player.health.current == 18 and not enemy.health.is_defeated(), "Attack damages opponent; the doomed actor outlives its own turn")
+	session.step(EndTurnCommand.new(player.unit_id))
+	suite.expect(enemy.health.is_defeated(), "The doomed actor dies of its periodic damage at its next phase start")
 
 	# Maximize actual HP removed, even if a nearer target is already attackable.
 	enemy = fixture.unit(&"doomed", BattleFaction.Value.ENEMY, Vector2i.ZERO, 1, 4)
@@ -199,4 +201,7 @@ func run_doomed_ai(suite: Node) -> void:
 	suite.expect(command is AttackCommand and command.target_id == &"plateau:battle:author:placement_1", "Recorded Chudishcherog reaches Tesla for an attack")
 	resolution = session.step(command)
 	suite.expect(resolution.accepted and participants[&"plateau:battle:author:placement_1"].health.current == 0, "Recorded Chudishcherog deals remaining 3 HP of damage to Tesla before dying")
-	suite.expect(participants[&"plateau:battle:author:placement_4"].health.is_defeated(), "Recorded Chudishcherog still obeys lethal end-of-turn status rules")
+	suite.expect(not participants[&"plateau:battle:author:placement_4"].health.is_defeated(), "Recorded Chudishcherog outlives its own turn")
+	session.step(EndPhaseCommand.new(BattleFaction.Value.ENEMY))
+	session.step(EndPhaseCommand.new(BattleFaction.Value.PLAYER))
+	suite.expect(participants[&"plateau:battle:author:placement_4"].health.is_defeated(), "Recorded Chudishcherog dies of its periodic damage at its next phase start")

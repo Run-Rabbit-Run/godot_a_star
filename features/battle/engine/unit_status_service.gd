@@ -25,7 +25,7 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 	if id == UnitStatusCatalog.PARALYSIS_RESISTANCE:
 		unit.statuses.erase(UnitStatusCatalog.PARALYSIS)
 	var previous := int(unit.statuses.get(id, 0))
-	# Paralysis never stacks past one level: it always costs exactly the next own turn.
+	# Paralysis never stacks past one level: it always costs exactly one own turn.
 	_set_levels(unit, id, mini(1, previous + levels) if id == UnitStatusCatalog.PARALYSIS else previous + levels)
 	if id == UnitStatusCatalog.ACID and unit.statuses.get(id, 0) >= 5:
 		unit.statuses.erase(id)
@@ -96,7 +96,20 @@ static func damage(unit: UnitState, request: DamageRequest, events: Array[Battle
 	if request.type == &"fire":
 		_explode_oil(unit, events)
 
-static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
+## Start of the unit's side phase, first step: reserves that last until then fall whole,
+## before any other start effect, so the side's own periodic damage never meets its shield.
+static func expire_reserves(unit: UnitState, events: Array[BattleEvent]) -> void:
+	if unit == null or unit.health.is_defeated():
+		return
+	var before := unit.statuses.duplicate()
+	for id: StringName in unit.statuses.keys():
+		if UnitStatusCatalog.drops_at_phase_start(id):
+			unit.statuses.erase(id)
+	_emit(unit, before, events)
+
+## Start of the unit's side phase, after its hex has acted: periodic statuses act, then periodic
+## statuses and properties lose one level. Turn statuses keep theirs until the phase ends.
+static func start_phase(unit: UnitState, events: Array[BattleEvent]) -> void:
 	if unit == null or unit.health.is_defeated():
 		return
 	# Presence determines periodic damage; levels determine decay and thresholds.
@@ -107,25 +120,27 @@ static func end_turn(unit: UnitState, events: Array[BattleEvent]) -> void:
 	damage(unit, DamageRequest.new(2 if plasma > 0 else 0, &"fire").from_status(UnitStatusCatalog.PLASMA), events)
 	damage(unit, DamageRequest.new(1 if electricity > 0 else 0, &"electric").from_status(UnitStatusCatalog.ELECTRIFIED), events)
 	var before := unit.statuses.duplicate()
-	var was_paralyzed: bool = unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0
 	if unit.statuses.get(UnitStatusCatalog.ACID, 0) > 0:
 		_set_levels(unit, UnitStatusCatalog.ARMOR, int(unit.statuses.get(UnitStatusCatalog.ARMOR, 0)) - 1)
 	for id: StringName in unit.statuses.keys():
-		# Armor never wears off; a shield lasts until its side's next phase.
-		if id != UnitStatusCatalog.ARMOR and id != UnitStatusCatalog.SHIELD:
+		var category := UnitStatusCatalog.category(id)
+		if category == UnitStatusCatalog.Category.PERIODIC or category == UnitStatusCatalog.Category.PROPERTY:
 			_set_levels(unit, id, int(unit.statuses[id]) - 1)
-	# Worn-off paralysis leaves one level of resistance, added after the decay so that it
-	# lasts through the opponent's phase and the unit's next own turn.
-	if was_paralyzed and not unit.statuses.has(UnitStatusCatalog.PARALYSIS):
-		unit.statuses[UnitStatusCatalog.PARALYSIS_RESISTANCE] = 1
 	_emit(unit, before, events)
 
-## Effects of the unit's statuses at the start of its side's phase: every shield level falls.
-static func start_phase(unit: UnitState, events: Array[BattleEvent]) -> void:
-	if unit == null or unit.health.is_defeated() or not unit.statuses.has(UnitStatusCatalog.SHIELD):
+## End of the unit's side phase: turn statuses lose one level. Paralysis costs exactly one
+## turn: it wears off only when `lost_turn` says it kept the unit from acting in this phase,
+## and leaves one level of resistance that lasts through the opponent's phase.
+static func end_phase(unit: UnitState, lost_turn: bool, events: Array[BattleEvent]) -> void:
+	if unit == null or unit.health.is_defeated():
 		return
 	var before := unit.statuses.duplicate()
-	unit.statuses.erase(UnitStatusCatalog.SHIELD)
+	for id: StringName in unit.statuses.keys():
+		if UnitStatusCatalog.category(id) == UnitStatusCatalog.Category.TURN and id != UnitStatusCatalog.PARALYSIS:
+			_set_levels(unit, id, int(unit.statuses[id]) - 1)
+	if lost_turn and unit.statuses.has(UnitStatusCatalog.PARALYSIS):
+		unit.statuses.erase(UnitStatusCatalog.PARALYSIS)
+		unit.statuses[UnitStatusCatalog.PARALYSIS_RESISTANCE] = 1
 	_emit(unit, before, events)
 
 static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:

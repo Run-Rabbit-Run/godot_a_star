@@ -17,8 +17,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 			source = HexStateCatalog.get_display_name(event.source_hex_state_id)
 		if not event.source_status_id.is_empty():
 			source = UnitStatusCatalog.display_name(event.source_status_id)
-			if event.source_status_id in [UnitStatusCatalog.BURNING, UnitStatusCatalog.PLASMA, UnitStatusCatalog.ELECTRIFIED]:
-				source += " (конец хода)"
+			if UnitStatusCatalog.has_status(event.source_status_id) and UnitStatusCatalog.category(event.source_status_id) == UnitStatusCatalog.Category.PERIODIC:
+				source += " (начало фазы)"
 		var text := "%s → %s: %d урона (%s), осталось %d ОЗ.\n  Расчёт: %s" % [source, _unit(event.target_id, units), event.damage, _damage_type(event.damage_type), event.target_health_remaining, _damage_formula(event, content)]
 		if event.target_defeated:
 			text += " %s погибает." % _unit(event.target_id, units)
@@ -55,7 +55,7 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		return "Фаза %s." % ("игрока" if event.faction == BattleFaction.Value.PLAYER else "противника")
 	if event is TurnEndedEvent:
 		if event.was_skipped:
-			return "Ход %s пропущен из-за паралича; эффекты конца хода применены." % _unit(event.unit_id, units)
+			return "Ход %s пропущен из-за паралича." % _unit(event.unit_id, units)
 		return "%s завершает ход." % _unit(event.unit_id, units)
 	if event is MapMutationEvent:
 		if event.obstacle_changed:

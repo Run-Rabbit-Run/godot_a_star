@@ -230,7 +230,7 @@ func show_statuses(statuses: Dictionary) -> void:
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
-		icon.tooltip_text = "%s · уровней: %d\n\n%s" % [UnitStatusCatalog.display_name(id), int(statuses[id]), UnitStatusCatalog.description(id)]
+		icon.tooltip_text = "%s · уровней: %d\nКатегория: %s\n\n%s" % [UnitStatusCatalog.display_name(id), int(statuses[id]), UnitStatusCatalog.category_name(id), UnitStatusCatalog.description(id)]
 		_status_row.add_child(icon)
 		var count := Label.new()
 		count.text = str(statuses[id])
