@@ -1,5 +1,5 @@
 extends RefCounted
-## Battle editor: unsaved-document guard, embedded unit editor, trial errors and obstacle editing.
+## Battle editor: unsaved-document guard, embedded unit editor, trial errors, obstacle and flask editing.
 
 
 func run(suite: Node) -> void:
@@ -7,6 +7,7 @@ func run(suite: Node) -> void:
 	await _check_embedded_editors(suite)
 	_check_obstacle_commands(suite)
 	await _check_obstacle_brush(suite)
+	await _check_flask_form(suite)
 
 
 func _check_document_guard(suite: Node) -> void:
@@ -161,3 +162,47 @@ func _check_obstacle_brush(suite: Node) -> void:
 	suite.expect(document.map_definition.obstacles.is_empty(), "Right click deletes whole footprint")
 	editor.queue_free()
 	await suite.get_tree().process_frame
+
+
+## A flask fills one destructible hex; the form shows only the settings of the chosen type.
+func _check_flask_form(suite: Node) -> void:
+	var editor := (load("res://tools/battles/battle_editor.tscn") as PackedScene).instantiate() as BattleEditorShell
+	suite.get_tree().root.add_child(editor)
+	await suite.get_tree().process_frame
+	editor.call("_create_new_document")
+	var inspector: BattleEditorInspector = editor.get("_inspector")
+	var document: BattleDocument = editor.get("_document")
+	var origin := HexCoordinateMapper.offset_to_axial(Vector2i(4, 4))
+	inspector.obstacle_size.value = 3
+	inspector.obstacle_destructible.button_pressed = false
+	_choose(inspector.obstacle_type, BattleObstacleDefinition.TYPES.find(&"big_flask"))
+	suite.expect(inspector.obstacle_size.value == 1 and not inspector.obstacle_size.editable and inspector.obstacle_destructible.button_pressed and inspector.obstacle_destructible.disabled and inspector.obstacle_hp.editable, "A flask type fixes one destructible hex with editable HP")
+	suite.expect(inspector.obstacle_contents.visible and not inspector.obstacle_blast.visible and not inspector.obstacle_burst_hint.text.is_empty(), "A spilling flask shows its contents and what its burst does")
+	_choose(inspector.obstacle_contents, BattleObstacleDefinition.CONTENTS.find(&"core:oil"))
+	inspector.obstacle_hp.value = 3
+	editor.call("_select_tool", EditorBattleView.Tool.PAINT_OBSTACLE)
+	editor.call("_on_hex_activated", origin)
+	var placed := EditorMapRules.obstacle_at(document, origin)
+	suite.expect(placed != null and placed.terrain_type == &"big_flask" and placed.contents == &"core:oil" and placed.max_hp == 3 and placed.hexes.size() == 1 and placed.destructible, "The brush places the configured flask")
+	_choose(inspector.obstacle_type, BattleObstacleDefinition.TYPES.find(&"explosive_flask"))
+	suite.expect(inspector.obstacle_blast.visible and not inspector.obstacle_contents.visible, "An explosive flask shows its blast damage")
+	inspector.obstacle_blast.value = 6
+	editor.call("_on_hex_activated", origin + Vector2i(2, 0))
+	var explosive := EditorMapRules.obstacle_at(document, origin + Vector2i(2, 0))
+	suite.expect(explosive != null and explosive.blast_damage == 6 and explosive.contents.is_empty(), "The explosive flask keeps its blast damage and no contents")
+	_choose(inspector.obstacle_type, BattleObstacleDefinition.TYPES.find(&"rocks"))
+	suite.expect(inspector.obstacle_size.editable and not inspector.obstacle_destructible.disabled and not inspector.obstacle_direction.disabled and not inspector.obstacle_contents.visible and not inspector.obstacle_blast.visible, "Ordinary obstacles get their size and destructibility back")
+	editor.call("_select_hex", origin)
+	suite.expect(inspector.obstacle_type.selected == BattleObstacleDefinition.TYPES.find(&"big_flask") and inspector.obstacle_contents.selected == BattleObstacleDefinition.CONTENTS.find(&"core:oil") and inspector.obstacle_hp.value == 3 and inspector.obstacle_contents.visible, "Selecting a flask loads its settings")
+	var loaded := BattleDocumentSerializer.from_dictionary(BattleDocumentSerializer.to_dictionary(document))
+	suite.expect(loaded != null and EditorMapRules.obstacle_at(loaded, origin + Vector2i(2, 0)).blast_damage == 6 and EditorMapRules.obstacle_at(loaded, origin).contents == &"core:oil", "Flask settings are saved with the field")
+	editor.call("_undo")
+	suite.expect(EditorMapRules.obstacle_at(document, origin + Vector2i(2, 0)) == null and EditorMapRules.obstacle_at(document, origin) != null, "Undo removes the last flask only")
+	editor.queue_free()
+	await suite.get_tree().process_frame
+
+
+## Selects an item as a user would: the selection signal follows.
+static func _choose(option: OptionButton, index: int) -> void:
+	option.select(index)
+	option.item_selected.emit(index)

@@ -102,12 +102,17 @@ static func plan(session: BattleSession, trace: Variant = null, unit_id: StringN
 	return {"command": EndTurnCommand.new(active.unit_id), "reason": "doomed_no_reachable_progress"}
 
 
-## Main actions the actor can take from its hex: attacks and built-in abilities that may hit an
-## opponent. `others` maps hexes to the other living units; `memo` needs "reach" and "skipped".
+## Main actions the actor can take from its hex: attacks, strikes at flasks and built-in
+## abilities that may hit an opponent. `others` maps hexes to the other living units; `memo`
+## needs "reach" and "skipped".
 static func actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], memo: Dictionary) -> Array[BattleCommand]:
 	var commands: Array[BattleCommand] = []
 	for target: UnitState in engine.get_attackable_targets(actor.unit_id):
 		commands.append(AttackCommand.new(actor.unit_id, target.unit_id))
+	for hex: Vector2i in engine.get_attackable_obstacle_hexes(actor.unit_id):
+		var obstacle := grid.get_obstacle(hex)
+		if obstacle != null and obstacle.is_flask():
+			commands.append(AttackObstacleCommand.new(actor.unit_id, hex))
 	var ids: Array = actor.abilities.keys()
 	ids.sort()
 	for id: StringName in ids:
@@ -138,6 +143,12 @@ static func actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, other
 ## True when a local effect at this center provably removes no opponent HP.
 static func _misses_opponents(ability: AbilityDefinition, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], center: Vector2i, memo: Dictionary) -> bool:
 	if not is_local(ability):
+		return false
+	# A flask in the area may burst onto opponents outside it. The map's flasks never move
+	# while the actor's options are explored, so their presence is checked once per plan.
+	if not memo.has("flasks"):
+		memo["flasks"] = touches_flask(grid, grid.get_cells())
+	if memo.flasks and touches_flask(grid, AbilityExecutor.get_affected_hexes(grid, actor.hex, ability, center)):
 		return false
 	var unit_hit := false
 	if ability.target_mode in ORIGIN_MODES:
@@ -192,6 +203,9 @@ static func _score(position: BattleEngine, actor: UnitState, grid: HexGrid, othe
 		return _simulate(position, actor, command, memo)
 	var center: Vector2i = command.target_hex if command.targets_hex else position.get_unit(command.target_id).hex
 	var area := AbilityExecutor.get_affected_hexes(grid, actor.hex, ability, center)
+	# A burst reaches past the area, and may reach the actor wherever it stands.
+	if touches_flask(grid, area):
+		return _simulate(position, actor, command, memo)
 	var key := _outcome_key(ability, grid, others, area, center)
 	var cached: Dictionary = memo.outcomes.get(key, {})
 	if not cached.is_empty():
@@ -280,6 +294,15 @@ static func _is_physical(ability: AbilityDefinition) -> bool:
 		if effect.effect_type_id == &"core:damage" and StringName(effect.parameters.get("damage_type", "physical")) != &"physical":
 			return false
 	return true
+
+
+## True when one of the cells holds a flask: breaking it acts beyond the cells themselves.
+static func touches_flask(grid: HexGrid, cells: Array[Vector2i]) -> bool:
+	for hex: Vector2i in cells:
+		var obstacle := grid.get_obstacle(hex) if grid.has_obstacle(hex) else null
+		if obstacle != null and obstacle.is_flask():
+			return true
+	return false
 
 
 static func _obstacle_hexes(grid: HexGrid, area: Array[Vector2i]) -> Array[Vector2i]:

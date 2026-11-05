@@ -22,6 +22,8 @@ var damage_modifiers: Array[Dictionary] = []
 var ranged_attack := false
 ## Damage of a collision after a push (PushService), dealt to both sides of it.
 var collision := false
+## The destroyed flask whose burst dealt the damage (ObstacleBreakService).
+var source_obstacle_id: StringName
 
 
 func _init(

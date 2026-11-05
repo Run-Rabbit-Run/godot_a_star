@@ -145,6 +145,9 @@ func _present_event(
 		map_view.apply_map_event(event as MapMutationEvent)
 		return true
 
+	if event is ObstacleBrokenEvent:
+		return await _present_flask_burst(event as ObstacleBrokenEvent, map_view)
+
 	push_error("Unsupported BattleEvent in presentation queue.")
 	return false
 
@@ -195,6 +198,16 @@ func _present_push(event: UnitPushedEvent, unit_actors: Dictionary[StringName, U
 	return true
 
 
+## The flask's art is already gone with its map update; the burst plays where it stood.
+func _present_flask_burst(event: ObstacleBrokenEvent, map_view: BattleMapView) -> bool:
+	var center := map_view.to_local(map_view.hex_to_global_position(event.hex))
+	var step := map_view.to_local(map_view.hex_to_global_position(event.hex + Vector2i(1, 0))).distance_to(center)
+	var tween := FlaskBurstEffect.play(map_view, center, step, event.obstacle)
+	_track_tween(tween)
+	await _finish(tween)
+	return true
+
+
 func _present_damage(
 	event: UnitDamagedEvent,
 	unit_actors: Dictionary[StringName, UnitActor],
@@ -219,6 +232,8 @@ func _present_damage(
 		source_name = HexStateCatalog.get_display_name(event.source_hex_state_id)
 	if not event.source_status_id.is_empty():
 		source_name = UnitStatusCatalog.display_name(event.source_status_id)
+	if not event.source_obstacle_id.is_empty():
+		source_name = "Взрыв колбы"
 
 	hud.show_attack(
 		source_name,

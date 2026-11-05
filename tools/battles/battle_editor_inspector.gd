@@ -49,6 +49,10 @@ var obstacle_size: SpinBox
 var obstacle_direction: OptionButton
 var obstacle_destructible: CheckButton
 var obstacle_hp: SpinBox
+## Hex layer of a spilling flask, one item per BattleObstacleDefinition.CONTENTS.
+var obstacle_contents: OptionButton
+var obstacle_blast: SpinBox
+var obstacle_burst_hint: Label
 var obstacle_apply_button: Button
 var obstacle_remove_button: Button
 var document_path_label: Label
@@ -61,6 +65,8 @@ var background_option: OptionButton
 var grid_layout_controls: EditorGridLayoutControls
 var objective_panel := EditorObjectivePanel.new()
 var validation_summary: Label
+## Caption and control of each flask-only row, shown for the types that use them.
+var _flask_rows: Dictionary[StringName, Array] = {}
 var diagnostics: ItemList
 var check_button: Button
 var trial_button: Button
@@ -258,12 +264,77 @@ func _build_obstacle_card(page: VBoxContainer) -> void:
 	obstacle_hp.value = 10
 	obstacle_hp.editable = false
 	obstacle_destructible.toggled.connect(func(value: bool) -> void: obstacle_hp.editable = value)
-	EditorUi.row(EditorUi.form(obstacle_card), "HP всего препятствия", obstacle_hp)
+	var flask_form := EditorUi.form(obstacle_card)
+	EditorUi.row(flask_form, "HP всего препятствия", obstacle_hp)
+	obstacle_contents = _option()
+	for id: StringName in BattleObstacleDefinition.CONTENTS:
+		obstacle_contents.add_item(HexStateCatalog.get_display_name(id))
+	_flask_rows[&"contents"] = [EditorUi.row(flask_form, "Содержимое", obstacle_contents, "Состояние гекса, которое колба оставит после разрушения."), obstacle_contents]
+	obstacle_blast = EditorUi.spin(1, BattleObstacleDefinition.MAX_BLAST_DAMAGE)
+	obstacle_blast.value = BattleObstacleDefinition.DEFAULT_BLAST_DAMAGE
+	_flask_rows[&"blast"] = [EditorUi.row(flask_form, "Урон взрыва", obstacle_blast, "Огненный урон каждому юниту на соседних гексах."), obstacle_blast]
+	obstacle_burst_hint = EditorUi.hint("")
+	obstacle_card.add_child(obstacle_burst_hint)
+	obstacle_type.item_selected.connect(func(_index: int) -> void: _sync_obstacle_form())
+	obstacle_contents.item_selected.connect(func(_index: int) -> void: _sync_obstacle_form())
+	obstacle_blast.value_changed.connect(func(_value: float) -> void: _sync_obstacle_form())
+	_sync_obstacle_form()
 	obstacle_apply_button = EditorUi.button("Поставить / обновить на выбранном гексе", Callable())
 	obstacle_card.add_child(obstacle_apply_button)
 	obstacle_remove_button = EditorUi.button("Удалить выбранное препятствие", Callable())
 	EditorUi.add_shortcut(obstacle_remove_button, KEY_DELETE)
 	obstacle_card.add_child(obstacle_remove_button)
+
+
+## Loads an obstacle into the form.
+func show_obstacle(obstacle: BattleObstacleDefinition) -> void:
+	obstacle_type.select(BattleObstacleDefinition.TYPES.find(obstacle.terrain_type))
+	obstacle_size.value = obstacle.hexes.size()
+	obstacle_destructible.button_pressed = obstacle.destructible
+	obstacle_hp.value = obstacle.max_hp
+	if not obstacle.contents.is_empty():
+		obstacle_contents.select(BattleObstacleDefinition.CONTENTS.find(obstacle.contents))
+	if obstacle.terrain_type == &"explosive_flask":
+		obstacle_blast.value = obstacle.blast_damage
+	if obstacle.hexes.size() > 1:
+		obstacle_direction.select(HexGrid.DIRECTIONS.find(obstacle.hexes[1] - obstacle.hexes[0]))
+	_sync_obstacle_form()
+
+
+## The obstacle the form describes, starting at `origin`; flask settings only for flasks.
+func read_obstacle(id: StringName, origin: Vector2i) -> BattleObstacleDefinition:
+	var value := BattleObstacleDefinition.new()
+	value.id = id
+	value.terrain_type = BattleObstacleDefinition.TYPES[obstacle_type.selected]
+	value.destructible = obstacle_destructible.button_pressed
+	value.max_hp = int(obstacle_hp.value)
+	value.current_hp = value.max_hp
+	if BattleObstacleDefinition.SPILL_TYPES.has(value.terrain_type):
+		value.contents = BattleObstacleDefinition.CONTENTS[obstacle_contents.selected]
+	if value.terrain_type == &"explosive_flask":
+		value.blast_damage = int(obstacle_blast.value)
+	for index in range(int(obstacle_size.value)):
+		value.hexes.append(origin + HexGrid.DIRECTIONS[obstacle_direction.selected] * index)
+	return value
+
+
+## A flask fills one hex and can always be destroyed; only its own settings are shown.
+func _sync_obstacle_form() -> void:
+	var type := BattleObstacleDefinition.TYPES[maxi(obstacle_type.selected, 0)]
+	var flask := BattleObstacleDefinition.FLASK_TYPES.has(type)
+	if flask:
+		obstacle_size.value = 1
+		obstacle_destructible.button_pressed = true
+	obstacle_size.editable = not flask
+	obstacle_direction.disabled = flask
+	obstacle_destructible.disabled = flask
+	for control: Control in _flask_rows[&"contents"]:
+		control.visible = BattleObstacleDefinition.SPILL_TYPES.has(type)
+	for control: Control in _flask_rows[&"blast"]:
+		control.visible = type == &"explosive_flask"
+	var sample := read_obstacle(&"preview", Vector2i.ZERO)
+	obstacle_burst_hint.text = ObstacleDescription.burst(sample)
+	obstacle_burst_hint.visible = flask
 
 
 func _build_field_page(page: VBoxContainer) -> void:

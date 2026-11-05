@@ -24,6 +24,8 @@ var units: Dictionary[StringName, UnitChange] = {}
 var hexes: Dictionary[Vector2i, Array] = {}
 ## Damage each hit obstacle hex would take.
 var obstacle_damage: Dictionary[Vector2i, int] = {}
+## Flasks that would burst, in the order they break.
+var broken_flasks: Array[BattleObstacleDefinition] = []
 ## Where the acting unit would end up; for a move, whether it reaches the requested hex.
 var destination: Vector2i
 var reached := true
@@ -57,6 +59,8 @@ static func build(forecast: BattleEngine, before: BattleEngine, command: BattleC
 			preview.destination = event.path.back()
 		elif event is MapMutationEvent and event.obstacle_changed:
 			preview.obstacle_damage[event.hex] = event.obstacle_damage
+		elif event is ObstacleBrokenEvent:
+			preview.broken_flasks.append(event.obstacle)
 		elif event is MapMutationEvent and event.kind == MapMutationKind.Value.APPLY_HEX_STATE and event.hex_state_changed:
 			var previous: Array = preview.hexes.get(event.hex, before.get_hex_layers(event.hex))
 			preview.hexes[event.hex] = [previous[0], previous[1], event.liquid_id, event.energy_id]

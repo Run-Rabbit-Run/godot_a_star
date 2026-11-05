@@ -113,9 +113,12 @@ func get_obstacle(hex: Vector2i) -> BattleObstacleDefinition:
 	return _state.hex_grid.get_obstacle(hex)
 
 
+## A flask it destroys bursts; a burst the map refuses fails the ability.
 func damage_obstacle(hex: Vector2i, amount: int) -> Array[BattleEvent]:
 	var events: Array[BattleEvent] = []
-	ObstacleService.damage(_state, hex, amount, events)
+	var error := ObstacleService.damage(_state, hex, amount, events)
+	if not error.is_empty():
+		fail(error)
 	return events
 
 
@@ -169,7 +172,9 @@ func push(source_unit_id: StringName, target_unit_id: StringName, distance: int)
 		return events
 	var direction := AbilityExecutor.get_line_direction(source.hex, target.hex)
 	if direction != Vector2i.ZERO:
-		PushService.push(_state, source_unit_id, target_unit_id, direction, distance, _ability_id, events)
+		var error := PushService.push(_state, source_unit_id, target_unit_id, direction, distance, _ability_id, events)
+		if not error.is_empty():
+			fail(error)
 	return events
 
 

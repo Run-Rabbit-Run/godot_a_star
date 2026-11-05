@@ -20,6 +20,8 @@ var cover_hex_state_id: StringName
 var melee_penalty := 0
 ## A pushed unit ran into something: the hit is the collision, not the source's strike.
 var collision := false
+## The destroyed flask whose burst dealt the damage.
+var source_obstacle_id: StringName
 
 
 func _init(p_amount: int, p_type: StringName = &"physical") -> void:
@@ -60,4 +62,9 @@ func with_melee_penalty(penalty: int) -> DamageRequest:
 
 func from_collision() -> DamageRequest:
 	collision = true
+	return self
+
+
+func from_obstacle(obstacle_id: StringName) -> DamageRequest:
+	source_obstacle_id = obstacle_id
 	return self

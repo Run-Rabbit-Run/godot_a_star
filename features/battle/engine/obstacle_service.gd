@@ -1,13 +1,18 @@
 class_name ObstacleService
 extends RefCounted
+## Damage to obstacles. A destroyed flask bursts at once (ObstacleBreakService), before the
+## action that broke it continues.
 
-static func damage(state: BattleState, hex: Vector2i, amount: int, events: Array[BattleEvent]) -> int:
+
+## Returns "" or why the burst of a destroyed flask could not change the map; the caller
+## decides whether that rejects its transaction or stops the battle.
+static func damage(state: BattleState, hex: Vector2i, amount: int, events: Array[BattleEvent]) -> String:
 	var obstacle := state.hex_grid.get_obstacle(hex)
 	if obstacle == null:
-		return 0
+		return ""
 	var damage := state.hex_grid.damage_obstacle(hex, amount)
 	if damage == 0:
-		return 0
+		return ""
 	state.map_revision += 1
 	state.state_revision += 1
 	for cell: Vector2i in obstacle.hexes:
@@ -16,4 +21,7 @@ static func damage(state: BattleState, hex: Vector2i, amount: int, events: Array
 		event.obstacle = state.hex_grid.get_obstacle(cell)
 		event.obstacle_damage = damage
 		events.append(event)
-	return damage
+	if state.hex_grid.has_obstacle(hex) or not obstacle.is_flask():
+		return ""
+	obstacle.current_hp = 0
+	return ObstacleBreakService.burst(state, obstacle, events)

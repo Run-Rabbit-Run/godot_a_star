@@ -52,6 +52,8 @@ static func describe(preview: ActionPreview, units: Dictionary[StringName, UnitD
 		obstacle_damage = maxi(obstacle_damage, preview.obstacle_damage[hex])
 	if obstacle_damage > 0:
 		lines.append("Препятствие: −%d HP" % obstacle_damage)
+	for flask: BattleObstacleDefinition in preview.broken_flasks:
+		lines.append("%s разобьётся" % ObstacleDescription.display_name(flask))
 	return {"lines": lines, "warning": warning}
 
 

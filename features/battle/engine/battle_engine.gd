@@ -757,8 +757,12 @@ func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolutio
 	var damage := attacker.basic_attack_damage
 	if not BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, command.target_hex):
 		damage -= BasicAttackRules.melee_penalty(attacker.basic_attack_range, damage)
-	ObstacleService.damage(_state, command.target_hex, damage, events)
-	_finish_action_turn(attacker.unit_id, events)
+	# The strike has landed: a flask burst the map refuses stops the battle, as after a hit.
+	_terminal_error = ObstacleService.damage(_state, command.target_hex, damage, events)
+	# A burst may kill: its consequences come before the attacker's end-of-turn effects.
+	_settle_presence(events)
+	if _terminal_error.is_empty():
+		_finish_action_turn(attacker.unit_id, events)
 	return _accepted(events)
 
 

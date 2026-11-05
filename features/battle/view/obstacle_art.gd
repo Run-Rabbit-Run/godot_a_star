@@ -1,14 +1,27 @@
 class_name ObstacleArt
 extends RefCounted
-## Presentation-only atlas regions preserve the source PNGs and their alpha.
+## Presentation-only atlas regions preserve the source PNGs and their alpha. Flasks are vector
+## art (tools/art/generate_flask_art.py), one picture per type and contents.
 
+const FLASKS := "res://features/battle/art/obstacles/flasks/"
 const SOURCES: Dictionary = {
 	&"hill": preload("res://features/battle/art/obstacles/hill-v1.png"),
 	&"river": preload("res://features/battle/art/obstacles/river-v1.png"),
 	&"puddle": preload("res://features/battle/art/obstacles/puddle-v1.png"),
 	&"trees": preload("res://features/battle/art/obstacles/trees-v1.png"),
 	&"rocks": preload("res://features/battle/art/obstacles/rocks-v1.png"),
+	&"flask_acid": preload(FLASKS + "flask_acid.svg"),
+	&"flask_water": preload(FLASKS + "flask_water.svg"),
+	&"flask_oil": preload(FLASKS + "flask_oil.svg"),
+	&"flask_electricity": preload(FLASKS + "flask_electricity.svg"),
+	&"big_flask_acid": preload(FLASKS + "big_flask_acid.svg"),
+	&"big_flask_water": preload(FLASKS + "big_flask_water.svg"),
+	&"big_flask_oil": preload(FLASKS + "big_flask_oil.svg"),
+	&"big_flask_electricity": preload(FLASKS + "big_flask_electricity.svg"),
+	&"pressure_flask": preload(FLASKS + "pressure_flask.svg"),
+	&"explosive_flask": preload(FLASKS + "explosive_flask.svg"),
 }
+## Visible parts of the painted sources; a picture without a region is used whole.
 const REGIONS: Dictionary = {
 	&"hill": Rect2(0.0, 76.0, 1522.0, 871.0),
 	&"river": Rect2(0.0, 112.0, 1758.0, 663.0),
@@ -16,20 +29,35 @@ const REGIONS: Dictionary = {
 	&"trees": Rect2(5.0, 15.0, 1512.0, 1009.0),
 	&"rocks": Rect2(23.0, 102.0, 1493.0, 828.0),
 }
-const WIDTHS: Dictionary = {&"hill": 94.0, &"river": 112.0, &"puddle": 90.0, &"trees": 96.0, &"rocks": 88.0}
-const ANCHORS: Dictionary = {&"hill": 0.65, &"river": 0.5, &"puddle": 0.5, &"trees": 0.85, &"rocks": 0.75}
+## Drawn width on the 94 px hex and the share of the height above the hex center, by type.
+const WIDTHS: Dictionary = {
+	&"hill": 94.0, &"river": 112.0, &"puddle": 90.0, &"trees": 96.0, &"rocks": 88.0,
+	&"flask": 52.0, &"big_flask": 76.0, &"pressure_flask": 56.0, &"explosive_flask": 54.0,
+}
+const ANCHORS: Dictionary = {
+	&"hill": 0.65, &"river": 0.5, &"puddle": 0.5, &"trees": 0.85, &"rocks": 0.75,
+	&"flask": 0.9, &"big_flask": 0.9, &"pressure_flask": 0.9, &"explosive_flask": 0.9,
+}
 static var _textures: Dictionary[StringName, AtlasTexture] = {}
+
+
+## The picture of an obstacle: spilling flasks have one per contents.
+static func art_id(obstacle: BattleObstacleDefinition) -> StringName:
+	if BattleObstacleDefinition.SPILL_TYPES.has(obstacle.terrain_type):
+		return StringName("%s_%s" % [obstacle.terrain_type, String(obstacle.contents).trim_prefix("core:")])
+	return obstacle.terrain_type
+
 
 static func texture(id: StringName) -> AtlasTexture:
 	if not _textures.has(id):
 		var atlas := AtlasTexture.new()
 		atlas.atlas = SOURCES[id]
-		atlas.region = REGIONS[id]
+		atlas.region = REGIONS.get(id, Rect2(Vector2.ZERO, atlas.atlas.get_size()))
 		_textures[id] = atlas
 	return _textures[id]
 
 static func draw(canvas: CanvasItem, center: Vector2, obstacle: BattleObstacleDefinition, hex: Vector2i) -> void:
-	var sprite := texture(obstacle.terrain_type)
+	var sprite := texture(art_id(obstacle))
 	var width: float = WIDTHS[obstacle.terrain_type]
 	var dimensions := sprite.get_size() * (width / sprite.get_width())
 	var angle := 0.0

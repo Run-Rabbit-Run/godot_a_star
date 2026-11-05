@@ -11,6 +11,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		var source := _unit(event.attacker_id, units)
 		if event.collision:
 			source = "Столкновение"
+		if not event.source_obstacle_id.is_empty():
+			source = "Взрыв колбы"
 		if not event.source_hex_state_id.is_empty():
 			source = HexStateCatalog.get_display_name(event.source_hex_state_id)
 		if not event.source_status_id.is_empty():
@@ -36,6 +38,8 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		return "Стратег применяет «%s» в %s." % [strategist_ability.display_name if strategist_ability != null else String(event.ability_id), _hex(event.target_hex)]
 	if event is UnitHealthChangedEvent:
 		return "%s: максимум ОЗ %d → %d, ОЗ %d → %d." % [_unit(event.unit_id, units), event.maximum_before, event.maximum_after, event.health_before, event.health_after]
+	if event is ObstacleBrokenEvent:
+		return ObstacleDescription.burst_log(event.obstacle, event.hex)
 	if event is CorpseRemovedEvent:
 		return "%s: тело уничтожено вместе с гексом %s." % [_unit(event.unit_id, units), _hex(event.hex)]
 	if event is UnitStatusChangedEvent:
@@ -112,6 +116,8 @@ static func _damage_formula(event: UnitDamagedEvent, content: ContentSnapshot) -
 		origin = "умение: %s" % _ability(event.source_ability_id, content)
 	if event.collision:
 		origin = "столкновение"
+	if not event.source_obstacle_id.is_empty():
+		origin = "взрыв колбы"
 	if not event.source_hex_state_id.is_empty():
 		origin = "гекс: %s" % HexStateCatalog.get_display_name(event.source_hex_state_id)
 	if not event.source_status_id.is_empty():

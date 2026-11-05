@@ -88,6 +88,9 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 		if other.faction != actor.faction and other.basic_attack_range > 1:
 			shooters.append(other.hex)
 	var reach := _action_reach(actor_state)
+	# A flask the unit breaks acts on the hexes around it.
+	if AILastActionPlanner.touches_flask(grid, grid.get_cells()):
+		reach += 1
 	var context := {"health_before": actor.health.current, "start_approach": start_approach, "threat": threat, "shooters": shooters, "range": actor.basic_attack_range, "faction": actor.faction, "key": memo.keys.has(unit_id)}
 	var best: Dictionary = {}
 	# Outcomes of area abilities that leave the actor outside; the same from every hex.
@@ -173,7 +176,9 @@ static func _outcome_key(command: BattleCommand, mover: UnitState, grid: HexGrid
 	var ability := mover.get_ability(command.ability_id)
 	if ability == null or ability.melee_attack or ability.target_mode in AILastActionPlanner.ORIGIN_MODES or not AILastActionPlanner.is_local(ability):
 		return ""
-	if AbilityExecutor.get_affected_hexes(grid, mover.hex, ability, command.target_hex).has(mover.hex):
+	var area := AbilityExecutor.get_affected_hexes(grid, mover.hex, ability, command.target_hex)
+	# A flask's burst reaches past the area, so the mover's hex matters as well.
+	if area.has(mover.hex) or AILastActionPlanner.touches_flask(grid, area):
 		return ""
 	return "%s@%s" % [ability.id, command.target_hex]
 

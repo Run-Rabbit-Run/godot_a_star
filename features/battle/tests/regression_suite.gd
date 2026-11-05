@@ -24,6 +24,10 @@ func _run() -> void:
 		preload("res://features/battle/tests/obstacle_regressions.gd").new().run_obstacles(self)
 	if runs("obstacle_view"):
 		await preload("res://features/battle/tests/obstacle_regressions.gd").new().run_obstacle_view(self)
+	if runs("flasks"):
+		preload("res://features/battle/tests/flask_regressions.gd").new().run(self)
+	if runs("flask_view"):
+		await preload("res://features/battle/tests/flask_regressions.gd").new().run_presentation(self)
 	if runs("geometry"):
 		preload("res://features/battle/tests/hex_rule_regressions.gd").new().run_geometry(self)
 	if runs("terrain_reactions"):

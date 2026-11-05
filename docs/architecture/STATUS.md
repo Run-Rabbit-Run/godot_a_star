@@ -22,6 +22,7 @@
 | Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | [BATTLE_MAP.md](BATTLE_MAP.md) «Определение карты» |
 | Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE_MAP.md «Изменение карты» |
 | Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE_MAP.md «Препятствия местности», EDITOR.md «Препятствия» |
+| Колбы | Четыре типа колб с разливом, выбросом давления и взрывом, цепная реакция: `ObstacleBreakService`, `ObstacleBrokenEvent`, `DamageRequest.from_obstacle()`, `ActionPreview.broken_flasks`, `FlaskBurstEffect`, форма в `BattleEditorInspector` | BATTLE_MAP.md «Колбы», EDITOR.md «Препятствия» |
 | Статусы и состояния гексов | 10 статусов с уровнями, включая устойчивость к параличу и щит от «Защиты» (`EndTurnCommand`), два слоя гексов (4 жидкости, 3 энергии), пять реакций, распространение, срок 3 раунда у каждого слоя | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
 | Обычная атака: выстрел и удар вплотную | `BasicAttackRules`, `UnitDamagedEvent.ranged_attack` | BATTLE_UNITS_AND_ABILITIES.md «Обычная атака» |
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |

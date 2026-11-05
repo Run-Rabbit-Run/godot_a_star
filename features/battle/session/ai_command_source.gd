@@ -159,11 +159,27 @@ func _choose_disengage_move(session: BattleSession, active: UnitSnapshot, target
 func _choose_obstacle_command(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot) -> AttackObstacleCommand:
 	var candidates := session.get_attackable_obstacle_hexes(active.unit_id)
 	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return HexGrid.get_distance(a, target.hex) < HexGrid.get_distance(b, target.hex) if HexGrid.get_distance(a, target.hex) != HexGrid.get_distance(b, target.hex) else a < b)
+	var grid := session.get_hex_grid()
 	for hex: Vector2i in candidates:
 		if HexGrid.get_distance(hex, target.hex) < HexGrid.get_distance(active.hex, target.hex):
+			var command := AttackObstacleCommand.new(active.unit_id, hex)
+			var obstacle := grid.get_obstacle(hex)
+			if obstacle != null and obstacle.is_flask() and _hurts_own_side(session, active.faction, command):
+				continue
 			_trace("reason", "clear_destructible_obstacle")
-			return AttackObstacleCommand.new(active.unit_id, hex)
+			return command
 	return null
+
+
+## True when the forecast of the command costs a unit of the faction health.
+static func _hurts_own_side(session: BattleSession, faction: BattleFaction.Value, command: BattleCommand) -> bool:
+	var preview := session.preview(command)
+	for unit_id: StringName in preview.units:
+		var change := preview.units[unit_id] as ActionPreview.UnitChange
+		var unit := session.get_unit(unit_id)
+		if unit != null and unit.faction == faction and change.health_after < change.health_before:
+			return true
+	return false
 
 
 func _choose_ability_command(
@@ -175,6 +191,8 @@ func _choose_ability_command(
 	_trace("allies", allies)
 	if decision_trace != null:
 		decision_trace["ability_candidates"] = []
+	# The simple policy cannot weigh a burst: it leaves flasks to the tactical one.
+	var grid := session.get_hex_grid()
 
 	for ability_id: StringName in active.ability_ids:
 		var target_hexes := session.get_ability_target_hexes(
@@ -201,6 +219,7 @@ func _choose_ability_command(
 				for enemy: UnitSnapshot in opponents:
 					if cells.has(enemy.hex):
 						hits += 1
+				friendly = friendly or AILastActionPlanner.touches_flask(grid, cells)
 				if decision_trace != null:
 					evaluations.append({"center": center, "affected_hexes": cells, "enemy_hits": hits, "friendly_fire": friendly})
 				if hits > 0 and not friendly:
@@ -210,7 +229,7 @@ func _choose_ability_command(
 			for opponent: UnitSnapshot in opponents:
 				if decision_trace != null:
 					evaluations.append({"target_id": opponent.unit_id, "legal": target_hexes.has(opponent.hex), "allies_in_radius": _count_units_in_radius(opponent.hex, radius, allies) if radius > 0 else 0})
-				if target_hexes.has(opponent.hex) and (radius == 0 or _count_units_in_radius(opponent.hex, radius, allies) == 0):
+				if target_hexes.has(opponent.hex) and (radius == 0 or (_count_units_in_radius(opponent.hex, radius, allies) == 0 and not AILastActionPlanner.touches_flask(grid, session.get_ability_affected_hexes(active.unit_id, ability_id, opponent.hex)))):
 					return UseAbilityCommand.new(active.unit_id, opponent.unit_id, ability_id)
 			continue
 
@@ -232,7 +251,7 @@ func _choose_ability_command(
 			if decision_trace != null:
 				evaluations.append({"center": center, "allies_in_radius": _count_units_in_radius(center, radius, allies), "enemies_in_radius": _count_units_in_radius(center, radius, opponents)})
 			# Allies include the acting unit, so the blast never covers it.
-			if _count_units_in_radius(center, radius, allies) > 0:
+			if _count_units_in_radius(center, radius, allies) > 0 or AILastActionPlanner.touches_flask(grid, session.get_ability_affected_hexes(active.unit_id, ability_id, center)):
 				continue
 
 			var count := _count_units_in_radius(center, radius, opponents)

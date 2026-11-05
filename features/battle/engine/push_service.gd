@@ -9,11 +9,12 @@ const COLLISION_DAMAGE := 1
 
 
 ## Pushes the living target `distance` hexes in one of the six directions. A unit that holds
-## its hex stays anchored to it.
-static func push(state: BattleState, source_id: StringName, target_id: StringName, direction: Vector2i, distance: int, ability_id: StringName, events: Array[BattleEvent]) -> void:
+## its hex stays anchored to it. `source_id` is "" when no unit pushes, as for a flask.
+## Returns "" or why a flask the target broke could not change the map.
+static func push(state: BattleState, source_id: StringName, target_id: StringName, direction: Vector2i, distance: int, ability_id: StringName, events: Array[BattleEvent]) -> String:
 	var unit := state.unit_states.get(target_id) as UnitState
 	if unit == null or unit.health.is_defeated() or unit.holds_hex or distance <= 0 or not HexGrid.DIRECTIONS.has(direction):
-		return
+		return ""
 	var segment: Array[Vector2i] = [unit.hex]
 	for _step in range(distance):
 		var next := unit.hex + direction
@@ -25,8 +26,7 @@ static func push(state: BattleState, source_id: StringName, target_id: StringNam
 			event.blocker_hex = next
 			event.blocker_unit_id = blocker.unit_id if blocker != null else StringName()
 			events.append(event)
-			_collide(state, unit, blocker, next, collision, source_id, ability_id, events)
-			return
+			return _collide(state, unit, blocker, next, collision, source_id, ability_id, events)
 		unit.hex = next
 		segment.append(next)
 		if not state.hex_grid.has_layers(next):
@@ -36,9 +36,10 @@ static func push(state: BattleState, source_id: StringName, target_id: StringNam
 		segment = [next]
 		HexStateService.expose(unit, state.hex_grid, events)
 		if unit.health.is_defeated():
-			return
+			return ""
 	if segment.size() > 1:
 		events.append(UnitPushedEvent.new(target_id, source_id, segment))
+	return ""
 
 
 ## What a pushed unit would hit on entering the hex. Bodies do not stop it.
@@ -55,13 +56,14 @@ static func collision_at(state: BattleState, hex: Vector2i) -> UnitPushedEvent.C
 
 
 ## The pushed unit is hit first, then the unit or obstacle it ran into; the edge and
-## impassable hexes take nothing.
-static func _collide(state: BattleState, unit: UnitState, blocker: UnitState, hex: Vector2i, collision: UnitPushedEvent.Collision, source_id: StringName, ability_id: StringName, events: Array[BattleEvent]) -> void:
+## impassable hexes take nothing. A flask broken by the collision bursts.
+static func _collide(state: BattleState, unit: UnitState, blocker: UnitState, hex: Vector2i, collision: UnitPushedEvent.Collision, source_id: StringName, ability_id: StringName, events: Array[BattleEvent]) -> String:
 	UnitStatusService.damage(unit, _hit(source_id, ability_id), events)
 	if collision == UnitPushedEvent.Collision.UNIT and blocker != null:
 		UnitStatusService.damage(blocker, _hit(source_id, ability_id), events)
 	elif collision == UnitPushedEvent.Collision.OBSTACLE:
-		ObstacleService.damage(state, hex, COLLISION_DAMAGE, events)
+		return ObstacleService.damage(state, hex, COLLISION_DAMAGE, events)
+	return ""
 
 
 static func _hit(source_id: StringName, ability_id: StringName) -> DamageRequest:

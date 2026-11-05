@@ -697,13 +697,7 @@ func _select_hex(hex: Vector2i) -> void:
 	_traversable_check.button_pressed = cell.traversable and _obstacle_at(hex) == null
 	var obstacle := _obstacle_at(hex)
 	if obstacle != null:
-		_obstacle_type.select(BattleObstacleDefinition.TYPES.find(obstacle.terrain_type))
-		_obstacle_size.value = obstacle.hexes.size()
-		_obstacle_destructible.button_pressed = obstacle.destructible
-		_obstacle_hp.editable = obstacle.destructible
-		_obstacle_hp.value = obstacle.max_hp
-		if obstacle.hexes.size() > 1:
-			_obstacle_direction.select(HexGrid.DIRECTIONS.find(obstacle.hexes[1] - obstacle.hexes[0]))
+		_inspector.show_obstacle(obstacle)
 		_view.obstacle_direction = _obstacle_direction.selected
 	_selected_hex_label.text = "Выбран гекс q=%d, r=%d%s" % [hex.x, hex.y, " · " + _layers_text(cell) if cell.has_layers() else ""]
 	_update_inspector()
@@ -1372,15 +1366,8 @@ func _remove_selected_obstacle() -> void:
 
 func _put_obstacle(hex: Vector2i) -> void:
 	var previous := _obstacle_at(hex)
-	var value := BattleObstacleDefinition.new()
-	value.id = previous.id if previous != null else EditorMapRules.new_obstacle_id(_document)
-	value.terrain_type = BattleObstacleDefinition.TYPES[_obstacle_type.selected]
-	value.destructible = _obstacle_destructible.button_pressed
-	value.max_hp = int(_obstacle_hp.value)
-	value.current_hp = value.max_hp
 	var origin := previous.hexes[0] if previous != null else hex
-	for index in range(int(_obstacle_size.value)):
-		value.hexes.append(origin + HexGrid.DIRECTIONS[_obstacle_direction.selected] * index)
+	var value := _inspector.read_obstacle(previous.id if previous != null else EditorMapRules.new_obstacle_id(_document), origin)
 	var error := EditorMapRules.obstacle_footprint_error(_document, value.hexes, previous)
 	if not error.is_empty():
 		_set_status(error, EditorUi.Severity.WARN)

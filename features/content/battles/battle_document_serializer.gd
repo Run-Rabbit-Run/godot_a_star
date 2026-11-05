@@ -96,7 +96,13 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 		var hexes: Array = []
 		for hex: Vector2i in obstacle.hexes:
 			hexes.append([hex.x, hex.y])
-		obstacles.append({"id": String(obstacle.id), "terrain_type": String(obstacle.terrain_type), "hexes": hexes, "destructible": obstacle.destructible, "max_hp": obstacle.max_hp})
+		var entry := {"id": String(obstacle.id), "terrain_type": String(obstacle.terrain_type), "hexes": hexes, "destructible": obstacle.destructible, "max_hp": obstacle.max_hp}
+		# Flask settings are written only for the flasks that use them.
+		if not obstacle.contents.is_empty():
+			entry["contents"] = String(obstacle.contents)
+		if obstacle.terrain_type == &"explosive_flask":
+			entry["blast_damage"] = obstacle.blast_damage
+		obstacles.append(entry)
 	var objective: Dictionary = {}
 
 	if document.battle_definition.primary_objective != null:
@@ -186,6 +192,8 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 		obstacle.destructible = obstacle_data.get("destructible", false)
 		obstacle.max_hp = int(obstacle_data.get("max_hp", 10))
 		obstacle.current_hp = obstacle.max_hp
+		obstacle.contents = StringName(obstacle_data.get("contents", ""))
+		obstacle.blast_damage = int(obstacle_data.get("blast_damage", BattleObstacleDefinition.DEFAULT_BLAST_DAMAGE))
 		for hex: Array in obstacle_data.get("hexes", []):
 			obstacle.hexes.append(Vector2i(int(hex[0]), int(hex[1])))
 		map.obstacles.append(obstacle)
@@ -311,7 +319,7 @@ static func _validate_structure(data: Dictionary) -> String:
 	for item: Variant in map.get("obstacles", []):
 		if not (item is Dictionary):
 			return "map.obstacles entries must be objects."
-		error = _validate_fields(item, {"id": TYPE_STRING, "terrain_type": TYPE_STRING, "destructible": TYPE_BOOL, "max_hp": TYPE_INT, "hexes": TYPE_ARRAY}, "map.obstacles")
+		error = _validate_fields(item, {"id": TYPE_STRING, "terrain_type": TYPE_STRING, "destructible": TYPE_BOOL, "max_hp": TYPE_INT, "hexes": TYPE_ARRAY, "contents": TYPE_STRING, "blast_damage": TYPE_INT}, "map.obstacles")
 		if not error.is_empty():
 			return error
 		for hex: Variant in item.get("hexes", []):
