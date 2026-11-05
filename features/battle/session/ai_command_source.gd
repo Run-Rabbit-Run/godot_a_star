@@ -63,6 +63,38 @@ func _tactical_command(session: BattleSession) -> BattleCommand:
 	return best.command
 
 
+## The attack on the target; a unit with a choice of attack types takes the one whose forecast
+## removes the most opponent health, keeping its current type on a tie.
+static func _attack_command(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot) -> AttackCommand:
+	var best := AttackCommand.new(active.unit_id, target.unit_id)
+	if active.attack_damage_types.is_empty():
+		return best
+	var best_damage := _opponent_damage(session, active, best)
+	for damage_type: StringName in active.attack_damage_types:
+		if damage_type == active.basic_attack_damage_type:
+			continue
+		var command := AttackCommand.new(active.unit_id, target.unit_id, damage_type)
+		var damage := _opponent_damage(session, active, command)
+		if damage > best_damage:
+			best = command
+			best_damage = damage
+	return best
+
+
+## Opponent health the command removes by its forecast; -1 for a rejected command.
+static func _opponent_damage(session: BattleSession, active: UnitSnapshot, command: BattleCommand) -> int:
+	var preview := session.preview(command)
+	if not preview.accepted:
+		return -1
+	var damage := 0
+	for unit_id: StringName in preview.units:
+		var unit := session.get_unit(unit_id)
+		if unit != null and unit.faction != active.faction:
+			var change := preview.units[unit_id] as ActionPreview.UnitChange
+			damage += maxi(0, change.health_before - change.health_after)
+	return damage
+
+
 func _basic_command(session: BattleSession, active_unit_id: StringName) -> BattleCommand:
 	var active := session.get_unit(active_unit_id)
 
@@ -106,7 +138,7 @@ func _basic_command(session: BattleSession, active_unit_id: StringName) -> Battl
 
 	if attack_target != null:
 		_trace("reason", "basic_attack_in_range")
-		return AttackCommand.new(active.unit_id, attack_target.unit_id)
+		return _attack_command(session, active, attack_target)
 
 	var ability_command := _choose_ability_command(session, active, opponents)
 

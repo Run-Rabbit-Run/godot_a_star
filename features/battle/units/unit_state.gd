@@ -34,6 +34,13 @@ var corpse_removed := false
 var max_health_bonus := 0
 ## Bonus to the maximum health of the unit's other living allies while this unit lives.
 var ally_max_health_bonus := 0
+## A push never moves the unit.
+var push_immune := false
+## Attack charge levels the unit tops up to when it starts its turn next to an opponent.
+var engaged_charge := 0
+## Damage types an ordinary attack may choose from, the unit's own first; empty without a choice.
+## The chosen type stays the unit's attack type, retaliation included.
+var attack_damage_types: Array[StringName] = []
 
 
 func _init(
@@ -103,6 +110,9 @@ func duplicate_state() -> UnitState:
 	copy.corpse_removed = corpse_removed
 	copy.max_health_bonus = max_health_bonus
 	copy.ally_max_health_bonus = ally_max_health_bonus
+	copy.push_immune = push_immune
+	copy.engaged_charge = engaged_charge
+	copy.attack_damage_types.assign(attack_damage_types)
 	return copy
 
 
@@ -133,3 +143,6 @@ func copy_from(other: UnitState) -> void:
 	corpse_removed = other.corpse_removed
 	max_health_bonus = other.max_health_bonus
 	ally_max_health_bonus = other.ally_max_health_bonus
+	push_immune = other.push_immune
+	engaged_charge = other.engaged_charge
+	attack_damage_types.assign(other.attack_damage_types)

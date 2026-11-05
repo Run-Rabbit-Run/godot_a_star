@@ -12,6 +12,7 @@ const PLASMA := &"core:plasma"
 const STICKY_OIL := &"core:sticky_oil"
 const ARMOR := &"core:armor"
 const SHIELD := &"core:shield"
+const ATTACK_CHARGE := &"core:attack_charge"
 
 ## When a status acts and when it loses levels: HEX_AND_UNIT_STATES.md «Категории статусов».
 enum Category {
@@ -44,6 +45,7 @@ const RULES := {
 	STICKY_OIL: {"name": "Тягучее масло", "category": Category.TURN, "description": "Снижает передвижение на 1; при 5 уровнях — на 2. В конце фазы своей стороны теряет 1 уровень. Огненный урон или наложение горения вызывает взрыв с уроном, равным сумме уровней масла и горения. Взрыв наносит физический урон только этому юниту, расходует всё масло и сохраняет горение."},
 	ARMOR: {"name": "Броня", "category": Category.RESERVE, "description": "Каждый уровень блокирует 1 физического урона. Сама по себе не спадает. Кислота разрушает броню."},
 	SHIELD: {"name": "Щит", "category": Category.RESERVE, "drops_at_phase_start": true, "description": "Предотвращает урон любого типа: 1 урона за уровень, после брони и других статусов. Предотвратив хотя бы 1 урона, снимается целиком. В начале фазы своей стороны снимаются все уровни. «Защита» даёт 1 уровень."},
+	ATTACK_CHARGE: {"name": "Заряд", "category": Category.RESERVE, "description": "Следующая обычная атака юнита — по противнику или препятствию — наносит на 1 урона больше за каждый уровень и расходует весь заряд. Сам не спадает. Ответный удар и умения заряд не тратят. Пассив «Я здесь» даёт 1 уровень, если юнит начал ход рядом с противником."},
 }
 
 static func has_status(id: StringName) -> bool:

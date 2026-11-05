@@ -26,6 +26,9 @@ var holds_hex := false
 var corpse_removed := false
 var takes_turns := true
 var max_health_bonus := 0
+var push_immune := false
+var engaged_charge := 0
+var attack_damage_types: Array[StringName] = []
 
 
 func _init(state: UnitState) -> void:
@@ -47,6 +50,9 @@ func _init(state: UnitState) -> void:
 	corpse_removed = state.corpse_removed
 	takes_turns = state.takes_turns()
 	max_health_bonus = state.max_health_bonus
+	push_immune = state.push_immune
+	engaged_charge = state.engaged_charge
+	attack_damage_types.assign(state.attack_damage_types)
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

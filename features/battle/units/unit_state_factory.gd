@@ -47,6 +47,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		state.statuses[UnitStatusCatalog.ARMOR] = base_stats.armor_levels
 	state.passive_ability_ids.assign(passive_ids)
 	state.retaliation_configured = true
+	var alternate := StringName()
 	for id: StringName in passive_ids:
 		var passive: Dictionary = spawn.unit_definition.passive_definitions.get(id, PassiveAbilityCatalog.DEFINITIONS.get(id, {}))
 		if passive.get("retaliation", id == &"core:melee_retaliation"):
@@ -58,4 +59,12 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		if passive.has("immunity"):
 			state.status_immunities.append(passive.immunity)
 		state.ally_max_health_bonus += int(passive.get("ally_max_health", 0))
+		if passive.get("push_immunity", false):
+			state.push_immune = true
+		state.engaged_charge = maxi(state.engaged_charge, int(passive.get("engaged_charge", 0)))
+		if passive.has("alternate_damage_type"):
+			alternate = StringName(passive.alternate_damage_type)
+	# Validation allows one passive of the attack type: the choice starts from the unit's own type.
+	if not alternate.is_empty() and alternate != state.basic_attack_damage_type:
+		state.attack_damage_types.assign([state.basic_attack_damage_type, alternate])
 	return state

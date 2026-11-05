@@ -108,7 +108,11 @@ static func plan(session: BattleSession, trace: Variant = null, unit_id: StringN
 static func actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, others: Dictionary[Vector2i, UnitState], memo: Dictionary) -> Array[BattleCommand]:
 	var commands: Array[BattleCommand] = []
 	for target: UnitState in engine.get_attackable_targets(actor.unit_id):
-		commands.append(AttackCommand.new(actor.unit_id, target.unit_id))
+		# A unit with a choice of attack types tries each of them; the forecast tells them apart.
+		if actor.attack_damage_types.is_empty():
+			commands.append(AttackCommand.new(actor.unit_id, target.unit_id))
+		for damage_type: StringName in actor.attack_damage_types:
+			commands.append(AttackCommand.new(actor.unit_id, target.unit_id, damage_type))
 	for hex: Vector2i in engine.get_attackable_obstacle_hexes(actor.unit_id):
 		var obstacle := grid.get_obstacle(hex)
 		if obstacle != null and obstacle.is_flask():

@@ -100,6 +100,7 @@ func _check_categories(suite: Node) -> void:
 		&"core:paralysis_resistance": UnitStatusCatalog.Category.PROPERTY,
 		&"core:armor": UnitStatusCatalog.Category.RESERVE,
 		&"core:shield": UnitStatusCatalog.Category.RESERVE,
+		&"core:attack_charge": UnitStatusCatalog.Category.RESERVE,
 	}
 	for id: StringName in UnitStatusCatalog.RULES:
 		suite.expect(expected.has(id) and UnitStatusCatalog.category(id) == expected[id] and not UnitStatusCatalog.category_name(id).is_empty(), "Status %s has its category" % id)

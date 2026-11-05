@@ -161,6 +161,7 @@ func _initialize_battle() -> void:
 	health_display.setup(_unit_views.actors, _hud.get_health_alt_check())
 	_hud.movement_requested.connect(_on_movement_requested)
 	_hud.basic_attack_requested.connect(_on_basic_attack_requested)
+	_hud.attack_type_requested.connect(_on_attack_type_requested)
 	_hud.ability_requested.connect(_on_ability_requested)
 	_hud.strategist_ability_requested.connect(_on_strategist_ability_requested)
 	_hud.playback_speed_requested.connect(_on_playback_speed_requested)
@@ -328,6 +329,17 @@ func _on_basic_attack_requested() -> void:
 		return
 
 	_show_unit_movement(active)
+
+
+## The next attack of the shown unit takes its other damage type; nothing changes in the battle
+## until the attack is made.
+func _on_attack_type_requested() -> void:
+	if _is_presenting or _battle_session == null:
+		return
+	var active := _battle_session.get_unit(_acting_unit_id())
+	if active == null or not _selection.cycle_attack_damage_type():
+		return
+	_active_unit_hud.show(active, _selection.attack_damage_type())
 
 
 func _on_playback_speed_requested(speed: float) -> void:
@@ -584,7 +596,7 @@ func _show_unit_movement(state: UnitSnapshot) -> void:
 	var none: Array[Vector2i] = []
 	_input_router.set_extra_cells(none)
 	_selection.show_movement_and_attacks(state)
-	_active_unit_hud.show(state)
+	_active_unit_hud.show(state, _selection.attack_damage_type())
 
 
 func _present_resolution(resolution: BattleResolution, actors: Dictionary[StringName, UnitActor], definitions: Dictionary[StringName, UnitDefinition], map_view: BattleMapView, hud: BattleHUD) -> bool:

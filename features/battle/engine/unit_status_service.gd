@@ -39,13 +39,17 @@ static func apply(unit: UnitState, id: StringName, levels: int, events: Array[Ba
 
 static func damage(unit: UnitState, request: DamageRequest, events: Array[BattleEvent]) -> void:
 	var amount := request.amount
-	if unit == null or unit.health.is_defeated() or amount <= 0:
+	if unit == null or unit.health.is_defeated() or amount + maxi(0, request.bonus) <= 0:
 		return
 	var before := unit.statuses.duplicate()
 	var modifiers: Array[Dictionary] = []
 	var penalized := maxi(0, amount - request.melee_penalty)
 	if penalized != amount:
 		modifiers.append({"source_id": BasicAttackRules.RANGED_MELEE_PENALTY, "amount": penalized - amount})
+	# A bonus such as the attack charge adds to what the strike deals, after the melee halving.
+	if request.bonus > 0:
+		penalized += request.bonus
+		modifiers.append({"source_id": request.bonus_source_id, "amount": request.bonus})
 	var adjusted := maxi(0, penalized - request.ranged_reduction)
 	if adjusted != penalized:
 		modifiers.append({"source_id": request.cover_hex_state_id if not request.cover_hex_state_id.is_empty() else &"ranged_protection", "amount": adjusted - penalized})

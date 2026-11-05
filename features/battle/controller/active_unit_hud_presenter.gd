@@ -15,7 +15,8 @@ func setup(session: BattleSession, hud: BattleHUD, unit_views: BattleUnitViewReg
 	_content = content
 
 
-func show(state: UnitSnapshot) -> void:
+## `attack_type` is the type the unit's next attack takes, "" for a unit without a choice.
+func show(state: UnitSnapshot, attack_type := StringName()) -> void:
 	_hud.show_round(_session.get_round_number(), _session.get_active_faction())
 	_hud.show_health(state.health.current, state.health.maximum)
 	_hud.show_movement(state.turn.movement_remaining, state.turn.movement_max)
@@ -42,7 +43,11 @@ func show(state: UnitSnapshot) -> void:
 	_hud.show_active_unit(definition.display_name)
 	var presentation := _unit_views.presentations.get(state.unit_id) as UnitPresentationDefinition
 	_hud.show_active_portrait(presentation.actor_texture if presentation != null else null)
-	_hud.show_combat_stats(state.basic_attack_damage, state.basic_attack_range)
+	_hud.show_combat_stats(state.basic_attack_damage, state.basic_attack_range, int(state.statuses.get(UnitStatusCatalog.ATTACK_CHARGE, 0)))
+	var types: Array[StringName] = []
+	if not _session.is_unit_ai_controlled(state.unit_id):
+		types = state.attack_damage_types
+	_hud.show_attack_type(types, attack_type if not attack_type.is_empty() else state.basic_attack_damage_type, state.turn.main_action_available and not state.health.is_defeated())
 	var opponent_hexes: Array[Vector2i] = []
 	for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
 		opponent_hexes.append(opponent.hex)

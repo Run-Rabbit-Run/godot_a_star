@@ -6,6 +6,8 @@ extends CanvasLayer
 signal end_turn_requested
 signal movement_requested
 signal basic_attack_requested
+## The player switches the attack type of a unit that has a choice.
+signal attack_type_requested
 signal ability_requested(ability_id: StringName)
 signal strategist_ability_requested(ability_id: StringName)
 signal playback_speed_requested(speed: float)
@@ -83,6 +85,9 @@ var _main_action_available := false
 var _ability_action_available := false
 var _ability_buttons: Array[Button] = []
 var _ability_button_ids: Array[StringName] = []
+## Created from the ability template for the first unit with a choice of attack types.
+var _attack_type_button: Button
+var _attack_type_available := false
 var _display_settings: BattleDisplaySettingsController
 @onready var _battle_log_button: Button = $"HUDRoot/%BattleLogButton"
 @onready var _battle_log_panel: PanelContainer = $"HUDRoot/%BattleLogPanel"
@@ -281,6 +286,30 @@ func show_basic_attack_button(attack_range: int, available: bool) -> void:
 	_refresh_action_button_states()
 
 
+## The switch of a unit's attack type: hidden for a unit without a choice. `selected` is the
+## type the next attack takes.
+func show_attack_type(types: Array[StringName], selected: StringName, available: bool) -> void:
+	_attack_type_available = available
+	if types.is_empty():
+		if _attack_type_button != null:
+			_attack_type_button.hide()
+		return
+	if _attack_type_button == null:
+		_attack_type_button = _create_action_button("AttackTypeButton", "Тип атаки")
+		var row := _basic_attack_button.get_parent()
+		row.move_child(_attack_type_button, _basic_attack_button.get_index() + 1)
+		_attack_type_button.pressed.connect(_on_attack_type_button_pressed)
+	var type_name := AbilityDescription.damage_type_name(String(selected))
+	_attack_type_button.text = "Атака: %s" % type_name
+	_attack_type_button.icon = BattleActionIcons.ICONS.electricity if selected == &"electric" else BattleActionIcons.ICONS.attack
+	var names: PackedStringArray = []
+	for type: StringName in types:
+		names.append(AbilityDescription.damage_type_name(String(type)))
+	_attack_type_button.tooltip_text = "Тип обычной атаки: %s.\nНажмите, чтобы переключить: %s.\nВыбранный тип остаётся после атаки — им бьёт и ответный удар." % [type_name, " или ".join(names)]
+	_attack_type_button.show()
+	_refresh_action_button_states()
+
+
 ## unit_context fills unit-dependent description variables: attack_damage and attack_range of the acting unit.
 func show_abilities(abilities: Array[AbilityDefinition], available: bool, cooldowns: Dictionary = {}, unit_context: Dictionary = {}) -> void:
 	var ability_ids: Array[StringName] = []
@@ -325,9 +354,10 @@ func show_active_portrait(texture: Texture2D) -> void:
 	_active_portrait.texture = texture
 
 
-func show_combat_stats(damage: int, attack_range: int) -> void:
-	_combat_stats_label.text = "УРОН  %d     ДАЛЬНОСТЬ  %d" % [
-		damage,
+## `charge` is the attack charge the next ordinary attack adds to the damage.
+func show_combat_stats(damage: int, attack_range: int, charge := 0) -> void:
+	_combat_stats_label.text = "УРОН  %s     ДАЛЬНОСТЬ  %d" % [
+		"%d+%d" % [damage, charge] if charge > 0 else str(damage),
 		attack_range,
 	]
 
@@ -521,6 +551,10 @@ func _on_ability_button_pressed(ability_id: StringName) -> void:
 	ability_requested.emit(ability_id)
 
 
+func _on_attack_type_button_pressed() -> void:
+	attack_type_requested.emit()
+
+
 func get_health_alt_check() -> CheckButton:
 	return _health_alt_check
 
@@ -577,6 +611,8 @@ func _refresh_action_button_states() -> void:
 		not _interaction_enabled
 		or not _main_action_available
 	)
+	if _attack_type_button != null:
+		_attack_type_button.disabled = not _interaction_enabled or not _attack_type_available
 	for button: Button in _ability_buttons:
 		button.disabled = (
 			not _interaction_enabled
@@ -597,26 +633,32 @@ func _rebuild_ability_buttons(abilities: Array[AbilityDefinition]) -> void:
 		if ability == null:
 			continue
 
-		var button := _ability_button_template.duplicate() as Button
-		button.name = get_ability_button_name(ability.id)
-		button.text = ability.display_name
+		var button := _create_action_button(get_ability_button_name(ability.id), ability.display_name)
 		if button.icon == null:
 			button.icon = BattleActionIcons.ability(ability.id)
-		# The authored template supplies appearance/size; generated actions stay in the row.
-		if layout_presenter != null:
-			var template_id := String(layout_presenter.root.get_path_to(_ability_button_template))
-			var properties: Dictionary = layout_presenter.document.elements.get(template_id, {})
-			button.top_level = false
-			if properties.has("rect"):
-				button.custom_minimum_size = Vector2(properties.rect[2], properties.rect[3])
-			if properties.has("text"):
-				button.text = String(properties.text).replace("{value}", ability.display_name)
-		button.tooltip_text = ability.display_name
-		button.show()
-		skill_buttons.add_child(button)
 		skill_buttons.move_child(button, _end_turn_button.get_index())
 		button.pressed.connect(_on_ability_button_pressed.bind(ability.id))
 		_ability_buttons.append(button)
+
+
+## A visible action button made from the ability template, added to the action row.
+func _create_action_button(node_name: String, text: String) -> Button:
+	var button := _ability_button_template.duplicate() as Button
+	button.name = node_name
+	button.text = text
+	# The authored template supplies appearance/size; generated actions stay in the row.
+	if layout_presenter != null:
+		var template_id := String(layout_presenter.root.get_path_to(_ability_button_template))
+		var properties: Dictionary = layout_presenter.document.elements.get(template_id, {})
+		button.top_level = false
+		if properties.has("rect"):
+			button.custom_minimum_size = Vector2(properties.rect[2], properties.rect[3])
+		if properties.has("text"):
+			button.text = String(properties.text).replace("{value}", text)
+	button.tooltip_text = text
+	button.show()
+	_ability_button_template.get_parent().add_child(button)
+	return button
 
 
 func _create_turn_card(entry: Dictionary, is_active: bool, order: int) -> PanelContainer:

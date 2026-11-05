@@ -44,7 +44,8 @@ func request(include_presentation := false) -> BattleStartRequest:
 
 ## The regression battle with the authored spear guard first, all sides under the player.
 ## Shared with tools/units/spear_preview.tscn, so the regression and the manual stand agree.
-func spear_request() -> BattleStartRequest:
+## `extra_passives` are added to every unit that may take them.
+func spear_request(extra_passives: Array[StringName] = []) -> BattleStartRequest:
 	var loaded := ProjectBattleLoader.load_battle(GameContentSettings.read().content_packages, BATTLE_PATH, 7)
 	if loaded.request == null:
 		push_error(loaded.error_message)
@@ -60,6 +61,11 @@ func spear_request() -> BattleStartRequest:
 		placement.ai_profile_override_id = &""
 		var unit := snapshot.get_unit_definition(placement.definition_id)
 		unit.base_stats.max_health = 100
+		for passive: StringName in extra_passives:
+			var ids := unit.passive_ability_ids.duplicate()
+			ids.append(passive)
+			if PassiveAbilityCatalog.validate(ids, unit.passive_definitions).is_empty():
+				unit.passive_ability_ids.assign(ids)
 		units.append(unit)
 	for side: BattleSideDefinition in battle.sides:
 		side.control_source = BattleControlSource.Value.PLAYER

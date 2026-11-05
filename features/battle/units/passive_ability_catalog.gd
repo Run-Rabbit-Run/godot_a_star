@@ -17,6 +17,10 @@ const DEFINITIONS := {
 	&"core:acid_attack": {"name": "Кислотная базовая атака", "damage_type": &"acid", "description": "Обычная атака наносит {damage_type} урон."},
 	&"core:plasma_attack": {"name": "Плазменная базовая атака", "damage_type": &"plasma", "description": "Обычная атака наносит {damage_type} урон."},
 	&"core:ally_max_health": {"name": "Жизнеобеспечение (+1 ОЗ союзникам)", "ally_max_health": 1, "description": "Пока юнит цел, у остальных союзников максимум ОЗ больше на {ally_health}."},
+	&"core:immune_push": {"name": "Невосприимчивость к отталкиванию", "push_immunity": true, "description": "Толчки и отбрасывание не сдвигают юнита и не вызывают столкновений."},
+	&"core:engaged_charge": {"name": "«Я здесь»", "engaged_charge": 1, "description": "Начав ход рядом с противником, получает заряд: следующая обычная атака наносит на 1 урона больше. Зарядов не больше одного."},
+	# The alternative type is a String, like the types in skill documents: the factory converts it.
+	&"core:electric_attack_choice": {"name": "Выбор атаки: физическая или электрическая", "alternate_damage_type": "electric", "description": "Перед обычной атакой можно выбрать физический или электрический урон. Выбранный тип остаётся, пока его не сменят, — им бьёт и ответный удар."},
 }
 
 static func validate(ids: Array[StringName], overrides: Dictionary = {}) -> String:
@@ -30,7 +34,7 @@ static func validate(ids: Array[StringName], overrides: Dictionary = {}) -> Stri
 		if id in seen:
 			return "Повтор пассивного умения: %s" % id
 		seen.append(id)
-		if definitions[id].has("damage_type"):
+		if definitions[id].has("damage_type") or definitions[id].has("alternate_damage_type"):
 			attack_type_count += 1
 	if attack_type_count > 1:
 		return "Выберите только один тип урона базовой атаки."

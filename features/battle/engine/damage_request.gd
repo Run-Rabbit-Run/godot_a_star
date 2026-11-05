@@ -18,6 +18,9 @@ var ranged_reduction := 0
 var cover_hex_state_id: StringName
 ## Damage a ranged unit loses when it strikes in melee.
 var melee_penalty := 0
+## Damage the hit gains after the melee penalty and the status or effect that gives it.
+var bonus := 0
+var bonus_source_id: StringName
 ## A pushed unit ran into something: the hit is the collision, not the source's strike.
 var collision := false
 ## The destroyed flask whose burst dealt the damage.
@@ -57,6 +60,12 @@ func with_cover(reduction: int, hex_state_id: StringName) -> DamageRequest:
 
 func with_melee_penalty(penalty: int) -> DamageRequest:
 	melee_penalty = penalty
+	return self
+
+
+func with_bonus(amount: int, source_id: StringName) -> DamageRequest:
+	bonus = amount
+	bonus_source_id = source_id
 	return self
 
 

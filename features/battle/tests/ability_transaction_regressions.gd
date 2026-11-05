@@ -304,6 +304,9 @@ func _check_unit_copy_covers_every_field(suite: Node, fixture: Fixtures) -> void
 	full.corpse_removed = true
 	full.max_health_bonus = 1
 	full.ally_max_health_bonus = 2
+	full.push_immune = true
+	full.engaged_charge = 1
+	full.attack_damage_types.assign([&"fire", &"electric"])
 	var fresh: UnitState = fixture.unit(&"unit", BattleFaction.Value.ENEMY, Vector2i.ZERO)
 	var untouched: Array[String] = []
 	for property: Dictionary in full.get_property_list():

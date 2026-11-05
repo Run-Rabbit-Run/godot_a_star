@@ -23,7 +23,7 @@
 | Изменяемая карта | `MapMutationService`: атомарные пакеты add/remove/change/set traversal, ревизии | BATTLE_MAP.md «Изменение карты» |
 | Препятствия местности | `BattleObstacleDefinition`, `ObstacleService`, `AttackObstacleCommand` | BATTLE_MAP.md «Препятствия местности», EDITOR.md «Препятствия» |
 | Колбы | Четыре типа колб с разливом, выбросом давления и взрывом, цепная реакция: `ObstacleBreakService`, `ObstacleBrokenEvent`, `DamageRequest.from_obstacle()`, `ActionPreview.broken_flasks`, `FlaskBurstEffect`, форма в `BattleEditorInspector` | BATTLE_MAP.md «Колбы», EDITOR.md «Препятствия» |
-| Статусы и состояния гексов | 10 статусов с уровнями в четырёх категориях (`UnitStatusCatalog.Category`), срабатывание и спад только на границах фазы, включая устойчивость к параличу и щит от «Защиты» (`EndTurnCommand`), два слоя гексов (4 жидкости, 3 энергии), пять реакций, распространение, срок 3 раунда у каждого слоя | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
+| Статусы и состояния гексов | 11 статусов с уровнями в четырёх категориях (`UnitStatusCatalog.Category`), срабатывание и спад только на границах фазы, включая устойчивость к параличу и щит от «Защиты» (`EndTurnCommand`), два слоя гексов (4 жидкости, 3 энергии), пять реакций, распространение, срок 3 раунда у каждого слоя | [HEX_AND_UNIT_STATES.md](HEX_AND_UNIT_STATES.md) |
 | Обычная атака: выстрел и удар вплотную | `BasicAttackRules`, `UnitDamagedEvent.ranged_attack` | BATTLE_UNITS_AND_ABILITIES.md «Обычная атака» |
 | Типы урона и формула | physical/electric/water/fire/acid/plasma; `UnitDamagedEvent.damage_modifiers` | [BATTLE_UNITS_AND_ABILITIES.md](BATTLE_UNITS_AND_ABILITIES.md) «Урон и события урона», HEX_AND_UNIT_STATES.md «Типы урона и попадания» |
 | Завершение хода действием, КД, призыв | `UnitState.ability_cooldowns`, `core:summon`, `UnitSummonedEvent` | BATTLE.md «Действие завершает ход», BATTLE_UNITS_AND_ABILITIES.md «Кулдауны», «Призыв» |
@@ -31,7 +31,7 @@
 | Описания умений | `AbilityDefinition.description`, `AbilityDescription`, подсказки HUD и редактора юнитов | BATTLE_UNITS_AND_ABILITIES.md «Описание», BATTLE_PRESENTATION.md «HUD» |
 | Умения копья и ответный удар | `core:spear_throw/sweep/pin`, `core:melee_retaliation`, `pending_spear_return` | BATTLE_UNITS_AND_ABILITIES.md «Копьё и ответный удар» |
 | Толчок и столкновения | `core:push`, `PushEffectHandler`, `PushService`, `UnitPushedEvent`, `UnitDamagedEvent.collision`, умение `core:shove` | BATTLE_UNITS_AND_ABILITIES.md «Толчок и столкновения» |
-| Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions` | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
+| Пассивы | `PassiveAbilityCatalog` и авторские `passive_definitions`; невосприимчивость к толчку (`UnitState.push_immune`), заряд «Я здесь» (`AttackChargeService`), выбор типа атаки (`AttackCommand.damage_type`, `AttackTypeButton`) | BATTLE_UNITS_AND_ABILITIES.md «Пассивные умения», [CONTENT_AND_MODS.md](CONTENT_AND_MODS.md) |
 | Трупы в состоянии боя | `BattleState.get_corpses_at()`, уничтожение тела вместе с удерживаемым гексом (`corpse_removed`) | BATTLE_UNITS_AND_ABILITIES.md «Смерть и трупы» |
 | Умения стратега | `StrategistAbilityDefinition`, `StrategistAbilityExecutor`, `UseStrategistAbilityCommand`, `core:landing`, `core:health_shuttle`; раз в фазу игрока | BATTLE_UNITS_AND_ABILITIES.md «Умения стратега» |
 | Удерживаемый гекс и аура здоровья | `HeldHexService`, `HealthAuraService`, `core:ally_max_health`, `UnitHealthChangedEvent`, `CorpseRemovedEvent` | BATTLE_UNITS_AND_ABILITIES.md «Последствия появления и гибели», «Пассивные умения» |
@@ -86,7 +86,7 @@
 | Моды | Внутренние Resource-пакеты, зависимости, замороженный `ModAPI` | Установка и загрузка внешнего JSON/ZIP/PCK-пакета, отдельный data-only путь |
 | Экспорт редактора | `manifest.json` и `battle_document.json` в `content/authored/exports/` | Обратный импорт через `ContentLoader`; экспорт не является устанавливаемым модом |
 | Кампания | Бои, переходы по победе/поражению, проверка графа | Глобальная карта, Фобос/другие базы, сложные условия, постоянный состав и `SaveService` |
-| Юниты | Здоровье, ход, базовая атака, способности, десять статусов, броня, щит, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
+| Юниты | Здоровье, ход, базовая атака, способности, одиннадцать статусов, броня, щит, пассивы | Экипировка, травмы, полноценные stat modifiers, инициатива. Непустые `facing`, `modifiers`, `character_binding` расстановки только дают предупреждение |
 | Редакторы | Карта, гексы, препятствия, расстановки, стороны, ИИ, цель боя, юниты, навыки, HUD, save/load/export/trial | UI зон, триггеров, кампаний, глобальной карты и диалогов; шаблоны карт и массовые операции |
 | Симуляция | Один бой и последовательность кампании, `SimulationRunResult.to_report()` | Batch-runner, агрегаты, JSON/CSV серии, журнал команд headless-прогона |
 | Диагностика | JSONL-лог графического боя | Подключение к `SimulationRunner` и проигрыватель записи |

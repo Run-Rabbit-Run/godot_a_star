@@ -543,6 +543,8 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 		# The hex comes first, so what it gives acts in this phase; properties lose their level
 		# only after it, so a resistance still meets the paralysis of the unit's own hex.
 		UnitStatusService.start_phase(unit, events)
+		# The turn starts where the start effects left the unit: alive, able to act, maybe engaged.
+		AttackChargeService.grant(_state, unit, events)
 		_settle_presence(events)
 		if not _terminal_error.is_empty() or get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 			return
@@ -673,9 +675,15 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, target.hex, _is_engaged(attacker)):
 		return AttackResult.failure()
 
+	if not BasicAttackRules.may_choose(attacker.basic_attack_damage_type, attacker.attack_damage_types, command.damage_type):
+		return AttackResult.failure()
+
 	if not attacker.turn.spend_main_action():
 		return AttackResult.failure()
 
+	# The chosen type stays the unit's attack type: a later retaliation strikes with it too.
+	if not command.damage_type.is_empty():
+		attacker.basic_attack_damage_type = command.damage_type
 	var health_before := target.health.current
 	# Only the liquid layer gives cover: steam.
 	var protection_hex_state := _state.hex_grid.get_liquid(target.hex)
@@ -683,7 +691,8 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	var reduction := HexStateCatalog.ranged_reduction(protection_hex_state) if shot else 0
 	var penalty := 0 if shot else BasicAttackRules.melee_penalty(attacker.basic_attack_range, attacker.basic_attack_damage)
 	var first_event := events.size()
-	var hit := DamageRequest.new(attacker.basic_attack_damage, attacker.basic_attack_damage_type).from_unit(attacker.unit_id)
+	var charge := AttackChargeService.spend(attacker, events)
+	var hit := DamageRequest.new(attacker.basic_attack_damage, attacker.basic_attack_damage_type).from_unit(attacker.unit_id).with_bonus(charge, UnitStatusCatalog.ATTACK_CHARGE)
 	UnitStatusService.damage(target, hit.with_cover(reduction, protection_hex_state).with_melee_penalty(penalty), events)
 	if shot:
 		_mark_ranged_hit(events, first_event)
@@ -763,6 +772,8 @@ func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolutio
 	var damage := attacker.basic_attack_damage
 	if not BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, command.target_hex):
 		damage -= BasicAttackRules.melee_penalty(attacker.basic_attack_range, damage)
+	# An attack on an obstacle is the unit's own ordinary attack too: it spends the charge.
+	damage += AttackChargeService.spend(attacker, events)
 	# The strike has landed: a flask burst the map refuses stops the battle, as after a hit.
 	_terminal_error = ObstacleService.damage(_state, command.target_hex, damage, events)
 	# A burst may kill: its consequences come before the attacker's turn ends.

@@ -9,11 +9,12 @@ const COLLISION_DAMAGE := 1
 
 
 ## Pushes the living target `distance` hexes in one of the six directions. A unit that holds
-## its hex stays anchored to it. `source_id` is "" when no unit pushes, as for a flask.
+## its hex stays anchored to it, a unit immune to pushes stays put: neither collides.
+## `source_id` is "" when no unit pushes, as for a flask.
 ## Returns "" or why a flask the target broke could not change the map.
 static func push(state: BattleState, source_id: StringName, target_id: StringName, direction: Vector2i, distance: int, ability_id: StringName, events: Array[BattleEvent]) -> String:
 	var unit := state.unit_states.get(target_id) as UnitState
-	if unit == null or unit.health.is_defeated() or unit.holds_hex or distance <= 0 or not HexGrid.DIRECTIONS.has(direction):
+	if unit == null or unit.health.is_defeated() or unit.holds_hex or unit.push_immune or distance <= 0 or not HexGrid.DIRECTIONS.has(direction):
 		return ""
 	var segment: Array[Vector2i] = [unit.hex]
 	for _step in range(distance):

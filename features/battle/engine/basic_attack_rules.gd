@@ -27,6 +27,12 @@ static func is_shot(attack_range: int, from: Vector2i, to: Vector2i) -> bool:
 	return attack_range > 1 and HexGrid.get_distance(from, to) > 1
 
 
+## True when an attack may strike with `requested` type: "" keeps the unit's current type,
+## another type must be one of the unit's choices.
+static func may_choose(current: StringName, choices: Array[StringName], requested: StringName) -> bool:
+	return requested.is_empty() or requested == current or choices.has(requested)
+
+
 ## Damage a ranged unit loses on a melee strike: half, rounded down, at least 1 remains.
 static func melee_penalty(attack_range: int, damage: int) -> int:
 	if attack_range <= 1 or damage <= 0:

@@ -26,6 +26,10 @@ var _acting_unit_id := StringName()
 var _preview_key := ""
 var _preview: ActionPreview
 var _previewed_actors: Array[StringName] = []
+## The attack type the player chose for the unit with a choice; it applies with the next attack
+## and is reset to the unit's own type when another unit is shown.
+var _attack_type_unit_id := StringName()
+var _attack_damage_type := StringName()
 
 
 func setup(session: BattleSession, map_view: BattleMapView, hud: BattleHUD, unit_views: BattleUnitViewRegistry, content: ContentSnapshot) -> void:
@@ -50,6 +54,9 @@ func forget_movement() -> void:
 func show_movement_and_attacks(state: UnitSnapshot) -> void:
 	_clear_preview()
 	_acting_unit_id = state.unit_id
+	if _attack_type_unit_id != state.unit_id:
+		_attack_type_unit_id = state.unit_id
+		_attack_damage_type = state.basic_attack_damage_type
 	_map_view.set_cursor_mode(BattleMapView.CursorMode.DEFAULT)
 	_selected_ability_id = StringName()
 	_ability_hexes.clear()
@@ -80,6 +87,26 @@ func clear() -> void:
 	_map_view.show_targetable_cells(_attackable_hexes)
 	_map_view.clear_ability_area()
 	_hud.clear_target()
+
+
+## The attack type the shown unit's next attack chooses, or "" when it has no choice.
+func attack_damage_type() -> StringName:
+	var active := _session.get_unit(_acting_unit_id) if _session != null else null
+	if active == null or active.attack_damage_types.is_empty() or _attack_type_unit_id != active.unit_id:
+		return StringName()
+	return _attack_damage_type
+
+
+## Switches the shown unit's next attack to its following damage type; false without a choice.
+func cycle_attack_damage_type() -> bool:
+	var active := _session.get_unit(_acting_unit_id) if _session != null else null
+	if active == null or active.attack_damage_types.is_empty() or _session.is_unit_ai_controlled(active.unit_id):
+		return false
+	var types := active.attack_damage_types
+	_attack_type_unit_id = active.unit_id
+	_attack_damage_type = types[(types.find(_attack_damage_type) + 1) % types.size()]
+	_clear_preview()
+	return true
 
 
 ## True while a unit's or the strategist's ability is aimed.
@@ -170,7 +197,7 @@ func command_at(active: UnitSnapshot, axial_cell: Vector2i) -> BattleCommand:
 
 	var target := _session.get_unit_at(axial_cell)
 	if target != null and target.unit_id != active.unit_id:
-		return AttackCommand.new(active.unit_id, target.unit_id)
+		return AttackCommand.new(active.unit_id, target.unit_id, attack_damage_type() if active.unit_id == _acting_unit_id else StringName())
 	if _hex_grid.has_obstacle(axial_cell):
 		return AttackObstacleCommand.new(active.unit_id, axial_cell)
 	return MoveCommand.new(active.unit_id, axial_cell)
@@ -392,7 +419,7 @@ static func _command_key(command: BattleCommand) -> String:
 	if command is MoveCommand:
 		return "move:%s:%s" % [command.unit_id, command.destination]
 	if command is AttackCommand:
-		return "attack:%s:%s" % [command.attacker_id, command.target_id]
+		return "attack:%s:%s:%s" % [command.attacker_id, command.target_id, command.damage_type]
 	if command is AttackObstacleCommand:
 		return "obstacle:%s:%s" % [command.attacker_id, command.target_hex]
 	if command is UseAbilityCommand:
