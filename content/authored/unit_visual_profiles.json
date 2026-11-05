@@ -304,5 +304,35 @@
     "foot_anchor": [0.4, 0.975],
     "corpse_width": 90,
     "corpse_visible_region": [48, 97, 1681, 717]
+  },
+  "sniper_dust_cloak.png": {
+    "height": 82,
+    "foot_anchor": [0.35, 0.97],
+    "corpse_width": 82,
+    "corpse_visible_region": [34, 105, 2124, 524]
+  },
+  "alexandra_ochi.png": {
+    "height": 82,
+    "foot_anchor": [0.444, 0.982],
+    "corpse_width": 82,
+    "corpse_visible_region": [16, 97, 2071, 606]
+  },
+  "cartel_street_prince.png": {
+    "height": 82,
+    "foot_anchor": [0.366, 0.975],
+    "corpse_width": 82,
+    "corpse_visible_region": [18, 134, 1973, 567]
+  },
+  "space_cadet.png": {
+    "height": 82,
+    "foot_anchor": [0.402, 0.979],
+    "corpse_width": 82,
+    "corpse_visible_region": [12, 170, 1757, 589]
+  },
+  "barbara_boska.png": {
+    "height": 82,
+    "foot_anchor": [0.431, 0.975],
+    "corpse_width": 82,
+    "corpse_visible_region": [19, 124, 1736, 663]
   }
 }

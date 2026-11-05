@@ -1,0 +1,35 @@
+[
+  {
+    "variant": 2,
+    "type": "concept",
+    "name": "Антенна",
+    "prompt": "Use case: stylized-concept. ONE full-body key art of Alexandra \"Ochi\" Teli, ordinary HUMAN young ADULT woman22, clever restrained attentive genius support hacker. Variant02 \"Антенна\". Tall slender human woman with auburn hair in high practical bun, pale ash long field jacket with dark teal lining, slim backpack with ONE folded broad antenna mast (not robot arm), glove controller and short-range induction emitter, copper wired earpiece. Reserved focused half smile, electronic support silhouette.\nDefine a distinctly tall slender long-coat silhouette, practical adult human woman not robot. Pale ash long field jacket over closed gray high-neck blouse and dark cargo trousers, flat knee-high boots. Auburn high practical bun, copper wired earpiece, reserved focused half smile. Slim backpack has exactly ONE folded broad antenna mast behind shoulder, compact mechanical radio hardware not robot arm. Exactly TWO natural arms/hands: right hand holds short-range induction emitter with compact copper coil head; left hand wears controller glove and rests near control terminal at belt WITHOUT any extra hand tapping devices. No magic.\nHand-painted detailed 2D A_star worn material science fantasy, muted ash/earth/teal and copper palette, soft dark outlines, restrained tiny cyan emitter indicator only. Full hair mast boots all equipment inside portrait frame with safe margin, ONE figure on quiet warm ash paper backdrop. Nonsexualized fully covering functional clothes, adult natural proportions. No text/logos/UI/insets/collage, no anime/plastic/neon/holograms.",
+    "sourceImages": [],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-7b9a-76f1-8914-6fd294d9b5b6\\exec-d40b33e9-8889-4cfc-b9dc-07ebb137b9ae.png",
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/concepts/02.png"
+  },
+  {
+    "variant": 2,
+    "type": "battle",
+    "prompt": "Create ONE matching transparent battle sprite Alexandra Ochi human adult22, exact variant from Image1. Preserve auburn high bun, pale ash long field coat dark teal lining, closed gray blouse dark cargo trousers flat boots, copper earpiece, slim backpack with ONE folded broad antenna mast, controller glove and belt terminal, handheld copper-coil short range induction emitter. Images2/3 define camera and right-facing combat stance ONLY.\nHead nose gaze strong near-PROFILE RIGHT toward enemy offscreen RIGHT, never eye contact with viewer. Shallow mostly side camera like game refs, torso slight3/4, NOT overhead. Knees bent with braced front leg right rear left, boot toes right. Right hand thrusts short coil emitter toward RIGHT at chest height with small elbow bend, left gloved hand rests near belt terminal single hand only. Exactly TWO natural human arms/hands. Attentive reserved focused face. Compact silhouette antenna stays folded close to backpack; full bun mast boots device in frame with margins.\nHand-painted 2D tactical RPG worn muted ash earth copper teal materials soft dark contours, adult nonsexualized practical clothing, no cyborg or magic staff. Tiny cyan power indicator permitted only at tool.\nGenuine transparent alpha cutout, no floor ground shadow backdrop halo haze aura base UI text or extra figures.",
+    "sourceImages": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/concepts/02.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_spear_guard.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_engineer.png"
+    ],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-7b9a-76f1-8914-6fd294d9b5b6\\exec-e5bb2476-4fd7-457e-bf7d-51811d61f0ca.png",
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/units/02.png"
+  },
+  {
+    "variant": 2,
+    "type": "corpse",
+    "prompt": "Create matching inert DEAD corpse sprite of same ordinary HUMAN adult woman22 Alexandra Ochi Image1. Images2/3 collapsed pose/style only. Exact auburn bun and face, pale ash long coat dark teal lining, high neck gray blouse dark trousers boots, earpiece, backpack with ONE folded broad radio antenna, glove controller/belt terminal and copper-coil induction emitter all preserved.\nNatural full body lies FLAT ON SIDE on horizontal ground plane, head RIGHT boots LEFT, slightly elevated three-quarter corpse camera. Eyes CLOSED, relaxed face, torso/head/hips DOWN, knees naturally loose, arms limp and exactly TWO natural hands. Coil emitter grounded by hand, cable slack, antenna folded horizontal along backpack and body not upright. ALL display/weapon indicator lights COMPLETELY OFF. No blood/gore/wounds.\nSame detailed hand-painted muted worn 2D RPG materials and soft dark outlines. Compact horizontal silhouette, whole bun mast cable emitter boots in landscape canvas with transparent margin. No kneeling/seated/raised torso, no rotated standing cutout. Genuine transparent alpha outside exact silhouette, NO floor/shadow/background/haze/halo/aura/base/UI/text/extra figures.",
+    "sourceImages": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/units/02.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_officer.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_engineer.png"
+    ],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-7b9a-76f1-8914-6fd294d9b5b6\\exec-9033403a-5f7d-4957-a13e-9b6a24c7036d.png",
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/corpses/02.png"
+  }
+]

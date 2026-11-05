@@ -1,0 +1,40 @@
+[
+  {
+    "variant": 2,
+    "variantName": "Пыльный плащ",
+    "type": "concept",
+    "path": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/concepts/02.png",
+    "prompt": "Original A_star ordinary HUMAN adult male sniper, worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, no anime/plastic shine/neon overload, no logos/text/UI, no other figures or collage. Character: Tall adult human man, silent calm merciless toward enemies. Giant precision rifle, interchangeable cartridges for different damage/effects. Lost daughter after criminals betrayed hostage exchange. Express grief through restraint and attentive cold gaze, no hostage scene or child pictured. No new accepted name. Design variant: Tall narrow man40, black hair tied low, clean-shaven angular face, desert ash hood pushed back revealing face; asymmetric sand-gray half cloak over brown light field armor, flat boots, compact cartridge case worn cross-body. Huge long rail-like mechanical sniper rifle with heavy rectangular breech, modest amber optic, no glowing laser. ONE full-body finished character key art on quiet warm ash paper backdrop. Single tall human figure with GIANT precision rifle fully visible, pose quiet and vigilant. Face unobstructed, cold grief expressed through restraint. All boots, entire rifle muzzle/stock and hair within frame with safe margin, rifle can slope diagonally up-right. Provided game images are style/material reference ONLY do not copy their identity or weapons. No insets or character sheet.",
+    "referencePaths": [
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_spear_guard.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_engineer.png"
+    ],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-2fa3-7ff0-b856-55d74685f8b2\\exec-b12f5cba-6313-4e06-b0fd-149dc7f0695d.png"
+  },
+  {
+    "variant": 2,
+    "variantName": "Пыльный плащ",
+    "type": "battle",
+    "path": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/units/02.png",
+    "prompt": "Original A_star ordinary HUMAN adult male sniper, worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, no anime/plastic shine/neon overload, no logos/text/UI, no other figures or collage. Character: Tall adult human man, silent calm merciless toward enemies. Giant precision rifle, interchangeable cartridges for different damage/effects. Lost daughter after criminals betrayed hostage exchange. Express grief through restraint and attentive cold gaze, no hostage scene or child pictured. No new accepted name. Design variant: Tall narrow man40, black hair tied low, clean-shaven angular face, desert ash hood pushed back revealing face; asymmetric sand-gray half cloak over brown light field armor, flat boots, compact cartridge case worn cross-body. Huge long rail-like mechanical sniper rifle with heavy rectangular breech, modest amber optic, no glowing laser. Reference1 is EXACT character identity/outfit/huge rifle design, preserve them. References2/3 are pose/camera/style ONLY. ONE full-body READY COMBAT sprite. Head/nose/eyes look SCREEN RIGHT in near profile toward offscreen enemy, never eye contact viewer; torso slight3/4, shallow tactical camera matching game refs, not overhead. Braced knees flexed, front leg RIGHT rear leg LEFT, two hands hold giant precision rifle READY aimed SCREEN RIGHT (sloping slightly up-right if needed for compactness). Full body and ENTIRE giant rifle barrel/muzzle/stock safely within frame with transparent margin; NO cropping. Readable at82px height. TRUE transparent alpha background, clean cutout: every pixel outside figure/weapon silhouette alpha ZERO, no brown vignette or smoky colored haze, only tiny edge antialiasing. No floor/ground/base/shadow/haze/aura/background/UI/text. No separate figures, no scene.",
+    "referencePaths": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/concepts/02.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_spear_guard.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_engineer.png"
+    ],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-2fa3-7ff0-b856-55d74685f8b2\\exec-85f29692-c85c-4cab-9e25-77635ccae71a.png"
+  },
+  {
+    "variant": 2,
+    "variantName": "Пыльный плащ",
+    "type": "corpse",
+    "path": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/corpses/02.png",
+    "prompt": "Original A_star ordinary HUMAN adult male sniper, worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, no anime/plastic shine/neon overload, no logos/text/UI, no other figures or collage. Character: Tall adult human man, silent calm merciless toward enemies. Giant precision rifle, interchangeable cartridges for different damage/effects. Lost daughter after criminals betrayed hostage exchange. Express grief through restraint and attentive cold gaze, no hostage scene or child pictured. No new accepted name. Design variant: Tall narrow man40, black hair tied low, clean-shaven angular face, desert ash hood pushed back revealing face; asymmetric sand-gray half cloak over brown light field armor, flat boots, compact cartridge case worn cross-body. Huge long rail-like mechanical sniper rifle with heavy rectangular breech, modest amber optic, no glowing laser. Reference1 is EXACT identity/outfit/giant rifle; preserve face costume proportions gear and painted style. References2/3 are collapsed pose/style ONLY. NEW naturally collapsed DEAD body lying completely FLAT ON SIDE HORIZONTALLY across ground plane, head at SCREEN RIGHT, boots at SCREEN LEFT, eyes CLOSED, relaxed lifeless limbs with knees slightly bent. No supporting elbows/hands, NO raised torso, no kneeling, not rotated-standing cutout. Giant rifle rests flat alongside body, entirely visible including muzzle and stock; no floating or raised weapon. No blood/wounds/gore, ALL weapon/optic lights extinguished and dark. Slight elevated tactical view of single compact HORIZONTAL silhouette with all body and gear inside landscape frame and safe transparent margins. True transparent alpha, no ground/floor/shadow/matte/aura/haze/UI/text.",
+    "referencePaths": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/units/02.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_officer.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_engineer.png"
+    ],
+    "generatedSource": "C:\\Users\\Rabbit\\.codex\\generated_images\\01a1a5ab-2fa3-7ff0-b856-55d74685f8b2\\exec-fde18700-6a13-4f7d-be8e-e119fe202480.png"
+  }
+]

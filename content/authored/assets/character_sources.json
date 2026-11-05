@@ -27,6 +27,96 @@
       "sha256": "A9B2C8168253325282BED42C12258AD46DFFBA0A23C6D71C513E47D46B10AAB4",
       "tool": "built-in ImageGen",
       "transparent_background": true
+    },
+    {
+      "output": "units/sniper_dust_cloak.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/units/02.png",
+      "variant": "Пыльный плащ",
+      "sha256": "61C6F5613F004F58855D21F3EF382D0B764B9A6794AB05A1A807670E57DC8480",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/sniper_dust_cloak.json"
+    },
+    {
+      "output": "corpses/sniper_dust_cloak.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/sniper/corpses/02.png",
+      "variant": "Пыльный плащ",
+      "sha256": "EAF27EA2A13E35377BC755159E41443281E3AD4B409F769BFE60FC7590B712C2",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/sniper_dust_cloak.json"
+    },
+    {
+      "output": "units/alexandra_ochi.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/units/02.png",
+      "variant": "Антенна",
+      "sha256": "DA29F650C51BB1A27116F038377ABFBDED2021360A59CCBC105CE190C6E2C712",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/alexandra_ochi.json"
+    },
+    {
+      "output": "corpses/alexandra_ochi.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/ochi/corpses/02.png",
+      "variant": "Антенна",
+      "sha256": "47B752E1E6CE1040A8C38928E1FBC30FEFB6F95397A6381DB21C325CE41932D5",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/alexandra_ochi.json"
+    },
+    {
+      "output": "units/cartel_street_prince.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/units/03.png",
+      "variant": "Уличный князь",
+      "sha256": "67D6BE78DBCA5FCF10FAA164C8942D4F251C15D4CE9C8E38DB0B5DAC710A983E",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/cartel_street_prince.json"
+    },
+    {
+      "output": "corpses/cartel_street_prince.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/corpses/03.png",
+      "variant": "Уличный князь",
+      "sha256": "69AC6FA33314DF05FDFAFBC08F8AC0EE799318FA7D4FFD4EF7469AFB7E7A1857",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/cartel_street_prince.json"
+    },
+    {
+      "output": "units/space_cadet.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cadet/units/04.png",
+      "variant": "Гвардейская школа",
+      "sha256": "76AE7C0BB2102E80BDE98A3F83BA3849ED39D086658E0BFA1A2C69F17A93DE3A",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/space_cadet.json"
+    },
+    {
+      "output": "corpses/space_cadet.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cadet/corpses/04.png",
+      "variant": "Гвардейская школа",
+      "sha256": "0C8855D6AE6DE49FFAD2B69D8B23417B3285787336C24D8B9F550F94E7DAA3CC",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/space_cadet.json"
+    },
+    {
+      "output": "units/barbara_boska.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/barbara/units/01.png",
+      "variant": "Полевой врач",
+      "sha256": "C76B1948745ECA64E31FA1B6064C90529EF456CF19F3060A7FA1648E0425497C",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/barbara_boska.json"
+    },
+    {
+      "output": "corpses/barbara_boska.png",
+      "source": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/barbara/corpses/01.png",
+      "variant": "Полевой врач",
+      "sha256": "F26206D71CF008B2415F530F622045335967C6D4543C7E97D33B8B784827BD31",
+      "tool": "built-in ImageGen",
+      "transparent_background": true,
+      "prompts": "prompts/barbara_boska.json"
     }
   ]
 }

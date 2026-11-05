@@ -1,0 +1,32 @@
+[
+  {
+    "variant": 3,
+    "type": "concept",
+    "prompt": "Original A_star character. Ordinary dark-skinned HUMAN adult male cartel leader, arrogant daring charismatic with black humor. Worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, readable silhouettes, no anime/plastic shine/neon overload. No logos/text/UI. Only ONE SPEAR as weapon, never guns/swords/daggers. All adult fully practical nonsexualized clothing. DISTINCT DESIGN03 Уличный князь: Tall athletic dark-skinned man35, thick short dreadlocks with one gray lock, clean-shaven teasing grin. Charcoal sleeveless outer coat over FULLY covering dark quilted sleeves, ash scarf, patched rust trousers and brass shoulder clasp. ONE long narrow hooked spear blade mounted on industrial shaft with heat-resistant wrappings, light embers along metal. CONCEPT ONE full-body three-quarter finished character key art on quiet warm ash paper backdrop. Tall athletic lean quick-footed street prince silhouette, asymmetrical long narrow hooked spear and restless confident humor. No heavy cuirass, no bald head. Charcoal sleeveless outer coat OVER fully covering quilted long sleeves, scarf and patched rust trousers all practical. One figure, entire boots, dreadlock hair, whole spear butt+tip inside frame with margin. Game reference controls painted materials style only not identity. No text/collage/insets/UI.",
+    "sourceImages": [
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_spear_guard.png"
+    ],
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/concepts/03.png"
+  },
+  {
+    "variant": 3,
+    "type": "battle",
+    "prompt": "Original A_star character. Ordinary dark-skinned HUMAN adult male cartel leader, arrogant daring charismatic with black humor. Worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, readable silhouettes, no anime/plastic shine/neon overload. No logos/text/UI. Only ONE SPEAR as weapon, never guns/swords/daggers. All adult fully practical nonsexualized clothing. Exact design03 Tall athletic dark-skinned man35, thick short dreadlocks with one gray lock, clean-shaven teasing grin. Charcoal sleeveless outer coat over FULLY covering dark quilted sleeves, ash scarf, patched rust trousers and brass shoulder clasp. ONE long narrow hooked spear blade mounted on industrial shaft with heat-resistant wrappings, light embers along metal. Image1 exact identity/clothes/spear, image2 game reference camera+stance ONLY. SAME adult dark-skinned dreadlocked man READY COMBAT transparent miniature fullbody. Face/nose/gaze SCREEN RIGHT nearPROFILE to offscreen enemy NEVER viewer, torso partly3/4, shallow slight elevation NOT overhead. Front RIGHT leg bent braced rear LEFT supporting, two hands hold SAME narrow hooked SPEAR in ready guard pointing up-right diagonal compact. Lively arrogant grin to enemyRIGHT. Preserve one grey dreadlock, quilted full sleeves under charcoal sleeveless coat, ash scarf, patched rust trousers and brass clasp. Whole spear butt AND TIP, both boots/hair/coat inside frame safe clear margins. No other weapons. Detailed painted worn sciencefantasy miniature readable at82px. GENUINELY TRANSPARENT ALPHA background, no floor/ground/shadow/base/haze/aura/UI/text.",
+    "sourceImages": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/concepts/03.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/units/gt_spear_guard.png"
+    ],
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/units/03.png"
+  },
+  {
+    "variant": 3,
+    "type": "corpse",
+    "prompt": "Original A_star character. Ordinary dark-skinned HUMAN adult male cartel leader, arrogant daring charismatic with black humor. Worn material science fantasy, hand-painted detailed 2D tactical RPG, muted ash/rust/earth palette, soft dark outlines, restrained glow, readable silhouettes, no anime/plastic shine/neon overload. No logos/text/UI. Only ONE SPEAR as weapon, never guns/swords/daggers. All adult fully practical nonsexualized clothing. Image1 is exact identity/costume/spear. Images2/3 natural corpse POSE references ONLY. SAME dark-skinned clean-shaven dreadlocked man with one gray lock, charcoal sleeveless outer coat over quilted sleeves, ash scarf, patched rust trousers and hooked industrial spear, NEW natural DEAD collapsed FLAT ON SIDE horizontal groundplane headRIGHT bootsLEFT. EYES FULLY CLOSED, limp relaxed limbs, body rests flat not kneeling/propped/upright or merely rotated standing figure. Same one long hooked SPEAR rests on invisible ground beside hands, entire spear aligned horizontally buttLEFT tipRIGHT. ALL fire/embers/lights EXTINGUISHED entirely, cold metal. No wounds/blood/gore. Whole figure, boots, hair and whole weapon inside LANDSCAPE canvas with clear transparent margin all edges. GENUINELY TRANSPARENT ALPHA; no floor/ground/base/shadow/haze/aura/backdrop/UI/text/vignette. Preserve exact painted material style.",
+    "sourceImages": [
+      "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/units/03.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_officer.png",
+      "Z:/Godot/Projects/a_star/content/authored/assets/corpses/gt_engineer.png"
+    ],
+    "output": "C:/Users/Rabbit/.codex/visualizations/2026/11/04/01a1a5a7-f89a-7303-a70b-0ffcfade28ac/remaining-characters/cartel/corpses/03.png"
+  }
+]
