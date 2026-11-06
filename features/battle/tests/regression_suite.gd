@@ -90,6 +90,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/session_regressions.gd").new().run_summon_control(self)
 	if runs("summon_references"):
 		preload("res://features/battle/tests/summon_reference_regressions.gd").new().run(self)
+	if runs("turret"):
+		preload("res://features/battle/tests/turret_regressions.gd").new().run(self)
 	if runs("strategist"):
 		preload("res://features/battle/tests/strategist_regressions.gd").new().run(self)
 	if runs("strategist_view"):

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="summon"]
+script = ExtResource("effect")
+effect_type_id = &"core:summon"
+parameters = {
+"center_only": true,
+"unit_id": "core:turret_unit",
+}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:turret"
+display_name = "Турель"
+description = "Призывает «{summon}» на свободный гекс на дальности {range}: ОЗ {summon_hp}, атака {summon_damage} на дальность {summon_range}. Перезарядка {cooldown}."
+presentation_id = &"core:turret_ability_presentation"
+range = 4
+area_radius = 0
+target_mode = 3
+uses_attack_range = false
+cooldown_turns = 3
+effects = Array[ExtResource("effect")]([SubResource("summon")])

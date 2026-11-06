@@ -22,7 +22,7 @@ static func ability(id: StringName) -> Texture2D:
 		&"core:grenade", &"core:emp_grenade": return ICONS.grenade
 		&"core:create_electricity": return ICONS.electricity
 		&"core:electromagnetic_shot": return ICONS.attack
-		&"core:electric_turret": return ICONS.turret
+		&"core:electric_turret", &"core:turret": return ICONS.turret
 		&"core:spear_throw", &"core:spear_sweep", &"core:spear_pin": return ICONS.spear
 		&"core:health_shuttle": return ICONS.shuttle
 	return ICONS.ability

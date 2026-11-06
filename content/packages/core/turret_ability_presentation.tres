@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="AbilityPresentationDefinition" format=3]
+[ext_resource type="Script" path="res://features/battle/view/ability_presentation_definition.gd" id="script"]
+[resource]
+script = ExtResource("script")
+id = &"core:turret_ability_presentation"
+projectile_color = Color(0.7, 0.69, 0.66, 1)
+trail_color = Color(0.52, 0.5, 0.46, 0.65)
+impact_color = Color(0.8, 0.62, 0.32, 0.85)
