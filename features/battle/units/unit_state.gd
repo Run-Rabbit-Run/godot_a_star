@@ -41,6 +41,9 @@ var engaged_charge := 0
 ## Damage types an ordinary attack may choose from, the unit's own first; empty without a choice.
 ## The chosen type stays the unit's attack type, retaliation included.
 var attack_damage_types: Array[StringName] = []
+## The ordinary attack is a sniper shot: it shoots only before the unit spends movement points
+## in its turn; a neighbor is still struck in melee.
+var sniper_shot := false
 
 
 func _init(
@@ -94,6 +97,7 @@ func duplicate_state() -> UnitState:
 	copy.health.current = health.current
 	copy.turn.movement_remaining = turn.movement_remaining
 	copy.turn.main_action_available = turn.main_action_available
+	copy.turn.movement_spent = turn.movement_spent
 	copy.statuses.assign(statuses)
 	copy.passive_ability_ids.assign(passive_ability_ids)
 	copy.basic_attack_damage_type = basic_attack_damage_type
@@ -113,6 +117,7 @@ func duplicate_state() -> UnitState:
 	copy.push_immune = push_immune
 	copy.engaged_charge = engaged_charge
 	copy.attack_damage_types.assign(attack_damage_types)
+	copy.sniper_shot = sniper_shot
 	return copy
 
 
@@ -122,6 +127,7 @@ func copy_from(other: UnitState) -> void:
 	turn.movement_max = other.turn.movement_max
 	turn.movement_remaining = other.turn.movement_remaining
 	turn.main_action_available = other.turn.main_action_available
+	turn.movement_spent = other.turn.movement_spent
 	health.maximum = other.health.maximum
 	health.current = other.health.current
 	basic_attack_damage = other.basic_attack_damage
@@ -146,3 +152,4 @@ func copy_from(other: UnitState) -> void:
 	push_immune = other.push_immune
 	engaged_charge = other.engaged_charge
 	attack_damage_types.assign(other.attack_damage_types)
+	sniper_shot = other.sniper_shot

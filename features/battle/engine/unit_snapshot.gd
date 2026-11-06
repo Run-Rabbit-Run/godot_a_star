@@ -29,6 +29,7 @@ var max_health_bonus := 0
 var push_immune := false
 var engaged_charge := 0
 var attack_damage_types: Array[StringName] = []
+var sniper_shot := false
 
 
 func _init(state: UnitState) -> void:
@@ -53,10 +54,12 @@ func _init(state: UnitState) -> void:
 	push_immune = state.push_immune
 	engaged_charge = state.engaged_charge
 	attack_damage_types.assign(state.attack_damage_types)
+	sniper_shot = state.sniper_shot
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,
-		state.turn.main_action_available
+		state.turn.main_action_available,
+		state.turn.movement_spent
 	)
 	health = HealthSnapshot.new(
 		state.health.maximum,

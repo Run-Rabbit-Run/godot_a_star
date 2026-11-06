@@ -51,9 +51,10 @@ func show(state: UnitSnapshot, attack_type := StringName()) -> void:
 	var opponent_hexes: Array[Vector2i] = []
 	for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
 		opponent_hexes.append(opponent.hex)
-	# An engaged ranged unit cannot shoot: its button names the melee strike.
-	var reach := 1 if BasicAttackRules.is_engaged(state.hex, opponent_hexes) else state.basic_attack_range
-	_hud.show_basic_attack_button(reach, state.turn.main_action_available)
+	# An engaged ranged unit or a sniper that moved cannot shoot: its button names the melee strike.
+	var shot_blocked := BasicAttackRules.is_engaged(state.hex, opponent_hexes) or BasicAttackRules.sniper_moved(state.sniper_shot, state.turn.movement_spent)
+	var reach := 1 if shot_blocked else state.basic_attack_range
+	_hud.show_basic_attack_button(reach, state.turn.main_action_available, state.sniper_shot)
 	_show_turn_order(state.unit_id)
 	show_strategist()
 

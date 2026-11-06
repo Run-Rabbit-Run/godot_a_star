@@ -178,8 +178,9 @@ func _basic_command(session: BattleSession, active_unit_id: StringName) -> Battl
 
 
 ## An engaged shooter steps to a reachable free firing position instead of striking at half damage.
+## A sniper cannot shoot after a move, so it strikes where it stands.
 func _choose_disengage_move(session: BattleSession, active: UnitSnapshot, target: UnitSnapshot, opponent_hexes: Array[Vector2i]) -> MoveCommand:
-	if active.basic_attack_range <= 1 or active.turn.movement_remaining <= 0 or not BasicAttackRules.is_engaged(active.hex, opponent_hexes):
+	if active.basic_attack_range <= 1 or active.sniper_shot or active.turn.movement_remaining <= 0 or not BasicAttackRules.is_engaged(active.hex, opponent_hexes):
 		return null
 	var move := EnemyBrain.choose_move(active.unit_id, active.hex, target.hex, session.get_movement_search(active.unit_id), session.get_hex_grid(), active.health.current, active.basic_attack_range, active, opponent_hexes, decision_trace)
 	# A safer cell that still cannot shoot is no reason to give up the strike.

@@ -327,8 +327,8 @@ func _refresh_attack_targets(state: UnitSnapshot) -> void:
 	var opponent_hexes: Array[Vector2i] = []
 	for opponent: UnitSnapshot in _session.get_living_opponents(state.faction):
 		opponent_hexes.append(opponent.hex)
-	# An engaged ranged unit only strikes its neighbors, so it gets the melee highlight.
-	var shoots := state.basic_attack_range > 1 and not BasicAttackRules.is_engaged(state.hex, opponent_hexes)
+	# An engaged ranged unit or a sniper that moved only strikes its neighbors: melee highlight.
+	var shoots := state.basic_attack_range > 1 and not BasicAttackRules.is_engaged(state.hex, opponent_hexes) and not BasicAttackRules.sniper_moved(state.sniper_shot, state.turn.movement_spent)
 	if shoots:
 		var range_cells := _hex_grid.get_cells_in_range(state.hex, state.basic_attack_range)
 		var enemy_cells: Array[Vector2i] = []

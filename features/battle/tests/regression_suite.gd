@@ -50,6 +50,10 @@ func _run() -> void:
 		preload("res://features/battle/tests/passive_regressions.gd").new().run(self)
 	if runs("passive_view"):
 		await preload("res://features/battle/tests/passive_regressions.gd").new().run_presentation(self)
+	if runs("sniper"):
+		preload("res://features/battle/tests/sniper_regressions.gd").new().run(self)
+	if runs("sniper_view"):
+		await preload("res://features/battle/tests/sniper_regressions.gd").new().run_presentation(self)
 	if runs("damage_log"):
 		preload("res://features/battle/tests/status_regressions.gd").new().run_damage_log(self)
 	if runs("file_logging"):

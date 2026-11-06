@@ -62,6 +62,8 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		if passive.get("push_immunity", false):
 			state.push_immune = true
 		state.engaged_charge = maxi(state.engaged_charge, int(passive.get("engaged_charge", 0)))
+		if passive.get("sniper_shot", false):
+			state.sniper_shot = true
 		if passive.has("alternate_damage_type"):
 			alternate = StringName(passive.alternate_damage_type)
 	# Validation allows one passive of the attack type: the choice starts from the unit's own type.

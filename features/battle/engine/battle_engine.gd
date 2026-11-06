@@ -126,7 +126,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 	):
 		return targets
 
-	var engaged := _is_engaged(attacker)
+	var shot_blocked := _shot_blocked(attacker)
 	for candidate: UnitState in _state.unit_states.values():
 		if candidate.faction == attacker.faction:
 			continue
@@ -134,7 +134,7 @@ func get_attackable_targets(unit_id: StringName) -> Array[UnitState]:
 		if candidate.health.is_defeated():
 			continue
 
-		if BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, candidate.hex, engaged):
+		if BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, candidate.hex, shot_blocked):
 			targets.append(candidate)
 
 	targets.sort_custom(_is_unit_id_before)
@@ -291,7 +291,9 @@ func get_reach(unit_id: StringName) -> Dictionary:
 		cells.sort()
 		var attack: Dictionary[Vector2i, bool] = {}
 		for cell: Vector2i in cells:
-			for target: Vector2i in _state.hex_grid.get_cells_in_range(cell, unit.basic_attack_range):
+			# A sniper shoots only from where it stands; after a move it strikes its neighbors.
+			var attack_range := 1 if unit.sniper_shot and cell != unit.hex else unit.basic_attack_range
+			for target: Vector2i in _state.hex_grid.get_cells_in_range(cell, attack_range):
 				if target != cell:
 					attack[target] = true
 		attack_cells.assign(attack.keys())
@@ -672,7 +674,7 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	if not attacker.turn.main_action_available:
 		return AttackResult.failure()
 
-	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, target.hex, _is_engaged(attacker)):
+	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, target.hex, _shot_blocked(attacker)):
 		return AttackResult.failure()
 
 	if not BasicAttackRules.may_choose(attacker.basic_attack_damage_type, attacker.attack_damage_types, command.damage_type):
@@ -794,7 +796,15 @@ func _obstacle_attack_error(attacker: UnitState, hex: Vector2i) -> String:
 		return "Препятствие вне дальности атаки."
 	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, hex, _is_engaged(attacker)):
 		return "Рядом враг: стрелять нельзя."
+	if not BasicAttackRules.reaches(attacker.basic_attack_range, attacker.hex, hex, _shot_blocked(attacker)):
+		return "Снайперский выстрел невозможен после перемещения."
 	return ""
+
+
+## True when the unit cannot shoot now and only strikes its neighbors: an opponent stands next
+## to it, or it is a sniper that has spent movement points this turn.
+func _shot_blocked(unit: UnitState) -> bool:
+	return BasicAttackRules.sniper_moved(unit.sniper_shot, unit.turn.movement_spent) or _is_engaged(unit)
 
 
 ## True when a living opponent stands next to the unit, so it cannot shoot.

@@ -1,7 +1,8 @@
 class_name BasicAttackRules
 extends RefCounted
 ## Ordinary attack rules shared by the engine, AI and battle UI: a ranged unit cannot shoot
-## while an enemy stands next to it and strikes an adjacent target in melee for half damage.
+## while an enemy stands next to it, nor a sniper after it has moved this turn; it strikes an
+## adjacent target in melee for half damage.
 
 ## Modifier source of the halved melee strike in UnitDamagedEvent.damage_modifiers.
 const RANGED_MELEE_PENALTY := &"ranged_melee_penalty"
@@ -15,11 +16,16 @@ static func is_engaged(hex: Vector2i, opponent_hexes: Array[Vector2i]) -> bool:
 	return false
 
 
+## True when a sniper may not shoot: it has spent movement points this turn.
+static func sniper_moved(sniper_shot: bool, movement_spent: int) -> bool:
+	return sniper_shot and movement_spent > 0
+
+
 ## True when an ordinary attack from `from` may hit `to`: within range, and a shot past the
-## neighbors only while the attacker is not engaged.
-static func reaches(attack_range: int, from: Vector2i, to: Vector2i, engaged: bool) -> bool:
+## neighbors only while the attacker may shoot — it is not engaged and no sniper that moved.
+static func reaches(attack_range: int, from: Vector2i, to: Vector2i, shot_blocked: bool) -> bool:
 	var distance := HexGrid.get_distance(from, to)
-	return distance <= attack_range and (distance <= 1 or not engaged)
+	return distance <= attack_range and (distance <= 1 or not shot_blocked)
 
 
 ## True when the attack is a shot rather than a melee strike.

@@ -27,6 +27,8 @@ const COLOR_MUTED := Color(0.515, 0.510, 0.455, 1.0)
 const COLOR_HEALTHY := Color(0.400, 0.447, 0.357, 1.0)
 const COLOR_WOUNDED := Color(0.604, 0.451, 0.278, 1.0)
 const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
+const SNIPER_TOOLTIP := "Снайперский выстрел: стрелять можно, только если юнит ещё не перемещался на этом ходу.
+Соседнюю цель он бьёт вплотную и после перемещения."
 
 
 @onready var _strategist_panel: PanelContainer = $"HUDRoot/%StrategistPanel"
@@ -278,11 +280,14 @@ func _on_strategist_ability_pressed(ability_id: StringName) -> void:
 	strategist_ability_requested.emit(ability_id)
 
 
-func show_basic_attack_button(attack_range: int, available: bool) -> void:
+## `attack_range` is how far the attack reaches now: 1 for a unit that can only strike its
+## neighbors. A sniper's shot is named so and explains when it is lost.
+func show_basic_attack_button(attack_range: int, available: bool, sniper := false) -> void:
 	_main_action_available = available
 	_basic_attack_button.text = (
-		"Выстрел" if attack_range > 1 else "Атака"
+		"Снайперский выстрел" if sniper and attack_range > 1 else "Выстрел" if attack_range > 1 else "Атака"
 	)
+	_basic_attack_button.tooltip_text = SNIPER_TOOLTIP if sniper else _basic_attack_button.text
 	_refresh_action_button_states()
 
 

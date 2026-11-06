@@ -19,6 +19,7 @@ const DEFINITIONS := {
 	&"core:ally_max_health": {"name": "Жизнеобеспечение (+1 ОЗ союзникам)", "ally_max_health": 1, "description": "Пока юнит цел, у остальных союзников максимум ОЗ больше на {ally_health}."},
 	&"core:immune_push": {"name": "Невосприимчивость к отталкиванию", "push_immunity": true, "description": "Толчки и отбрасывание не сдвигают юнита и не вызывают столкновений."},
 	&"core:engaged_charge": {"name": "«Я здесь»", "engaged_charge": 1, "description": "Начав ход рядом с противником, получает заряд: следующая обычная атака наносит на 1 урона больше. Зарядов не больше одного."},
+	&"core:sniper_shot": {"name": "Снайперский выстрел", "sniper_shot": true, "description": "Обычная атака — снайперский выстрел: стрелять можно, только если юнит не тратил очки передвижения на этом ходу. Соседнюю цель он бьёт вплотную и после перемещения."},
 	# The alternative type is a String, like the types in skill documents: the factory converts it.
 	&"core:electric_attack_choice": {"name": "Выбор атаки: физическая или электрическая", "alternate_damage_type": "electric", "description": "Перед обычной атакой можно выбрать физический или электрический урон. Выбранный тип остаётся, пока его не сменят, — им бьёт и ответный удар."},
 }

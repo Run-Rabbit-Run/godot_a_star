@@ -285,6 +285,7 @@ func _check_unit_copy_covers_every_field(suite: Node, fixture: Fixtures) -> void
 	full.health.current = 9
 	full.turn.movement_remaining = 2
 	full.turn.main_action_available = false
+	full.turn.movement_spent = 3
 	full.basic_attack_damage = 7
 	full.basic_attack_range = 3
 	full.abilities[&"core:copied"] = fixture.ability(&"core:copied", AbilityDefinition.TargetMode.HEX)
@@ -307,6 +308,7 @@ func _check_unit_copy_covers_every_field(suite: Node, fixture: Fixtures) -> void
 	full.push_immune = true
 	full.engaged_charge = 1
 	full.attack_damage_types.assign([&"fire", &"electric"])
+	full.sniper_shot = true
 	var fresh: UnitState = fixture.unit(&"unit", BattleFaction.Value.ENEMY, Vector2i.ZERO)
 	var untouched: Array[String] = []
 	for property: Dictionary in full.get_property_list():

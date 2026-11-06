@@ -5,6 +5,8 @@ extends RefCounted
 var movement_max: int
 var movement_remaining: int
 var main_action_available: bool
+## Movement points the unit has spent on moves this turn; penalties and pushes spend none.
+var movement_spent := 0
 
 
 ## Само состояние гарантирует неотрицательный максимум и полный стартовый запас.
@@ -16,6 +18,7 @@ func _init(p_movement_max: int) -> void:
 func start_turn() -> void:
 	movement_remaining = movement_max
 	main_action_available = true
+	movement_spent = 0
 
 
 func spend_movement(cost: int) -> bool:
@@ -23,6 +26,7 @@ func spend_movement(cost: int) -> bool:
 		return false
 
 	movement_remaining -= cost
+	movement_spent += cost
 
 	return true
 
