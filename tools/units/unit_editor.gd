@@ -17,6 +17,10 @@ var embedded := false
 ## Content the units belong to; the hosting editor passes its own packages, a standalone
 ## editor reads them from the project settings.
 var content_packages: Array[ContentPackage] = []
+## Folder of the unit files; tests point it at user://.
+var units_directory := UnitLibrary.UNITS
+## Folder of the fields checked for placements of a unit before its deletion.
+var battles_directory := GameContentSettings.BATTLES
 var _library: SkillLibrary
 var _document: Dictionary = {}
 var _saved: Dictionary = {}
@@ -49,6 +53,10 @@ var _validation: Label
 var _effective_damage: Label
 var _confirm: ConfirmationDialog
 var _pending: Callable
+var _delete_dialog: ConfirmationDialog
+var _delete_path := ""
+var _list_menu: PopupMenu
+var _menu_path := ""
 var _previous_auto_accept := true
 var _preview_asset := ""
 
@@ -115,6 +123,7 @@ func _build_ui() -> void:
 	_validation.mouse_filter = Control.MOUSE_FILTER_PASS
 	footer.add_child(_validation)
 	_confirm = EditorUi.confirm_discard(self, "Отбросить несохранённые изменения юнита?", func() -> void: _pending.call())
+	_delete_dialog = EditorUi.confirm_delete(self, "Удаление юнита", _delete_unit)
 
 
 func _build_header(root: Control) -> void:
@@ -127,6 +136,11 @@ func _build_header(root: Control) -> void:
 	EditorUi.add_shortcut(create, KEY_N, true)
 	header.add_child(create)
 	header.add_child(EditorUi.button("Копия", _copy_document, "Создать независимую копию с новым ID"))
+	header.add_child(EditorUi.button(
+		"Удалить…", func() -> void: _request_delete(_path_for(_document)),
+		"Удалить файл открытого юнита из библиотеки. Правый щелчок по юниту в списке удаляет его без открытия.",
+		&"DangerButton",
+	))
 	header.add_child(EditorUi.separator())
 	var undo := EditorUi.button("Отменить", _undo_edit)
 	EditorUi.add_shortcut(undo, KEY_Z, true)
@@ -142,7 +156,7 @@ func _build_header(root: Control) -> void:
 	folders.get_popup().add_item("Открыть папку юнитов", 0)
 	folders.get_popup().add_item("Открыть папку изображений", 1)
 	folders.get_popup().id_pressed.connect(func(id: int) -> void:
-		_open_folder(UnitLibrary.UNITS if id == 0 else UnitLibrary.ASSETS)
+		_open_folder(units_directory if id == 0 else UnitLibrary.ASSETS)
 	)
 	header.add_child(folders)
 	var refresh := EditorUi.button("Обновить", _refresh, "Перечитать юнитов, изображения и навыки с диска")
@@ -166,7 +180,12 @@ func _build_library(body: Control) -> void:
 	_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_list.fixed_icon_size = Vector2i(40, 40)
 	_list.item_selected.connect(_select_file)
+	_list.gui_input.connect(_on_list_input)
 	library.add_child(_list)
+	_list_menu = PopupMenu.new()
+	_list_menu.add_item("Удалить…")
+	_list_menu.id_pressed.connect(func(_id: int) -> void: _request_delete(_menu_path))
+	_list.add_child(_list_menu)
 	_library_count = EditorUi.hint("")
 	library.add_child(_library_count)
 
@@ -469,7 +488,7 @@ func _redo_edit() -> void:
 
 
 func _save() -> void:
-	var error := UnitLibrary.save_document(_document, _skills)
+	var error := UnitLibrary.save_document(_document, _skills, units_directory)
 	if not error.is_empty():
 		EditorUi.set_status(_status, "Не сохранено: " + error, EditorUi.Severity.ERROR)
 		return
@@ -516,10 +535,10 @@ func _refresh_list() -> void:
 	var filter := _search.text.strip_edges().to_lower()
 	var entries: Array[Dictionary] = []
 	var broken := 0
-	for filename: String in DirAccess.get_files_at(UnitLibrary.UNITS):
+	for filename: String in DirAccess.get_files_at(units_directory):
 		if filename.get_extension().to_lower() != "json":
 			continue
-		var path := UnitLibrary.UNITS.path_join(filename)
+		var path := units_directory.path_join(filename)
 		var result := UnitLibrary.read_document(path, _skills)
 		var error := String(result.error)
 		var readable: bool = result.has("document")
@@ -544,6 +563,68 @@ func _refresh_list() -> void:
 		if entry.path == current:
 			_list.select(index)
 	_library_count.text = "Юнитов: %d%s" % [entries.size(), " · с ошибками: %d" % broken if broken > 0 else ""]
+
+
+## Right click on a listed unit offers deletion without opening it, so a broken file can go too.
+func _on_list_input(event: InputEvent) -> void:
+	var click := event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_RIGHT:
+		return
+	var index := _list.get_item_at_position(click.position, true)
+	if index < 0:
+		return
+	_list.accept_event()
+	_menu_path = _list.get_item_metadata(index)
+	_list_menu.position = Vector2i(_list.get_screen_position() + click.position)
+	_list_menu.reset_size()
+	_list_menu.popup()
+
+
+## Names the fields that place the unit; deletion itself waits for the confirmation.
+func _request_delete(path: String) -> void:
+	if not FileAccess.file_exists(path):
+		EditorUi.set_status(_status, "Юнит ещё не сохранён: удалять нечего.", EditorUi.Severity.WARN)
+		return
+	_delete_path = path
+	var lines := PackedStringArray([
+		"Удалить юнита «%s»?" % _title_for(path),
+		"Файл %s будет удалён с диска. Изображения останутся в библиотеке." % path,
+	])
+	var fields := PackedStringArray()
+	for field: Dictionary in BattleLibrary.fields_using_unit(UnitLibrary.id_for_path(path), battles_directory):
+		fields.append("«%s»%s" % [field.label, " (стартовый бой игры)" if field.starting else ""])
+	if not fields.is_empty():
+		lines.append("Юнит расставлен в полях: %s. Они не пройдут проверку и не запустятся, пока его фигуры не убраны." % ", ".join(fields))
+	if path == _path_for(_document):
+		lines.append("Данные останутся в форме: «Сохранить» вернёт юнита в библиотеку.")
+	_delete_dialog.dialog_text = "\n\n".join(lines)
+	_delete_dialog.popup_centered()
+
+
+## The open unit stays in the form as a new one without a discard prompt; saving restores its file.
+func _delete_unit() -> void:
+	var path := _delete_path
+	_delete_path = ""
+	var title := _title_for(path)
+	var error := UnitLibrary.delete_document(path, units_directory)
+	if not error.is_empty():
+		EditorUi.set_status(_status, "Не удалено: " + error, EditorUi.Severity.ERROR)
+		return
+	var open := path == _path_for(_document)
+	if open:
+		_saved = _document.duplicate(true)
+	_refresh_state()
+	_refresh_list()
+	EditorUi.set_status(_status, "Юнит «%s» удалён: %s.%s" % [
+		title, path, " Данные остались в форме — «Сохранить» вернёт его." if open else "",
+	], EditorUi.Severity.OK)
+
+
+func _title_for(path: String) -> String:
+	if path == _path_for(_document):
+		return String(_document.name)
+	var result := UnitLibrary.read_document(path, _skills)
+	return String(result.document.name) if result.has("document") else path.get_file()
 
 
 func _refresh_assets() -> void:
@@ -586,4 +667,4 @@ func _leave() -> void:
 
 
 func _path_for(data: Dictionary) -> String:
-	return UnitLibrary.UNITS.path_join(String(data.get("id", "")).trim_prefix("custom_units:") + ".json")
+	return units_directory.path_join(String(data.get("id", "")).trim_prefix("custom_units:") + ".json")

@@ -141,14 +141,29 @@ static func read_document(path: String, skills: Dictionary) -> Dictionary:
 		return {"error": "%s: %s" % [path, references], "document": data}
 	return {"error": "", "document": data}
 
-static func save_document(data: Dictionary, skills: Dictionary) -> String:
+static func save_document(data: Dictionary, skills: Dictionary, directory := UNITS) -> String:
 	var error := validate(data, skills)
 	if not error.is_empty():
 		return error
 	if texture_for(data.image) == null:
 		return "Изображение не удалось прочитать."
-	var path := UNITS.path_join(String(data.id).trim_prefix("custom_units:") + ".json")
+	var path := directory.path_join(String(data.id).trim_prefix("custom_units:") + ".json")
 	return AtomicFileWriter.write_text(path, JSON.stringify(data, "\t") + "\n")
+
+
+## Removes one unit file, readable or broken. Images and corpses stay: other units may share them.
+static func delete_document(path: String, directory := UNITS) -> String:
+	if path.get_base_dir() != directory or path.get_extension().to_lower() != "json":
+		return "Удалять можно только JSON-файл из папки юнитов: %s" % path
+	if not FileAccess.file_exists(path):
+		return "Файл юнита не найден: %s" % path
+	var error := DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	return "" if error == OK else "Не удалось удалить %s: %s" % [path, error_string(error)]
+
+
+## Unit ID a library file holds by the naming rule, even when its JSON is broken.
+static func id_for_path(path: String) -> StringName:
+	return StringName("custom_units:" + path.get_file().get_basename())
 
 static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
 	var result := ContentLoadResult.new()

@@ -10,8 +10,12 @@ func _run() -> void:
 		await preload("res://tools/battles/tests/objective_editor_regressions.gd").new().run(self)
 	if runs("map_rules"):
 		preload("res://tools/battles/tests/map_rule_regressions.gd").new().run(self)
+	if runs("battle_delete"):
+		await preload("res://tools/battles/tests/battle_delete_regressions.gd").new().run(self)
 	if runs("unit_editor"):
 		await preload("res://tools/units/tests/unit_editor_regressions.gd").new().run(self)
+	if runs("unit_delete"):
+		await preload("res://tools/units/tests/unit_delete_regressions.gd").new().run(self)
 	if runs("skill_editor"):
 		await preload("res://tools/skills/tests/skill_editor_regressions.gd").new().run(self)
 	if runs("previews"):

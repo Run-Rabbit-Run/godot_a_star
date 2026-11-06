@@ -60,6 +60,7 @@ var open_button: Button
 var save_as_button: Button
 var new_button: Button
 var export_button: Button
+var delete_field_button: Button
 var use_in_game_buttons: Array[Button] = []
 var background_option: OptionButton
 var grid_layout_controls: EditorGridLayoutControls
@@ -351,6 +352,8 @@ func _build_field_page(page: VBoxContainer) -> void:
 	for button: Button in [open_button, save_as_button, new_button, export_button]:
 		file_actions.add_child(button)
 	document.add_child(_use_in_game_button("Сохранить, проверить и назначить поле для обычного запуска игры (F5 в Godot)"))
+	delete_field_button = _wide(EditorUi.button("Удалить поле…", Callable(), "Удалить файл открытого поля; черновик останется открытым, «Сохранить» вернёт его", &"DangerButton"))
+	document.add_child(delete_field_button)
 	objective_panel.build_card(page)
 	var backdrop := EditorUi.card(page, "ФОН")
 	background_option = _option()

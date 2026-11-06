@@ -22,6 +22,8 @@ const ERROR := Color("ee6d61")
 const UNSAVED_TITLE := "Несохранённые изменения"
 const DISCARD := "Отбросить"
 const KEEP_EDITING := "Продолжить редактирование"
+const DELETE := "Удалить"
+const CANCEL := "Отмена"
 
 static var _theme: Theme
 
@@ -196,6 +198,28 @@ static func confirm_discard(parent: Node, text: String, action: Callable) -> Con
 	return dialog
 
 
+## Confirmation of an irreversible deletion. The owner sets the text per request; Cancel takes
+## the focus, so Enter never deletes.
+static func confirm_delete(parent: Node, title: String, action: Callable) -> ConfirmationDialog:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = title
+	dialog.ok_button_text = DELETE
+	dialog.cancel_button_text = CANCEL
+	dialog.dialog_autowrap = true
+	dialog.min_size = Vector2i(620, 0)
+	dialog.get_ok_button().theme_type_variation = &"DangerButton"
+	dialog.confirmed.connect(action)
+	# The dialog focuses its OK button when shown; the deferred call runs after that.
+	dialog.about_to_popup.connect(func() -> void:
+		(func() -> void:
+			if dialog.visible:
+				dialog.get_cancel_button().grab_focus()
+		).call_deferred()
+	)
+	parent.add_child(dialog)
+	return dialog
+
+
 static func _box(color: Color, border := Color.TRANSPARENT, radius := 4, margin := Vector4(10, 6, 10, 6), border_width := 1) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -301,6 +325,8 @@ static func _build_theme() -> Theme:
 	theme.set_type_variation(&"PrimaryButton", &"Button")
 	_button_styles(theme, &"PrimaryButton", ACCENT.darkened(0.12), ACCENT, ACCENT.darkened(0.3), ACCENT.lightened(0.2), Color("1c1507"), Color("1c1507"))
 	theme.set_color("font_disabled_color", "PrimaryButton", Color("1c1507", 0.6))
+	theme.set_type_variation(&"DangerButton", &"Button")
+	_button_styles(theme, &"DangerButton", BUTTON, BUTTON_HOVER, ERROR.darkened(0.65), ERROR, ERROR, ERROR.lightened(0.2))
 	theme.set_type_variation(&"ToolButton", &"Button")
 	_button_styles(theme, &"ToolButton", Color(BUTTON, 0.0), BUTTON_HOVER, Color(ACCENT, 0.2), ACCENT, TEXT, ACCENT)
 	theme.set_stylebox("normal", "ToolButton", _box(Color(BUTTON, 0.55), Color(BORDER, 0.6)))

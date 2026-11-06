@@ -7,7 +7,7 @@ extends Control
 ## (docs/dev/GOTCHAS.md «Godot 4.7»).
 const BATTLE_SCREEN_SCENE := preload("res://features/battle/battle_screen.tscn")
 
-enum FileAction { NEW, OPEN, SAVE, SAVE_AS, REFRESH_LIST, RELOAD_LIBRARY, EXPORT, USE_IN_GAME }
+enum FileAction { NEW, OPEN, SAVE, SAVE_AS, REFRESH_LIST, RELOAD_LIBRARY, EXPORT, USE_IN_GAME, DELETE }
 
 
 var content_packages: Array[ContentPackage] = []
@@ -66,6 +66,8 @@ var _unit_editor: UnitEditor
 var _skill_editor: SkillEditor
 var _discard_dialog: ConfirmationDialog
 var _pending_discard_action: Callable
+var _delete_dialog: ConfirmationDialog
+var _file_menu: PopupMenu
 var _saved_document: Dictionary = {}
 ## Names and portraits by definition ID for one snapshot; snapshot getters return deep copies.
 var _unit_info: Dictionary[StringName, Dictionary] = {}
@@ -82,6 +84,8 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	_discard_dialog = EditorUi.confirm_discard(self, "Есть несохранённые изменения поля боя. Отбросить их?", _confirm_discard)
 	_discard_dialog.theme = EditorUi.theme()
+	_delete_dialog = EditorUi.confirm_delete(self, "Удаление поля", _delete_field)
+	_delete_dialog.theme = EditorUi.theme()
 	var settings := GameContentSettings.read()
 	if settings == null:
 		_set_status("Не удалось прочитать content/game_content.tres.", EditorUi.Severity.ERROR)
@@ -190,7 +194,10 @@ func _build_top_bar(root: Control) -> void:
 	popup.add_item("Экспорт копии документа", FileAction.EXPORT)
 	popup.add_separator()
 	popup.add_item("Сделать стартовым боем", FileAction.USE_IN_GAME)
+	popup.add_separator()
+	popup.add_item("Удалить поле…", FileAction.DELETE)
 	popup.id_pressed.connect(_on_file_action)
+	_file_menu = popup
 	bar.add_child(file_menu)
 	bar.add_child(EditorUi.separator())
 	bar.add_child(EditorUi.label("Поле", &"FieldLabel"))
@@ -331,7 +338,7 @@ func _build_inspector(body: Control) -> void:
 		[_inspector.obstacle_remove_button, _remove_selected_obstacle], [_inspector.open_button, _open_dialog_requested],
 		[_inspector.save_as_button, _save_as], [_inspector.new_button, _new_document_requested],
 		[_inspector.export_button, _export], [_inspector.check_button, _check_document],
-		[_inspector.trial_button, _start_trial],
+		[_inspector.trial_button, _start_trial], [_inspector.delete_field_button, _delete_field_requested],
 	]:
 		(pair[0] as Button).pressed.connect(pair[1])
 	for button: Button in _inspector.use_in_game_buttons:
@@ -392,6 +399,8 @@ func _on_file_action(id: int) -> void:
 			_export()
 		FileAction.USE_IN_GAME:
 			_use_in_game()
+		FileAction.DELETE:
+			_delete_field_requested()
 
 
 func _on_tool_selected(tool: EditorBattleView.Tool) -> void:
@@ -460,6 +469,9 @@ func _reload_unit_library() -> void:
 		_set_status("Библиотека не обновлена: исправьте ошибки файлов. Предыдущий снимок сохранён.", EditorUi.Severity.ERROR)
 		return
 	_snapshot = result.snapshot
+	# A unit deleted in the unit editor leaves the palette and can no longer be placed.
+	if not _selected_definition_id.is_empty() and _snapshot.get_unit_definition(_selected_definition_id) == null:
+		_selected_definition_id = StringName()
 	if _document == null:
 		var settings := GameContentSettings.read()
 		if settings != null and not settings.battle_document_path.is_empty():
@@ -1161,6 +1173,34 @@ func _update_document_path_label() -> void:
 		if not _current_document_path.is_empty()
 		else "Файл: не сохранён"
 	)
+	_inspector.delete_field_button.disabled = _current_document_path.is_empty()
+	_file_menu.set_item_disabled(_file_menu.get_item_index(FileAction.DELETE), _current_document_path.is_empty())
+
+
+## The draft stays open after deletion, so the confirmation only names the file that goes.
+func _delete_field_requested() -> void:
+	var error := BattleLibrary.delete_error(_current_document_path, _document)
+	if not error.is_empty():
+		_set_status(error, EditorUi.Severity.WARN)
+		return
+	_delete_dialog.dialog_text = "Удалить поле «%s»?\n\nФайл %s будет удалён с диска.\n\nЧерновик останется открытым: «Сохранить» вернёт поле в библиотеку." % [
+		BattleLibrary.label_for(_current_document_path, _document), _current_document_path,
+	]
+	_delete_dialog.popup_centered()
+
+
+## The open draft becomes a new field without a discard prompt; saving writes it back.
+func _delete_field() -> void:
+	var path := _current_document_path
+	var error := BattleLibrary.delete_document(path, _document)
+	if not error.is_empty():
+		_set_status("Не удалено: %s" % error, EditorUi.Severity.ERROR)
+		return
+	_current_document_path = ""
+	_saved_document = BattleDocumentSerializer.to_dictionary(_document).duplicate(true)
+	_update_document_path_label()
+	_update_dirty()
+	_set_status("Поле удалено: %s. Черновик открыт — «Сохранить» вернёт его." % ProjectSettings.globalize_path(path), EditorUi.Severity.OK)
 
 
 func _use_in_game() -> void:
