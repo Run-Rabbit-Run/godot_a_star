@@ -26,7 +26,7 @@ func _run_definition(suite: Node, snapshot: ContentSnapshot, ability: AbilityDef
 	suite.expect(ability.cooldown_turns == 1 and ability.initial_cooldown_turns == 0 and ability.validate().is_empty(), "«Огненный росчерк» has a cooldown of 1 and none at the start")
 	var damage := ability.effects[0] if ability.effects.size() == 2 else null
 	var burning := ability.effects[1] if ability.effects.size() == 2 else null
-	suite.expect(damage != null and damage.effect_type_id == &"core:damage" and damage.parameters.get("amount") == 1 and damage.parameters.get("secondary_amount") == 1 and damage.parameters.get("damage_type") == "fire" and damage.parameters.get("affects_obstacles") == false, "The stroke deals 1 fire damage to units only")
+	suite.expect(damage != null and damage.effect_type_id == &"core:damage" and damage.parameters.get("amount") == 1 and damage.parameters.get("secondary_amount") == 1 and damage.parameters.get("damage_type") == "fire" and damage.parameters.get("affects_obstacles") == true, "The stroke deals 1 fire damage to units and obstacles")
 	suite.expect(burning != null and burning.effect_type_id == &"core:unit_status" and StringName(burning.parameters.get("status_id")) == UnitStatusCatalog.BURNING and burning.parameters.get("levels") == 1, "Then it sets one level of burning")
 	suite.expect(snapshot.get_ability_presentation_definition(ability.presentation_id) != null, "«Огненный росчерк» has a presentation")
 	var text := AbilityDescription.render(ability)
@@ -65,7 +65,7 @@ func _run_geometry(suite: Node, fixture: Fixtures, ability: AbilityDefinition) -
 
 
 ## The user at the origin strikes east: enemies at (1, 0) and (1, -1), an ally at (0, 1);
-## an enemy west at (-1, 0) and an obstacle next to the side stay untouched.
+## an enemy west at (-1, 0) stays untouched.
 func _run_strike(suite: Node, fixture: Fixtures, ability: AbilityDefinition) -> void:
 	var user := fixture.unit(&"user", PLAYER, Vector2i.ZERO)
 	_give(user, ability)
@@ -95,19 +95,33 @@ func _run_strike(suite: Node, fixture: Fixtures, ability: AbilityDefinition) -> 
 	var area := result.events[0] as AreaAbilityUsedEvent if not result.events.is_empty() else null
 	suite.expect(area != null and area.affected_hexes == AbilityExecutor.get_affected_hexes(state.hex_grid, Vector2i.ZERO, ability, Vector2i(1, 0)), "The area event lists the side")
 
-	# Obstacles in the side keep their health.
+	# Obstacles on the side take the damage too: the chosen hex and the hexes beside it; a large
+	# obstacle covering two of them is struck once. An obstacle off the side stays whole.
 	user = fixture.unit(&"user", PLAYER, Vector2i.ZERO)
 	_give(user, ability)
-	state = fixture.state(_disk(2), [user, fixture.unit(&"enemy", ENEMY, Vector2i(2, 0))])
-	var obstacle := BattleObstacleDefinition.new()
-	obstacle.id = &"test:crate"
-	obstacle.destructible = true
-	obstacle.max_hp = 5
-	obstacle.hexes.append(Vector2i(1, 0))
-	state.hex_grid.add_obstacle(obstacle)
+	state = fixture.state(_disk(2), [user, fixture.unit(&"enemy", ENEMY, Vector2i(-2, 2))])
+	state.hex_grid.add_obstacle(_crate(&"test:front", [Vector2i(1, 0)]))
+	state.hex_grid.add_obstacle(_crate(&"test:side", [Vector2i(0, 1), Vector2i(-1, 2)]))
+	state.hex_grid.add_obstacle(_crate(&"test:wide", [Vector2i(1, -1), Vector2i(0, -1)]))
+	state.hex_grid.add_obstacle(_crate(&"test:behind", [Vector2i(-1, 0)]))
 	engine = BattleEngine.new(state)
-	result = engine.execute(UseAbilityCommand.at_hex(user.unit_id, Vector2i(1, 0), STROKE))
-	suite.expect(result.accepted and state.hex_grid.get_obstacle(Vector2i(1, 0)).current_hp == 5, "The stroke leaves an obstacle on the side whole")
+	command = UseAbilityCommand.at_hex(user.unit_id, Vector2i(1, 0), STROKE)
+	preview = ActionPreview.build(engine.fork_for_prediction(), engine, command)
+	suite.expect(preview.accepted and preview.obstacle_damage.get(Vector2i(1, 0), 0) == 1, "The preview shows the damage to an obstacle on the side")
+	result = engine.execute(command)
+	var grid := state.hex_grid
+	suite.expect(result.accepted and grid.get_obstacle(Vector2i(1, 0)).current_hp == 4 and grid.get_obstacle(Vector2i(0, 1)).current_hp == 4, "The stroke deals 1 damage to the obstacles on the chosen hex and beside it")
+	suite.expect(grid.get_obstacle(Vector2i(1, -1)).current_hp == 4, "An obstacle covering two hexes of the side is struck once")
+	suite.expect(grid.get_obstacle(Vector2i(-1, 0)).current_hp == 5, "An obstacle off the side stays whole")
+	var weak := fixture.unit(&"user", PLAYER, Vector2i.ZERO)
+	_give(weak, ability)
+	state = fixture.state(_disk(2), [weak, fixture.unit(&"enemy", ENEMY, Vector2i(-2, 2))])
+	var brittle := _crate(&"test:brittle", [Vector2i(1, 0)])
+	brittle.max_hp = 1
+	state.hex_grid.add_obstacle(brittle)
+	engine = BattleEngine.new(state)
+	result = engine.execute(UseAbilityCommand.at_hex(weak.unit_id, Vector2i(1, 0), STROKE))
+	suite.expect(result.accepted and not state.hex_grid.has_obstacle(Vector2i(1, 0)) and state.hex_grid.is_traversable(Vector2i(1, 0)), "The stroke destroys an obstacle with 1 HP and opens the hex")
 
 
 ## The tactical AI burns two neighbors with one stroke rather than a weak strike at one.
@@ -133,6 +147,16 @@ func _run_ai(suite: Node, fixture: Fixtures, ability: AbilityDefinition) -> void
 			if event is UnitDamagedEvent and event.source_ability_id == STROKE:
 				struck.append(event.target_id)
 	suite.expect(result != null and result.accepted and struck.size() == 2 and struck.has(left.unit_id) and struck.has(right.unit_id), "The AI's stroke is accepted and strikes both: %s" % [struck])
+
+
+## A destructible obstacle with 5 HP on the hexes.
+static func _crate(id: StringName, hexes: Array[Vector2i]) -> BattleObstacleDefinition:
+	var obstacle := BattleObstacleDefinition.new()
+	obstacle.id = id
+	obstacle.destructible = true
+	obstacle.max_hp = 5
+	obstacle.hexes.assign(hexes)
+	return obstacle
 
 
 static func _give(unit: UnitState, ability: AbilityDefinition) -> void:

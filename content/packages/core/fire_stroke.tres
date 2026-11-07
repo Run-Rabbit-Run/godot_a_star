@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="damage"]
 script = ExtResource("effect")
 effect_type_id = &"core:damage"
-parameters = {"amount": 1, "secondary_amount": 1, "damage_type": "fire", "affects_obstacles": false}
+parameters = {"amount": 1, "secondary_amount": 1, "damage_type": "fire", "affects_obstacles": true}
 
 [sub_resource type="Resource" id="burning"]
 script = ExtResource("effect")
@@ -17,7 +17,7 @@ parameters = {"status_id": "core:burning", "levels": 1}
 script = ExtResource("ability")
 id = &"core:fire_stroke"
 display_name = "Огненный росчерк"
-description = "Росчерк по выбранной стороне: каждый юнит на трёх соседних гексах — союзник тоже — получает {damage} урона ({damage_type}) и {status} ×{levels}. Препятствия не повреждаются. Перезарядка {cooldown}."
+description = "Росчерк по выбранной стороне: каждый юнит на трёх соседних гексах — союзник тоже — получает {damage} урона ({damage_type}) и {status} ×{levels}. Препятствия на этих гексах тоже получают {damage} урона. Перезарядка {cooldown}."
 presentation_id = &"core:fire_stroke_presentation"
 range = 1
 area_radius = 0
