@@ -27,6 +27,8 @@ const COLOR_MUTED := Color(0.515, 0.510, 0.455, 1.0)
 const COLOR_HEALTHY := Color(0.400, 0.447, 0.357, 1.0)
 const COLOR_WOUNDED := Color(0.604, 0.451, 0.278, 1.0)
 const COLOR_CRITICAL := Color(0.431, 0.161, 0.161, 1.0)
+## Body tag of the hovered unit: living green, mechanical steel.
+const BODY_COLORS := {UnitBody.LIVING: Color(0.56, 0.72, 0.45, 1.0), UnitBody.MECHANICAL: Color(0.58, 0.68, 0.76, 1.0)}
 const SNIPER_TOOLTIP := "Снайперский выстрел: стрелять можно, только если юнит ещё не перемещался на этом ходу.
 Соседнюю цель он бьёт вплотную и после перемещения."
 
@@ -50,6 +52,7 @@ const SNIPER_TOOLTIP := "Снайперский выстрел: стрелять
 @onready var _target_portrait: TextureRect = $"HUDRoot/%TargetPortrait"
 @onready var _target_name_label: Label = $"HUDRoot/%TargetNameLabel"
 @onready var _target_faction_label: Label = $"HUDRoot/%TargetFactionLabel"
+@onready var _target_body_label: Label = $"HUDRoot/%TargetBodyLabel"
 @onready var _target_health_label: Label = $"HUDRoot/%TargetHealthLabel"
 @onready var _target_stats_label: Label = $"HUDRoot/%TargetStatsLabel"
 @onready var _target_effects_label: Label = $"HUDRoot/%TargetEffectsLabel"
@@ -359,12 +362,15 @@ func show_active_portrait(texture: Texture2D) -> void:
 	_active_portrait.texture = texture
 
 
-## `charge` is the attack charge the next ordinary attack adds to the damage.
-func show_combat_stats(damage: int, attack_range: int, charge := 0) -> void:
-	_combat_stats_label.text = "УРОН  %s     ДАЛЬНОСТЬ  %d" % [
-		"%d+%d" % [damage, charge] if charge > 0 else str(damage),
-		attack_range,
-	]
+## `charge` is the attack charge the next ordinary attack adds to the damage, `glitch` the
+## targeting glitch it takes away: «УРОН 2+1−1».
+func show_combat_stats(damage: int, attack_range: int, charge := 0, glitch := 0) -> void:
+	var text := str(damage)
+	if charge > 0:
+		text += "+%d" % charge
+	if glitch > 0:
+		text += "−%d" % glitch
+	_combat_stats_label.text = "УРОН  %s     ДАЛЬНОСТЬ  %d" % [text, attack_range]
 
 
 func show_ability_targeting(display_name: String, area_radius: int, mode: int = AbilityDefinition.TargetMode.AUTO) -> void:
@@ -382,6 +388,12 @@ func show_ability_targeting(display_name: String, area_radius: int, mode: int = 
 		return
 	if mode == AbilityDefinition.TargetMode.ENEMY:
 		_action_label.text = "ВЫБЕРИТЕ ПРОТИВНИКА: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.ALLY:
+		_action_label.text = "ВЫБЕРИТЕ СОЮЗНИКА: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.ARC:
+		_action_label.text = "ВЫБЕРИТЕ СТОРОНУ: %s" % display_name.to_upper()
 		return
 	_action_label.text = (
 		"ВЫБЕРИТЕ ЦЕНТР: %s · РАДИУС %d" % [display_name.to_upper(), area_radius]
@@ -448,7 +460,8 @@ func show_target(
 	movement_remaining: int,
 	movement_maximum: int,
 	main_action_available: bool,
-	statuses: Dictionary = {}
+	statuses: Dictionary = {},
+	body: StringName = UnitBody.LIVING
 ) -> void:
 	_target_panel.visible = true
 	_target_placeholder.visible = false
@@ -459,6 +472,9 @@ func show_target(
 	_target_faction_label.modulate = (
 		COLOR_ENEMY if faction_name == "Противник" else COLOR_IVORY
 	)
+	# Healing reaches living bodies; mechanical ones are only repaired.
+	_target_body_label.text = UnitBody.display_name(body).to_upper()
+	_target_body_label.modulate = BODY_COLORS.get(body, COLOR_MUTED)
 	_target_health_label.text = "ОЗ   %d / %d" % [
 		current_health,
 		maximum_health,

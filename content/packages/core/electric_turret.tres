@@ -11,6 +11,7 @@ basic_attack_range = 3
 script = ExtResource("unit")
 id = &"core:electric_turret_unit"
 display_name = "Электро турель"
+body = &"mechanical"
 base_stats = SubResource("stats")
 passive_ability_ids = Array[StringName]([&"core:electric_attack"])
 presentation_id = &"core:electric_turret_actor"

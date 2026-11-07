@@ -30,6 +30,8 @@ var push_immune := false
 var engaged_charge := 0
 var attack_damage_types: Array[StringName] = []
 var sniper_shot := false
+var body: StringName = UnitBody.LIVING
+var ally_shield := 0
 
 
 func _init(state: UnitState) -> void:
@@ -55,6 +57,8 @@ func _init(state: UnitState) -> void:
 	engaged_charge = state.engaged_charge
 	attack_damage_types.assign(state.attack_damage_types)
 	sniper_shot = state.sniper_shot
+	body = state.body
+	ally_shield = state.ally_shield
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
 		state.turn.movement_remaining,

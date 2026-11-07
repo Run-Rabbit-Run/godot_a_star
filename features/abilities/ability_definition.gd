@@ -11,7 +11,9 @@ extends Resource
 @export_range(0, 8) var area_radius := 0
 @export var effects: Array[AbilityEffectDefinition] = []
 
-enum TargetMode { AUTO, ENEMY, HEX, EMPTY_HEX, LINE, PATH, SELF }
+## ALLY: a living ally other than the user whom every effect accepts (AbilityEffectHandler.accepts_target).
+## ARC: a neighboring hex chooses a side; the area is it and the two hexes beside it next to the user.
+enum TargetMode { AUTO, ENEMY, HEX, EMPTY_HEX, LINE, PATH, SELF, ALLY, ARC }
 @export var returns_next_turn := false
 @export var melee_attack := false
 @export var target_mode: TargetMode = TargetMode.AUTO
@@ -20,7 +22,7 @@ enum TargetMode { AUTO, ENEMY, HEX, EMPTY_HEX, LINE, PATH, SELF }
 @export_range(0, 99) var initial_cooldown_turns := 0
 
 func targets_hex() -> bool:
-	return target_mode in [TargetMode.HEX, TargetMode.EMPTY_HEX, TargetMode.LINE, TargetMode.PATH, TargetMode.SELF] or (target_mode == TargetMode.AUTO and area_radius > 0)
+	return target_mode in [TargetMode.HEX, TargetMode.EMPTY_HEX, TargetMode.LINE, TargetMode.PATH, TargetMode.SELF, TargetMode.ARC] or (target_mode == TargetMode.AUTO and area_radius > 0)
 
 func get_range(unit: UnitState) -> int:
 	return unit.basic_attack_range if uses_attack_range else range
@@ -28,8 +30,10 @@ func get_range(unit: UnitState) -> int:
 func validate() -> String:
 	if range < 1 or area_radius < 0 or area_radius > 8 or cooldown_turns < 1 or initial_cooldown_turns < 0:
 		return "Invalid ability range, radius or cooldown."
-	if target_mode < TargetMode.AUTO or target_mode > TargetMode.SELF:
+	if target_mode < TargetMode.AUTO or target_mode > TargetMode.ARC:
 		return "Unknown ability target mode."
+	if target_mode == TargetMode.ARC and (range != 1 or area_radius != 0 or uses_attack_range):
+		return "A side of three neighboring hexes needs range 1 and zero area radius."
 	if returns_next_turn and (target_mode != TargetMode.PATH or area_radius != 0):
 		return "Returning weapons require a finite path and zero area radius."
 	if effects.is_empty():

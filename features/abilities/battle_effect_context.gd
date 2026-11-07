@@ -142,6 +142,21 @@ func apply_unit_status(target_id: StringName, status_id: StringName, levels: int
 	return events
 
 
+## Restores the target's health when its body is `body`: heals a living body, repairs a mechanical
+## one. A defeated target or one of the other body is left as it is, without an event.
+func heal(source_unit_id: StringName, target_id: StringName, amount: int, body: StringName) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	var target := _state.unit_states.get(target_id) as UnitState
+	if target == null:
+		fail("Heal needs an existing target: %s." % target_id)
+		return events
+	if target.health.is_defeated() or target.body != body:
+		return events
+	var restored := target.health.restore(amount)
+	events.append(UnitHealedEvent.new(target_id, source_unit_id, _ability_id, body, restored, target.health.current, target.health.maximum))
+	return events
+
+
 func apply_hex_state(hex: Vector2i, id: StringName) -> Array[BattleEvent]:
 	var hexes: Array[Vector2i] = [hex]
 	return apply_hex_states(hexes, id)

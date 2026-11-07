@@ -38,6 +38,9 @@ static func variables(ability: AbilityDefinition, context: Dictionary = {}) -> A
 				_add(result, "levels" + suffix, "Уровней состояния" + number, str(params.get("levels", 0)))
 			&"core:hex_state":
 				_add(result, "hex_state" + suffix, "Состояние гекса" + number, HexStateCatalog.get_display_name(StringName(str(params.get("state_id", "")))).to_lower())
+			&"core:heal":
+				_add(result, "heal" + suffix, "Восстановление ОЗ" + number, str(params.get("amount", 0)))
+				_add(result, "heal_body" + suffix, "Тело цели" + number, UnitBody.display_name(StringName(str(params.get("body", UnitBody.LIVING)))).to_lower())
 			&"core:push":
 				_add(result, "push_distance" + suffix, "Дальность толчка" + number, str(params.get("distance", 0)))
 				_add(result, "collision_damage" + suffix, "Урон столкновения" + number, str(PushService.COLLISION_DAMAGE))
@@ -71,6 +74,8 @@ static func passive_variables(definition: Dictionary) -> Array[Dictionary]:
 		_add(result, "immunity", "Невосприимчивость", UnitStatusCatalog.display_name(StringName(str(definition.immunity))).to_lower())
 	if int(definition.get("ally_max_health", 0)) > 0:
 		_add(result, "ally_health", "Бонус ОЗ союзникам", str(int(definition.ally_max_health)))
+	if int(definition.get("ally_shield", 0)) > 0:
+		_add(result, "ally_shield", "Щит рядом с союзником", str(int(definition.ally_shield)))
 	return result
 
 

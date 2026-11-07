@@ -19,13 +19,7 @@ static func grant(state: BattleState, unit: UnitState, events: Array[BattleEvent
 
 ## Takes the whole charge for the ordinary attack the unit is making; returns its levels.
 static func spend(unit: UnitState, events: Array[BattleEvent]) -> int:
-	var levels := int(unit.statuses.get(UnitStatusCatalog.ATTACK_CHARGE, 0))
-	if levels <= 0:
-		return 0
-	var before := unit.statuses.duplicate()
-	unit.statuses.erase(UnitStatusCatalog.ATTACK_CHARGE)
-	events.append(UnitStatusChangedEvent.new(unit, before))
-	return levels
+	return UnitStatusService.consume(unit, UnitStatusCatalog.ATTACK_CHARGE, events)
 
 
 static func _next_to_opponent(state: BattleState, unit: UnitState) -> bool:

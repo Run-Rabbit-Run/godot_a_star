@@ -309,6 +309,8 @@ func _check_unit_copy_covers_every_field(suite: Node, fixture: Fixtures) -> void
 	full.engaged_charge = 1
 	full.attack_damage_types.assign([&"fire", &"electric"])
 	full.sniper_shot = true
+	full.body = UnitBody.MECHANICAL
+	full.ally_shield = 1
 	var fresh: UnitState = fixture.unit(&"unit", BattleFaction.Value.ENEMY, Vector2i.ZERO)
 	var untouched: Array[String] = []
 	for property: Dictionary in full.get_property_list():

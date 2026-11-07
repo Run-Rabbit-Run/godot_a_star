@@ -11,5 +11,6 @@ basic_attack_range = 2
 script = ExtResource("unit")
 id = &"core:turret_unit"
 display_name = "Турель"
+body = &"mechanical"
 base_stats = SubResource("stats")
 presentation_id = &"core:turret_actor"

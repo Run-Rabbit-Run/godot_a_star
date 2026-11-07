@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="glitch"]
+script = ExtResource("effect")
+effect_type_id = &"core:unit_status"
+parameters = {"status_id": "core:targeting_glitch", "levels": 1}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:targeting_glitch"
+display_name = "Сбой наведения"
+description = "Противник на дальности {range} получает {status} ×{levels}: его следующая обычная атака или ответный удар наносит на 1 урона меньше за уровень, но не меньше 0. Сбой снимается после атаки или в конце следующей фазы цели. Перезарядка {cooldown}."
+presentation_id = &"core:targeting_glitch_presentation"
+range = 6
+area_radius = 0
+target_mode = 1
+cooldown_turns = 1
+melee_attack = false
+returns_next_turn = false
+effects = Array[ExtResource("effect")]([SubResource("glitch")])

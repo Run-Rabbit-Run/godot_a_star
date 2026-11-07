@@ -312,7 +312,8 @@ func _show_hovered_target(axial_cell: Vector2i) -> void:
 		target.turn.movement_remaining,
 		target.turn.movement_max,
 		target.turn.main_action_available,
-		target.statuses
+		target.statuses,
+		target.body
 	)
 
 

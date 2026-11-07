@@ -11,6 +11,7 @@ basic_attack_range = 1
 script = ExtResource("unit")
 id = &"core:health_shuttle_unit"
 display_name = "Шаттл Здоровья"
+body = &"mechanical"
 base_stats = SubResource("stats")
 passive_ability_ids = Array[StringName]([&"core:ally_max_health"])
 presentation_id = &"core:health_shuttle_actor"

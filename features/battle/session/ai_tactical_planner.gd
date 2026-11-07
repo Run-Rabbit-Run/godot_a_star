@@ -228,7 +228,7 @@ static func _misses_everyone(command: BattleCommand, mover: UnitState, opponents
 	if not command is UseAbilityCommand or not command.targets_hex:
 		return false
 	var ability := mover.get_ability(command.ability_id)
-	if ability == null or ability.target_mode in [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]:
+	if ability == null or ability.target_mode in AILastActionPlanner.ORIGIN_MODES:
 		return false
 	for opponent: UnitSnapshot in opponents:
 		if HexGrid.get_distance(command.target_hex, opponent.hex) <= ability.area_radius + 1:

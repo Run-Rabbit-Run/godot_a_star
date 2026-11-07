@@ -43,6 +43,10 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		base_stats.basic_attack_range,
 		spawn.abilities
 	)
+	if not UnitBody.is_known(spawn.unit_definition.body):
+		push_error("Unknown unit body: %s" % spawn.unit_definition.body)
+		return null
+	state.body = spawn.unit_definition.body
 	if base_stats.armor_levels > 0:
 		state.statuses[UnitStatusCatalog.ARMOR] = base_stats.armor_levels
 	state.passive_ability_ids.assign(passive_ids)
@@ -64,6 +68,7 @@ static func create(spawn: UnitSpawnData) -> UnitState:
 		state.engaged_charge = maxi(state.engaged_charge, int(passive.get("engaged_charge", 0)))
 		if passive.get("sniper_shot", false):
 			state.sniper_shot = true
+		state.ally_shield = maxi(state.ally_shield, int(passive.get("ally_shield", 0)))
 		if passive.has("alternate_damage_type"):
 			alternate = StringName(passive.alternate_damage_type)
 	# Validation allows one passive of the attack type: the choice starts from the unit's own type.

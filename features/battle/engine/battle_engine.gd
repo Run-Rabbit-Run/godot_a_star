@@ -78,7 +78,7 @@ func fork_onto(state: BattleState) -> BattleEngine:
 
 
 func supports_ability_prediction(ability: AbilityDefinition) -> bool:
-	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script(), PushEffectHandler.new().get_script()]
+	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script(), PushEffectHandler.new().get_script(), HealEffectHandler.new().get_script()]
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := _state.mod_api.get_effect_handler(effect.effect_type_id)
 		if handler == null or not supported.has(handler.get_script()):
@@ -496,7 +496,7 @@ func get_strategist_target_hexes(faction: BattleFaction.Value, ability_id: Strin
 func _finish_action_turn(unit_id: StringName, events: Array[BattleEvent]) -> void:
 	if get_outcome() != BattleOutcome.Value.IN_PROGRESS:
 		return
-	_finish_unit(unit_id, events)
+	_finish_unit(unit_id, events, 0, true)
 
 
 ## Defending ends the turn: the unit raises a shield that covers it until its side's next phase.
@@ -505,7 +505,7 @@ func _resolve_end_turn(command: EndTurnCommand) -> BattleResolution:
 		return _rejected("Only a ready unit can end its turn while no other unit has started.")
 
 	var events: Array[BattleEvent] = []
-	_finish_unit(command.unit_id, events, DEFEND_SHIELD_LEVELS)
+	_finish_unit(command.unit_id, events, DEFEND_SHIELD_LEVELS, true)
 	return _accepted(events)
 
 
@@ -553,8 +553,9 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 
 
 ## The unit cannot act again this phase and ends its turn once. A defending unit raises
-## `shield_levels` of shield that covers it until its side's next phase.
-func _finish_unit(unit_id: StringName, events: Array[BattleEvent], shield_levels := 0) -> void:
+## `shield_levels` of shield that covers it until its side's next phase; a unit that ends its
+## turn itself (`own_end`: an action or defence) also raises the shield of «Плечом к плечу».
+func _finish_unit(unit_id: StringName, events: Array[BattleEvent], shield_levels := 0, own_end := false) -> void:
 	var unit := get_unit(unit_id)
 	var paralyzed: bool = unit != null and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0
 	var skipped := paralyzed and _state.turn_service.get_current_unit_id() != unit_id
@@ -565,6 +566,8 @@ func _finish_unit(unit_id: StringName, events: Array[BattleEvent], shield_levels
 	if unit == null or _state.turn_service.has_ended(unit_id):
 		return
 	_state.turn_service.mark_ended(unit_id, lost_turn)
+	if own_end:
+		shield_levels += AllyShieldService.levels(_state, unit)
 	UnitStatusService.apply(unit, UnitStatusCatalog.SHIELD, shield_levels, events)
 	# An object has no turn to end.
 	if not unit.takes_turns():
@@ -694,7 +697,8 @@ func _execute_attack(command: AttackCommand, events: Array[BattleEvent]) -> Atta
 	var penalty := 0 if shot else BasicAttackRules.melee_penalty(attacker.basic_attack_range, attacker.basic_attack_damage)
 	var first_event := events.size()
 	var charge := AttackChargeService.spend(attacker, events)
-	var hit := DamageRequest.new(attacker.basic_attack_damage, attacker.basic_attack_damage_type).from_unit(attacker.unit_id).with_bonus(charge, UnitStatusCatalog.ATTACK_CHARGE)
+	var glitch := UnitStatusService.consume(attacker, UnitStatusCatalog.TARGETING_GLITCH, events)
+	var hit := DamageRequest.new(attacker.basic_attack_damage, attacker.basic_attack_damage_type).from_unit(attacker.unit_id).with_bonus(charge, UnitStatusCatalog.ATTACK_CHARGE).with_weakening(glitch, UnitStatusCatalog.TARGETING_GLITCH)
 	UnitStatusService.damage(target, hit.with_cover(reduction, protection_hex_state).with_melee_penalty(penalty), events)
 	if shot:
 		_mark_ranged_hit(events, first_event)
@@ -774,8 +778,10 @@ func _resolve_obstacle_attack(command: AttackObstacleCommand) -> BattleResolutio
 	var damage := attacker.basic_attack_damage
 	if not BasicAttackRules.is_shot(attacker.basic_attack_range, attacker.hex, command.target_hex):
 		damage -= BasicAttackRules.melee_penalty(attacker.basic_attack_range, damage)
-	# An attack on an obstacle is the unit's own ordinary attack too: it spends the charge.
+	# An attack on an obstacle is the unit's own ordinary attack too: it spends the charge and
+	# the targeting glitch.
 	damage += AttackChargeService.spend(attacker, events)
+	damage = maxi(0, damage - UnitStatusService.consume(attacker, UnitStatusCatalog.TARGETING_GLITCH, events))
 	# The strike has landed: a flask burst the map refuses stops the battle, as after a hit.
 	_terminal_error = ObstacleService.damage(_state, command.target_hex, damage, events)
 	# A burst may kill: its consequences come before the attacker's turn ends.

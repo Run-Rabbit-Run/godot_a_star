@@ -242,7 +242,7 @@ func _choose_ability_command(
 			if not target_hexes.is_empty():
 				return UseAbilityCommand.at_hex(active.unit_id, target_hexes[0], ability_id)
 			continue
-		if mode in [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]:
+		if mode in AILastActionPlanner.ORIGIN_MODES:
 			for center: Vector2i in target_hexes:
 				var cells := session.get_ability_affected_hexes(active.unit_id, ability_id, center)
 				var hits := 0

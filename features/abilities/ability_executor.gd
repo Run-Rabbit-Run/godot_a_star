@@ -13,14 +13,19 @@ static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id
 		targets.append(user.hex)
 		return targets
 	if not ability.targets_hex():
+		var allies := ability.target_mode == AbilityDefinition.TargetMode.ALLY
 		for target: UnitState in state.unit_states.values():
-			if not target.health.is_defeated() and target.faction != user.faction and HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user):
+			if target.health.is_defeated() or target == user or (target.faction == user.faction) != allies:
+				continue
+			if HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user) and _accepts(state, ability, target):
 				targets.append(target.hex)
 	else:
 		for hex: Vector2i in state.hex_grid.get_cells_in_range(user.hex, ability.get_range(user)):
 			if ability.target_mode == AbilityDefinition.TargetMode.EMPTY_HEX:
 				if not state.hex_grid.is_traversable(hex) or _occupied(state, hex):
 					continue
+			if ability.target_mode == AbilityDefinition.TargetMode.ARC and hex == user.hex:
+				continue
 			if ability.target_mode == AbilityDefinition.TargetMode.LINE and get_line_direction(user.hex, hex) == Vector2i.ZERO:
 				continue
 			targets.append(hex)
@@ -38,6 +43,8 @@ static func get_line_direction(origin: Vector2i, target: Vector2i) -> Vector2i:
 static func get_affected_hexes(grid: HexGrid, origin: Vector2i, ability: AbilityDefinition, center: Vector2i) -> Array[Vector2i]:
 	if ability.target_mode == AbilityDefinition.TargetMode.PATH:
 		return get_path_hexes(grid, origin, center)
+	if ability.target_mode == AbilityDefinition.TargetMode.ARC:
+		return get_arc_hexes(grid, origin, center)
 	if ability.target_mode == AbilityDefinition.TargetMode.SELF:
 		var neighbors := grid.get_cells_in_range(origin, ability.area_radius)
 		neighbors.erase(origin)
@@ -75,7 +82,10 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	var center := command.target_hex
 	if not command.targets_hex:
 		var target := state.unit_states.get(command.target_id) as UnitState
-		if target == null or target.health.is_defeated() or target.faction == user.faction:
+		if ability.target_mode == AbilityDefinition.TargetMode.ALLY:
+			if target == null or target.health.is_defeated() or target == user or target.faction != user.faction:
+				return AbilityExecutionResult.rejected("Ability requires a living ally target.")
+		elif target == null or target.health.is_defeated() or target.faction == user.faction:
 			return AbilityExecutionResult.rejected("Ability requires a living opposing target.")
 		center = target.hex
 	if not get_target_hexes(state, user.unit_id, ability.id).has(center):
@@ -123,6 +133,28 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	if scratch != state:
 		state.adopt(scratch)
 	return AbilityExecutionResult.success(events)
+
+## The side of three neighboring hexes: the chosen neighbor and the two hexes beside it that also
+## touch the origin. Missing hexes are left out; a center that is no neighbor gives no area.
+static func get_arc_hexes(grid: HexGrid, origin: Vector2i, center: Vector2i) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	var index := HexGrid.DIRECTIONS.find(center - origin)
+	if index < 0:
+		return cells
+	for offset: int in [-1, 0, 1]:
+		var hex := origin + HexGrid.DIRECTIONS[(index + offset + HexGrid.DIRECTIONS.size()) % HexGrid.DIRECTIONS.size()]
+		if grid.has_cell(hex):
+			cells.append(hex)
+	cells.sort()
+	return cells
+
+## True when every effect of the ability may act on this unit target.
+static func _accepts(state: BattleState, ability: AbilityDefinition, target: UnitState) -> bool:
+	for effect: AbilityEffectDefinition in ability.effects:
+		var handler := state.mod_api.get_effect_handler(effect.effect_type_id) if effect != null else null
+		if handler != null and not handler.accepts_target(effect, target):
+			return false
+	return true
 
 static func _occupied(state: BattleState, hex: Vector2i) -> bool:
 	for unit: UnitState in state.unit_states.values():

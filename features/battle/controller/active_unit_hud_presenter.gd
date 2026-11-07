@@ -43,7 +43,7 @@ func show(state: UnitSnapshot, attack_type := StringName()) -> void:
 	_hud.show_active_unit(definition.display_name)
 	var presentation := _unit_views.presentations.get(state.unit_id) as UnitPresentationDefinition
 	_hud.show_active_portrait(presentation.actor_texture if presentation != null else null)
-	_hud.show_combat_stats(state.basic_attack_damage, state.basic_attack_range, int(state.statuses.get(UnitStatusCatalog.ATTACK_CHARGE, 0)))
+	_hud.show_combat_stats(state.basic_attack_damage, state.basic_attack_range, int(state.statuses.get(UnitStatusCatalog.ATTACK_CHARGE, 0)), int(state.statuses.get(UnitStatusCatalog.TARGETING_GLITCH, 0)))
 	var types: Array[StringName] = []
 	if not _session.is_unit_ai_controlled(state.unit_id):
 		types = state.attack_damage_types

@@ -20,5 +20,14 @@ func apply_damage(amount: int) -> int:
 	return previous - current
 
 
+## Restores health up to the maximum; a defeated unit is not brought back. Returns what it restored.
+func restore(amount: int) -> int:
+	if amount <= 0 or is_defeated():
+		return 0
+	var previous := current
+	current = mini(current + amount, maximum)
+	return current - previous
+
+
 func is_defeated() -> bool:
 	return current == 0

@@ -30,6 +30,12 @@ func execute_obstacles(_effect: AbilityEffectDefinition, _context: BattleEffectC
 	return events
 
 
+## Whether a unit-targeted ability may choose this unit for the effect. The target is read-only;
+## the default accepts every unit the target mode allows.
+func accepts_target(_effect: AbilityEffectDefinition, _target: UnitState) -> bool:
+	return true
+
+
 func validate(_effect: AbilityEffectDefinition) -> String:
 	return "Ability effect handler does not implement validation."
 

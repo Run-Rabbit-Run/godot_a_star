@@ -5,7 +5,7 @@ const UNITS := "res://content/authored/units"
 const ASSETS := "res://content/authored/assets/units"
 const CORPSES := "res://content/authored/assets/corpses"
 const VISUAL_PROFILES := "res://content/authored/unit_visual_profiles.json"
-const FIELD_NAMES := {"id": "ID", "name": "Имя", "image": "Изображение", "attack_type": "Тип атаки", "schema_version": "Версия схемы", "hp": "ОЗ", "damage": "Урон", "attack_range": "Дальность", "movement": "Передвижение", "abilities": "Активные умения", "passives": "Пассивные умения"}
+const FIELD_NAMES := {"id": "ID", "name": "Имя", "image": "Изображение", "attack_type": "Тип атаки", "schema_version": "Версия схемы", "hp": "ОЗ", "damage": "Урон", "attack_range": "Дальность", "movement": "Передвижение", "abilities": "Активные умения", "passives": "Пассивные умения", "body": "Тело"}
 
 
 static var _visual_profiles: Dictionary = {}
@@ -52,7 +52,7 @@ static func new_document() -> Dictionary:
 		"id": "custom_units:u_" + Crypto.new().generate_random_bytes(16).hex_encode(),
 		"name": "Новый юнит", "image": "0.png", "hp": 10, "damage": 2,
 		"attack_type": "melee", "attack_range": 3, "movement": 4,
-		"abilities": [], "passives": [], "armor": 0,
+		"abilities": [], "passives": [], "armor": 0, "body": String(UnitBody.LIVING),
 	}
 
 ## `skills` is the catalog of the content the unit belongs to, from its SkillLibrary.
@@ -66,6 +66,9 @@ static func validate_structure(data: Dictionary) -> String:
 	var armor: Variant = data.get("armor", 0)
 	if not (armor is int or armor is float) or not is_finite(float(armor)) or float(armor) != floor(float(armor)) or armor < 0 or armor > 9999:
 		return "Броня: целое число 0–9999."
+	var body: Variant = data.get("body", String(UnitBody.LIVING))
+	if not body is String or not UnitBody.is_known(StringName(body)):
+		return "Тело: «living» (живой) или «mechanical» (механический)."
 	for key: String in ["id", "name", "image", "attack_type"]:
 		if not data.get(key) is String or String(data[key]).strip_edges().is_empty():
 			return "Поле «%s» должно содержать текст." % FIELD_NAMES[key]
@@ -130,6 +133,9 @@ static func read_document(path: String, skills: Dictionary) -> Dictionary:
 	var data: Dictionary = json.data
 	if not data.has("armor"):
 		data["armor"] = 0
+	# Units saved before bodies existed are living.
+	if not data.has("body"):
+		data["body"] = String(UnitBody.LIVING)
 	var error := validate_structure(data)
 	if not error.is_empty():
 		return {"error": "%s: %s" % [path, error]}
@@ -165,7 +171,8 @@ static func delete_document(path: String, directory := UNITS) -> String:
 static func id_for_path(path: String) -> StringName:
 	return StringName("custom_units:" + path.get_file().get_basename())
 
-static func load_content(packages: Array[ContentPackage], include_presentation := true) -> ContentLoadResult:
+## Units are read from `directory`; tests point it at user://.
+static func load_content(packages: Array[ContentPackage], include_presentation := true, directory := UNITS) -> ContentLoadResult:
 	var result := ContentLoadResult.new()
 	var library := SkillLibrary.new(packages)
 	var authored := library.read_all()
@@ -175,8 +182,8 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 	var definitions := SkillLibrary.passive_definitions(authored.documents)
 	var available := library.builtin_documents()
 	available.merge(authored.documents, true)
-	if not DirAccess.dir_exists_absolute(UNITS):
-		result.add_error("Не найдена библиотека юнитов проекта: %s" % UNITS)
+	if not DirAccess.dir_exists_absolute(directory):
+		result.add_error("Не найдена библиотека юнитов проекта: %s" % directory)
 		return result
 	var package := ContentPackage.new()
 	package.manifest = ContentPackageManifest.new()
@@ -187,10 +194,10 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 	var skill_dependency := ContentPackageDependency.new()
 	skill_dependency.package_id = &"custom_skills"
 	package.manifest.dependencies.append(skill_dependency)
-	for filename: String in DirAccess.get_files_at(UNITS):
+	for filename: String in DirAccess.get_files_at(directory):
 		if filename.get_extension().to_lower() != "json":
 			continue
-		var loaded := read_document(UNITS.path_join(filename), available)
+		var loaded := read_document(directory.path_join(filename), available)
 		if not String(loaded.error).is_empty():
 			result.add_error(loaded.error)
 			continue
@@ -205,6 +212,7 @@ static func load_content(packages: Array[ContentPackage], include_presentation :
 		unit.base_stats.basic_attack_range = int(data.attack_range) if data.attack_type == "ranged" else 1
 		unit.base_stats.movement_points = int(data.movement)
 		unit.base_stats.armor_levels = int(data.get("armor", 0))
+		unit.body = StringName(data.get("body", UnitBody.LIVING))
 		unit.ability_ids.assign(data.abilities)
 		unit.passive_ability_ids.assign(data.passives)
 		unit.passive_definitions = definitions.duplicate(true)

@@ -101,6 +101,7 @@ func _check_categories(suite: Node) -> void:
 		&"core:armor": UnitStatusCatalog.Category.RESERVE,
 		&"core:shield": UnitStatusCatalog.Category.RESERVE,
 		&"core:attack_charge": UnitStatusCatalog.Category.RESERVE,
+		&"core:targeting_glitch": UnitStatusCatalog.Category.RESERVE,
 	}
 	for id: StringName in UnitStatusCatalog.RULES:
 		suite.expect(expected.has(id) and UnitStatusCatalog.category(id) == expected[id] and not UnitStatusCatalog.category_name(id).is_empty(), "Status %s has its category" % id)
@@ -110,9 +111,9 @@ func _check_categories(suite: Node) -> void:
 	var events: Array[BattleEvent] = []
 	UnitStatusService.start_phase(unit, events)
 	suite.expect(unit.health.current == 99 and unit.statuses == {&"core:burning": 2, &"core:acid": 1, &"core:paralysis": 1, &"core:armor": 3}, "The phase start: periodic statuses and properties lose a level, turn statuses keep theirs, acid takes one armor")
-	unit.statuses.assign({&"core:burning": 3, &"core:sticky_oil": 2, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2})
+	unit.statuses.assign({&"core:burning": 3, &"core:sticky_oil": 2, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2, &"core:targeting_glitch": 2})
 	UnitStatusService.end_phase(unit, false, events)
-	suite.expect(unit.statuses == {&"core:burning": 3, &"core:sticky_oil": 1, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2}, "The phase end: only turn statuses lose a level")
+	suite.expect(unit.statuses == {&"core:burning": 3, &"core:sticky_oil": 1, &"core:wet": 2, &"core:armor": 4, &"core:shield": 2}, "The phase end: turn statuses lose a level and the targeting glitch falls whole")
 
 
 ## Periodic damage lands at the start of the side's phase, after the hex, never at a turn end.

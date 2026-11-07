@@ -6,7 +6,7 @@ signal closed
 
 const HISTORY_LIMIT := 100
 const KIND_TITLES := {"active": "Активные", "passive": "Пассивные"}
-const TARGET_MODES := {0: "автоматически", 1: "противник", 2: "гекс", 3: "пустой гекс", 4: "линия", 5: "путь", 6: "свой гекс"}
+const TARGET_MODES := {0: "автоматически", 1: "противник", 2: "гекс", 3: "пустой гекс", 4: "линия", 5: "путь", 6: "свой гекс", 7: "союзник", 8: "три соседних гекса"}
 const TARGET_HELP := {
 	0: "При радиусе больше 0 выбирается гекс в пределах дальности, иначе — противник в пределах дальности.",
 	1: "Выбирается противник в пределах дальности; область считается вокруг него.",
@@ -15,10 +15,12 @@ const TARGET_HELP := {
 	4: "Выбирается направление: луч проходит по всей прямой и не останавливается дырами и препятствиями.",
 	5: "Поражается путь от юнита до выбранного гекса.",
 	6: "Действует вокруг своего гекса: соседи в радиусе области, без самого юнита.",
+	7: "Выбирается живой союзник в пределах дальности, кроме самого юнита; эффекты могут ограничить выбор, например лечение — только живыми телами.",
+	8: "Выбирается соседний гекс — сторона: действует на него и два соседних с ним гекса рядом с юнитом.",
 }
-const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ", "core:push": "ТОЛЧОК"}
+const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ", "core:push": "ТОЛЧОК", "core:heal": "ЛЕЧЕНИЕ"}
 ## Targets whose "other targets" damage applies even without an area radius.
-const SPREADING_TARGETS := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]
+const SPREADING_TARGETS := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF, AbilityDefinition.TargetMode.ARC]
 ## Consecutive edits of these keys share one undo step (typing).
 const TYPED_KEYS := ["name", "description"]
 
@@ -439,6 +441,10 @@ func _effect_card(index: int) -> void:
 			card.add_child(EditorUi.hint("Живёт %d полных раунда. %s" % [HexStateCatalog.LIFETIME, "Создаётся только в центре области." if params.get("center_only", false) else "Создаётся на всех гексах области."]))
 		"core:summon":
 			card.add_child(EditorUi.hint(_summon_text(params)))
+		"core:heal":
+			var repair := HealEffectHandler.body_of(_library.to_effect(effect)) == UnitBody.MECHANICAL
+			_number(grid, "Восстановление ОЗ", params, "amount", 1, 9999, change, "Сколько ОЗ получает цель; больше максимума ОЗ не бывает.")
+			card.add_child(EditorUi.hint("Чинит только механические тела." if repair else "Лечит только живые тела: механических лечение не берёт."))
 		"core:push":
 			_number(grid, "Дальность толчка", params, "distance", 1, PushEffectHandler.MAX_DISTANCE, change, "На сколько гексов цель отлетает от юнита по прямой.")
 			card.add_child(EditorUi.hint("Столкновение обрывает толчок: цель и то, во что она врезалась, получают по %d физического урона." % PushService.COLLISION_DAMAGE))
@@ -566,6 +572,8 @@ func _effect_description(effect: Dictionary) -> String:
 			return HexStateCatalog.description(StringName(params.get("state_id", "")))
 		"core:damage":
 			return "Броня поглощает только физический урон. Влага и горение меняют огненный, водный и электрический урон по правилам состояний."
+		"core:heal":
+			return "Восстанавливает ОЗ, но не выше максимума; погибших не поднимает. Живое тело лечится, механическое только чинится особыми умениями."
 		"core:push":
 			return "Цель отлетает от юнита по прямой, не тратя движения. Юнит, препятствие, непроходимая клетка или край поля на пути останавливают её, и оба участника столкновения получают по %d физического урона; стена и край поля урона не получают. Тела не мешают. Состояния гексов на пути действуют, как при обычном перемещении." % PushService.COLLISION_DAMAGE
 	return ""

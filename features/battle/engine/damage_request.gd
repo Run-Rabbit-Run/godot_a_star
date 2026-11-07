@@ -21,6 +21,9 @@ var melee_penalty := 0
 ## Damage the hit gains after the melee penalty and the status or effect that gives it.
 var bonus := 0
 var bonus_source_id: StringName
+## Damage a weakened attack loses after the bonus, never below 0, and the status that weakens it.
+var weakening := 0
+var weakening_source_id: StringName
 ## A pushed unit ran into something: the hit is the collision, not the source's strike.
 var collision := false
 ## The destroyed flask whose burst dealt the damage.
@@ -66,6 +69,12 @@ func with_melee_penalty(penalty: int) -> DamageRequest:
 func with_bonus(amount: int, source_id: StringName) -> DamageRequest:
 	bonus = amount
 	bonus_source_id = source_id
+	return self
+
+
+func with_weakening(amount: int, source_id: StringName) -> DamageRequest:
+	weakening = amount
+	weakening_source_id = source_id
 	return self
 
 

@@ -7,11 +7,11 @@ extends RefCounted
 const ROOT := "res://content/authored/skills"
 const KINDS := ["active", "passive"]
 ## Form limits of active skills: key -> [minimum, maximum, caption].
-const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [0, 8, "Радиус области"], "target_mode": [0, 6, "Цель"], "cooldown_turns": [1, 99, "Перезарядка"], "initial_cooldown_turns": [0, 99, "Начальная перезарядка"]}
+const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [0, 8, "Радиус области"], "target_mode": [0, 8, "Цель"], "cooldown_turns": [1, 99, "Перезарядка"], "initial_cooldown_turns": [0, 99, "Начальная перезарядка"]}
 const DAMAGE_TYPES := {"physical": "Физический", "electric": "Электрический", "fire": "Огненный", "water": "Водный", "acid": "Кислотный", "plasma": "Плазменный"}
 
 ## Effect parameters that keep a built-in skill's structure: the editor shows them read-only.
-const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"]}
+const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"], "core:heal": ["body"]}
 const FIXED_ACTIVE_KEYS := ["target_mode", "uses_attack_range", "returns_next_turn", "melee_attack", "presentation_id"]
 ## Passive properties the skill documents describe; a built-in passive keeps its other ones.
 const PASSIVE_DOCUMENT_KEYS := ["name", "description", "attack_bonus", "damage_type", "status", "levels", "immunity", "retaliation"]
@@ -233,7 +233,7 @@ func validate_effect(data: Dictionary) -> String:
 	if not data.get("type") is String or not data.get("parameters") is Dictionary: return "Некорректный формат эффекта."
 	var params: Dictionary = data.parameters
 	for key: String in ["amount", "secondary_amount", "levels"]:
-		if params.has(key) and not _integer(params, key, 1, 9999): return "Эффект: %s — целое число 1–9999." % {"amount": "урон основной цели", "secondary_amount": "урон остальных целей", "levels": "уровни состояния"}[key]
+		if params.has(key) and not _integer(params, key, 1, 9999): return "Эффект: %s — целое число 1–9999." % {"amount": "восстановление ОЗ" if data.type == "core:heal" else "урон основной цели", "secondary_amount": "урон остальных целей", "levels": "уровни состояния"}[key]
 	match data.type:
 		"core:damage":
 			if not DAMAGE_TYPES.has(params.get("damage_type", "physical")): return "Эффект урона: неизвестный тип урона."
@@ -250,6 +250,7 @@ func validate_effect(data: Dictionary) -> String:
 		"core:hex_state": handler = HexStateEffectHandler.new()
 		"core:summon": handler = SummonEffectHandler.new()
 		"core:push": handler = PushEffectHandler.new()
+		"core:heal": handler = HealEffectHandler.new()
 		_: return "Неизвестный обработчик эффекта."
 	var effect := to_effect(data)
 	var error := handler.validate(effect)

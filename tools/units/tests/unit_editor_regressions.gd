@@ -49,6 +49,16 @@ func _check_editing(suite: Node) -> void:
 	editor._set_document(trained)
 	suite.expect(editor._skill_tooltip(editor._skills["core:spear_sweep"]).contains("8 урона"), "Unit editor skill tooltip uses the unit's attack with passive bonus")
 	suite.expect(editor._skill_tooltip(editor._skills["core:attack_training"]).begins_with("+3 к урону"), "Unit editor passive tooltip shows its description")
+
+	# The body: living by default, mechanical by choice, one undo step.
+	var body: OptionButton = editor.get("_body")
+	editor._set_document(UnitLibrary.new_document())
+	suite.expect(body.get_item_text(body.selected) == "Живой" and editor._document.body == "living", "A new unit is shown living")
+	body.select(1)
+	body.item_selected.emit(1)
+	suite.expect(editor._document.body == "mechanical" and UnitLibrary.validate(editor._document, library.catalog()).is_empty() and (editor.get("_stats_summary") as Label).text.contains("Механический"), "Choosing a mechanical body reaches the draft and its summary")
+	editor._undo_edit()
+	suite.expect(editor._document.body == "living" and body.get_item_text(body.selected) == "Живой", "Undo restores the living body")
 	editor.queue_free()
 	await suite.get_tree().process_frame
 

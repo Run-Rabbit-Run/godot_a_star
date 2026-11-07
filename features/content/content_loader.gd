@@ -377,6 +377,8 @@ static func _validate_references(
 		var passive_error := PassiveAbilityCatalog.validate(unit.passive_ability_ids, unit.passive_definitions)
 		if not passive_error.is_empty():
 			result.add_error("%s: %s" % [unit.id, passive_error])
+		if not UnitBody.is_known(unit.body):
+			result.add_error("%s: unknown unit body %s." % [unit.id, unit.body])
 		if not unit.race_id.is_empty() and snapshot.get_race_definition(unit.race_id) == null:
 			result.add_error(
 				"UnitDefinition %s references missing RaceDefinition %s."

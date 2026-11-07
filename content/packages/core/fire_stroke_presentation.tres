@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="AbilityPresentationDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/battle/view/ability_presentation_definition.gd" id="script"]
+
+[resource]
+script = ExtResource("script")
+id = &"core:fire_stroke_presentation"
+delivery = 0
+projectile_color = Color(0.98, 0.62, 0.24, 1)
+trail_color = Color(0.92, 0.36, 0.16, 0.7)
+impact_color = Color(0.95, 0.42, 0.15, 0.9)

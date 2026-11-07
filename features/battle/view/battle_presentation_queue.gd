@@ -91,6 +91,13 @@ func _present_event(
 			var change := health_event.maximum_after - health_event.maximum_before
 			_show_badge(health_actor, "%+d ОЗ" % change, Color(0.42, 0.78, 0.40) if change > 0 else Color(0.72, 0.62, 0.48))
 		return true
+	if event is UnitHealedEvent:
+		var healed := event as UnitHealedEvent
+		var healed_actor := _actor(unit_actors, healed.unit_id)
+		if healed_actor != null:
+			healed_actor.show_health(healed.health_after, healed.health_maximum)
+			_show_badge(healed_actor, "+%d ОЗ" % healed.amount, Color(0.42, 0.78, 0.40))
+		return true
 	if event is CorpseRemovedEvent:
 		var body := _actor(unit_actors, (event as CorpseRemovedEvent).unit_id)
 		if body != null:

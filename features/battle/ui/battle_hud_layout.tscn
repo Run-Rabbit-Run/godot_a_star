@@ -316,6 +316,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 9
 text = "—"
 
+[node name="TargetBodyLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 9
+text = "—"
+
 [node name="TargetHealthLabel" type="Label" parent="TargetPanel/Content/TargetContent/TargetInfo"]
 unique_name_in_owner = true
 layout_mode = 2

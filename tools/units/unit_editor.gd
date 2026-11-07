@@ -37,6 +37,7 @@ var _library_count: Label
 var _name: LineEdit
 var _assets: OptionButton
 var _attack: OptionButton
+var _body: OptionButton
 var _numbers: Dictionary[String, SpinBox] = {}
 var _range_hint: Label
 var _active_menu: MenuButton
@@ -213,6 +214,12 @@ func _build_form(body: Control) -> void:
 	EditorUi.row(basics, "Изображение", _assets, "PNG, WebP или JPG из папки изображений проекта. Используется для фигуры и портрета.")
 	_corpse_status = EditorUi.hint("")
 	EditorUi.row(basics, "Погибший вариант", _corpse_status, "Тело с тем же именем файла в content/authored/assets/corpses/.")
+	_body = OptionButton.new()
+	for kind: StringName in UnitBody.ALL:
+		_body.add_item(UnitBody.display_name(kind))
+		_body.set_item_metadata(_body.item_count - 1, String(kind))
+	_body.item_selected.connect(func(index: int) -> void: _change("body", _body.get_item_metadata(index)))
+	EditorUi.row(basics, "Тело", _body, "Живого лечат обычные умения лечения. Механического они не лечат: его только чинят особые умения. Метка видна в бою при наведении на юнита.")
 	_identity = EditorUi.label("", &"MutedLabel")
 	EditorUi.row(basics, "ID", _identity, "Стабильный ID. Переименование его не меняет, копия получает новый.")
 
@@ -399,6 +406,7 @@ func _render() -> void:
 	if _name.text != _document.name:
 		_name.text = _document.name
 	_attack.select(0 if _document.attack_type == "melee" else 1)
+	_body.select(maxi(0, UnitBody.ALL.find(StringName(_document.get("body", UnitBody.LIVING)))))
 	_assets.select(-1)
 	for index: int in range(_assets.item_count):
 		if _assets.get_item_text(index) == _document.image:
@@ -431,8 +439,8 @@ func _refresh_state() -> void:
 	ids.assign(_document.passives)
 	var bonus := PassiveAbilityCatalog.attack_bonus(ids, SkillLibrary.passive_definitions(_skills))
 	_effective_damage.text = "Урон обычной атаки в бою: %s + %s (пассивные) = %s" % [_document.damage, bonus, int(_document.damage) + bonus]
-	_stats_summary.text = "%s\nОЗ %s · броня %s · урон %s · передвижение %s\n%s" % [
-		_document.name, _document.hp, _document.armor, int(_document.damage) + bonus, _document.movement,
+	_stats_summary.text = "%s\n%s · ОЗ %s · броня %s · урон %s · передвижение %s\n%s" % [
+		_document.name, UnitBody.display_name(StringName(_document.get("body", UnitBody.LIVING))), _document.hp, _document.armor, int(_document.damage) + bonus, _document.movement,
 		"Дальняя атака, %s гексов" % _document.attack_range if ranged else "Ближняя атака",
 	]
 	var error := UnitLibrary.validate(_document, _skills)

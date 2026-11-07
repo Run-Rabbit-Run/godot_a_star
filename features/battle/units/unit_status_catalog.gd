@@ -13,6 +13,7 @@ const STICKY_OIL := &"core:sticky_oil"
 const ARMOR := &"core:armor"
 const SHIELD := &"core:shield"
 const ATTACK_CHARGE := &"core:attack_charge"
+const TARGETING_GLITCH := &"core:targeting_glitch"
 
 ## When a status acts and when it loses levels: HEX_AND_UNIT_STATES.md «Категории статусов».
 enum Category {
@@ -33,7 +34,8 @@ const CATEGORY_NAMES := {
 	Category.RESERVE: "запас",
 }
 
-## `drops_at_phase_start`: a reserve that falls whole at the start of its side's phase.
+## `drops_at_phase_start`: a reserve that falls whole at the start of its side's phase;
+## `drops_at_phase_end`: one that falls whole at the end of its side's phase.
 const RULES := {
 	WET: {"name": "Влага", "category": Category.PROPERTY, "description": "Пока есть, поглощает огненный урон: 1 урона за уровень, расходуя влагу. При наличии хотя бы 1 уровня усиливает электрический урон на 1 без расхода. Влага и горение взаимно снимаются 1:1. Плазма запрещает влагу. В начале фазы своей стороны теряет 1 уровень."},
 	BURNING: {"name": "Горение", "category": Category.PERIODIC, "description": "В начале фазы своей стороны наносит 1 огненного урона независимо от числа уровней, затем теряет 1 уровень. Пока есть, поглощает водный урон, расходуя 1 уровень за 1 урона. Взаимно снимается с влагой 1:1. При наличии масла вызывает взрыв."},
@@ -46,6 +48,7 @@ const RULES := {
 	ARMOR: {"name": "Броня", "category": Category.RESERVE, "description": "Каждый уровень блокирует 1 физического урона. Сама по себе не спадает. Кислота разрушает броню."},
 	SHIELD: {"name": "Щит", "category": Category.RESERVE, "drops_at_phase_start": true, "description": "Предотвращает урон любого типа: 1 урона за уровень, после брони и других статусов. Предотвратив хотя бы 1 урона, снимается целиком. В начале фазы своей стороны снимаются все уровни. «Защита» даёт 1 уровень."},
 	ATTACK_CHARGE: {"name": "Заряд", "category": Category.RESERVE, "description": "Следующая обычная атака юнита — по противнику или препятствию — наносит на 1 урона больше за каждый уровень и расходует весь заряд. Сам не спадает. Ответный удар и умения заряд не тратят. Пассив «Я здесь» даёт 1 уровень, если юнит начал ход рядом с противником."},
+	TARGETING_GLITCH: {"name": "Сбой наведения", "category": Category.RESERVE, "drops_at_phase_end": true, "description": "Следующая обычная атака юнита — по противнику, препятствию или ответный удар — наносит на 1 урона меньше за каждый уровень, но не меньше 0, и снимает сбой целиком. Умения его не тратят. Если юнит не атаковал, сбой снимается в конце фазы своей стороны."},
 }
 
 static func has_status(id: StringName) -> bool:
@@ -66,6 +69,9 @@ static func category_name(id: StringName) -> String:
 
 static func drops_at_phase_start(id: StringName) -> bool:
 	return bool(RULES.get(id, {}).get("drops_at_phase_start", false))
+
+static func drops_at_phase_end(id: StringName) -> bool:
+	return bool(RULES.get(id, {}).get("drops_at_phase_end", false))
 
 static func movement_penalty(statuses: Dictionary) -> int:
 	var oil := int(statuses.get(STICKY_OIL, 0))

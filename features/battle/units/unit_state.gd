@@ -44,6 +44,10 @@ var attack_damage_types: Array[StringName] = []
 ## The ordinary attack is a sniper shot: it shoots only before the unit spends movement points
 ## in its turn; a neighbor is still struck in melee.
 var sniper_shot := false
+## UnitBody of the unit: which healing and repair effects reach it.
+var body: StringName = UnitBody.LIVING
+## Shield levels the unit raises when it ends its own turn next to a living ally.
+var ally_shield := 0
 
 
 func _init(
@@ -118,6 +122,8 @@ func duplicate_state() -> UnitState:
 	copy.engaged_charge = engaged_charge
 	copy.attack_damage_types.assign(attack_damage_types)
 	copy.sniper_shot = sniper_shot
+	copy.body = body
+	copy.ally_shield = ally_shield
 	return copy
 
 
@@ -153,3 +159,5 @@ func copy_from(other: UnitState) -> void:
 	engaged_charge = other.engaged_charge
 	attack_damage_types.assign(other.attack_damage_types)
 	sniper_shot = other.sniper_shot
+	body = other.body
+	ally_shield = other.ally_shield

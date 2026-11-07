@@ -54,6 +54,16 @@ func _run() -> void:
 		preload("res://features/battle/tests/sniper_regressions.gd").new().run(self)
 	if runs("sniper_view"):
 		await preload("res://features/battle/tests/sniper_regressions.gd").new().run_presentation(self)
+	if runs("healing"):
+		preload("res://features/battle/tests/healing_regressions.gd").new().run(self)
+	if runs("healing_view"):
+		await preload("res://features/battle/tests/healing_regressions.gd").new().run_presentation(self)
+	if runs("targeting_glitch"):
+		preload("res://features/battle/tests/targeting_glitch_regressions.gd").new().run(self)
+	if runs("fire_stroke"):
+		preload("res://features/battle/tests/fire_stroke_regressions.gd").new().run(self)
+	if runs("shoulder"):
+		preload("res://features/battle/tests/shoulder_regressions.gd").new().run(self)
 	if runs("damage_log"):
 		preload("res://features/battle/tests/status_regressions.gd").new().run_damage_log(self)
 	if runs("file_logging"):

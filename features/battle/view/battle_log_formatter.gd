@@ -38,6 +38,9 @@ static func describe(event: BattleEvent, units: Dictionary[StringName, UnitDefin
 		return "Стратег применяет «%s» в %s." % [strategist_ability.display_name if strategist_ability != null else String(event.ability_id), _hex(event.target_hex)]
 	if event is UnitHealthChangedEvent:
 		return "%s: максимум ОЗ %d → %d, ОЗ %d → %d." % [_unit(event.unit_id, units), event.maximum_before, event.maximum_after, event.health_before, event.health_after]
+	if event is UnitHealedEvent:
+		var verb := "чинит" if event.body == UnitBody.MECHANICAL else "лечит"
+		return "%s %s %s: +%d ОЗ, теперь %d / %d." % [_unit(event.source_unit_id, units), verb, _unit(event.unit_id, units), event.amount, event.health_after, event.health_maximum]
 	if event is ObstacleBrokenEvent:
 		return ObstacleDescription.burst_log(event.obstacle, event.hex)
 	if event is CorpseRemovedEvent:

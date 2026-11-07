@@ -3,7 +3,7 @@ extends RefCounted
 
 
 ## Their affected area depends on the user's hex, not only on the chosen center.
-const ORIGIN_MODES := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF]
+const ORIGIN_MODES := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF, AbilityDefinition.TargetMode.ARC]
 ## Effects that change only units inside the area; terrain effects may spread across the map.
 const LOCAL_EFFECTS := [&"core:damage", &"core:unit_status"]
 ## Effects whose outcome depends on the user's hex even when its area does not: a push flies

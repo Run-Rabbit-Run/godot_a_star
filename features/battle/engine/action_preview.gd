@@ -55,6 +55,8 @@ static func build(forecast: BattleEngine, before: BattleEngine, command: BattleC
 		elif event is UnitHealthChangedEvent:
 			# A lost aura can cost health as surely as a hit.
 			preview._change(event.unit_id, before).health_after = event.health_after
+		elif event is UnitHealedEvent:
+			preview._change(event.unit_id, before).health_after = event.health_after
 		elif event is UnitMovedEvent and event.unit_id == preview.actor_id and not event.path.is_empty():
 			preview.destination = event.path.back()
 		elif event is MapMutationEvent and event.obstacle_changed:

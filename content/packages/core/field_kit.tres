@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="heal"]
+script = ExtResource("effect")
+effect_type_id = &"core:heal"
+parameters = {"amount": 2, "body": "living"}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:field_kit"
+display_name = "Полевой набор"
+description = "Соседний живой союзник восстанавливает {heal} ОЗ, но не больше максимума. Механические тела этим набором не лечатся: их только чинят особые умения. Перезарядка {cooldown}."
+presentation_id = &"core:field_kit_presentation"
+range = 1
+area_radius = 0
+target_mode = 7
+cooldown_turns = 1
+melee_attack = false
+returns_next_turn = false
+effects = Array[ExtResource("effect")]([SubResource("heal")])

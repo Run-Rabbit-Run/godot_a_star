@@ -54,6 +54,16 @@ func _check_editing(suite: Node) -> void:
 	suite.expect(push_spins.size() == 1, "The push effect card edits its distance")
 	(push_spins[0] as SpinBox).value = 4
 	suite.expect(editor._document.effects[1].parameters.distance == 4 and editor._preview.text.contains("дальность толчка — 4") and editor._validation.text.begins_with("✓"), "A changed push distance reaches the draft and its description")
+	editor._set_document(builtin["core:field_kit"])
+	var heal_spins := editor._form.find_children("*", "SpinBox", true, false).filter(func(spin: SpinBox) -> bool:
+		return spin.value == 2 and spin.min_value == 1
+	)
+	suite.expect(heal_spins.size() == 1 and editor._help.text.contains("союзник"), "The healing card edits how much the kit heals")
+	if heal_spins.size() == 1:
+		(heal_spins[0] as SpinBox).value = 3
+	suite.expect(editor._document.effects[0].parameters.amount == 3 and editor._preview.text.contains("3 ОЗ") and editor._validation.text.begins_with("✓"), "A changed heal reaches the draft and its description")
+	editor._set_document(builtin["core:fire_stroke"])
+	suite.expect(editor._validation.text.begins_with("✓") and editor._help.text.contains("три соседних гекса"), "The fire stroke opens with its side target explained")
 	var turret: Dictionary = builtin["core:electric_turret"]
 	var started := Time.get_ticks_usec()
 	editor._set_document(turret)

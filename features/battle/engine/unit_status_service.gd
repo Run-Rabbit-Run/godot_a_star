@@ -50,6 +50,11 @@ static func damage(unit: UnitState, request: DamageRequest, events: Array[Battle
 	if request.bonus > 0:
 		penalized += request.bonus
 		modifiers.append({"source_id": request.bonus_source_id, "amount": request.bonus})
+	# A weakened attack, such as one with a targeting glitch, loses damage next, never below 0.
+	var weakened := maxi(0, penalized - request.weakening)
+	if weakened != penalized:
+		modifiers.append({"source_id": request.weakening_source_id, "amount": weakened - penalized})
+		penalized = weakened
 	var adjusted := maxi(0, penalized - request.ranged_reduction)
 	if adjusted != penalized:
 		modifiers.append({"source_id": request.cover_hex_state_id if not request.cover_hex_state_id.is_empty() else &"ranged_protection", "amount": adjusted - penalized})
@@ -132,20 +137,34 @@ static func start_phase(unit: UnitState, events: Array[BattleEvent]) -> void:
 			_set_levels(unit, id, int(unit.statuses[id]) - 1)
 	_emit(unit, before, events)
 
-## End of the unit's side phase: turn statuses lose one level. Paralysis costs exactly one
-## turn: it wears off only when `lost_turn` says it kept the unit from acting in this phase,
-## and leaves one level of resistance that lasts through the opponent's phase.
+## End of the unit's side phase: turn statuses lose one level and reserves that last until then
+## fall whole. Paralysis costs exactly one turn: it wears off only when `lost_turn` says it kept
+## the unit from acting in this phase, and leaves one level of resistance that lasts through the
+## opponent's phase.
 static func end_phase(unit: UnitState, lost_turn: bool, events: Array[BattleEvent]) -> void:
 	if unit == null or unit.health.is_defeated():
 		return
 	var before := unit.statuses.duplicate()
 	for id: StringName in unit.statuses.keys():
-		if UnitStatusCatalog.category(id) == UnitStatusCatalog.Category.TURN and id != UnitStatusCatalog.PARALYSIS:
+		if UnitStatusCatalog.drops_at_phase_end(id):
+			unit.statuses.erase(id)
+		elif UnitStatusCatalog.category(id) == UnitStatusCatalog.Category.TURN and id != UnitStatusCatalog.PARALYSIS:
 			_set_levels(unit, id, int(unit.statuses[id]) - 1)
 	if lost_turn and unit.statuses.has(UnitStatusCatalog.PARALYSIS):
 		unit.statuses.erase(UnitStatusCatalog.PARALYSIS)
 		unit.statuses[UnitStatusCatalog.PARALYSIS_RESISTANCE] = 1
 	_emit(unit, before, events)
+
+## Takes every level of a status the unit spends at once, such as its attack charge or targeting
+## glitch on its next attack; returns the levels taken.
+static func consume(unit: UnitState, id: StringName, events: Array[BattleEvent]) -> int:
+	var levels := int(unit.statuses.get(id, 0))
+	if levels <= 0:
+		return 0
+	var before := unit.statuses.duplicate()
+	unit.statuses.erase(id)
+	_emit(unit, before, events)
+	return levels
 
 static func _explode_oil(unit: UnitState, events: Array[BattleEvent]) -> void:
 	var oil := int(unit.statuses.get(UnitStatusCatalog.STICKY_OIL, 0))
