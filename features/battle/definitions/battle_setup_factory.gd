@@ -146,9 +146,7 @@ static func create(request: BattleStartRequest) -> BattleSetupCreationResult:
 
 	# The player's strategist knows every strategist ability of the snapshot.
 	var strategist_abilities: Dictionary[StringName, StrategistAbilityDefinition] = {}
-	var strategist_ids: Array[StringName] = []
-	strategist_ids.assign(snapshot.get_strategist_ability_definition_ids().keys())
-	strategist_ids.sort()
+	var strategist_ids := IdOrder.sorted(snapshot.get_strategist_ability_definition_ids().keys())
 	for ability_id: StringName in strategist_ids:
 		var strategist_ability := snapshot.get_strategist_ability_definition(ability_id)
 		var strategist_error := strategist_ability.validate()

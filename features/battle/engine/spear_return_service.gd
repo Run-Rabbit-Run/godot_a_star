@@ -23,8 +23,7 @@ static func resolve(state: BattleState, unit: UnitState, events: Array[BattleEve
 		return ""
 	# Occupants are struck in path order, starting at the landing hex, while still alive.
 	var target_ids: Array[StringName] = []
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	for hex: Vector2i in cells:
 		for id: StringName in ids:
 			var target: UnitState = state.unit_states[id]

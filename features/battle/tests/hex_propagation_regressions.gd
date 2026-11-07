@@ -191,8 +191,7 @@ func _engine(state: BattleState) -> BattleEngine:
 
 
 func _fingerprint(state: BattleState) -> String:
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	var units: Array = []
 	for id: StringName in ids:
 		units.append(state.unit_states[id])

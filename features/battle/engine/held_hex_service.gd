@@ -13,8 +13,7 @@ static func collapse_defeated(state: BattleState, events: Array[BattleEvent]) ->
 			break
 	if not fallen:
 		return ""
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	for id: StringName in ids:
 		var holder: UnitState = state.unit_states[id]
 		if not holder.holds_hex or not holder.health.is_defeated():

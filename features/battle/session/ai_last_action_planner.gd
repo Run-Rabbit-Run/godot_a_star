@@ -117,9 +117,7 @@ static func actions(engine: BattleEngine, actor: UnitState, grid: HexGrid, other
 		var obstacle := grid.get_obstacle(hex)
 		if obstacle != null and obstacle.is_flask():
 			commands.append(AttackObstacleCommand.new(actor.unit_id, hex))
-	var ids: Array = actor.abilities.keys()
-	ids.sort()
-	for id: StringName in ids:
+	for id: StringName in IdOrder.sorted(actor.abilities.keys()):
 		var ability := actor.get_ability(id)
 		# Only built-in stateless handlers can be speculatively executed safely.
 		if not _supports_prediction(ability) or not engine.supports_ability_prediction(ability):
@@ -240,7 +238,7 @@ static func _outcome_key(ability: AbilityDefinition, grid: HexGrid, others: Dict
 		var unit := others.get(hex) as UnitState
 		if unit != null:
 			hit_ids.append(unit.unit_id)
-	hit_ids.sort()
+	hit_ids = IdOrder.sorted(hit_ids)
 	var center_unit := others.get(center) as UnitState if area.has(center) else null
 	var obstacle_center: Variant = center if grid.has_obstacle(center) and area.has(center) else null
 	return str([ability.id, hit_ids, center_unit.unit_id if center_unit != null else &"", _obstacle_hexes(grid, area), obstacle_center])

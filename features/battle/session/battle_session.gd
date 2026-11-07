@@ -358,9 +358,7 @@ func has_diagnostic_observer() -> bool:
 
 func get_diagnostic_state() -> Dictionary:
 	var units: Array[UnitSnapshot] = []
-	var ids: Array = _state.unit_states.keys()
-	ids.sort()
-	for id: StringName in ids:
+	for id: StringName in IdOrder.sorted(_state.unit_states.keys()):
 		units.append(get_unit(id))
 	return {"units": units, "grid": get_hex_grid(), "turn_order": get_turn_order(), "active_unit_id": get_active_unit_id(), "round": get_round_number(), "state_revision": get_state_revision(), "map_revision": get_map_revision(), "rng_state": str(_state.random.state), "outcome": get_outcome(), "objective": get_objective_description()}
 

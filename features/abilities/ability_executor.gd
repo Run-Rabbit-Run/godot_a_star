@@ -112,7 +112,7 @@ static func execute(state: BattleState, command: UseAbilityCommand) -> AbilityEx
 	for target: UnitState in scratch.unit_states.values():
 		if not target.health.is_defeated() and cells.has(target.hex):
 			target_ids.append(target.unit_id)
-	target_ids.sort()
+	target_ids = IdOrder.sorted(target_ids)
 	var events: Array[BattleEvent] = []
 	if ability.targets_hex() or ability.area_radius > 0:
 		events.append(AreaAbilityUsedEvent.new(actor.unit_id, ability.id, center, cells))

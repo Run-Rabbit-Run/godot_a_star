@@ -220,8 +220,7 @@ func show_statuses(statuses: Dictionary) -> void:
 	for child: Node in _status_row.get_children():
 		_status_row.remove_child(child)
 		child.queue_free()
-	var ids := statuses.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(statuses.keys())
 	for id: StringName in ids:
 		var icon := UnitStatusIcon.new()
 		icon.name = String(id).replace(":", "_")

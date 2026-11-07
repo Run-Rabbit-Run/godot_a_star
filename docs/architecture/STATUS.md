@@ -17,6 +17,7 @@
 | Цели боя | `ObjectiveSystem`, `SurviveRoundsObjective`, `EliminateTargetsObjective`, защищаемые юниты, лимит раундов | BATTLE.md «Цели боя» |
 | Прогноз команды | `ActionPreview`, `BattleSession.preview()`, `get_reach()`, `ActionPreviewPanel`, `UnitActor.show_health_preview()` | BATTLE.md «Прогноз команды», BATTLE_PRESENTATION.md «Прогноз при наведении» |
 | Фазы сторон | `TurnService`, `FieldOrder`, `EndPhaseCommand` без кнопки в HUD, `PhaseStartedEvent`, `BattleEngine.can_command()`, `BattleSession.has_spent_turn()`, выбор юнита в `BattleController` | BATTLE.md «Фазы сторон», BATTLE_PRESENTATION.md «HUD» |
+| Порядок по ID | `IdOrder` в правилах, ИИ, диагностике и HUD; `ContentLoader` сравнивает ID пакетов так же | BATTLE.md «Инварианты» |
 | Порядок границ хода | `BattleEngine._finish_unit()`, `_end_phase()`, `UnitStatusService.expire_reserves()/start_phase()/end_phase()`, `TurnService.lost_turn_to_paralysis()`, `TurnEndedEvent.was_skipped` | BATTLE.md «Порядок границ хода», HEX_AND_UNIT_STATES.md «Порядок на границах фазы» |
 | Аварийная остановка | `BattleResolution.terminal_error`, однократные `battle_failed`/`battle_finished`, восстановление отображения | BATTLE.md «Аварийная остановка» |
 | Произвольная карта | `BattleMapDefinition`, `HexGrid`: отверстия, острова, отрицательные координаты | [BATTLE_MAP.md](BATTLE_MAP.md) «Определение карты» |

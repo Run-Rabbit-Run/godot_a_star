@@ -472,10 +472,7 @@ func _resolve_strategist(command: UseStrategistAbilityCommand) -> BattleResoluti
 
 ## Abilities of the player faction's strategist, sorted by ID.
 func get_strategist_ability_ids() -> Array[StringName]:
-	var ids: Array[StringName] = []
-	ids.assign(_state.strategist_abilities.keys())
-	ids.sort()
-	return ids
+	return IdOrder.sorted(_state.strategist_abilities.keys())
 
 
 ## Why the faction's strategist cannot use the ability now, or "".

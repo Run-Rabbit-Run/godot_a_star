@@ -491,9 +491,7 @@ func show_target(
 		]
 	)
 	var descriptions: Array[String] = []
-	var ids := statuses.keys()
-	ids.sort()
-	for id: StringName in ids:
+	for id: StringName in IdOrder.sorted(statuses.keys()):
 		descriptions.append("%s ×%d" % [UnitStatusCatalog.display_name(id), int(statuses[id])])
 	_target_effects_label.text = "СОСТОЯНИЯ\n" + ("Нет активных эффектов" if descriptions.is_empty() else " · ".join(descriptions))
 

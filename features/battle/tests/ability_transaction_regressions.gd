@@ -352,8 +352,7 @@ func _session(state: BattleState) -> BattleSession:
 
 func _engine_fingerprint(engine: BattleEngine) -> String:
 	var state: BattleState = engine.get("_state")
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	var units: Array = []
 	for id: StringName in ids:
 		units.append(state.unit_states[id])

@@ -16,8 +16,7 @@ static func refresh(state: BattleState, events: Array[BattleEvent]) -> void:
 			break
 	if not involved:
 		return
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	for id: StringName in ids:
 		var unit: UnitState = state.unit_states[id]
 		if unit.health.is_defeated():

@@ -71,8 +71,7 @@ func _init(state: UnitState) -> void:
 	)
 	basic_attack_damage = state.basic_attack_damage
 	basic_attack_range = state.basic_attack_range
-	ability_ids.assign(state.abilities.keys())
-	ability_ids.sort()
+	ability_ids = IdOrder.sorted(state.abilities.keys())
 
 	for ability_id: StringName in ability_ids:
 		abilities[ability_id] = AbilitySnapshot.new(state.get_ability(ability_id), state)

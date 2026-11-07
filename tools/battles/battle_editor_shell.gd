@@ -538,8 +538,7 @@ func _populate_ai_options() -> void:
 	_ai_option.clear()
 	_ai_option.add_item("Профиль стороны")
 	_ai_option.set_item_metadata(0, StringName())
-	var ids := _snapshot.get_ai_profile_definition_ids().keys()
-	ids.sort()
+	var ids := IdOrder.sorted(_snapshot.get_ai_profile_definition_ids().keys())
 
 	for ai_id: StringName in ids:
 		var index := _ai_option.item_count

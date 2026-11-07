@@ -202,7 +202,8 @@ static func _resolve_order(
 	var resolved: Dictionary[StringName, bool] = {}
 	var package_ids: Array[StringName] = []
 	package_ids.assign(packages_by_id.keys())
-	package_ids.sort()
+	# By text: sort() orders StringName by its interned pointer. IdOrder belongs to the battle core.
+	package_ids.sort_custom(func(left: StringName, right: StringName) -> bool: return String(left) < String(right))
 
 	while ordered.size() < packages_by_id.size():
 		var made_progress := false

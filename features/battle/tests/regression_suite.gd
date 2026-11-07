@@ -92,6 +92,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/ability_transaction_regressions.gd").new().run(self)
 	if runs("hex_propagation"):
 		preload("res://features/battle/tests/hex_propagation_regressions.gd").new().run(self)
+	if runs("id_order"):
+		preload("res://features/battle/tests/id_order_regressions.gd").new().run(self)
 	if runs("player_selection"):
 		await preload("res://features/battle/tests/player_selection_regressions.gd").new().run(self)
 	if runs("hud_layout"):

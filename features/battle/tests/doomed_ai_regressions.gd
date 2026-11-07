@@ -439,9 +439,7 @@ func _all_actions(engine: BattleEngine, actor: UnitState) -> Array[BattleCommand
 	var commands: Array[BattleCommand] = []
 	for target: UnitState in engine.get_attackable_targets(actor.unit_id):
 		commands.append(AttackCommand.new(actor.unit_id, target.unit_id))
-	var ids: Array = actor.abilities.keys()
-	ids.sort()
-	for id: StringName in ids:
+	for id: StringName in IdOrder.sorted(actor.abilities.keys()):
 		var ability := actor.get_ability(id)
 		if not AILastActionPlanner._supports_prediction(ability) or not engine.supports_ability_prediction(ability):
 			continue

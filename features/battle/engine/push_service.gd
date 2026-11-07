@@ -72,8 +72,7 @@ static func _hit(source_id: StringName, ability_id: StringName) -> DamageRequest
 
 
 static func _living_unit_at(state: BattleState, hex: Vector2i) -> UnitState:
-	var ids := state.unit_states.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(state.unit_states.keys())
 	for id: StringName in ids:
 		var unit: UnitState = state.unit_states[id]
 		if unit.hex == hex and not unit.health.is_defeated():

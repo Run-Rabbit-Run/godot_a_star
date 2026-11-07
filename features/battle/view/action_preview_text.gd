@@ -17,8 +17,7 @@ static func describe(preview: ActionPreview, units: Dictionary[StringName, UnitD
 		else:
 			lines.append("Маршрут оборвётся на %d, %d" % [preview.destination.x, preview.destination.y])
 		warning = true
-	var ids := preview.units.keys()
-	ids.sort()
+	var ids := IdOrder.sorted(preview.units.keys())
 	# The acting unit first, then the others.
 	if ids.has(preview.actor_id):
 		ids.erase(preview.actor_id)
