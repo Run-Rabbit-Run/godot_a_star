@@ -18,6 +18,7 @@ static func create_default() -> ModAPI:
 	api.register_effect_handler(&"core:landing", LandingEffectHandler.new())
 	api.register_effect_handler(&"core:push", PushEffectHandler.new())
 	api.register_effect_handler(&"core:heal", HealEffectHandler.new())
+	api.register_effect_handler(PositioningEffectHandler.EFFECT_ID, PositioningEffectHandler.new())
 	return api
 
 

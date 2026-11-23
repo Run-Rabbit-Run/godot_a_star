@@ -18,7 +18,7 @@ const TARGET_HELP := {
 	7: "Выбирается живой союзник в пределах дальности, кроме самого юнита; эффекты могут ограничить выбор, например лечение — только живыми телами.",
 	8: "Выбирается соседний гекс — сторона: действует на него и два соседних с ним гекса рядом с юнитом.",
 }
-const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ", "core:push": "ТОЛЧОК", "core:heal": "ЛЕЧЕНИЕ"}
+const EFFECT_TITLES := {"core:damage": "УРОН", "core:unit_status": "СОСТОЯНИЕ ЮНИТА", "core:hex_state": "СОСТОЯНИЕ ГЕКСА", "core:summon": "ПРИЗЫВ", "core:push": "ТОЛЧОК", "core:heal": "ЛЕЧЕНИЕ", "core:positioning": "МАНЁВР"}
 ## Targets whose "other targets" damage applies even without an area radius.
 const SPREADING_TARGETS := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.TargetMode.PATH, AbilityDefinition.TargetMode.SELF, AbilityDefinition.TargetMode.ARC]
 ## Consecutive edits of these keys share one undo step (typing).
@@ -448,6 +448,8 @@ func _effect_card(index: int) -> void:
 		"core:push":
 			_number(grid, "Дальность толчка", params, "distance", 1, PushEffectHandler.MAX_DISTANCE, change, "На сколько гексов цель отлетает от юнита по прямой.")
 			card.add_child(EditorUi.hint("Столкновение обрывает толчок: цель и то, во что она врезалась, получают по %d физического урона." % PushService.COLLISION_DAMAGE))
+		"core:positioning":
+			card.add_child(EditorUi.hint("Правило манёвра задано встроенным умением."))
 
 
 func _summon_text(params: Dictionary) -> String:

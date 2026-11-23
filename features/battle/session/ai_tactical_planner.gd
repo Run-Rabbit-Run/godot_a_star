@@ -95,6 +95,7 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 	var best: Dictionary = {}
 	# Outcomes of area abilities that leave the actor outside; the same from every hex.
 	var outcomes: Dictionary = {}
+	var guards_present := opponents.any(func(unit: UnitSnapshot) -> bool: return unit.statuses.has(UnitStatusCatalog.INTERCEPT_READY))
 	for cell: Vector2i in cells:
 		var move: MoveCommand = MoveCommand.new(unit_id, cell) if cell != actor.hex else null
 		context["approach"] = _approach(cell, opponents, approach_costs)
@@ -124,7 +125,7 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 				break
 			if _misses_everyone(command, mover, opponents):
 				continue
-			var key := _outcome_key(command, mover, grid)
+			var key := "" if guards_present else _outcome_key(command, mover, grid)
 			var outcome: Dictionary = outcomes.get(key, {}) if not key.is_empty() else {}
 			if outcome.is_empty():
 				memo.simulations += 1
@@ -139,7 +140,12 @@ static func _plan_unit(session: BattleSession, base: BattleEngine, grid: HexGrid
 				# The actor stands outside the area: only its route and turn end touch it.
 				health_after = actor.health.current - int(forecast.damage)
 				defeated = bool(forecast.lethal)
-			var scored := _score(cell, outcome, health_after, defeated, context)
+			var destination: Vector2i = outcome.destination if key.is_empty() else cell
+			var score_context := context
+			if destination != cell:
+				score_context = context.duplicate()
+				score_context.approach = _approach(destination, opponents, approach_costs)
+			var scored := _score(destination, outcome, health_after, defeated, score_context)
 			_keep(best, scored, move if move != null else command, unit_id, move != null)
 	return best
 
@@ -149,7 +155,7 @@ static func _outcome(position: BattleEngine, mover: UnitState, command: BattleCo
 	var preview := ActionPreview.build(position.fork_for_prediction(), position, command)
 	if not preview.accepted:
 		return {}
-	var outcome := {"enemy_damage": 0, "kills": 0, "key_damage": 0, "key_kills": 0, "friendly_damage": 0, "friendly_kills": 0, "health_after": mover.health.current, "defeated": false}
+	var outcome := {"enemy_damage": 0, "kills": 0, "key_damage": 0, "key_kills": 0, "friendly_damage": 0, "friendly_kills": 0, "health_after": mover.health.current, "defeated": false, "destination": preview.destination}
 	for changed_id: StringName in preview.units:
 		var change := preview.units[changed_id] as ActionPreview.UnitChange
 		var lost := change.health_before - change.health_after
@@ -228,7 +234,7 @@ static func _misses_everyone(command: BattleCommand, mover: UnitState, opponents
 	if not command is UseAbilityCommand or not command.targets_hex:
 		return false
 	var ability := mover.get_ability(command.ability_id)
-	if ability == null or ability.target_mode in AILastActionPlanner.ORIGIN_MODES:
+	if ability == null or ability.target_mode in AILastActionPlanner.ORIGIN_MODES or AILastActionPlanner.depends_on_origin(ability):
 		return false
 	for opponent: UnitSnapshot in opponents:
 		if HexGrid.get_distance(command.target_hex, opponent.hex) <= ability.area_radius + 1:

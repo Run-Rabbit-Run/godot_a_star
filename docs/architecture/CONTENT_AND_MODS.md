@@ -123,6 +123,8 @@ Headless-расчёт не должен требовать `PackedScene`, тек
 
 Площадной обработчик может переопределить `execute_hexes(effect, context, source, hexes)`, чтобы разрешить всю область одним пакетом; по умолчанию он вызывает `execute_hex()` для каждой клетки. `core:hex_state` использует `BattleEffectContext.apply_hex_states()`: все клетки меняются до распространения реакций, порядок клеток не влияет на результат.
 
+Встроенный эффект `core:positioning` применяет одну операцию манёвра через `BattleEffectContext.apply_positioning()`. Операция встроенного навыка фиксирована в редакторе. [Юниты и способности](BATTLE_UNITS_AND_ABILITIES.md) «Манёвры».
+
 `StrategistAbilityDefinition` подчиняется тем же правилам, что и способности: ID в namespace пакета, встроенные эффекты, проверка обработчиков и юнитов из `get_unit_references()` в `ContentLoader`, разрешение юнитов в `BattleSetupFactory`. Встроенный ModAPI регистрирует для них `core:landing` (`unit_id`, `center_only=true`, необязательный `terrain_id`). Core package поставляет `core:health_shuttle`, юнита `core:health_shuttle_unit` и его presentation `core:health_shuttle_actor` (`content/packages/core/health_shuttle.svg` → PNG, происхождение — [README.md](../../content/packages/core/README.md)).
 
 Переопределение встроенного пассива из `SkillLibrary` меняет только поля документа навыка (название, описание, числа, тип урона, состояния); остальные свойства встроенного определения, например `ally_max_health`, сохраняются.

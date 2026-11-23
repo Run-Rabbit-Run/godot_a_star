@@ -38,6 +38,7 @@ var _path_shadow: Line2D
 var _path_stroke: Line2D
 var _ability_target_visuals: Node2D
 var _ability_area_visuals: Node2D
+var _relocation_visuals: Node2D
 var _reachable_visuals: Node2D
 var _ranged_attack_visuals: Node2D
 var _selection_visuals: Node2D
@@ -194,6 +195,10 @@ func _mount_ability_visuals() -> void:
 	_ability_area_visuals = Node2D.new()
 	_ability_area_visuals.name = "AbilityAreaVisuals"
 	_ability_area_visuals.z_index = 14
+	_relocation_visuals = Node2D.new()
+	_relocation_visuals.name = "RelocationPreview"
+	_relocation_visuals.z_index = 16
+	add_child(_relocation_visuals)
 	add_child(_ability_area_visuals)
 
 
@@ -502,6 +507,28 @@ func show_action_preview(lines: PackedStringArray, warning: bool) -> void:
 
 func clear_action_preview() -> void:
 	_action_preview_panel.hide_panel()
+	_clear_hex_visuals(_relocation_visuals)
+
+
+func show_relocation_preview(relocations: Dictionary[StringName, Array]) -> void:
+	var color := Color(0.53, 1.0, 0.91, 0.95)
+	for id: StringName in IdOrder.sorted(relocations.keys()):
+		var path: Array = relocations[id]
+		if path[0] == path[1]:
+			continue
+		_add_hex_visual(_relocation_visuals, path[1], Color(0.20, 0.75, 0.65, 0.22), color, 2.2)
+		var start := to_local(hex_to_global_position(path[0]))
+		var end := to_local(hex_to_global_position(path[1]))
+		var direction := (end - start).normalized()
+		var wing := direction.orthogonal() * 6.0
+		var tip := end - direction * 5.0
+		var arrow := Line2D.new()
+		arrow.name = "RelocationArrow_%s" % String(id).validate_node_name()
+		arrow.width = 2.6
+		arrow.default_color = color
+		arrow.antialiased = true
+		arrow.points = PackedVector2Array([start + direction * 12.0, tip, tip - direction * 9.0 + wing, tip, tip - direction * 9.0 - wing])
+		_relocation_visuals.add_child(arrow)
 
 
 func _add_boundary_edge(container: Node2D, start: Vector2, end: Vector2, color: Color) -> void:

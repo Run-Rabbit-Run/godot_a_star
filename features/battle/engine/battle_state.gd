@@ -20,6 +20,8 @@ var is_detached := false
 var spread_rule: Callable = HexStateCatalog.spreading_energy
 ## Read-only abilities of the player faction's strategist, by ID.
 var strategist_abilities: Dictionary[StringName, StrategistAbilityDefinition] = {}
+## Temporary traversal blocks, keyed by the unit whose next phase will clear them.
+var active_fissures: Dictionary[StringName, Array] = {}
 
 
 func _init(
@@ -69,6 +71,7 @@ func duplicate_for_prediction() -> BattleState:
 	copy.is_detached = true
 	copy.spread_rule = spread_rule
 	copy.strategist_abilities = strategist_abilities
+	copy.active_fissures.assign(active_fissures.duplicate(true))
 	return copy
 
 
@@ -85,3 +88,4 @@ func adopt(scratch: BattleState) -> void:
 	random.state = scratch.random.state
 	state_revision = scratch.state_revision
 	map_revision = scratch.map_revision
+	active_fissures.assign(scratch.active_fissures.duplicate(true))

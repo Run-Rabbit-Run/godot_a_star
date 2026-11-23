@@ -78,7 +78,7 @@ func fork_onto(state: BattleState) -> BattleEngine:
 
 
 func supports_ability_prediction(ability: AbilityDefinition) -> bool:
-	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script(), PushEffectHandler.new().get_script(), HealEffectHandler.new().get_script()]
+	var supported: Array[Script] = [DamageEffectHandler.new().get_script(), HexStateEffectHandler.new().get_script(), UnitStatusEffectHandler.new().get_script(), SummonEffectHandler.new().get_script(), PushEffectHandler.new().get_script(), HealEffectHandler.new().get_script(), PositioningEffectHandler.new().get_script()]
 	for effect: AbilityEffectDefinition in ability.effects:
 		var handler := _state.mod_api.get_effect_handler(effect.effect_type_id)
 		if handler == null or not supported.has(handler.get_script()):
@@ -417,13 +417,17 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		segment_path.append(next_hex)
 		segment_cost += step_cost
 
-		if not _state.hex_grid.has_layers(next_hex):
+		var guards := InterceptionService.guards_at(_state, moved_unit, next_hex)
+		if not _state.hex_grid.has_layers(next_hex) and guards.is_empty():
 			continue
 
 		events.append(UnitMovedEvent.new(result.unit_id, segment_path, segment_cost))
 		segment_path = [next_hex]
 		segment_cost = 0
 		_apply_hex_state_damage(result.unit_id, events)
+		_terminal_error = InterceptionService.react(_state, moved_unit, guards, events)
+		if not _terminal_error.is_empty():
+			break
 
 		if moved_unit.health.is_defeated() or moved_unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
 			break
@@ -525,6 +529,9 @@ func _start_phase(events: Array[BattleEvent], first := false) -> void:
 	# The side's shields fall before any start effect, so none of them meets a shield of this side.
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
 		UnitStatusService.expire_reserves(get_unit(unit_id), events)
+	_terminal_error = FissureService.expire(_state, get_active_faction(), events)
+	if not _terminal_error.is_empty():
+		return
 	for unit_id: StringName in _state.turn_service.get_phase_unit_ids():
 		var unit := get_unit(unit_id)
 		unit.turn.start_turn()

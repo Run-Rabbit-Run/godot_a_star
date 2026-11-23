@@ -30,12 +30,16 @@ static func push(state: BattleState, source_id: StringName, target_id: StringNam
 			return _collide(state, unit, blocker, next, collision, source_id, ability_id, events)
 		unit.hex = next
 		segment.append(next)
-		if not state.hex_grid.has_layers(next):
+		var guards := InterceptionService.guards_at(state, unit, next)
+		if not state.hex_grid.has_layers(next) and guards.is_empty():
 			continue
 		# The layers act once the unit is on the hex, as on an ordinary move.
 		events.append(UnitPushedEvent.new(target_id, source_id, segment))
 		segment = [next]
 		HexStateService.expose(unit, state.hex_grid, events)
+		var error := InterceptionService.react(state, unit, guards, events)
+		if not error.is_empty():
+			return error
 		if unit.health.is_defeated():
 			return ""
 	if segment.size() > 1:

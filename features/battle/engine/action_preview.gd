@@ -29,6 +29,8 @@ var broken_flasks: Array[BattleObstacleDefinition] = []
 ## Where the acting unit would end up; for a move, whether it reaches the requested hex.
 var destination: Vector2i
 var reached := true
+## First hex and final hex for every moved unit, including forced movement.
+var relocations: Dictionary[StringName, Array] = {}
 
 
 ## Runs the command on `forecast`, which the caller owns and discards afterwards; `before` is
@@ -57,8 +59,8 @@ static func build(forecast: BattleEngine, before: BattleEngine, command: BattleC
 			preview._change(event.unit_id, before).health_after = event.health_after
 		elif event is UnitHealedEvent:
 			preview._change(event.unit_id, before).health_after = event.health_after
-		elif event is UnitMovedEvent and event.unit_id == preview.actor_id and not event.path.is_empty():
-			preview.destination = event.path.back()
+		elif event is UnitMovedEvent or event is UnitPushedEvent:
+			preview._record_movement(event.unit_id, event.path)
 		elif event is MapMutationEvent and event.obstacle_changed:
 			preview.obstacle_damage[event.hex] = event.obstacle_damage
 		elif event is ObstacleBrokenEvent:
@@ -70,6 +72,16 @@ static func build(forecast: BattleEngine, before: BattleEngine, command: BattleC
 		var mover := preview.units.get(preview.actor_id) as UnitChange
 		preview.reached = preview.destination == command.destination and (mover == null or not mover.defeated)
 	return preview
+
+
+func _record_movement(unit_id: StringName, path: Array[Vector2i]) -> void:
+	if path.size() < 2:
+		return
+	var ends: Array = relocations.get(unit_id, [path.front(), path.back()])
+	ends[1] = path.back()
+	relocations[unit_id] = ends
+	if unit_id == actor_id:
+		destination = ends[1]
 
 
 func _change(unit_id: StringName, before: BattleEngine) -> UnitChange:

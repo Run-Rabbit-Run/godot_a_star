@@ -11,12 +11,17 @@ static func respond(state: BattleState, attacker: UnitState, defender: UnitState
 		return ""
 	if HexGrid.get_distance(attacker.hex, defender.hex) > 1:
 		return ""
+	return strike(state, attacker, defender, &"core:melee_retaliation", events)
+
+
+## An ordinary strike at melee distance without opening another reaction.
+static func strike(state: BattleState, target: UnitState, striker: UnitState, ability_id: StringName, events: Array[BattleEvent]) -> String:
 	# A response is a melee strike, so a ranged defender deals half damage.
-	var penalty := BasicAttackRules.melee_penalty(defender.basic_attack_range, defender.basic_attack_damage)
+	var penalty := BasicAttackRules.melee_penalty(striker.basic_attack_range, striker.basic_attack_damage)
 	# The response is the defender's next attack: a targeting glitch weakens it and is spent.
-	var glitch := UnitStatusService.consume(defender, UnitStatusCatalog.TARGETING_GLITCH, events)
-	var strike := DamageRequest.new(defender.basic_attack_damage, defender.basic_attack_damage_type).from_unit(defender.unit_id).with_ability(&"core:melee_retaliation")
-	UnitStatusService.damage(attacker, strike.with_melee_penalty(penalty).with_weakening(glitch, UnitStatusCatalog.TARGETING_GLITCH), events)
-	for status: StringName in defender.basic_attack_statuses:
-		UnitStatusService.apply(attacker, status, defender.basic_attack_statuses[status], events)
-	return DamageType.react(state, attacker.hex, defender.basic_attack_damage_type, events)
+	var glitch := UnitStatusService.consume(striker, UnitStatusCatalog.TARGETING_GLITCH, events)
+	var hit := DamageRequest.new(striker.basic_attack_damage, striker.basic_attack_damage_type).from_unit(striker.unit_id).with_ability(ability_id)
+	UnitStatusService.damage(target, hit.with_melee_penalty(penalty).with_weakening(glitch, UnitStatusCatalog.TARGETING_GLITCH), events)
+	for status: StringName in striker.basic_attack_statuses:
+		UnitStatusService.apply(target, status, striker.basic_attack_statuses[status], events)
+	return DamageType.react(state, target.hex, striker.basic_attack_damage_type, events)

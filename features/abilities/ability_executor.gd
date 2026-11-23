@@ -17,7 +17,7 @@ static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id
 		for target: UnitState in state.unit_states.values():
 			if target.health.is_defeated() or target == user or (target.faction == user.faction) != allies:
 				continue
-			if HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user) and _accepts(state, ability, target):
+			if HexGrid.get_distance(user.hex, target.hex) <= ability.get_range(user) and _accepts(state, ability, target) and PositioningEffectHandler.can_target(state, user, ability, target.hex):
 				targets.append(target.hex)
 	else:
 		for hex: Vector2i in state.hex_grid.get_cells_in_range(user.hex, ability.get_range(user)):
@@ -27,6 +27,8 @@ static func get_target_hexes(state: BattleState, unit_id: StringName, ability_id
 			if ability.target_mode == AbilityDefinition.TargetMode.ARC and hex == user.hex:
 				continue
 			if ability.target_mode == AbilityDefinition.TargetMode.LINE and get_line_direction(user.hex, hex) == Vector2i.ZERO:
+				continue
+			if not PositioningEffectHandler.can_target(state, user, ability, hex):
 				continue
 			targets.append(hex)
 	targets.sort()
@@ -41,6 +43,8 @@ static func get_line_direction(origin: Vector2i, target: Vector2i) -> Vector2i:
 	return Vector2i.ZERO
 
 static func get_affected_hexes(grid: HexGrid, origin: Vector2i, ability: AbilityDefinition, center: Vector2i) -> Array[Vector2i]:
+	if PositioningEffectHandler.creates_fissure(ability):
+		return FissureService.line(origin, center)
 	if ability.target_mode == AbilityDefinition.TargetMode.PATH:
 		return get_path_hexes(grid, origin, center)
 	if ability.target_mode == AbilityDefinition.TargetMode.ARC:

@@ -127,6 +127,18 @@ func get_base_attack_damage(id: StringName) -> int:
 	return unit.basic_attack_damage if unit != null else 0
 
 
+func apply_positioning(operation: StringName, unit_id: StringName, cells: Array[Vector2i]) -> Array[BattleEvent]:
+	var events: Array[BattleEvent] = []
+	var unit := _state.unit_states.get(unit_id) as UnitState
+	if unit == null:
+		fail("Positioning effect requires a unit.")
+		return events
+	var error := PositioningAbilityService.apply(_state, operation, unit, target_hex, cells, _ability_id, events)
+	if not error.is_empty():
+		fail(error)
+	return events
+
+
 func get_unit_hex(id: StringName) -> Vector2i:
 	var unit := _state.unit_states.get(id) as UnitState
 	return unit.hex if unit != null else Vector2i.ZERO

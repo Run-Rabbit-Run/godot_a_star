@@ -14,6 +14,7 @@ const ARMOR := &"core:armor"
 const SHIELD := &"core:shield"
 const ATTACK_CHARGE := &"core:attack_charge"
 const TARGETING_GLITCH := &"core:targeting_glitch"
+const INTERCEPT_READY := &"core:intercept_ready"
 
 ## When a status acts and when it loses levels: HEX_AND_UNIT_STATES.md «Категории статусов».
 enum Category {
@@ -37,6 +38,7 @@ const CATEGORY_NAMES := {
 ## `drops_at_phase_start`: a reserve that falls whole at the start of its side's phase;
 ## `drops_at_phase_end`: one that falls whole at the end of its side's phase.
 const RULES := {
+	INTERCEPT_READY: {"name": "Стойка перехвата", "category": Category.RESERVE, "drops_at_phase_start": true, "description": "Первый враг, вошедший на соседний гекс, получает удар вплотную. После удара или в начале следующей фазы своей стороны стойка снимается."},
 	WET: {"name": "Влага", "category": Category.PROPERTY, "description": "Пока есть, поглощает огненный урон: 1 урона за уровень, расходуя влагу. При наличии хотя бы 1 уровня усиливает электрический урон на 1 без расхода. Влага и горение взаимно снимаются 1:1. Плазма запрещает влагу. В начале фазы своей стороны теряет 1 уровень."},
 	BURNING: {"name": "Горение", "category": Category.PERIODIC, "description": "В начале фазы своей стороны наносит 1 огненного урона независимо от числа уровней, затем теряет 1 уровень. Пока есть, поглощает водный урон, расходуя 1 уровень за 1 урона. Взаимно снимается с влагой 1:1. При наличии масла вызывает взрыв."},
 	ACID: {"name": "Кислота", "category": Category.PERIODIC, "description": "В начале фазы своей стороны снимает 1 уровень брони, затем теряет 1 уровень. При 5 и более уровнях сразу снимает всю броню и кислоту."},

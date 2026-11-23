@@ -44,6 +44,10 @@ func _run() -> void:
 		preload("res://features/battle/tests/shield_regressions.gd").new().run(self)
 	if runs("push"):
 		preload("res://features/battle/tests/push_regressions.gd").new().run(self)
+	if runs("positioning"):
+		preload("res://features/battle/tests/positioning_regressions.gd").new().run(self)
+	if runs("positioning_view"):
+		await preload("res://features/battle/tests/positioning_regressions.gd").new().run_presentation(self)
 	if runs("push_view"):
 		await preload("res://features/battle/tests/push_regressions.gd").new().run_presentation(self)
 	if runs("passives"):

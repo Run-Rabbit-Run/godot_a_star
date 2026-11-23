@@ -382,6 +382,8 @@ func _show_preview(axial_cell: Vector2i) -> void:
 			_previewed_actors.append(unit_id)
 	var summary := ActionPreviewText.describe(_preview, _unit_views.definitions, factions, command is MoveCommand)
 	_map_view.show_action_preview(summary.lines, summary.warning)
+	if command is UseAbilityCommand:
+		_map_view.show_relocation_preview(_preview.relocations)
 
 
 ## The command worth previewing at the hex: an aimed ability target, an attackable target or

@@ -11,7 +11,7 @@ const ACTIVE_LIMITS := {"range": [1, 99, "Дальность"], "area_radius": [
 const DAMAGE_TYPES := {"physical": "Физический", "electric": "Электрический", "fire": "Огненный", "water": "Водный", "acid": "Кислотный", "plasma": "Плазменный"}
 
 ## Effect parameters that keep a built-in skill's structure: the editor shows them read-only.
-const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"], "core:heal": ["body"]}
+const FIXED_PARAMETERS := {"core:damage": ["affects_obstacles"], "core:hex_state": ["center_only"], "core:summon": ["unit_id", "center_only"], "core:heal": ["body"], "core:positioning": ["operation"]}
 const FIXED_ACTIVE_KEYS := ["target_mode", "uses_attack_range", "returns_next_turn", "melee_attack", "presentation_id"]
 ## Passive properties the skill documents describe; a built-in passive keeps its other ones.
 const PASSIVE_DOCUMENT_KEYS := ["name", "description", "attack_bonus", "damage_type", "status", "levels", "immunity", "retaliation"]
@@ -251,6 +251,7 @@ func validate_effect(data: Dictionary) -> String:
 		"core:summon": handler = SummonEffectHandler.new()
 		"core:push": handler = PushEffectHandler.new()
 		"core:heal": handler = HealEffectHandler.new()
+		"core:positioning": handler = PositioningEffectHandler.new()
 		_: return "Неизвестный обработчик эффекта."
 	var effect := to_effect(data)
 	var error := handler.validate(effect)

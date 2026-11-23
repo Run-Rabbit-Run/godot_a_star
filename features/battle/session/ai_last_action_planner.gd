@@ -8,7 +8,7 @@ const ORIGIN_MODES := [AbilityDefinition.TargetMode.LINE, AbilityDefinition.Targ
 const LOCAL_EFFECTS := [&"core:damage", &"core:unit_status"]
 ## Effects whose outcome depends on the user's hex even when its area does not: a push flies
 ## straight away from the user.
-const ORIGIN_EFFECTS := [&"core:push"]
+const ORIGIN_EFFECTS := [&"core:push", PositioningEffectHandler.EFFECT_ID]
 ## Forecasts of actions one plan may run. Every reachable position is still tried, so an
 ## advance stays available; beyond the budget no further action is forecast and the best
 ## plan found so far stands. Below it the plan equals the exhaustive search.
@@ -48,7 +48,8 @@ static func plan(session: BattleSession, trace: Variant = null, unit_id: StringN
 		var unit := base.get_unit(id)
 		if unit != null and id != active.unit_id and not unit.health.is_defeated():
 			others[unit.hex] = unit
-	var memo := {"outcomes": {}, "reach": {}, "simulations": 0, "skipped": 0, "refused": 0}
+	var guards_present := opponents.any(func(unit: UnitSnapshot) -> bool: return unit.statuses.has(UnitStatusCatalog.INTERCEPT_READY))
+	var memo := {"outcomes": {}, "reach": {}, "simulations": 0, "skipped": 0, "refused": 0, "guards_present": guards_present}
 	if not cells.has(active.hex):
 		cells.append(active.hex)
 		cells.sort()
@@ -201,7 +202,7 @@ static func _score(position: BattleEngine, actor: UnitState, grid: HexGrid, othe
 	if command is UseAbilityCommand:
 		ability = actor.get_ability(command.ability_id)
 	# Retaliation depends on the actor's distance to each defender, a push on its hex.
-	if ability == null or ability.melee_attack or depends_on_origin(ability):
+	if ability == null or ability.melee_attack or depends_on_origin(ability) or memo.get("guards_present", false):
 		return _simulate(position, actor, command, memo)
 	var center: Vector2i = command.target_hex if command.targets_hex else position.get_unit(command.target_id).hex
 	var area := AbilityExecutor.get_affected_hexes(grid, actor.hex, ability, center)
@@ -320,6 +321,9 @@ static func _supports_prediction(ability: AbilityDefinition) -> bool:
 	# Status application may cause immediate oil explosions; score its real events as well.
 	var can_affect_enemy := false
 	for effect: AbilityEffectDefinition in ability.effects:
+		if effect.effect_type_id == PositioningEffectHandler.EFFECT_ID:
+			can_affect_enemy = can_affect_enemy or effect.parameters.get("operation") != "intercept"
+			continue
 		if effect.effect_type_id not in [&"core:damage", &"core:hex_state", &"core:unit_status", &"core:summon", &"core:push"]:
 			return false
 		can_affect_enemy = can_affect_enemy or effect.effect_type_id != &"core:summon"

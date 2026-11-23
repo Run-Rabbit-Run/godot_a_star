@@ -375,7 +375,7 @@ func show_combat_stats(damage: int, attack_range: int, charge := 0, glitch := 0)
 
 func show_ability_targeting(display_name: String, area_radius: int, mode: int = AbilityDefinition.TargetMode.AUTO) -> void:
 	if mode == AbilityDefinition.TargetMode.PATH:
-		_action_label.text = "ВЫБЕРИТЕ ГЕКС БРОСКА: %s" % display_name.to_upper()
+		_action_label.text = "ВЫБЕРИТЕ КОНЕЧНЫЙ ГЕКС: %s" % display_name.to_upper()
 		return
 	if mode == AbilityDefinition.TargetMode.SELF:
 		_action_label.text = "НАЖМИТЕ НА ГЕКС СВОЕГО ЮНИТА: %s" % display_name.to_upper()
@@ -394,6 +394,9 @@ func show_ability_targeting(display_name: String, area_radius: int, mode: int = 
 		return
 	if mode == AbilityDefinition.TargetMode.ARC:
 		_action_label.text = "ВЫБЕРИТЕ СТОРОНУ: %s" % display_name.to_upper()
+		return
+	if mode == AbilityDefinition.TargetMode.HEX and area_radius == 0:
+		_action_label.text = "ВЫБЕРИТЕ ГЕКС: %s" % display_name.to_upper()
 		return
 	_action_label.text = (
 		"ВЫБЕРИТЕ ЦЕНТР: %s · РАДИУС %d" % [display_name.to_upper(), area_radius]

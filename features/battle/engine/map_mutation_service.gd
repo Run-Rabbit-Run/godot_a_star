@@ -101,6 +101,8 @@ static func _validate_mutation(
 				return "AddHex movement cost must be at least 1."
 
 		MapMutationKind.Value.REMOVE_HEX:
+			if FissureService.covers(state, mutation.hex):
+				return "Cannot remove a hex occupied by a fissure."
 			if candidate.has_obstacle(mutation.hex):
 				return "Cannot remove a hex occupied by an obstacle."
 			if not candidate.has_cell(mutation.hex):
@@ -115,6 +117,8 @@ static func _validate_mutation(
 				return "ChangeTerrain terrain id must not be empty."
 
 		MapMutationKind.Value.SET_TRAVERSAL:
+			if FissureService.covers(state, mutation.hex):
+				return "Cannot change traversal underneath a fissure."
 			if candidate.has_obstacle(mutation.hex):
 				return "Cannot change traversal underneath an obstacle."
 			if not candidate.has_cell(mutation.hex):

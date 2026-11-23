@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+
+[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
+[sub_resource type="Resource" id="push"]
+script = ExtResource("effect")
+effect_type_id = &"core:push"
+parameters = {"distance": 1}
+
+[resource]
+script = ExtResource("ability")
+id = &"core:repulse"
+presentation_id = &"core:shove_presentation"
+display_name = "Отталкивание"
+description = "Сдвигает всех соседних юнитов на {push_distance} гекс от бойца. Перезарядка {cooldown}."
+range = 1
+area_radius = 1
+target_mode = 6
+cooldown_turns = 2
+effects = Array[ExtResource("effect")]([SubResource("push")])
