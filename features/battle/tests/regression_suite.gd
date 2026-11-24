@@ -120,6 +120,8 @@ func _run() -> void:
 		preload("res://features/battle/tests/session_regressions.gd").new().run_simulation(self)
 	if runs("presentation"):
 		await preload("res://features/battle/tests/presentation_regressions.gd").new().run_presentation(self)
+	if runs("battle_camera"):
+		await preload("res://features/battle/tests/battle_camera_regressions.gd").new().run(self)
 	if runs("presentation_recovery"):
 		await preload("res://features/battle/tests/presentation_recovery_regressions.gd").new().run(self)
 	if runs("automatic_run"):

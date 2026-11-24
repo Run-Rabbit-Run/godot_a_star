@@ -230,6 +230,7 @@ func _build_top_bar(root: Control) -> void:
 	bar.add_child(EditorUi.button("Навыки…", _open_skill_editor, "Открыть редактор навыков: правка активных и пассивных умений"))
 	bar.add_child(EditorUi.separator())
 	bar.add_child(EditorUi.button("Сохранить", _save, "Сохранить поле (Ctrl+S)"))
+	bar.add_child(EditorUi.button("Вид игрока", _start_trial.bind(true), "Показать стартовый кадр текущего черновика"))
 	bar.add_child(EditorUi.button("▶ Пробный бой", _start_trial, "Запустить текущий черновик в обычном бою без записи результата", &"PrimaryButton"))
 
 
@@ -320,6 +321,13 @@ func _build_inspector(body: Control) -> void:
 	_background_option.item_selected.connect(func(_index: int) -> void:
 		if _document != null:
 			_execute(EditCommand.set_background(_background_option.get_selected_metadata()))
+	)
+	var camera := _inspector.camera_option
+	camera.item_selected.connect(func(index: int) -> void:
+		if _document != null:
+			var plan := camera.get_item_id(index) as BattleMapDefinition.CameraPlan
+			if plan != _document.map_definition.camera_plan:
+				_execute(EditCommand.set_camera_plan(plan))
 	)
 	_grid_layout_controls.offset_changed.connect(func(value: int, custom: bool) -> void:
 		if _document != null:
@@ -945,6 +953,7 @@ func _after_document_changed() -> void:
 	_sync_grid_layout()
 	_sync_document_name()
 	_select_option_by_metadata(_background_option, _document.map_definition.background_id)
+	_inspector.camera_option.select(_inspector.camera_option.get_item_index(_document.map_definition.camera_plan))
 	_validate_document()
 	_refresh_roster()
 	_after_selection_changed()
@@ -1243,7 +1252,7 @@ func _export() -> void:
 		_set_status(error, EditorUi.Severity.ERROR)
 
 
-func _start_trial() -> void:
+func _start_trial(preview := false) -> void:
 	if _document == null or _snapshot == null:
 		_set_status("Сначала исправьте ошибки загрузки библиотеки и обновите её.", EditorUi.Severity.ERROR)
 		return
@@ -1254,10 +1263,12 @@ func _start_trial() -> void:
 	if request == null:
 		_validate_document()
 		_inspector.current_tab = BattleEditorInspector.Page.CHECKS
-		_set_status("Пробный запуск заблокирован ошибками документа.", EditorUi.Severity.ERROR)
+		var action := "Вид игрока недоступен" if preview else "Пробный запуск недоступен"
+		_set_status("%s: исправьте ошибки документа." % action, EditorUi.Severity.ERROR)
 		return
 
-	var error := _trial.start(request)
+	var settings := GameContentSettings.read()
+	var error := _trial.start(request, preview, settings.ui_profile_path if settings != null else "")
 	if not error.is_empty():
 		_set_status(error, EditorUi.Severity.ERROR)
 

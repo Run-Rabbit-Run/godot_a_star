@@ -17,6 +17,7 @@ enum Kind {
 	REMOVE_OBSTACLE,
 	SET_GRID_OFFSET,
 	SET_OBJECTIVE,
+	SET_CAMERA_PLAN,
 }
 
 
@@ -25,6 +26,7 @@ var obstacle_id: StringName
 
 var objective: BattleObjectiveDefinition
 var background_id: StringName
+var camera_plan := BattleMapDefinition.CameraPlan.FAR
 var grid_offset_y := 0
 var custom_grid_offset := true
 var display_name := ""
@@ -118,6 +120,12 @@ static func set_background(id: StringName) -> EditCommand:
 	return command
 
 
+static func set_camera_plan(value: BattleMapDefinition.CameraPlan) -> EditCommand:
+	var command := EditCommand.new(Kind.SET_CAMERA_PLAN)
+	command.camera_plan = value
+	return command
+
+
 static func set_grid_offset(value: int, custom: bool = true) -> EditCommand:
 	var command := EditCommand.new(Kind.SET_GRID_OFFSET)
 	command.grid_offset_y = value
@@ -163,6 +171,10 @@ func apply(document: BattleDocument) -> bool:
 	_before = document.duplicate_document()
 
 	match kind:
+		Kind.SET_CAMERA_PLAN:
+			if not BattleMapDefinition.CameraPlan.values().has(camera_plan):
+				return _restore_failed(document)
+			document.map_definition.camera_plan = camera_plan
 		Kind.SET_OBJECTIVE:
 			document.battle_definition.primary_objective = objective.duplicate(true) as BattleObjectiveDefinition
 

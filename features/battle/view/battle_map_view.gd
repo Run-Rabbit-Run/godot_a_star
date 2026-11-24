@@ -16,6 +16,13 @@ const CURSOR_RANGED := preload(
 )
 enum CursorMode { DEFAULT, MELEE, RANGED }
 const GRID_TILE_SIZE := Vector2(56.0, 64.0)
+const REFERENCE_GRID_SIZE := Vector2(1739.0, 721.5)
+## Reserve space for figures and the top and bottom HUD on the reference canvas.
+const CAMERA_SAFE_GRID := Rect2(100.0, 210.0, 1720.0, 640.0)
+const CAMERA_ZOOM := {
+	BattleMapDefinition.CameraPlan.MEDIUM: 1.15,
+	BattleMapDefinition.CameraPlan.CLOSE: 1.30,
+}
 
 
 @onready var _background_layer: TileMapLayer = $BackgroundLayer
@@ -46,6 +53,9 @@ var _hover_visuals: Node2D
 var _landing_visuals: Node2D
 ## Offset cells the board was fitted to at its first render; hexes added in battle do not refit it.
 var _fit_cells: Array[Vector2i] = []
+var _initial_cell_rect := Rect2i()
+var _camera_zoom := 1.0
+var _actor_screen_scale := 1.0
 var _action_preview_panel: ActionPreviewPanel
 var _reach_visuals: Node2D
 var _hex_state_visuals: HexStateRenderer
@@ -57,11 +67,13 @@ var _terrain_property_nodes: Dictionary[Vector2i, Node2D] = {}
 var _displayed_properties: Dictionary[Vector2i, Dictionary] = {}
 
 var _presentation_frame := Vector2i.ZERO
+var _camera_plan := BattleMapDefinition.CameraPlan.FAR
 var _grid_offset_y := 0
 
 
 func set_map_presentation(definition: BattleMapDefinition) -> void:
 	_presentation_frame = definition.presentation_frame
+	_camera_plan = definition.camera_plan
 	_grid_offset_y = BattleGridLayoutSettings.resolve_offset(definition, BattleGridLayoutSettings.load_default())
 	_battle_backdrop.texture = BattleBackdrops.texture(definition.background_id)
 	_fit_battlefield_to_viewport()
@@ -245,25 +257,53 @@ func _fit_battlefield_to_viewport() -> void:
 	if not is_node_ready():
 		return
 
-	_grid_local_bounds = _calculate_grid_local_bounds()
+	var frame_cells := _fit_cells if not _fit_cells.is_empty() else _terrain_layer.get_used_cells()
+	if _has_presentation_frame():
+		frame_cells = []
+		for row in range(_presentation_frame.y):
+			for column in range(_presentation_frame.x):
+				frame_cells.append(Vector2i(column, row))
+	_grid_local_bounds = _calculate_grid_local_bounds(frame_cells)
 
 	if _grid_local_bounds.size == Vector2.ZERO:
 		return
 
 	var viewport_size := get_viewport().get_visible_rect().size
-	# Match the reference's 94 x 78 projected hexes at 1920 x 1080.
 	var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
-	var available_size := Vector2(1739.0, 721.5) * screen_scale
-	scale = available_size / _grid_local_bounds.size
-	position = viewport_size * 0.5 + Vector2(0, -21.25 + _grid_offset_y) * screen_scale - _grid_local_bounds.get_center() * scale
+	var projection := REFERENCE_GRID_SIZE / _grid_local_bounds.size
+	var reference_center := ReferenceCanvas.SIZE * 0.5 + Vector2(0, -21.25 + _grid_offset_y)
+	_camera_zoom = 1.0
+	if _camera_plan != BattleMapDefinition.CameraPlan.FAR and not _fit_cells.is_empty():
+		var occupied_bounds := _calculate_grid_local_bounds(_fit_cells)
+		var projected_size := occupied_bounds.size * projection
+		var fit := CAMERA_SAFE_GRID.size / projected_size
+		var requested: float = CAMERA_ZOOM.get(_camera_plan, 1.0)
+		_camera_zoom = maxf(1.0, minf(requested, minf(fit.x, fit.y)))
+		if _camera_zoom > 1.0:
+			var half_extent := projected_size * _camera_zoom * 0.5
+			reference_center = reference_center.clamp(CAMERA_SAFE_GRID.position + half_extent, CAMERA_SAFE_GRID.end - half_extent)
+			_grid_local_bounds = occupied_bounds
+
+	scale = projection * (_camera_zoom * screen_scale)
+	var canvas_origin := (viewport_size - ReferenceCanvas.SIZE * screen_scale) * 0.5
+	position = canvas_origin + reference_center * screen_scale - _grid_local_bounds.get_center() * scale
 	# Figures stay upright, independent of the board's perspective compression.
+	_actor_screen_scale = screen_scale * _camera_zoom
 	var units := get_node_or_null("Units") as Node2D
 	if units != null:
 		for actor: Node2D in units.get_children():
-			actor.scale = Vector2.ONE * screen_scale / scale
+			actor.scale = get_actor_scale()
 	_rebuild_grid_rulers(screen_scale)
 	# Marker text depends on the board scale, which has just changed.
 	_refresh_terrain_properties()
+
+
+func get_actor_scale() -> Vector2:
+	return Vector2.ONE * _actor_screen_scale / scale
+
+
+func _has_presentation_frame() -> bool:
+	return _presentation_frame.x > 0 and _presentation_frame.y > 0
 
 
 func _rebuild_grid_rulers(screen_scale: float) -> void:
@@ -273,16 +313,18 @@ func _rebuild_grid_rulers(screen_scale: float) -> void:
 		add_child(_grid_rulers)
 	_clear_hex_visuals(_grid_rulers)
 	var bounds := _terrain_layer.get_used_rect()
-	if _presentation_frame.x > 0 and _presentation_frame.y > 0:
+	if _camera_zoom > 1.0:
+		bounds = _initial_cell_rect
+	elif _has_presentation_frame():
 		bounds = Rect2i(Vector2i.ZERO, _presentation_frame)
 	var label_scale := Vector2.ONE * screen_scale / scale
 	for column in range(bounds.position.x, bounds.end.x):
 		var center := _terrain_layer.map_to_local(Vector2i(column, bounds.position.y))
-		_add_grid_number(column - bounds.position.x + 1, center + Vector2(0, -42), label_scale)
+		_add_grid_number(column + 1 if _has_presentation_frame() else column - bounds.position.x + 1, center + Vector2(0, -42), label_scale)
 	for row in range(bounds.position.y, bounds.end.y):
 		var center := _terrain_layer.map_to_local(Vector2i(bounds.position.x, row))
 		center.x = _grid_local_bounds.position.x - 8
-		_add_grid_number(row - bounds.position.y + 1, center, label_scale)
+		_add_grid_number(row + 1 if _has_presentation_frame() else row - bounds.position.y + 1, center, label_scale)
 
 
 func _add_grid_number(number: int, center: Vector2, label_scale: Vector2) -> void:
@@ -299,16 +341,7 @@ func _add_grid_number(number: int, center: Vector2, label_scale: Vector2) -> voi
 
 
 
-func _calculate_grid_local_bounds() -> Rect2:
-	var used_cells := _terrain_layer.get_used_cells()
-	if not _fit_cells.is_empty():
-		used_cells = _fit_cells.duplicate()
-	if _presentation_frame.x > 0 and _presentation_frame.y > 0:
-		used_cells.clear()
-		for row in range(_presentation_frame.y):
-			for column in range(_presentation_frame.x):
-				used_cells.append(Vector2i(column, row))
-
+func _calculate_grid_local_bounds(used_cells: Array[Vector2i]) -> Rect2:
 	if used_cells.is_empty():
 		return Rect2()
 
@@ -370,6 +403,9 @@ func render_grid(grid: HexGrid) -> void:
 			tile["atlas_coords"],
 			tile["alternative_tile"]
 		)
+
+	if first_render:
+		_initial_cell_rect = _terrain_layer.get_used_rect()
 
 	for hex: Vector2i in grid.get_cells():
 		_displayed_properties[hex] = {"terrain": grid.get_terrain_id(hex), "traversable": grid.is_traversable(hex), "cost": grid.get_configured_movement_cost(hex), "liquid": grid.get_liquid(hex), "liquid_turns": grid.get_liquid_turns(hex), "energy": grid.get_energy(hex), "energy_turns": grid.get_energy_turns(hex), "obstacle": grid.get_obstacle(hex)}
@@ -876,8 +912,6 @@ func _update_terrain_properties(hex: Vector2i) -> void:
 
 ## The board is scaled unevenly for perspective; marker text keeps upright screen proportions.
 func _create_marker_label(text: String, font_size: int, center: Vector2) -> Label:
-	var viewport_size := get_viewport().get_visible_rect().size
-	var screen_scale := ReferenceCanvas.fit_scale(viewport_size)
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
@@ -885,6 +919,6 @@ func _create_marker_label(text: String, font_size: int, center: Vector2) -> Labe
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.size = Vector2.ONE * font_size * 1.6
-	label.scale = Vector2.ONE * screen_scale / scale
+	label.scale = get_actor_scale()
 	label.position = center - label.size * label.scale * 0.5
 	return label

@@ -63,6 +63,7 @@ var export_button: Button
 var delete_field_button: Button
 var use_in_game_buttons: Array[Button] = []
 var background_option: OptionButton
+var camera_option: OptionButton
 var grid_layout_controls: EditorGridLayoutControls
 var objective_panel := EditorObjectivePanel.new()
 var validation_summary: Label
@@ -362,6 +363,13 @@ func _build_field_page(page: VBoxContainer) -> void:
 		background_option.set_item_metadata(background_option.item_count - 1, id)
 	backdrop.add_child(background_option)
 	backdrop.add_child(EditorUi.hint("Фон — только подложка. Клетки и препятствия задаются картой."))
+	var camera := EditorUi.card(page, "КАМЕРА")
+	camera_option = _option()
+	camera_option.add_item("Отдалённый", BattleMapDefinition.CameraPlan.FAR)
+	camera_option.add_item("Средний", BattleMapDefinition.CameraPlan.MEDIUM)
+	camera_option.add_item("Близкий", BattleMapDefinition.CameraPlan.CLOSE)
+	camera.add_child(camera_option)
+	camera.add_child(EditorUi.hint("Посмотрите выбранный план через «Вид игрока». Приближение зависит от размера поля."))
 	grid_layout_controls = EditorGridLayoutControls.new()
 	EditorUi.card(page, "СЕТКА").add_child(grid_layout_controls)
 	EditorUi.card(page, "ОКНО РЕДАКТОРА").add_child(EditorDisplaySettings.new())

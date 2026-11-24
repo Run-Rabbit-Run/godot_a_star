@@ -22,6 +22,7 @@ var _known_map_revision := -1
 var _battle_session: BattleSession
 var _battle_setup: BattleSetup
 var _start_request: BattleStartRequest
+var _preview_only := false
 var _is_initialization_requested := false
 var _is_initialized := false
 var initialization_error := ""
@@ -50,7 +51,8 @@ func _ready() -> void:
 
 func setup(
 	request: BattleStartRequest,
-	prepared_session: BattleSession = null
+	prepared_session: BattleSession = null,
+	preview_only := false
 ) -> bool:
 	var validation := BattleStartRequestValidator.validate(request)
 
@@ -84,7 +86,8 @@ func setup(
 
 	_battle_session = prepared_session
 	_start_request = request
-	if BattleLoggingController.is_feature_enabled():
+	_preview_only = preview_only
+	if not _preview_only and BattleLoggingController.is_feature_enabled():
 		var logging := BattleLoggingController.new()
 		logging.name = "BattleLoggingController"
 		add_child(logging)
@@ -102,7 +105,7 @@ func apply_map_mutations(
 	mutations: Array[MapMutation]
 ) -> BattleResolution:
 	# The session exists right after setup(), but actors and the grid appear only later.
-	if not _is_initialized or _is_presenting or _runtime_failed:
+	if _preview_only or not _is_initialized or _is_presenting or _runtime_failed:
 		return BattleResolution.rejected(
 			"Battle is not ready for a new operation.",
 			0,
@@ -201,9 +204,13 @@ func _initialize_battle() -> void:
 	if active != null:
 		_show_unit_movement(active)
 
-		if _battle_session.is_active_unit_ai_controlled():
-			_set_presenting(true)
-			await _run_ai_turns()
+	if _preview_only:
+		# Keep the opening HUD and highlights while the isolated viewport shows the shot.
+		_is_presenting = true
+		_input_router.set_interaction_enabled(false)
+	elif active != null and _battle_session.is_active_unit_ai_controlled():
+		_set_presenting(true)
+		await _run_ai_turns()
 
 
 func _on_hex_selected(axial_cell: Vector2i) -> void:

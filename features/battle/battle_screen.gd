@@ -18,6 +18,7 @@ var _failure_emitted := false
 )
 
 var _start_request: BattleStartRequest
+var _preview_only := false
 var _has_started := false
 var _prepared_session: BattleSession
 var initialization_error := ""
@@ -33,7 +34,7 @@ func _ready() -> void:
 		_start_battle()
 
 
-func setup(request: BattleStartRequest) -> bool:
+func setup(request: BattleStartRequest, preview_only := false) -> bool:
 	var validation := BattleStartRequestValidator.validate(request)
 
 	if not validation.is_valid:
@@ -50,6 +51,7 @@ func setup(request: BattleStartRequest) -> bool:
 		return false
 	_prepared_session = result.session
 	_start_request = request
+	_preview_only = preview_only
 
 	if is_node_ready():
 		return _start_battle()
@@ -70,7 +72,7 @@ func _start_battle() -> bool:
 
 	_battle_controller.battle_failed.connect(_on_battle_failed)
 	_battle_controller.battle_started.connect(_on_battle_started)
-	if not _battle_controller.setup(_start_request, _prepared_session):
+	if not _battle_controller.setup(_start_request, _prepared_session, _preview_only):
 		_on_battle_failed(_battle_controller.initialization_error)
 		return false
 

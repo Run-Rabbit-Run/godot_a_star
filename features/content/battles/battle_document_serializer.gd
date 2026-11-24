@@ -146,6 +146,8 @@ static func to_dictionary(document: BattleDocument) -> Dictionary:
 	}
 	if document.map_definition.has_custom_grid_offset:
 		result["map"]["grid_offset_y"] = document.map_definition.grid_offset_y
+	if document.map_definition.camera_plan != BattleMapDefinition.CameraPlan.FAR:
+		result["map"]["camera_plan"] = document.map_definition.camera_plan
 	return result
 
 
@@ -165,6 +167,7 @@ static func _create_document(data: Dictionary) -> BattleDocument:
 	map.background_id = StringName(map_data.get("background_id", "plateau"))
 	map.has_custom_grid_offset = map_data.has("grid_offset_y")
 	map.grid_offset_y = int(map_data.get("grid_offset_y", 0))
+	map.camera_plan = int(map_data.get("camera_plan", BattleMapDefinition.CameraPlan.FAR)) as BattleMapDefinition.CameraPlan
 	var frame: Array = map_data.get("presentation_frame", [0, 0])
 	if frame.size() == 2:
 		map.presentation_frame = Vector2i(int(frame[0]), int(frame[1]))
@@ -269,7 +272,7 @@ static func _validate_structure(data: Dictionary) -> String:
 	var battle: Dictionary = data["battle"]
 	error = _validate_fields(map, {
 		"id": TYPE_STRING, "background_id": TYPE_STRING,
-		"grid_offset_y": TYPE_INT,
+		"grid_offset_y": TYPE_INT, "camera_plan": TYPE_INT,
 		"presentation_frame": TYPE_ARRAY, "cells": TYPE_ARRAY, "obstacles": TYPE_ARRAY,
 	}, "map")
 	if not error.is_empty():
@@ -280,6 +283,8 @@ static func _validate_structure(data: Dictionary) -> String:
 			return "map.presentation_frame requires two integers."
 	if map.has("grid_offset_y") and (map["grid_offset_y"] < BattleMapDefinition.MIN_GRID_OFFSET_Y or map["grid_offset_y"] > BattleMapDefinition.MAX_GRID_OFFSET_Y):
 		return "map.grid_offset_y must be between -540 and 540."
+	if map.has("camera_plan") and not BattleMapDefinition.CameraPlan.values().has(int(map["camera_plan"])):
+		return "map.camera_plan must be 0 (far), 1 (medium) or 2 (close)."
 	error = _validate_fields(battle, {
 		"id": TYPE_STRING, "map_id": TYPE_STRING, "protected_faction": TYPE_INT,
 		"objective": TYPE_DICTIONARY, "sides": TYPE_ARRAY, "placements": TYPE_ARRAY,
