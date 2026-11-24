@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="BattleMapDefinition" format=3 uid="uid://cxxynqyb72h7a"]
 
 [ext_resource type="Script" uid="uid://1cvyf8p0q7rn" path="res://features/battle/map/battle_map_cell_definition.gd" id="1_7c4ng"]
+[ext_resource type="Script" uid="uid://c6l2yh6p7k8hf" path="res://features/battle/map/battle_obstacle_definition.gd" id="2_0ojek"]
 [ext_resource type="Script" uid="uid://dta1mejjhoh73" path="res://features/battle/map/battle_map_definition.gd" id="2_1s6dy"]
 
 [sub_resource type="Resource" id="Resource_0ojek"]
@@ -372,7 +373,6 @@ hex = Vector2i(5, 9)
 [sub_resource type="Resource" id="Resource_spqjb"]
 script = ExtResource("1_7c4ng")
 hex = Vector2i(4, 10)
-movement_cost = 1
 liquid_id = &"core:acid"
 
 [sub_resource type="Resource" id="Resource_x2n7n"]

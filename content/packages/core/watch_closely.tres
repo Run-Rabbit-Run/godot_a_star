@@ -1,21 +1,22 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://2kom50mla2ks"]
 
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
 
 [sub_resource type="Resource" id="positioning"]
 script = ExtResource("effect")
 effect_type_id = &"core:positioning"
-parameters = {"operation": "dash"}
+parameters = {
+"operation": "dash"
+}
 
 [resource]
 script = ExtResource("ability")
 id = &"core:watch_closely"
-presentation_id = &"core:shove_presentation"
 display_name = "Смотри внимательно"
 description = "Рывок по прямой на свободный гекс в пределах {range}. Каждый враг на пути получает 1 электрического урона. Перезарядка {cooldown}."
+presentation_id = &"core:shove_presentation"
 range = 3
-area_radius = 0
+effects = Array[ExtResource("effect")]([SubResource("positioning")])
 target_mode = 5
 cooldown_turns = 2
-effects = Array[ExtResource("effect")]([SubResource("positioning")])

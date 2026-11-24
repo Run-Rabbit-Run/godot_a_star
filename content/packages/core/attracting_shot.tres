@@ -1,21 +1,22 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://cair5883mstge"]
 
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
 
 [sub_resource type="Resource" id="positioning"]
 script = ExtResource("effect")
 effect_type_id = &"core:positioning"
-parameters = {"operation": "shot_pull"}
+parameters = {
+"operation": "shot_pull"
+}
 
 [resource]
 script = ExtResource("ability")
 id = &"core:attracting_shot"
 display_name = "Притягивающий выстрел"
 description = "Наносит выбранному врагу базовый урон и притягивает остальных юнитов в радиусе {radius} к цели на 1 гекс. Перезарядка {cooldown}."
-range = 1
 area_radius = 2
-target_mode = 1
-cooldown_turns = 2
-uses_attack_range = true
 effects = Array[ExtResource("effect")]([SubResource("positioning")])
+target_mode = 1
+uses_attack_range = true
+cooldown_turns = 2

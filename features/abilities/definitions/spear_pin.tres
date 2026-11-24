@@ -1,14 +1,26 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://onruhv4mknur"]
+
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+
 [sub_resource type="Resource" id="damage"]
 script = ExtResource("effect")
 effect_type_id = &"core:damage"
-parameters = {"amount": 3, "damage_type": "physical", "affects_obstacles": false, "use_base_attack": true}
+parameters = {
+"affects_obstacles": false,
+"amount": 3,
+"damage_type": "physical",
+"use_base_attack": true
+}
+
 [sub_resource type="Resource" id="status"]
 script = ExtResource("effect")
 effect_type_id = &"core:unit_status"
-parameters = {"status_id": "core:paralysis", "levels": 1}
+parameters = {
+"levels": 1,
+"status_id": "core:paralysis"
+}
+
 [resource]
 script = ExtResource("ability")
 id = &"core:spear_pin"
@@ -16,9 +28,7 @@ display_name = "Пригвоздить"
 description = "Удар по противнику на дальности {range}: {damage} урона ({damage_type}) и {status} ×{levels}. Считается ближней атакой: цель с ответным ударом отвечает."
 presentation_id = &"core:spear_presentation"
 range = 2
-area_radius = 0
+effects = Array[ExtResource("effect")]([SubResource("damage"), SubResource("status")])
+melee_attack = true
 target_mode = 1
 cooldown_turns = 3
-melee_attack = true
-returns_next_turn = false
-effects = Array[ExtResource("effect")]([SubResource("damage"), SubResource("status")])

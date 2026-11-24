@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://ddu78n6k881xi"]
 
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
 
 [sub_resource type="Resource" id="positioning"]
 script = ExtResource("effect")
 effect_type_id = &"core:positioning"
-parameters = {"operation": "grapple"}
+parameters = {
+"operation": "grapple"
+}
 
 [resource]
 script = ExtResource("ability")
@@ -14,7 +16,6 @@ id = &"core:grapple"
 display_name = "Гарпун"
 description = "Подтягивает бойца к выбранному юниту на дальности {range}. Боец останавливается перед целью или преградой. Перезарядка {cooldown}."
 range = 4
-area_radius = 0
+effects = Array[ExtResource("effect")]([SubResource("positioning")])
 target_mode = 2
 cooldown_turns = 2
-effects = Array[ExtResource("effect")]([SubResource("positioning")])

@@ -1,12 +1,14 @@
-[gd_resource type="Resource" script_class="AbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="AbilityDefinition" format=3 uid="uid://htxrxtoan5a7"]
 
-[ext_resource type="Script" path="res://features/abilities/ability_definition.gd" id="1"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="2"]
+[ext_resource type="Script" uid="uid://e6ht8605r23q" path="res://features/abilities/ability_definition.gd" id="1"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="2"]
 
 [sub_resource type="Resource" id="Effect"]
 script = ExtResource("2")
 effect_type_id = &"core:hex_state"
-parameters = {"state_id": "core:electricity"}
+parameters = {
+"state_id": "core:electricity"
+}
 
 [resource]
 script = ExtResource("1")

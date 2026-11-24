@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="StrategistAbilityDefinition" format=3]
+[gd_resource type="Resource" script_class="StrategistAbilityDefinition" format=3 uid="uid://b6xajerowro77"]
 
-[ext_resource type="Script" path="res://features/abilities/strategist_ability_definition.gd" id="ability"]
-[ext_resource type="Script" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
+[ext_resource type="Script" uid="uid://0s8r65kv44pc" path="res://features/abilities/strategist_ability_definition.gd" id="ability"]
+[ext_resource type="Script" uid="uid://dspmgv47bej7p" path="res://features/abilities/ability_effect_definition.gd" id="effect"]
 
 [sub_resource type="Resource" id="effect_0"]
 script = ExtResource("effect")
@@ -9,7 +9,7 @@ effect_type_id = &"core:landing"
 parameters = {
 "center_only": true,
 "terrain_id": "core:landing_pad",
-"unit_id": "core:health_shuttle_unit",
+"unit_id": "core:health_shuttle_unit"
 }
 
 [resource]
@@ -17,6 +17,5 @@ script = ExtResource("ability")
 id = &"core:health_shuttle"
 display_name = "Шаттл Здоровья"
 description = "С неба падает капсула (4 ОЗ) на гекс у края поля, и этот гекс становится частью поля. Пока капсула цела, у всех союзников максимум ОЗ больше на 1. Уничтоженная капсула забирает свой гекс со всем, что на нём было. Нельзя вызвать новый шаттл, пока цел прежний."
-target_mode = 0
 one_at_a_time = true
 effects = Array[ExtResource("effect")]([SubResource("effect_0")])
