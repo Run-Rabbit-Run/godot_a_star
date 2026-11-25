@@ -10,6 +10,7 @@ const PARALYSIS := &"core:paralysis"
 const PARALYSIS_RESISTANCE := &"core:paralysis_resistance"
 const PLASMA := &"core:plasma"
 const STICKY_OIL := &"core:sticky_oil"
+const ROOTED := &"core:rooted"
 const ARMOR := &"core:armor"
 const SHIELD := &"core:shield"
 const ATTACK_CHARGE := &"core:attack_charge"
@@ -47,6 +48,7 @@ const RULES := {
 	PARALYSIS_RESISTANCE: {"name": "Устойчивость к параличу", "category": Category.PROPERTY, "description": "Пока есть, паралич не накладывается. Наложение снимает паралич. Появляется, когда спадает паралич. В начале фазы своей стороны теряет 1 уровень."},
 	PLASMA: {"name": "Плазма", "category": Category.PERIODIC, "description": "В начале фазы своей стороны наносит 2 огненного урона независимо от числа уровней, затем теряет 1 уровень. Пока есть, даёт неуязвимость к водному урону и запрещает влагу; наложение снимает всю влагу. Наложение, дающее 5 и более уровней, накладывает паралич."},
 	STICKY_OIL: {"name": "Тягучее масло", "category": Category.TURN, "description": "Снижает передвижение на 1; при 5 уровнях — на 2. В конце фазы своей стороны теряет 1 уровень. Огненный урон или наложение горения вызывает взрыв с уроном, равным сумме уровней масла и горения. Взрыв наносит физический урон только этому юниту, расходует всё масло и сохраняет горение."},
+	ROOTED: {"name": "Скованность", "category": Category.TURN, "description": "Запрещает обычное передвижение. Атаки, умения и принудительные перемещения действуют по своим правилам. В конце фазы своей стороны теряет 1 уровень."},
 	ARMOR: {"name": "Броня", "category": Category.RESERVE, "description": "Каждый уровень блокирует 1 физического урона. Сама по себе не спадает. Кислота разрушает броню."},
 	SHIELD: {"name": "Щит", "category": Category.RESERVE, "drops_at_phase_start": true, "description": "Предотвращает урон любого типа: 1 урона за уровень, после брони и других статусов. Предотвратив хотя бы 1 урона, снимается целиком. В начале фазы своей стороны снимаются все уровни. «Защита» даёт 1 уровень."},
 	ATTACK_CHARGE: {"name": "Заряд", "category": Category.RESERVE, "description": "Следующая обычная атака юнита — по противнику или препятствию — наносит на 1 урона больше за каждый уровень и расходует весь заряд. Сам не спадает. Ответный удар и умения заряд не тратят. Пассив «Я здесь» даёт 1 уровень, если юнит начал ход рядом с противником."},
@@ -74,6 +76,10 @@ static func drops_at_phase_start(id: StringName) -> bool:
 
 static func drops_at_phase_end(id: StringName) -> bool:
 	return bool(RULES.get(id, {}).get("drops_at_phase_end", false))
+
+static func available_movement(statuses: Dictionary, points: int) -> int:
+	return 0 if statuses.has(ROOTED) else points
+
 
 static func movement_penalty(statuses: Dictionary) -> int:
 	var oil := int(statuses.get(STICKY_OIL, 0))

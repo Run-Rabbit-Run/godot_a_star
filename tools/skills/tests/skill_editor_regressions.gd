@@ -62,6 +62,17 @@ func _check_editing(suite: Node) -> void:
 	if heal_spins.size() == 1:
 		(heal_spins[0] as SpinBox).value = 3
 	suite.expect(editor._document.effects[0].parameters.amount == 3 and editor._preview.text.contains("3 ОЗ") and editor._validation.text.begins_with("✓"), "A changed heal reaches the draft and its description")
+	editor._set_document(builtin["core:spear_pin"])
+	var rooted := String(UnitStatusCatalog.ROOTED)
+	var can_select_rooted := false
+	for option: OptionButton in editor._form.find_children("*", "OptionButton", true, false):
+		for index in range(option.item_count):
+			if option.get_item_metadata(index) == rooted and option.get_item_text(index) == "Скованность":
+				option.select(index)
+				option.item_selected.emit(index)
+				can_select_rooted = true
+				break
+	suite.expect(can_select_rooted and editor._document.effects[1].parameters.status_id == rooted and editor._validation.text.begins_with("✓"), "Rooted can be selected and validated in the unit status effect")
 	editor._set_document(builtin["core:fire_stroke"])
 	suite.expect(editor._validation.text.begins_with("✓") and editor._help.text.contains("три соседних гекса"), "The fire stroke opens with its side target explained")
 	var turret: Dictionary = builtin["core:electric_turret"]

@@ -287,6 +287,7 @@ func get_reach(unit_id: StringName) -> Dictionary:
 	var unit := get_unit(unit_id)
 	if unit != null and not unit.health.is_defeated() and unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) <= 0:
 		var points := maxi(0, unit.turn.movement_max - UnitStatusCatalog.movement_penalty(unit.statuses))
+		points = UnitStatusCatalog.available_movement(unit.statuses, points)
 		cells = MovementService.search(_state.hex_grid, unit.hex, points, _get_blocked_cells(unit_id)).get_reachable_cells()
 		cells.sort()
 		var attack: Dictionary[Vector2i, bool] = {}
@@ -326,7 +327,7 @@ func get_movement_search(unit_id: StringName) -> MovementSearchResult:
 	var result := MovementService.search(
 		_state.hex_grid,
 		state.hex,
-		state.turn.movement_remaining,
+		UnitStatusCatalog.available_movement(state.statuses, state.turn.movement_remaining),
 		_get_blocked_cells(unit_id),
 		_state.map_revision,
 		_state.state_revision
@@ -429,7 +430,11 @@ func _resolve_move(command: MoveCommand) -> BattleResolution:
 		if not _terminal_error.is_empty():
 			break
 
-		if moved_unit.health.is_defeated() or moved_unit.statuses.get(UnitStatusCatalog.PARALYSIS, 0) > 0:
+		if (
+			moved_unit.health.is_defeated()
+			or moved_unit.statuses.has(UnitStatusCatalog.PARALYSIS)
+			or moved_unit.statuses.has(UnitStatusCatalog.ROOTED)
+		):
 			break
 
 	if segment_cost > 0:

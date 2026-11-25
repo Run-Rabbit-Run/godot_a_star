@@ -95,6 +95,7 @@ func _check_categories(suite: Node) -> void:
 		&"core:plasma": UnitStatusCatalog.Category.PERIODIC,
 		&"core:acid": UnitStatusCatalog.Category.PERIODIC,
 		&"core:sticky_oil": UnitStatusCatalog.Category.TURN,
+		UnitStatusCatalog.ROOTED: UnitStatusCatalog.Category.TURN,
 		&"core:paralysis": UnitStatusCatalog.Category.TURN,
 		&"core:wet": UnitStatusCatalog.Category.PROPERTY,
 		&"core:paralysis_resistance": UnitStatusCatalog.Category.PROPERTY,

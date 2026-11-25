@@ -61,7 +61,7 @@ func _init(state: UnitState) -> void:
 	ally_shield = state.ally_shield
 	turn = TurnSnapshot.new(
 		state.turn.movement_max,
-		state.turn.movement_remaining,
+		UnitStatusCatalog.available_movement(state.statuses, state.turn.movement_remaining),
 		state.turn.main_action_available,
 		state.turn.movement_spent
 	)
