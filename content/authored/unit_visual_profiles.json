@@ -340,41 +340,53 @@
     "foot_anchor": [
       0.405488,
       0.859049
-    ]
+    ],
+    "corpse_width": 106,
+    "corpse_visible_region": [74, 61, 1625, 792]
   },
   "bot_defender.png": {
     "height": 90,
     "foot_anchor": [
       0.403548,
       0.86833
-    ]
+    ],
+    "corpse_width": 94,
+    "corpse_visible_region": [55, 127, 1615, 703]
   },
   "bot_sniper.png": {
     "height": 82,
     "foot_anchor": [
       0.34375,
       0.919099
-    ]
+    ],
+    "corpse_width": 110,
+    "corpse_visible_region": [76, 98, 1770, 623]
   },
   "bot_flying.png": {
     "height": 76,
     "foot_anchor": [
       0.515244,
       0.942452
-    ]
+    ],
+    "corpse_width": 86,
+    "corpse_visible_region": [140, 156, 1364, 623]
   },
   "bot_kamikaze.png": {
     "height": 76,
     "foot_anchor": [
       0.494709,
       0.795192
-    ]
+    ],
+    "corpse_width": 108,
+    "corpse_visible_region": [147, 145, 1613, 609]
   },
   "bot_acid.png": {
     "height": 86,
     "foot_anchor": [
       0.464939,
       0.863219
-    ]
+    ],
+    "corpse_width": 100,
+    "corpse_visible_region": [79, 58, 1609, 799]
   }
 }
