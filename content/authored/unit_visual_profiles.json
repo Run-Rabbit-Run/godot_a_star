@@ -334,5 +334,47 @@
     "foot_anchor": [0.431, 0.975],
     "corpse_width": 82,
     "corpse_visible_region": [19, 124, 1736, 663]
+  },
+  "bot_flamethrower.png": {
+    "height": 88,
+    "foot_anchor": [
+      0.405488,
+      0.859049
+    ]
+  },
+  "bot_defender.png": {
+    "height": 90,
+    "foot_anchor": [
+      0.403548,
+      0.86833
+    ]
+  },
+  "bot_sniper.png": {
+    "height": 82,
+    "foot_anchor": [
+      0.34375,
+      0.919099
+    ]
+  },
+  "bot_flying.png": {
+    "height": 76,
+    "foot_anchor": [
+      0.515244,
+      0.942452
+    ]
+  },
+  "bot_kamikaze.png": {
+    "height": 76,
+    "foot_anchor": [
+      0.494709,
+      0.795192
+    ]
+  },
+  "bot_acid.png": {
+    "height": 86,
+    "foot_anchor": [
+      0.464939,
+      0.863219
+    ]
   }
 }
